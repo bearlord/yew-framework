@@ -15,10 +15,10 @@ class WsController extends Controller
     /**
      * @var array
      */
-    public $portTypes = ["ws"];
+    public array $portTypes = ["ws"];
 
     /**
      * @var string
      */
-    public $defaultMethod = "WS";
+    public string $defaultMethod = "WS";
 }

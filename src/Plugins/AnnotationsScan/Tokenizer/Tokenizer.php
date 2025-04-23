@@ -21,7 +21,7 @@ class Tokenizer
      * @param string $pathToFile
      * @return string|null
      */
-    public static function getClassFromFilePHP7(string $pathToFile)
+    public static function getClassFromFilePHP7(string $pathToFile): ?string
     {
         //Grab the contents of the file
         $contents = file_get_contents($pathToFile);

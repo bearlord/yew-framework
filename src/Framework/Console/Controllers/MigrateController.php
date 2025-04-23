@@ -8,13 +8,13 @@
 namespace Yew\Framework\Console\Controllers;
 
 use Yew\Framework\Base\Action;
-use Yew\Yii\Yii;
-use Yew\Yii\Db\Connection;
-use Yew\Yii\Db\Query;
-use Yew\Yii\Di\Instance;
-use Yew\Yii\Helpers\ArrayHelper;
-use Yew\Yii\Helpers\Console;
-use Yew\Yii\Helpers\Inflector;
+use Yew\Yew;
+use Yew\Framework\Db\Connection;
+use Yew\Framework\Db\Query;
+use Yew\Framework\Di\Instance;
+use Yew\Framework\Helpers\ArrayHelper;
+use Yew\Framework\Helpers\Console;
+use Yew\Framework\Helpers\Inflector;
 
 /**
  * Manages application migrations.

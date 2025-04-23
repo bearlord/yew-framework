@@ -6,6 +6,9 @@
 
 namespace Yew\Framework\Helpers;
 
+use Yew\Framework\Exception\Exception;
+use Yew\Framework\Exception\InvalidParamException;
+
 /**
  * Security provides a set of methods to handle common security-related tasks.
  *
@@ -597,7 +600,6 @@ class Security
         }
 
         if (function_exists('password_hash')) {
-            /** @noinspection PhpUndefinedConstantInspection */
             return password_hash($password, PASSWORD_DEFAULT, ['cost' => $cost]);
         }
 

@@ -56,7 +56,6 @@ class AnnotationRoute implements IRoute
      */
     public function handleClientData($clientData, $RoutePortConfig): bool
     {
-        var_dump(1);
         $this->clientData = $clientData;
         //Port
         $port = $this->clientData->getClientInfo()->getServerPort();
@@ -66,8 +65,6 @@ class AnnotationRoute implements IRoute
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $port, $requestMethod), $this->clientData->getPath());
 
         $request = $this->clientData->getRequest();
-
-        var_dump(100);
 
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:

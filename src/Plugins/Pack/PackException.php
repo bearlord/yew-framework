@@ -6,7 +6,7 @@
 
 namespace Yew\Plugins\Pack;
 
-use Yew\Core\Exception;
+use Yew\Core\Exception\Exception;
 
 /**
  * Class PackException

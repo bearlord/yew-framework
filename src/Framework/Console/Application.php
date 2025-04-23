@@ -18,12 +18,9 @@ use Yew\Framework\Base\Controller;
 use Yew\Framework\Base\InvalidConfigException;
 use Yew\Framework\Base\InvalidParamException;
 use Yew\Framework\Base\InvalidRouteException;
-use Yew\Yii\Di\ServiceLocator;
-use Yew\Yii\Plugin\Mongodb\MongodbPools;
-use Yew\Yii\Yii;
-use Yew\Yii\Db\Connection;
-use Yew\Yii\Plugin\Pdo\PdoPools;
-use FastRoute\Dispatcher;
+use Yew\Framework\Di\ServiceLocator;
+use Yew\Yew;
+use Yew\Framework\Db\Connection;
 
 /**
  * Class Application

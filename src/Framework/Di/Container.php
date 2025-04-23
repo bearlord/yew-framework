@@ -4,13 +4,13 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Framework\Base\Di;
+namespace Yew\Framework\Di;
 
 use ReflectionClass;
-use Yew;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\ArrayHelper;
+use Yew\Yew;
 
 /**
  * Container implements a [dependency injection](http://en.wikipedia.org/wiki/Dependency_injection) container.
@@ -101,24 +101,24 @@ class Container extends Component
     /**
      * @var array singleton objects indexed by their types
      */
-    private $_singletons = [];
+    private array $_singletons = [];
     /**
      * @var array object definitions indexed by their types
      */
-    private $_definitions = [];
+    private array $_definitions = [];
     /**
      * @var array constructor parameters indexed by object types
      */
-    private $_params = [];
+    private array $_params = [];
     /**
      * @var array cached ReflectionClass objects indexed by class/interface names
      */
-    private $_reflections = [];
+    private array $_reflections = [];
     /**
      * @var array cached dependencies indexed by class/interface names. Each class name
      * is associated with a list of constructor parameter types or default values.
      */
-    private $_dependencies = [];
+    private array $_dependencies = [];
 
 
     /**
@@ -138,15 +138,15 @@ class Container extends Component
      *
      * @param string|Instance $class the class Instance, name or an alias name (e.g. `foo`) that was previously registered via [[set()]]
      * or [[setSingleton()]].
-     * @param array $params a list of constructor parameter values. The parameters should be provided in the order
+     * @param array|null $params a list of constructor parameter values. The parameters should be provided in the order
      * they appear in the constructor declaration. If you want to skip some parameters, you should index the remaining
      * ones with the integers that represent their positions in the constructor parameter list.
-     * @param array $config a list of name-value pairs that will be used to initialize the object properties.
+     * @param array|null $config a list of name-value pairs that will be used to initialize the object properties.
      * @return object an instance of the requested class.
      * @throws InvalidConfigException if the class cannot be recognized or correspond to an invalid definition
      * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
      */
-    public function get($class, $params = [], $config = [])
+    public function get($class, ?array $params = [], ?array $config = []): object
     {
         if ($class instanceof Instance) {
             $class = $class->id;
@@ -247,11 +247,12 @@ class Container extends Component
      *   values of the newly created object when [[get()]] is called. The `class` element stands for the
      *   the class of the object to be created. If `class` is not specified, `$class` will be used as the class name.
      * - a string: a class name, an interface name or an alias name.
-     * @param array $params the list of constructor parameters. The parameters will be passed to the class
+     * @param array|null $params the list of constructor parameters. The parameters will be passed to the class
      * constructor when [[get()]] is called.
      * @return $this the container itself
+     * @throws InvalidConfigException
      */
-    public function set($class, $definition = [], array $params = [])
+    public function set(string $class, $definition, ?array $params = [])
     {
         $this->_definitions[$class] = $this->normalizeDefinition($class, $definition);
         $this->_params[$class] = $params;
@@ -267,12 +268,13 @@ class Container extends Component
      *
      * @param string $class class name, interface name or alias name
      * @param mixed $definition the definition associated with `$class`. See [[set()]] for more details.
-     * @param array $params the list of constructor parameters. The parameters will be passed to the class
+     * @param array|null $params the list of constructor parameters. The parameters will be passed to the class
      * constructor when [[get()]] is called.
      * @return $this the container itself
+     * @throws InvalidConfigException
      * @see set()
      */
-    public function setSingleton($class, $definition = [], array $params = [])
+    public function setSingleton(string $class, $definition, ?array $params = []): Container
     {
         $this->_definitions[$class] = $this->normalizeDefinition($class, $definition);
         $this->_params[$class] = $params;
@@ -286,7 +288,7 @@ class Container extends Component
      * @return bool whether the container has the definition of the specified name..
      * @see set()
      */
-    public function has($class)
+    public function has(string $class): bool
     {
         return isset($this->_definitions[$class]);
     }
@@ -298,7 +300,7 @@ class Container extends Component
      * @return bool whether the given name corresponds to a registered singleton. If `$checkInstance` is true,
      * the method should return a value indicating whether the singleton has been instantiated.
      */
-    public function hasSingleton($class, $checkInstance = false)
+    public function hasSingleton(string $class, bool $checkInstance = false): bool
     {
         return $checkInstance ? isset($this->_singletons[$class]) : array_key_exists($class, $this->_singletons);
     }
@@ -307,7 +309,7 @@ class Container extends Component
      * Removes the definition for the specified name.
      * @param string $class class name, interface name or alias name
      */
-    public function clear($class)
+    public function clear(string $class)
     {
         unset($this->_definitions[$class], $this->_singletons[$class]);
     }
@@ -319,7 +321,7 @@ class Container extends Component
      * @return array the normalized class definition
      * @throws InvalidConfigException if the definition is invalid.
      */
-    protected function normalizeDefinition($class, $definition)
+    protected function normalizeDefinition(string $class, $definition)
     {
         if (empty($definition)) {
             return ['class' => $class];
@@ -352,7 +354,7 @@ class Container extends Component
      * Returns the list of the object definitions or the loaded shared objects.
      * @return array the list of the object definitions or the loaded shared objects (type or ID => definition or instance).
      */
-    public function getDefinitions()
+    public function getDefinitions(): array
     {
         return $this->_definitions;
     }
@@ -367,7 +369,7 @@ class Container extends Component
      * @return object the newly created instance of the specified class
      * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
      */
-    protected function build($class, $params, $config)
+    protected function build(string $class, array $params, array $config): object
     {
         /* @var $reflection ReflectionClass */
         list($reflection, $dependencies) = $this->getDependencies($class);
@@ -413,7 +415,7 @@ class Container extends Component
      * @param array $params the constructor parameters
      * @return array the merged parameters
      */
-    protected function mergeParams($class, $params)
+    protected function mergeParams(string $class, array $params): array
     {
         if (empty($this->_params[$class])) {
             return $params;
@@ -435,7 +437,7 @@ class Container extends Component
      * @return array the dependencies of the specified class.
      * @throws InvalidConfigException if a dependency cannot be resolved or if a dependency cannot be fulfilled.
      */
-    protected function getDependencies($class)
+    protected function getDependencies(string $class): array
     {
         if (isset($this->_reflections[$class])) {
             return [$this->_reflections[$class], $this->_dependencies[$class]];
@@ -471,11 +473,11 @@ class Container extends Component
     /**
      * Resolves dependencies by replacing them with the actual object instances.
      * @param array $dependencies the dependencies
-     * @param ReflectionClass $reflection the class reflection associated with the dependencies
+     * @param ReflectionClass|null $reflection the class reflection associated with the dependencies
      * @return array the resolved dependencies
      * @throws InvalidConfigException if a dependency cannot be resolved or if a dependency cannot be fulfilled.
      */
-    protected function resolveDependencies($dependencies, $reflection = null)
+    protected function resolveDependencies(array $dependencies, ?ReflectionClass $reflection = null)
     {
         foreach ($dependencies as $index => $dependency) {
             if ($dependency instanceof Instance) {
@@ -518,7 +520,7 @@ class Container extends Component
      * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
      * @since 2.0.7
      */
-    public function invoke(callable $callback, $params = [])
+    public function invoke(callable $callback, array $params = [])
     {
         return call_user_func_array($callback, $this->resolveCallableDependencies($callback, $params));
     }
@@ -536,7 +538,7 @@ class Container extends Component
      * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
      * @since 2.0.7
      */
-    public function resolveCallableDependencies(callable $callback, $params = [])
+    public function resolveCallableDependencies(callable $callback, array $params = []): array
     {
         if (is_array($callback)) {
             $reflection = new \ReflectionMethod($callback[0], $callback[1]);

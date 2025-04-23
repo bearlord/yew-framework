@@ -5,8 +5,8 @@
  * @license http://www.yiiframework.com/license/
  */
 
-use Yew\Framework\Base\InvalidConfigException;
 use Yew\Framework\Db\Migration;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Log\DbTarget;
 
 /**

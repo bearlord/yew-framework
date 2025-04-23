@@ -135,12 +135,6 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             return;
         }
 
-//        if (strpos($file, 'php://') === 0) {
-//            if (preg_match('/resource=(.+)$/', $file, $matches)) {
-//                $file = PathResolver::realpath($matches[1]);
-//                $newfile = $file;
-//            }
-//        }
         include $file;
     }
 

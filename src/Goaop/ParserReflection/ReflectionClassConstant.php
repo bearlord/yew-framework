@@ -189,7 +189,7 @@ class ReflectionClassConstant extends BaseReflectionClassConstant
     /**
      * @inheritDoc
      */
-    public function __toString()
+    public function __toString(): string
     {
         # Starting from PHP7.3 gettype returns different names, need to remap them
         static $typeMap = [

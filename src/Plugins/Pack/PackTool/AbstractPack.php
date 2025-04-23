@@ -56,7 +56,7 @@ abstract class AbstractPack implements IPack
             case "N":
                 return 4;
             default:
-                throw new PackException(Yii::t('esd', 'Wrong Packet type'));
+                throw new PackException('Wrong Packet type');
         }
     }
 }

@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Framework\Base\Di;
+namespace Yew\Framework\Di;
 
 use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
