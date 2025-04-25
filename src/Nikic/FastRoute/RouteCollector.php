@@ -4,11 +4,11 @@ namespace Yew\Nikic\FastRoute;
 
 class RouteCollector
 {
-    /** @var RouteParser */
-    protected RouteParser $routeParser;
+    /** @var RouteParser|null */
+    protected ?RouteParser $routeParser = null;
 
-    /** @var DataGenerator */
-    protected DataGenerator $dataGenerator;
+    /** @var DataGenerator|null */
+    protected ?DataGenerator $dataGenerator = null;
 
     /** @var string */
     protected string $currentGroupPrefix;

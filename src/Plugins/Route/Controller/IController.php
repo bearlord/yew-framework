@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Route\Controller;
 
-/**
- * Interface IController
- * @package Yew\Plugins\Route\Controller
- */
 interface IController
 {
     /**

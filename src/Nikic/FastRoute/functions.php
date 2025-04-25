@@ -12,10 +12,10 @@ if (!function_exists('Yew\Nikic\FastRoute\simpleDispatcher')) {
     function simpleDispatcher(callable $routeDefinitionCallback, array $options = []): Dispatcher
     {
         $options += [
-            'routeParser' => 'Yew\Nikic\FastRoute\RouteParser\Std',
-            'dataGenerator' => 'Yew\Nikic\FastRoute\DataGenerator\GroupCountBased',
-            'dispatcher' => 'Yew\Nikic\FastRoute\Dispatcher\GroupCountBased',
-            'routeCollector' => "Yew\Nikic\FastRoute\RouteCollector",
+            'routeParser' => 'Yew\\Nikic\\FastRoute\\RouteParser\\Std',
+            'dataGenerator' => 'Yew\\Nikic\\FastRoute\\DataGenerator\\GroupCountBased',
+            'dispatcher' => 'Yew\\Nikic\\FastRoute\\Dispatcher\\GroupCountBased',
+            'routeCollector' => "Yew\\Nikic\\FastRoute\\RouteCollector",
         ];
 
         /** @var RouteCollector $routeCollector */
@@ -36,10 +36,10 @@ if (!function_exists('Yew\Nikic\FastRoute\simpleDispatcher')) {
     function cachedDispatcher(callable $routeDefinitionCallback, array $options = []): Dispatcher
     {
         $options += [
-            'routeParser' => 'Yew\Nikic\FastRoute\RouteParser\Std',
-            'dataGenerator' => 'Yew\Nikic\FastRoute\DataGenerator\GroupCountBased',
-            'dispatcher' => 'Yew\Nikic\FastRoute\Dispatcher\GroupCountBased',
-            'routeCollector' => "Yew\Nikic\FastRoute\RouteCollector",
+            'routeParser' => 'Yew\\Nikic\\FastRoute\\RouteParser\Std',
+            'dataGenerator' => 'Yew\\Nikic\\FastRoute\\DataGenerator\\GroupCountBased',
+            'dispatcher' => 'Yew\\Nikic\\FastRoute\\Dispatcher\\GroupCountBased',
+            'routeCollector' => "Yew\\Nikic\\FastRoute\\RouteCollector",
             'cacheDisabled' => false,
         ];
 

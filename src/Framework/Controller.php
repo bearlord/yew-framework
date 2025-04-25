@@ -2,14 +2,11 @@
 
 namespace Yew\Framework;
 
-use DI\Annotation\Inject;
-use Yew\Core\Server\Beans\Request;
 use Yew\Go\Exception\AlertResponseException;
 use Yew\Go\Exception\ResponseException;
 use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\MethodNotAllowedException;
 use Yew\Plugins\Route\RouteException;
-use Yew\Plugins\Pack\GetBoostSend;
 
 class Controller extends RouteController
 {
@@ -149,7 +146,7 @@ class Controller extends RouteController
 
     /**
      * Called when no method is found
-     * @param $methodName
+     * @param string|null $methodName
      * @return mixed
      */
     protected function defaultMethod(?string $methodName)
