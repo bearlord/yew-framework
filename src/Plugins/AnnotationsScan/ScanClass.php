@@ -15,13 +15,13 @@ use ReflectionClass;
  */
 class ScanClass
 {
-    private $annotationMethod = [];
-    private $annotationClass = [];
+    private array $annotationMethod = [];
+    private array $annotationClass = [];
 
     /**
      * @var CachedReader
      */
-    private $cachedReader;
+    private CachedReader $cachedReader;
 
     /**
      * ScanClass constructor.
@@ -79,7 +79,7 @@ class ScanClass
      * @param $annClass
      * @return ReflectionClass[]
      */
-    public function findClassesByAnn($annClass)
+    public function findClassesByAnn($annClass): array
     {
         return $this->annotationClass[$annClass] ?? [];
     }
@@ -100,7 +100,7 @@ class ScanClass
      * @param $annClass
      * @return ScanReflectionMethod[]
      */
-    public function findMethodsByAnnotation($annClass)
+    public function findMethodsByAnnotation($annClass): array
     {
         return $this->annotationMethod[$annClass] ?? [];
     }
@@ -122,7 +122,7 @@ class ScanClass
      * @param $annotationName
      * @return object|null
      */
-    public function getClassAndInterfaceAnnotation(ReflectionClass $class, $annotationName)
+    public function getClassAndInterfaceAnnotation(ReflectionClass $class, $annotationName): ?object
     {
         $result = $this->cachedReader->getClassAnnotation($class, $annotationName);
         if ($result == null) {
@@ -146,7 +146,7 @@ class ScanClass
     {
         $result = $this->cachedReader->getClassAnnotations($class);
         foreach ($class->getInterfaces() as $reflectionClass) {
-            $result = array_merge($this->cachedReader->getClassAnnotation($reflectionClass), $result);
+            $result = array_merge($this->cachedReader->getClassAnnotation($reflectionClass, null), $result);
         }
         return $result;
     }
@@ -185,7 +185,7 @@ class ScanClass
      * @param \ReflectionMethod $method
      * @return array
      */
-    public function getMethodAndInterfaceAnnotations(\ReflectionMethod $method)
+    public function getMethodAndInterfaceAnnotations(\ReflectionMethod $method): array
     {
         $result = $this->cachedReader->getMethodAnnotations($method);
         foreach ($method->getDeclaringClass()->getInterfaces() as $reflectionClass) {

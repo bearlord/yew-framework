@@ -24,6 +24,7 @@ use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Aop\OrderAspect;
 use Yew\Plugins\Console\ConsolePlugin;
+use Yew\Plugins\Redis\RedisPlugin;
 use Yew\Plugins\Route\RouteConfig;
 use Yew\Plugins\Route\RoutePlugin;
 
@@ -107,6 +108,8 @@ class Application extends Server
         $routeConfig->setErrorControllerName(RouteCollector::class);
 
         $this->addPlugin(new RoutePlugin($routeConfig));
+
+        $this->addPlugin(new RedisPlugin());
 
         //Add aop of Go namespace by default
         $aopConfig = new AopConfig(__DIR__);

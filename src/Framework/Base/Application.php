@@ -11,10 +11,12 @@ use Yew\Core\DI\DI;
 use Yew\Coroutine\Server\Server;
 use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
+use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\InvalidParamException;
 use Yew\Nikic\FastRoute\Dispatcher;
 use Yew\Plugins\Route\RoutePlugin;
 use Yew\Plugins\Session\HttpSession;
-use Yew\Framework\Base\Di\ServiceLocator;
+use Yew\Framework\Di\ServiceLocator;
 use Yew\Framework\Db\Connection;
 use Yew\Framework\Plugin\Pdo\PdoPools;
 use Yew\Framework\Plugin\Pdo\PdoPool;
@@ -23,8 +25,8 @@ use Yew\Yew;
 /**
  * Class Application
  * @package \Yew\Framework\Base
- * @property \ESD\Core\Server\Beans\Request $request The request component. This property is read-only.
- * @property \ESD\Core\Server\Beans\Response $response The response component. This property is read-only.
+ * @property \Yew\Core\Server\Beans\Request $request The request component. This property is read-only.
+ * @property \Yew\Core\Server\Beans\Response $response The response component. This property is read-only.
  * @property \ESD\Plugins\Session\HttpSession $session The session component. This property is read-only.
  * @property \Yew\Framework\Web\User $user The user component. This property is read-only.
  * @property \Yew\Framework\Caching\Cache $cache The cache application component. Null if the component is not enabled.
@@ -36,41 +38,41 @@ class Application extends ServiceLocator
     /**
      * @var string the charset currently used for the application.
      */
-    public $charset = 'UTF-8';
+    public string $charset = 'UTF-8';
     /**
      * @var string the language that is meant to be used for end users. It is recommended that you
      * use [IETF language tags](http://en.wikipedia.org/wiki/IETF_language_tag). For example, `en` stands
      * for English, while `en-US` stands for English (United States).
      * @see sourceLanguage
      */
-    public $language = 'en-US';
+    public string $language = 'en-US';
 
     /**
      * @var string the language that the application is written in. This mainly refers to
      * the language that the messages and view files are written in.
      * @see language
      */
-    public $sourceLanguage = 'en-US';
+    public string $sourceLanguage = 'en-US';
 
     /**
      * @var string Default time zone
      */
-    public $timeZone = 'Asia/Shanghai';
+    public string $timeZone = 'Asia/Shanghai';
 
     /**
      * @var string Cookie validation key
      */
-    public $cookieValidationKey = 'yii';
+    public string $cookieValidationKey = 'yew';
 
     /**
      * @var string the root directory of the application.
      */
-    private $_basePath;
+    private string $_basePath;
 
     /**
-     * @var Application
+     * @var Application[]
      */
-    private static $_instances;
+    private static array $_instances = [];
 
     /**
      * Application constructor.
@@ -322,9 +324,9 @@ class Application extends ServiceLocator
     }
 
     /**
-     * Get db once
-     * @return Connection|object|null
-     * @throws \Yew\Framework\Db\Exception|\Yew\Framework\Base\InvalidConfigException
+     * @param $name
+     * @return Connection|null
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function getDbOnce($name): ?Connection
     {
@@ -376,22 +378,20 @@ class Application extends ServiceLocator
 
     /**
      * Returns the request component.
-     * @return \ESD\Core\Server\Beans\Request the request component.
+     * @return \Yew\Core\Server\Beans\Request the request component.
      */
-    public function getRequest()
+    public function getRequest(): Request
     {
-        $request = getDeepContextValueByClassName(Request::class);
-        return $request;
+        return getDeepContextValueByClassName(Request::class);
     }
 
     /**
      * Returns the response component.
-     * @return \ESD\Core\Server\Beans\Response the response component.
+     * @return \Yew\Core\Server\Beans\Response the response component.
      */
-    public function getResponse()
+    public function getResponse(): Response
     {
-        $response = getDeepContextValueByClassName(Response::class);
-        return $response;
+        return getDeepContextValueByClassName(Response::class);
     }
 
     /**

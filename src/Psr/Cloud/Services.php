@@ -1,7 +1,7 @@
 <?php
 /**
- * ESD framework
- * @author tmtbe <896369042@qq.com>
+ * Yew framework
+ * @author bearlord <565364226@qq.com>
  */
 
 namespace ESD\Psr\Cloud;

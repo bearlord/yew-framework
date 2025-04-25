@@ -20,16 +20,13 @@ use Yew\Coroutine\Beans\ChannelStats;
  */
 class ChannelImpl implements Channel
 {
-    const CHANNEL_OK = SWOOLE_CHANNEL_OK;
 
-    const CHANNEL_TIMEOUT = SWOOLE_CHANNEL_TIMEOUT;
-
-    const CHANNEL_CLOSED = SWOOLE_CHANNEL_CLOSED;
+    protected bool $closed = false;
 
     /**
      * @var \Swoole\Coroutine\Channel
      */
-    public $swooleChannel;
+    public \Swoole\Coroutine\Channel $swooleChannel;
 
     /**
      * ChannelImpl constructor.
@@ -101,6 +98,8 @@ class ChannelImpl implements Channel
      */
     public function close()
     {
+        $this->closed = true;
+
         $this->swooleChannel->close();
     }
 
@@ -154,4 +153,29 @@ class ChannelImpl implements Channel
     {
         return $this->swooleChannel->errCode;
     }
+
+    /**
+     * @return bool
+     */
+    public function isClosing(): bool
+    {
+        return $this->closed || $this->getErrCode() === SWOOLE_CHANNEL_CLOSED;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTimeout(): bool
+    {
+        return ! $this->closed && $this->getErrCode() === SWOOLE_CHANNEL_TIMEOUT;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAvailable(): bool
+    {
+        return ! $this->isClosing();
+    }
+
 }

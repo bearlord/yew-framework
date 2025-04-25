@@ -25,7 +25,7 @@ final class MetadataLoadInterceptor implements EventSubscriber
     /**
      * {@inheritdoc}
      */
-    public function getSubscribedEvents()
+    public function getSubscribedEvents(): array
     {
         return [
             Events::loadClassMetadata
@@ -46,6 +46,7 @@ final class MetadataLoadInterceptor implements EventSubscriber
      * @see https://github.com/Atlantic18/DoctrineExtensions
      *
      * @param LoadClassMetadataEventArgs $args
+     * @throws \ReflectionException
      */
     public function loadClassMetadata(LoadClassMetadataEventArgs $args)
     {
@@ -69,6 +70,7 @@ final class MetadataLoadInterceptor implements EventSubscriber
      * from traits.
      *
      * @param ClassMetadata $metadata
+     * @throws \ReflectionException
      */
     private function removeMappingsFromTraits(ClassMetadata $metadata)
     {
@@ -77,9 +79,6 @@ final class MetadataLoadInterceptor implements EventSubscriber
         foreach ($traits as $trait) {
             $trait = new \ReflectionClass($trait);
 
-            /**
-             * @var \ReflectionProperty $property
-             */
             foreach ($trait->getProperties() as $property) {
                 $name = $property->getName();
 
@@ -104,12 +103,12 @@ final class MetadataLoadInterceptor implements EventSubscriber
      * @param object|string $objectOrClass Instance of class or FQCN
      * @param bool $autoload Weather to autoload class.
      *
-     * @throws \InvalidArgumentException
-     * @throws \RuntimeException
-     *
      * @return array Used traits.
+     *@throws \RuntimeException
+     *
+     * @throws \InvalidArgumentException
      */
-    private function getTraits($objectOrClass, $autoload = true)
+    private function getTraits($objectOrClass, bool $autoload = true): array
     {
         if (is_object($objectOrClass)) {
             $objectOrClass = get_class($objectOrClass);

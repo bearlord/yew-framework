@@ -17,26 +17,26 @@ class ChannelStats
      * there are N coroutines waiting for other coroutines to call the push method to produce data
      * @var int
      */
-    private $consumerNum;
+    private int $consumerNum;
 
     /**
      * Number of producers, indicating that the current channel is full, and there are N coroutines
      * waiting for other coroutines to call the pop method to consume data
      * @var int
      */
-    private $producerNum;
+    private int $producerNum;
 
     /**
      * Number of elements in the channel
      * @var int
      */
-    private $queueNum;
+    private int $queueNum;
 
     /**
      * ChannelStats constructor.
-     * @param $data
+     * @param array $data
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->consumerNum = $data['consumer_num'];
         $this->producerNum = $data['producer_num'];

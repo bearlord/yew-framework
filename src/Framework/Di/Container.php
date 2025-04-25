@@ -144,7 +144,7 @@ class Container extends Component
      * @param array|null $config a list of name-value pairs that will be used to initialize the object properties.
      * @return object an instance of the requested class.
      * @throws InvalidConfigException if the class cannot be recognized or correspond to an invalid definition
-     * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
+     * @throws NotInstantiableException|\ReflectionException If resolved to an abstract class or an interface (since 2.0.9)
      */
     public function get($class, ?array $params = [], ?array $config = []): object
     {
@@ -252,7 +252,7 @@ class Container extends Component
      * @return $this the container itself
      * @throws InvalidConfigException
      */
-    public function set(string $class, $definition, ?array $params = [])
+    public function set(string $class, $definition, ?array $params = []): Container
     {
         $this->_definitions[$class] = $this->normalizeDefinition($class, $definition);
         $this->_params[$class] = $params;
@@ -367,7 +367,9 @@ class Container extends Component
      * @param array $params constructor parameters
      * @param array $config configurations to be applied to the new instance
      * @return object the newly created instance of the specified class
+     * @throws InvalidConfigException
      * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
+     * @throws \ReflectionException
      */
     protected function build(string $class, array $params, array $config): object
     {
@@ -475,9 +477,9 @@ class Container extends Component
      * @param array $dependencies the dependencies
      * @param ReflectionClass|null $reflection the class reflection associated with the dependencies
      * @return array the resolved dependencies
-     * @throws InvalidConfigException if a dependency cannot be resolved or if a dependency cannot be fulfilled.
+     * @throws InvalidConfigException|\ReflectionException if a dependency cannot be resolved or if a dependency cannot be fulfilled.
      */
-    protected function resolveDependencies(array $dependencies, ?ReflectionClass $reflection = null)
+    protected function resolveDependencies(array $dependencies, ?ReflectionClass $reflection = null): array
     {
         foreach ($dependencies as $index => $dependency) {
             if ($dependency instanceof Instance) {
@@ -517,7 +519,7 @@ class Container extends Component
      * This can be either a list of parameters, or an associative array representing named function parameters.
      * @return mixed the callback return value.
      * @throws InvalidConfigException if a dependency cannot be resolved or if a dependency cannot be fulfilled.
-     * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
+     * @throws NotInstantiableException|\ReflectionException If resolved to an abstract class or an interface (since 2.0.9)
      * @since 2.0.7
      */
     public function invoke(callable $callback, array $params = [])
@@ -535,7 +537,7 @@ class Container extends Component
      * @param array $params The array of parameters for the function, can be either numeric or associative.
      * @return array The resolved dependencies.
      * @throws InvalidConfigException if a dependency cannot be resolved or if a dependency cannot be fulfilled.
-     * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
+     * @throws NotInstantiableException|\ReflectionException If resolved to an abstract class or an interface (since 2.0.9)
      * @since 2.0.7
      */
     public function resolveCallableDependencies(callable $callback, array $params = []): array
@@ -641,6 +643,7 @@ class Container extends Component
      * ]);
      * ```
      *
+     * @throws InvalidConfigException
      * @see set() to know more about possible values of definitions
      * @since 2.0.11
      */
@@ -662,6 +665,7 @@ class Container extends Component
      * @param array $singletons array of singleton definitions. See [[setDefinitions()]]
      * for allowed formats of array.
      *
+     * @throws InvalidConfigException
      * @see setDefinitions() for allowed formats of $singletons parameter
      * @see setSingleton() to know more about possible values of definitions
      * @since 2.0.11

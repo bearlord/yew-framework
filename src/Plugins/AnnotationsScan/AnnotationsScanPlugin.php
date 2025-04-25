@@ -22,7 +22,6 @@ use Yew\Plugins\AnnotationsScan\Annotation\Component;
 use Yew\Plugins\AnnotationsScan\Tokenizer\Tokenizer;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Framework\Helpers\StringHelper;
-use Yew\Yew;
 use ReflectionClass;
 use ReflectionException;
 
@@ -154,8 +153,8 @@ class AnnotationsScanPlugin extends AbstractPlugin
         $this->scanClass = new ScanClass($this->cacheReader);
         $this->setToDIContainer(CachedReader::class, $this->cacheReader);
         $this->setToDIContainer(ScanClass::class, $this->scanClass);
-        $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
 
+        $paths = array_unique($this->annotationsScanConfig->getIncludePaths());
         foreach ($paths as $path) {
             $files = $this->scanPhp($path);
             foreach ($files as $file) {

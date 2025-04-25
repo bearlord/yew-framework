@@ -13,17 +13,17 @@ class Exception extends \RuntimeException
     /**
      * @var array
      */
-    private $results;
+    private array $results;
 
     /**
      * @var array
      */
-    private $throwables;
+    private array $throwables;
 
     /**
      * @return array
      */
-    public function getResults()
+    public function getResults(): array
     {
         return $this->results;
     }
@@ -39,7 +39,7 @@ class Exception extends \RuntimeException
     /**
      * @return array
      */
-    public function getThrowables()
+    public function getThrowables(): array
     {
         return $this->throwables;
     }
@@ -48,7 +48,7 @@ class Exception extends \RuntimeException
      * @param array $throwables
      * @return array
      */
-    public function setThrowables(array $throwables)
+    public function setThrowables(array $throwables): array
     {
         return $this->throwables = $throwables;
     }

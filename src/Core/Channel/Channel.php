@@ -67,4 +67,24 @@ interface Channel
      * @return mixed
      */
     public function popLoop(callable $callback);
+
+    /**
+     * @return int
+     */
+    public function getErrCode(): int;
+
+    /**
+     * @return bool
+     */
+    public function isClosing(): bool;
+
+    /**
+     * @return bool
+     */
+    public function isTimeout(): bool;
+
+    /**
+     * @return bool
+     */
+    public function isAvailable(): bool;
 }

@@ -43,8 +43,7 @@ use Yew\Framework\Exception\InvalidConfigException;
  *
  * For more details and usage information on ServiceLocator, see the [guide article on service locators](guide:concept-service-locator).
  *
- * @property array $components The list of the component definitions or the loaded component instances (ID =>
- * definition or instance).
+ * @property array $components The list of the component definitions or the loaded component instances (ID => definition or instance).
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
@@ -54,11 +53,11 @@ class ServiceLocator extends Component
     /**
      * @var array shared component instances indexed by their IDs
      */
-    private $_components = [];
+    private array $_components = [];
     /**
      * @var array component definitions indexed by their IDs
      */
-    private $_definitions = [];
+    private array $_definitions = [];
 
 
     /**
@@ -66,6 +65,7 @@ class ServiceLocator extends Component
      * This method is overridden to support accessing components like reading properties.
      * @param string $name component or property name
      * @return mixed the named property value
+     * @throws InvalidConfigException
      */
     public function __get(string $name)
     {
@@ -105,7 +105,7 @@ class ServiceLocator extends Component
      * @return bool whether the locator has the specified component definition or has instantiated the component.
      * @see set()
      */
-    public function has($id, $checkInstance = false)
+    public function has(string $id, bool $checkInstance = false): bool
     {
         return $checkInstance ? isset($this->_components[$id]) : isset($this->_definitions[$id]);
     }
@@ -121,7 +121,7 @@ class ServiceLocator extends Component
      * @see has()
      * @see set()
      */
-    public function get($id, $throwException = true)
+    public function get(string $id, bool $throwException = true): ?object
     {
         if (isset($this->_components[$id])) {
             return $this->_components[$id];
@@ -184,7 +184,7 @@ class ServiceLocator extends Component
      *
      * @throws InvalidConfigException if the definition is an invalid configuration array
      */
-    public function set($id, $definition)
+    public function set(string $id, $definition)
     {
         unset($this->_components[$id]);
 
@@ -212,7 +212,7 @@ class ServiceLocator extends Component
      * Removes the component from the locator.
      * @param string $id the component ID
      */
-    public function clear($id)
+    public function clear(string $id)
     {
         unset($this->_definitions[$id], $this->_components[$id]);
     }
@@ -222,7 +222,7 @@ class ServiceLocator extends Component
      * @param bool $returnDefinitions whether to return component definitions instead of the loaded component instances.
      * @return array the list of the component definitions or the loaded component instances (ID => definition or instance).
      */
-    public function getComponents($returnDefinitions = true)
+    public function getComponents(bool $returnDefinitions = true): array
     {
         return $returnDefinitions ? $this->_definitions : $this->_components;
     }
@@ -253,8 +253,9 @@ class ServiceLocator extends Component
      * ```
      *
      * @param array $components component definitions or instances
+     * @throws InvalidConfigException
      */
-    public function setComponents($components)
+    public function setComponents(array $components)
     {
         foreach ($components as $id => $component) {
             $this->set($id, $component);
