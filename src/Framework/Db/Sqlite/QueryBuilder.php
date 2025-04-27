@@ -8,7 +8,7 @@
 namespace Yew\Framework\Db\Sqlite;
 
 use Yew\Framework\Exception\InvalidArgumentException;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Connection;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\Expression;

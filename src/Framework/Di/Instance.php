@@ -57,14 +57,14 @@ class Instance
     /**
      * @var string the component ID, class name, interface name or alias name
      */
-    public $id;
+    public string $id;
 
 
     /**
      * Constructor.
      * @param string $id the component ID
      */
-    protected function __construct($id)
+    protected function __construct(string $id)
     {
         $this->id = $id;
     }
@@ -74,7 +74,7 @@ class Instance
      * @param string $id the component ID
      * @return Instance the new Instance object.
      */
-    public static function of($id)
+    public static function of(string $id): Instance
     {
         return new static($id);
     }
@@ -102,15 +102,15 @@ class Instance
      * You may specify a reference in terms of a component ID or an Instance object.
      * Starting from version 2.0.2, you may also pass in a configuration array for creating the object.
      * If the "class" value is not specified in the configuration array, it will use the value of `$type`.
-     * @param string $type the class/interface name to be checked. If null, type check will not be performed.
+     * @param string|null $type the class/interface name to be checked. If null, type check will not be performed.
      * @param ServiceLocator|Container $container the container. This will be passed to [[get()]].
      * @return object the object referenced by the Instance, or `$reference` itself if it is an object.
-     * @throws InvalidConfigException if the reference is invalid
+     * @throws InvalidConfigException|\ReflectionException if the reference is invalid
      */
-    public static function ensure($reference, $type = null, $container = null)
+    public static function ensure($reference, ?string $type = null, $container = null)
     {
         if (is_array($reference)) {
-            $class = isset($reference['class']) ? $reference['class'] : $type;
+            $class = $reference['class'] ?? $type;
             if (!$container instanceof Container) {
                 $container = Yew::$container;
             }
@@ -150,11 +150,14 @@ class Instance
 
     /**
      * Returns the actual object referenced by this Instance object.
-     * @param ServiceLocator|Container $container the container used to locate the referenced object.
+     * @param null $container the container used to locate the referenced object.
      * If null, the method will first try `Yew::$app` then `Yew::$container`.
      * @return object the actual object referenced by this Instance object.
+     * @throws InvalidConfigException
+     * @throws NotInstantiableException
+     * @throws \ReflectionException
      */
-    public function get($container = null)
+    public function get($container = null): object
     {
         if ($container) {
             return $container->get($this->id);
@@ -175,7 +178,7 @@ class Instance
      * @see var_export()
      * @since 2.0.12
      */
-    public static function __set_state($state)
+    public static function __set_state(array $state)
     {
         if (!isset($state['id'])) {
             throw new InvalidConfigException('Failed to instantiate class "Instance". Required parameter "id" is missing');

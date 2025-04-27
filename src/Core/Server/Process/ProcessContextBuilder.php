@@ -9,10 +9,6 @@ namespace Yew\Core\Server\Process;
 use Yew\Core\Context\Context;
 use Yew\Core\Context\ContextBuilder;
 
-/**
- * Class ProcessContextBuilder
- * @package Yew\Core\Server\Process
- */
 class ProcessContextBuilder implements ContextBuilder
 {
     /**

@@ -19,7 +19,7 @@ class Exception extends \Yew\Framework\Exception\Exception
      * @var array the error info provided by a PDO exception. This is the same as returned
      * by [PDO::errorInfo](https://secure.php.net/manual/en/pdo.errorinfo.php).
      */
-    public $errorInfo = [];
+    public array $errorInfo = [];
 
 
     /**
@@ -27,9 +27,9 @@ class Exception extends \Yew\Framework\Exception\Exception
      * @param string $message PDO error message
      * @param array $errorInfo PDO error info
      * @param int $code PDO error code
-     * @param \Exception $previous The previous exception used for the exception chaining.
+     * @param \Exception|null $previous The previous exception used for the exception chaining.
      */
-    public function __construct($message, $errorInfo = [], $code = 0, \Exception $previous = null)
+    public function __construct($message, $errorInfo = [], $code = 0, ?\Exception $previous = null)
     {
         $this->errorInfo = $errorInfo;
         parent::__construct($message, $code, $previous);

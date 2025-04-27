@@ -2,33 +2,14 @@
 
 namespace Yew\Framework;
 
-use Yew\Go\Exception\AlertResponseException;
-use Yew\Go\Exception\ResponseException;
+use Yew\Framework\Exception\AlertResponseException;
+use Yew\Framework\Exception\ResponseException;
 use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\MethodNotAllowedException;
 use Yew\Plugins\Route\RouteException;
 
 class Controller extends RouteController
 {
-
-    /**
-     * @throws MethodNotAllowedException
-     */
-    public function assertGet()
-    {
-        if (strtolower($this->request->getMethod()) != "get") throw new MethodNotAllowedException();
-    }
-
-    /**
-     * @throws MethodNotAllowedException
-     */
-    public function assertPost()
-    {
-        if (strtolower($this->request->getMethod()) != "post") {
-            throw new MethodNotAllowedException();
-        }
-    }
-
     /**
      * @param string|null $has
      * @return bool

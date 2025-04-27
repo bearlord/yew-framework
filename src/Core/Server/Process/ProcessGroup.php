@@ -8,10 +8,6 @@ namespace Yew\Core\Server\Process;
 
 use Yew\Core\Message\Message;
 
-/**
- * Class ProcessGroup
- * @package Yew\Core\Server\Process
- */
 class ProcessGroup
 {
     /**

@@ -14,6 +14,7 @@ use Yew\Core\Server\Beans\Response;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidParamException;
 use Yew\Nikic\FastRoute\Dispatcher;
+use Yew\Plugins\Database\DatabasePools;
 use Yew\Plugins\Route\RoutePlugin;
 use Yew\Plugins\Session\HttpSession;
 use Yew\Framework\Di\ServiceLocator;
@@ -261,82 +262,86 @@ class Application extends ServiceLocator
     /**
      * @param string|null $name
      * @return mixed
-     * @throws \Yew\Framework\Base\InvalidConfigException
-     * @throws \Yew\Framework\Db\Exception
+     * @throws InvalidConfigException
+     * @throws \Yew\Framework\Db\Exception|\Throwable
      */
     public function getDb(?string $name = "default")
     {
-        $subname = "";
+        $subName = "";
         if (strpos($name, ".") > 0) {
-            list($name, $subname) = explode(".", $name, 2);
+            list($name, $subName) = explode(".", $name, 2);
         }
 
-        switch ($subname) {
+        switch ($subName) {
             case "slave":
             case "master":
-                $_configKey = sprintf("yii.db.%s.%ss", $name, $subname);
+                $_configKey = sprintf("db.%s.%s", $name, $subName);
                 $_configs = Server::$instance->getConfigContext()->get($_configKey);
+
                 if (empty($_configs)) {
                     $poolKey = $name;
-                    $contextKey = sprintf("Pdo:%s", $name);
+                    $contextKey = sprintf("db:%s", $name);
                 } else {
                     $_randKey = array_rand($_configs);
 
-                    $poolKey = sprintf("%s.%s.%s", $name, $subname, $_randKey);
-                    $contextKey = sprintf("Pdo:{$name}%s.%s.%s", $name, $subname, $_randKey);
+                    $poolKey = sprintf("%s.%s.%s", $name, $subName, $_randKey);
+                    $contextKey = sprintf("db:%s.%s.%s", $name, $subName, $_randKey);
                 }
                 break;
 
             default:
                 $poolKey = $name;
-                $contextKey = sprintf("Pdo:%s", $name);
+                $contextKey = sprintf("db:%s", $name);
                 break;
         }
 
-        $db = getContextValue($contextKey);
-
-        if ($db == null) {
-            /** @var PdoPools $pdoPools */
-            $pdoPools = getDeepContextValueByClassName(PdoPools::class);
-            if (!empty($pdoPools)) {
-                /** @var \Yew\Framework\Plugin\Pdo\PdoPool $pool */
-                $pool = $pdoPools->getPool($poolKey);
-                if ($pool == null) {
-                    Server::$instance->getLog()->error("No Pdo connection pool named {$poolKey} was found");
-                    throw new \PDOException("No Pdo connection pool named {$poolKey} was found");
-                }
-                try {
-                    $db = $pool->db();
-                    if (empty($db)) {
-                        Server::$instance->getLog()->error("Empty db, get db once.");
-                        return $this->getDbOnce($name);
-                    }
-                    return $db;
-                } catch (\Exception $e) {
-                    Server::$instance->getLog()->error($e);
-                }
-            } else {
-                return $this->getDbOnce($name);
-            }
-        } else {
-            return $db;
-        }
-    }
-
-    /**
-     * @param $name
-     * @return Connection|null
-     * @throws \Yew\Framework\Exception\InvalidConfigException
-     */
-    public function getDbOnce($name): ?Connection
-    {
-        $contextKey = sprintf("Pdo:%s", $name);
         $db = getContextValue($contextKey);
         if (!empty($db)) {
             return $db;
         }
 
-        $_configKey = sprintf("yii.db.%s", $name);
+        /** @var DatabasePools $pdoPools */
+        $pdoPools = getDeepContextValueByClassName(DatabasePools::class);
+        if (!empty($pdoPools)) {
+            /** @var \Yew\Plugins\Database\DatabasePool $pool */
+            $pool = $pdoPools->getPool($poolKey);
+            if ($pool == null) {
+                Server::$instance->getLog()->error("No Pdo connection pool named {$poolKey} was found");
+                throw new \PDOException("No Pdo connection pool named {$poolKey} was found");
+            }
+
+            try {
+                $db = $pool->db();
+                if (empty($db)) {
+                    Server::$instance->getLog()->error("Empty db, get db once.");
+                    return $this->getDbOnce($name);
+                }
+                return $db;
+            } catch (\Exception $e) {
+                Server::$instance->getLog()->error($e);
+                throw $e;
+            }
+
+        } else {
+            return $this->getDbOnce($name);
+        }
+    }
+
+    /**
+     * @param $name
+     * @return Connection|null|object
+     * @throws InvalidConfigException
+     * @throws \Exception
+     */
+    public function getDbOnce($name): ?Connection
+    {
+        $contextKey = sprintf("db:%s", $name);
+        $db = getContextValue($contextKey);
+        if (!empty($db)) {
+            return $db;
+        }
+
+        $_configKey = sprintf("db.%s", $name);
         $_config = Server::$instance->getConfigContext()->get($_configKey);
         $db = Yew::createObject([
             'class' => Connection::class,
@@ -397,7 +402,7 @@ class Application extends ServiceLocator
     /**
      * Returns the formatter component.
      * @return \Yew\Framework\I18n\Formatter the formatter application component.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws InvalidConfigException
      */
     public function getFormatter(): \Yew\Framework\I18n\Formatter
     {
@@ -427,7 +432,7 @@ class Application extends ServiceLocator
     /**
      * Returns the URL manager for this application.
      * @return \Yew\Framework\Web\UrlManager the URL manager for this application.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws InvalidConfigException
      */
     public function getUrlManager(): \Yew\Framework\Web\UrlManager
     {
@@ -438,7 +443,7 @@ class Application extends ServiceLocator
     /**
      * Returns the asset manager.
      * @return \Yew\Framework\Web\AssetManager the asset manager application component.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws InvalidConfigException
      */
     public function getAssetManager(): \Yew\Framework\Web\AssetManager
     {
@@ -458,7 +463,7 @@ class Application extends ServiceLocator
     /**
      * Returns the view object.
      * @return View|\Yew\Framework\Web\View the view application component that is used to render various view files.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws InvalidConfigException
      */
     public function getView()
     {
@@ -517,7 +522,6 @@ class Application extends ServiceLocator
     }
 
     /**
-     * @param string $key
      * @return string
      */
     public function getContextLanguage(): string
@@ -569,60 +573,6 @@ class Application extends ServiceLocator
     }
 
     /**
-     * @return \Yew\Framework\Mongodb\Connection|mixed
-     * @throws \Yew\Framework\Base\InvalidConfigException
-     * @throws \Yew\Framework\Db\Exception
-     */
-    public function getMongodb()
-    {
-        $poolKey = "default";
-        $contextKey = "Mongodb:default";
-
-        $db = getContextValue($contextKey);
-
-        if ($db == null) {
-            /** @var MongodbPools $pdoPools */
-            $pdoPools = getDeepContextValueByClassName(MongodbPools::class);
-            if (!empty($pdoPools)) {
-                $pool = $pdoPools->getPool($poolKey);
-                if ($pool == null) {
-                    throw new \PDOException("No Pdo connection pool named {$poolKey} was found");
-                }
-                return $pool->db();
-            } else {
-                return $this->getDbOnce();
-            }
-
-        } else {
-            return $db;
-        }
-    }
-
-    /**
-     * Get db once
-     * @return \Yew\Framework\Mongodb\Connection|object|null
-     * @throws \Yew\Framework\Mongodb\Exception|\Yew\Framework\Base\InvalidConfigException
-     */
-    public function getMongodbOnce(): ?\Yew\Framework\Mongodb\Connection
-    {
-        $config = Server::$instance->getConfigContext()->get("yii.db.mongodb");
-        $db = Yew::createObject([
-            'class' => \Yew\Framework\Mongodb\Connection::class,
-            'dsn' => $config['dsn'],
-            'username' => $config['username'],
-            'password' => $config['password'],
-            'options' => $config['options'],
-            'tablePrefix' => $config['tablePrefix'],
-            'enableSchemaCache' => $config['enableSchemaCache'],
-            'schemaCacheDuration' => $config['schemaCacheDuration'],
-            'schemaCache' => $config['schemaCache'],
-        ]);
-
-        $db->open();
-        return $db;
-    }
-
-    /**
      * @param $route
      * @return array
      * @throws InvalidConfigException
@@ -639,7 +589,7 @@ class Application extends ServiceLocator
 
         $method = $this->request->server('request_method');
         $port = $this->request->server('server_port');
-        $routeInfo = EasyRoutePlugin::$instance->getDispatcher()->dispatch($port . ":" . $method, $route);
+        $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch($port . ":" . $method, $route);
 
         switch ($routeInfo[0]) {
             case Dispatcher::FOUND:
@@ -679,9 +629,9 @@ class Application extends ServiceLocator
      * @param string $route the route that specifies the action.
      * @param array|null $params the parameters to be passed to the action
      * @return mixed the result of the action.
-     * @throws \Yew\Framework\Base\Exception
-     * @throws \Yew\Framework\Base\InvalidConfigException
-     * @throws \Yew\Framework\Base\InvalidRouteException if the requested route cannot be resolved into an action successfully.
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidRouteException if the requested route cannot be resolved into an action successfully.
      */
     public function runAction(string $route, ?array $params = [])
     {

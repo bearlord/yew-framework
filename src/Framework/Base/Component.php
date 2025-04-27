@@ -744,7 +744,7 @@ class Component extends BaseObject
      * will be detached first.
      * @param string|array|Behavior $behavior the behavior to be attached
      * @return Behavior the attached behavior.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     private function attachBehaviorInternal($name, $behavior)
     {

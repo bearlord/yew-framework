@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Db\Sqlite;
 
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\CheckConstraint;
 use Yew\Framework\Db\ColumnSchema;
 use Yew\Framework\Db\Constraint;
@@ -81,7 +81,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         $sql = "SELECT DISTINCT tbl_name FROM sqlite_master WHERE tbl_name<>'sqlite_sequence' ORDER BY tbl_name";
         return $this->db->createCommand($sql)->queryColumn();
@@ -90,7 +90,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableSchema($name)
+    protected function loadTableSchema(string $name): ?TableSchema
     {
         $table = new TableSchema();
         $table->name = $name;
@@ -204,7 +204,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * This method may be overridden by child classes to create a DBMS-specific query builder.
      * @return QueryBuilder query builder instance
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -213,7 +213,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * {@inheritdoc}
      * @return ColumnSchemaBuilder column schema builder instance
      */
-    public function createColumnSchemaBuilder($type, $length = null)
+    public function createColumnSchemaBuilder(string $type, $length = null): ColumnSchemaBuilder
     {
         return new ColumnSchemaBuilder($type, $length);
     }
@@ -280,7 +280,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * @param TableSchema $table the table metadata
      * @return array all unique indexes for the given table.
      */
-    public function findUniqueIndexes($table)
+    public function findUniqueIndexes(TableSchema $table): array
     {
         $sql = 'PRAGMA index_list(' . $this->quoteSimpleTableName($table->name) . ')';
         $indexes = $this->db->createCommand($sql)->queryAll();
@@ -364,7 +364,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * SQLite only supports SERIALIZABLE and READ UNCOMMITTED.
      * @see http://www.sqlite.org/pragma.html#pragma_read_uncommitted
      */
-    public function setTransactionIsolationLevel($level)
+    public function setTransactionIsolationLevel(string $level)
     {
         switch ($level) {
             case Transaction::SERIALIZABLE:

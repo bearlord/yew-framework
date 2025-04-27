@@ -35,7 +35,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the table metadata even if it is found in the cache.
      * @return mixed metadata.
      */
-    abstract protected function getTableMetadata($name, $type, $refresh);
+    abstract protected function getTableMetadata(string $name, string $type, bool $refresh);
 
     /**
      * Returns the metadata of the given type for all tables in the given schema.
@@ -45,7 +45,7 @@ trait ConstraintFinderTrait
      * cached data may be returned if available.
      * @return array array of metadata.
      */
-    abstract protected function getSchemaMetadata($schema, $type, $refresh);
+    abstract protected function getSchemaMetadata(string $schema, string $type, bool $refresh);
 
     /**
      * Loads a primary key for the given table.

@@ -183,12 +183,12 @@ abstract class Target extends Component
 
         $request = $clientData->getRequest();
         if (!empty($request)) {
-            $result[] = "\$_POST = " . VarDumper::dumpAsString(Yii::$app->getRequest()->getParsedBody());
-            $result[] = "\$_GET = " . VarDumper::dumpAsString(Yii::$app->getRequest()->getQueryParams());
-            $result[] = "\$_HEADERS = " . VarDumper::dumpAsString(Yii::$app->getRequest()->getHeaders());
-            $result[] = "\$_FILES = " . VarDumper::dumpAsString(Yii::$app->getRequest()->getFiles());
-            $result[] = "\$_COOKIE = " . VarDumper::dumpAsString(Yii::$app->getRequest()->cookie());
-            $result[] = "\$_SESSION = " . VarDumper::dumpAsString(Yii::$app->getSession()->getAttribute());
+            $result[] = "\$_POST = " . VarDumper::dumpAsString(Yew::$app->getRequest()->getParsedBody());
+            $result[] = "\$_GET = " . VarDumper::dumpAsString(Yew::$app->getRequest()->getQueryParams());
+            $result[] = "\$_HEADERS = " . VarDumper::dumpAsString(Yew::$app->getRequest()->getHeaders());
+            $result[] = "\$_FILES = " . VarDumper::dumpAsString(Yew::$app->getRequest()->getFiles());
+            $result[] = "\$_COOKIE = " . VarDumper::dumpAsString(Yew::$app->getRequest()->cookie());
+            $result[] = "\$_SESSION = " . VarDumper::dumpAsString(Yew::$app->getSession()->getAttribute());
         }
         if ($result) {
             return implode("\n\n", $result);
@@ -341,16 +341,16 @@ abstract class Target extends Component
             return call_user_func($this->prefix, $message);
         }
 
-        if (Yii::$app === null) {
+        if (Yew::$app === null) {
             return '';
         }
 
-        $request = Yii::$app->getRequest();
+        $request = Yew::$app->getRequest();
 
         $ip = $request instanceof Request ? $request->getServer(Request::SERVER_REMOTE_ADDR) : '-';
 
         /* @var $user \ESD\Yii\Web\User */
-        $user = Yii::$app->has('user', true) ? Yii::$app->get('user') : null;
+        $user = Yew::$app->has('user', true) ? Yew::$app->get('user') : null;
         if ($user && ($identity = $user->getIdentity(false))) {
             $userID = $identity->getId();
         } else {
@@ -358,7 +358,7 @@ abstract class Target extends Component
         }
 
         /* @var $session \ESD\Yii\Web\Session */
-        $session = Yii::$app->has('session', true) ? Yii::$app->get('session') : null;
+        $session = Yew::$app->has('session', true) ? Yew::$app->get('session') : null;
         $sessionID = $session && $session->getIsActive() ? $session->getId() : '-';
 
         return "[$ip][$userID][$sessionID]";
@@ -375,7 +375,7 @@ abstract class Target extends Component
      *
      * ```php
      * 'enabled' => function() {
-     *     return !Yii::$app->user->isGuest;
+     *     return !Yew::$app->user->isGuest;
      * }
      * ```
      */

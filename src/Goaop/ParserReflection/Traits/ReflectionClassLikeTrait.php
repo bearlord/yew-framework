@@ -208,7 +208,6 @@ trait ReflectionClassLikeTrait
         return false;
     }
 
-    #[\ReturnTypeWillChange]
     public function getConstants(?int $filter = null)
     {
         if (!isset($this->constants)) {
@@ -527,7 +526,6 @@ trait ReflectionClassLikeTrait
         return false;
     }
 
-    #[\ReturnTypeWillChange]
     public function getReflectionConstants(?int $filter = null)
     {
         if (!isset($this->classConstants)) {

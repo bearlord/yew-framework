@@ -767,10 +767,10 @@ class ActiveRecord extends BaseActiveRecord
      * Returns a value indicating whether the given active record is the same as the current one.
      * The comparison is made by comparing the table names and the primary key values of the two active records.
      * If one of the records [[isNewRecord|is new]] they are also considered not equal.
-     * @param ActiveRecord $record record to compare to
+     * @param ActiveRecordInterface $record record to compare to
      * @return bool whether the two active records refer to the same row in the same database table.
      */
-    public function equals($record): bool
+    public function equals(ActiveRecordInterface $record): bool
     {
         if ($this->isNewRecord || $record->isNewRecord) {
             return false;

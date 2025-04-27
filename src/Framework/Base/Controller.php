@@ -45,7 +45,7 @@ class Controller extends Component implements ViewContextInterface
      * @var string the ID of the action that is used when the action ID is not specified
      * in the request. Defaults to 'index'.
      */
-    public $defaultAction = 'actionIndex';
+    public string $defaultAction = 'actionIndex';
     /**
      * @var null|string|false the name of the layout to be applied to this controller's views.
      * This property mainly affects the behavior of [[render()]].
@@ -54,24 +54,24 @@ class Controller extends Component implements ViewContextInterface
      */
     public $layout = 'main';
     /**
-     * @var Action the action that is currently being executed. This property will be set
+     * @var Action|null the action that is currently being executed. This property will be set
      * by [[run()]] when it is called by [[Application]] to run an action.
      */
-    public $action;
+    public ?Action $action = null;
 
     /**
-     * @var View the view object that can be used to render views or view files.
+     * @var View|null the view object that can be used to render views or view files.
      */
-    private $_view;
+    private ?View $_view = null;
     /**
      * @var string the root directory that contains view files for this controller.
      */
-    private $_viewPath;
+    private string $_viewPath;
 
     /**
      * @var string the module name
      */
-    public $moduleName;
+    public string $moduleName;
 
     public $id;
 
@@ -115,9 +115,9 @@ class Controller extends Component implements ViewContextInterface
      * @param string $id the ID of the action to be executed.
      * @param array|null $params the parameters (name-value pairs) to be passed to the action.
      * @return mixed the result of the action.
-     * @throws \Yew\Yew\Base\Exception
-     * @throws \Yew\Yew\Base\InvalidConfigException
-     * @throws \Yew\Yew\Base\InvalidRouteException if the requested action ID cannot be resolved into an action successfully.
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidRouteException if the requested action ID cannot be resolved into an action successfully.
      * @throws \ReflectionException
      * @see createAction()
      */
@@ -167,11 +167,11 @@ class Controller extends Component implements ViewContextInterface
      * @param string $route the route to be handled, e.g., 'view', 'comment/view', '/admin/comment/view'.
      * @param array|null $params the parameters to be passed to the action.
      * @return mixed the result of the action.
-     * @throws \Yew\Yew\Base\Exception
-     * @throws \Yew\Yew\Base\InvalidConfigException
-     * @throws \Yew\Yew\Base\InvalidRouteException
-     * @throws \Yew\Yew\Console\Exception
-     * @throws \Yew\Yew\Console\UnknownCommandException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidRouteException
+     * @throws \Yew\Framework\Console\Exception
+     * @throws \Yew\Framework\Console\UnknownCommandException
      * @throws \ReflectionException
      * @see runAction()
      */
@@ -193,7 +193,7 @@ class Controller extends Component implements ViewContextInterface
      * @param Action $action the action to be bound with parameters.
      * @param array|null $params the parameters to be bound to the action.
      * @return array the valid parameters that the action can run with.
-     * @throws \Yew\Yew\Base\Exception
+     * @throws \Yew\Framework\Exception\Exception
      * @throws \ReflectionException
      */
     public function bindActionParams(Action $action, ?array $params = null): array
@@ -251,7 +251,7 @@ class Controller extends Component implements ViewContextInterface
      * where `xyz` is the action ID. If found, an [[InlineAction]] representing that
      * method will be created and returned.
      * @param string $id the action ID.
-     * @return Action|null the newly created action instance. Null if the ID doesn't resolve into any action.
+     * @return Action|null|object the newly created action instance. Null if the ID doesn't resolve into any action.
      * @throws \Yew\Yew\Base\InvalidConfigException
      */
     public function createAction(string $id)
@@ -400,7 +400,7 @@ class Controller extends Component implements ViewContextInterface
      * @param array|null $params the parameters (name-value pairs) that should be made available in the view.
      * These parameters will not be available in the layout.
      * @return string the rendering result.
-     * @throws \Yew\Yew\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Throwable
      */
     public function render(string $view, ?array $params = []): string
@@ -414,7 +414,7 @@ class Controller extends Component implements ViewContextInterface
      * @param string $content the static string being rendered
      * @return string the rendering result of the layout with the given static string as the `$content` variable.
      * If the layout is disabled, the string will be returned back.
-     * @throws \Yew\Yew\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Throwable
      * @since 2.0.1
      */
@@ -434,7 +434,7 @@ class Controller extends Component implements ViewContextInterface
      * @param string $view the view name. Please refer to [[render()]] on how to specify a view name.
      * @param array|null $params the parameters (name-value pairs) that should be made available in the view.
      * @return string the rendering result.
-     * @throws \Yew\Yew\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Throwable
      */
     public function renderPartial(string $view, ?array $params = []): string
@@ -447,7 +447,7 @@ class Controller extends Component implements ViewContextInterface
      * @param string $file the view file to be rendered. This can be either a file path or a [path alias](guide:concept-aliases).
      * @param array $params the parameters (name-value pairs) that should be made available in the view.
      * @return string the rendering result.
-     * @throws \Yew\Yew\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Throwable
      */
     public function renderFile(string $file, array $params = []): string
@@ -460,8 +460,8 @@ class Controller extends Component implements ViewContextInterface
      * The [[render()]], [[renderPartial()]] and [[renderFile()]] methods will use
      * this view object to implement the actual view rendering.
      * If not set, it will default to the "view" application component.
-     * @return View|\Yew\Yew\Web\View the view object that can be used to render views or view files.
-     * @throws \Yew\Yew\Base\InvalidConfigException
+     * @return View|\Yew\Framework\Web\View the view object that can be used to render views or view files.
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function getView()
     {
@@ -499,7 +499,7 @@ class Controller extends Component implements ViewContextInterface
     /**
      * Sets the directory that contains the view files.
      * @param string $path the root directory of view files.
-     * @throws InvalidArgumentException if the directory is invalid
+     * @throws \Yew\Framework\Exception\InvalidArgumentException if the directory is invalid
      * @since 2.0.7
      */
     public function setViewPath(string $path)
@@ -512,7 +512,7 @@ class Controller extends Component implements ViewContextInterface
      * @param View $view the view object to render the layout file.
      * @return string|bool the layout file path, or false if layout is not needed.
      * Please refer to [[render()]] on how to specify this parameter.
-     * @throws InvalidArgumentException if an invalid path alias is used to specify the layout.
+     * @throws \Yew\Framework\Exception\InvalidArgumentException if an invalid path alias is used to specify the layout.
      */
     public function findLayoutFile(View $view): ?string
     {
@@ -549,9 +549,9 @@ class Controller extends Component implements ViewContextInterface
      * @param string $name The name of the parameter.
      * @param array &$args The array of arguments for the action, this function may append items to it.
      * @param array &$requestedParams The array with requested params, this function may write specific keys to it.
-     * @throws \Yew\Yew\Base\Exception
-     * @throws \Yew\Yew\Base\InvalidConfigException Thrown when there is an error in the DI configuration.
-     * @throws \Yew\Yew\Di\NotInstantiableException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException Thrown when there is an error in the DI configuration.
+     * @throws \Yew\Framework\Di\NotInstantiableException
      * @since 2.0.36
      */
     final protected function bindInjectedParams(\ReflectionType $type, string $name, array &$args, array &$requestedParams)

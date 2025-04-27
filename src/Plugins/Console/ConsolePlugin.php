@@ -128,7 +128,7 @@ class ConsolePlugin extends AbstractPlugin
     /**
      * @return array|null
      */
-    protected function getCustomCommandClass()
+    protected function getCustomCommandClass(): ?array
     {
         $directory = ROOT_DIR . "src/Command";
         if (!file_exists($directory)) {

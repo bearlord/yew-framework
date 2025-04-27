@@ -14,7 +14,7 @@
 
 namespace Yew\Framework\Db\Cubrid;
 
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\ConstraintFinderInterface;
 use Yew\Framework\Db\ConstraintFinderTrait;
@@ -83,7 +83,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * @var array map of DB errors and corresponding exceptions
      * If left part is found in DB error message exception class from the right part is used.
      */
-    public $exceptionMap = [
+    public array $exceptionMap = [
         'Operation would have caused one or more unique constraint violations' => 'Yew\Framework\Db\IntegrityException',
     ];
 
@@ -96,7 +96,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         $pdo = $this->db->getSlavePdo();
         $tables = $pdo->cubrid_schema(\PDO::CUBRID_SCH_TABLE);
@@ -114,7 +114,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableSchema($name)
+    protected function loadTableSchema(string $name): ?TableSchema
     {
         $pdo = $this->db->getSlavePdo();
 
@@ -244,7 +244,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    public function releaseSavepoint($name)
+    public function releaseSavepoint(string $name)
     {
         // does nothing as cubrid does not support this
     }
@@ -253,7 +253,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * Creates a query builder for the CUBRID database.
      * @return QueryBuilder query builder instance
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -335,7 +335,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * @return int the PDO type
      * @see https://secure.php.net/manual/en/pdo.constants.php
      */
-    public function getPdoType($data)
+    public function getPdoType($data): int
     {
         static $typeMap = [
             // php type => PDO type
@@ -354,7 +354,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * {@inheritdoc}
      * @see http://www.cubrid.org/manual/91/en/sql/transaction.html#database-concurrency
      */
-    public function setTransactionIsolationLevel($level)
+    public function setTransactionIsolationLevel(string $level)
     {
         // translate SQL92 levels to CUBRID levels:
         switch ($level) {
@@ -377,7 +377,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    public function createColumnSchemaBuilder($type, $length = null)
+    public function createColumnSchemaBuilder(string $type, $length = null): ColumnSchemaBuilder
     {
         return new ColumnSchemaBuilder($type, $length, $this->db);
     }

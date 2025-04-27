@@ -106,7 +106,7 @@ trait GetHttp
         try {
             $decoded = json_decode($raw, true);
         } catch (\Exception $exception) {
-            $this->warning('postRawJson errror, raw:' . $raw);
+            $this->warning('postRawJson error, raw:' . $raw);
             throw new RouteException('RawJson Format error');
         }
 
@@ -127,7 +127,7 @@ trait GetHttp
         try {
             $xml = simplexml_load_string($raw, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
         } catch (\Exception $exception) {
-            $this->warning('RequestRawXml errror, raw:' . $this->getRequest()->getBody()->getContents());
+            $this->warning('RequestRawXml error, raw:' . $this->getRequest()->getBody()->getContents());
             throw new RouteException('RawXml Format error');
         }
 

@@ -132,6 +132,7 @@ class EventDispatcher
                     $start = true;
                     continue;
                 }
+
                 if ($start) {
                     $event->setProgress($order->getName());
                     $result = $order->dispatchEvent($event);
@@ -155,6 +156,7 @@ class EventDispatcher
         foreach ($toProcess as $process) {
             $pids[] = $process->getProcessId();
         }
+
         $event->setDstInfo(ProcessEventDispatcher::type, $pids);
         $this->dispatchEvent($event);
     }
@@ -172,12 +174,10 @@ class EventDispatcher
     }
 
     /**
-     * Get event calls
-     *
-     * @param $type
-     * @return EventCall[]||null
+     * @param string $type
+     * @return EventCall[]|array|null
      */
-    public function getEventCalls($type): ?array
+    public function getEventCalls(string $type): ?array
     {
         return $this->eventCalls[$type] ?? null;
     }

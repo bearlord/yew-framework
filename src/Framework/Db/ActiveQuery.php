@@ -84,7 +84,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @var string the SQL statement to be executed for retrieving AR records.
      * This is set by [[ActiveRecord::findBySql()]].
      */
-    public $sql;
+    public string $sql;
     /**
      * @var string|array the join condition to be used when this query is used in a relational context.
      * The condition will be used in the ON part when [[ActiveQuery::joinWith()]] is called.
@@ -96,7 +96,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
     /**
      * @var array a list of relations that this query should be joined with
      */
-    public $joinWith;
+    public array $joinWith;
 
 
     /**
@@ -128,7 +128,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * If null, the DB connection returned by [[modelClass]] will be used.
      * @return array|ActiveRecord[] the query results. If the query results in nothing, an empty array will be returned.
      */
-    public function all(?Connection $db = null)
+    public function all(?Connection $db = null): array
     {
         return parent::all($db);
     }
@@ -136,7 +136,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
     /**
      * {@inheritdoc}
      */
-    public function prepare(QueryBuilder $builder)
+    public function prepare(QueryBuilder $builder): Query
     {
         // NOTE: because the same ActiveQuery may be used to build different SQL statements
         // (e.g. by ActiveDataProvider, one for count query, the other for row data query,
@@ -244,7 +244,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @throws InvalidConfigException if model primary key is empty
      * @return array the distinctive models
      */
-    private function removeDuplicatedModels(array $models)
+    private function removeDuplicatedModels(array $models): array
     {
         $hash = [];
         /* @var $class ActiveRecord */
@@ -315,7 +315,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @param Connection|null $db the DB connection used to create the DB command.
      * If `null`, the DB connection returned by [[modelClass]] will be used.
      * @return Command the created DB command instance.
-     * @throws \Yew\Framework\Db\Exception
+     * @throws Exception
      */
     public function createCommand(?Connection $db = null): Command
     {

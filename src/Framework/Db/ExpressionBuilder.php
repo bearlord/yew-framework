@@ -17,12 +17,12 @@ class ExpressionBuilder implements ExpressionBuilderInterface
 {
     use ExpressionBuilderTrait;
 
-
     /**
-     * {@inheritdoc}
-     * @param Expression|ExpressionInterface $expression the expression to be built
+     * @param ExpressionInterface $expression
+     * @param array $params
+     * @return string
      */
-    public function build(ExpressionInterface $expression, array &$params = [])
+    public function build(ExpressionInterface $expression, array &$params = []): string
     {
         $params = array_merge($params, $expression->params);
         return $expression->__toString();

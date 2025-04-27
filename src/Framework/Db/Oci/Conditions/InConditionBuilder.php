@@ -23,7 +23,7 @@ class InConditionBuilder extends \Yew\Framework\Db\Conditions\InConditionBuilder
      * @param array $params the binding parameters.
      * @return string the raw SQL that will not be additionally escaped or quoted.
      */
-    public function build(ExpressionInterface $expression, array &$params = [])
+    public function build(ExpressionInterface $expression, array &$params = []): string
     {
         $splitCondition = $this->splitCondition($expression, $params);
         if ($splitCondition !== null) {

@@ -12,7 +12,7 @@ class Event
      * Event type
      * @var string
      */
-    private $type;
+    private string $type;
 
     /**
      * Event data
@@ -24,19 +24,19 @@ class Event
      * Source info
      * @var array
      */
-    private $sourceInfo = [];
+    private array $sourceInfo = [];
 
     /**
      * Destination info
      * @var array
      */
-    private $dstInfo = [];
+    private array $dstInfo = [];
 
     /**
      * Progress
      * @var string
      */
-    private $progress;
+    private string $progress = "";
 
     /**
      * Event constructor.
@@ -94,10 +94,10 @@ class Event
     }
 
     /**
-     * @param $type
+     * @param string $type
      * @return mixed
      */
-    public function getDstInfo($type)
+    public function getDstInfo(string $type)
     {
         return $this->dstInfo[$type] ?? null;
     }
@@ -105,10 +105,10 @@ class Event
     /**
      * Set destination info
      *
-     * @param $type
+     * @param string $type
      * @param $data
      */
-    public function setDstInfo($type, $data): void
+    public function setDstInfo(string $type, $data): void
     {
         $this->dstInfo[$type] = $data;
     }

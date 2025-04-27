@@ -71,7 +71,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * @return null|string
      * @see type
      */
-    public function getType()
+    public function getType(): ?string
     {
         return $this->type;
     }
@@ -89,7 +89,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * @return int the number of indices needed to select an element
      * @see dimensions
      */
-    public function getDimension()
+    public function getDimension(): int
     {
         return $this->dimension;
     }
@@ -107,7 +107,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * The return value will be casted to boolean if non-boolean was returned.
      * @since 2.0.14
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return isset($this->value[$offset]);
     }
@@ -170,7 +170,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * The return value is cast to an integer.
      * @since 2.0.14
      */
-    public function count()
+    public function count(): int
     {
         return count($this->value);
     }

@@ -70,14 +70,14 @@ class Migration extends Component implements MigrationInterface
      * console output more compact.
      * @since 2.0.13
      */
-    public $maxSqlOutputLength;
+    public int $maxSqlOutputLength;
     /**
      * @var bool indicates whether the console output should be compacted.
      * If this is set to true, the individual commands ran within the migration will not be output to the console.
      * Default is false, in other words the output is fully verbose by default.
      * @since 2.0.13
      */
-    public $compact = false;
+    public bool $compact = false;
 
 
     /**

@@ -10,10 +10,6 @@ use Exception;
 use Yew\Core\Message\Message;
 use Yew\Core\Server\Server;
 
-/**
- * Class ManagerProcess
- * @package Yew\Core\Server\Process
- */
 class ManagerProcess extends Process
 {
     const NAME = "manager";

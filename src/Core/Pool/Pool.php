@@ -139,10 +139,10 @@ abstract class Pool implements PoolInterface
     }
 
     /**
-     * @return ConnectionInterface
+     * @return ConnectionInterface|null
      * @throws \Throwable
      */
-    public function get(): ConnectionInterface
+    public function get(): ?ConnectionInterface
     {
         $connection = $this->getConnection();
 

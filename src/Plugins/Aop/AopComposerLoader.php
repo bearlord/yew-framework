@@ -135,6 +135,14 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             return;
         }
 
+        if (strpos($file, 'php://') === 0) {
+            if (strpos($class, "Yew\\Nikic") !== false) {
+                if (preg_match('/resource=(.+)$/', $file, $matches)) {
+                    $file = PathResolver::realpath($matches[1]);
+                }
+            }
+        }
+
         include $file;
     }
 

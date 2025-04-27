@@ -7,50 +7,46 @@
 namespace Yew\Core\Server\Process;
 
 use Yew\Core\Server\Config\ProcessConfig;
-use Yew\Core\Server\Server;
+use Yew\Coroutine\Server\Server;
 
-/**
- * Class ProcessManager
- * @package Yew\Core\Server\Process
- */
 class ProcessManager
 {
     /**
      * @var ProcessConfig[]
      */
-    private $customProcessConfigs = [];
+    private array $customProcessConfigs = [];
 
     /**
      * @var Process[]
      */
-    private $processes = [];
+    private array $processes = [];
 
     /**
      * @var Server
      */
-    private $server;
+    private Server $server;
 
     /**
      * @var Process
      */
-    private $masterProcess;
+    private Process $masterProcess;
 
     /**
      * @var Process
      */
-    private $managerProcess;
+    private Process $managerProcess;
 
     /**
      * Default process class
      * @var string
      */
-    private $defaultProcessClass;
+    private string $defaultProcessClass;
 
     /**
      * Process groups
      * @var array
      */
-    private $groups = [];
+    private array $groups = [];
 
     /**
      * ProcessManager constructor.
@@ -97,7 +93,10 @@ class ProcessManager
     }
 
     /**
-     * Merge config
+     *
+     * @return void
+     * @throws \ReflectionException
+     * @throws \Yew\Core\Exception\ConfigException
      */
     public function mergeConfig()
     {
@@ -107,15 +106,15 @@ class ProcessManager
     }
 
     /**
-     * Get customer process configs
-     *
      * @return array
-     * @throws \Yew\Core\Plugins\Config\ConfigException|\Exception
+     * @throws \ReflectionException
+     * @throws \Yew\Core\Exception\ConfigException
      */
     public function getCustomProcessConfigs(): array
     {
         $this->mergeConfig();
         $customProcessConfigs = [];
+
         $configs = Server::$instance->getConfigContext()->get(ProcessConfig::key, []);
         foreach ($configs as $key => $value) {
             $processConfig = new ProcessConfig();
@@ -125,6 +124,7 @@ class ProcessManager
                 $processConfig->setClassName($this->defaultProcessClass);
             }
         }
+
         return $customProcessConfigs;
     }
 
@@ -145,6 +145,8 @@ class ProcessManager
     /**
      * @return void
      * @throws \DI\DependencyException
+     * @throws \ReflectionException
+     * @throws \Yew\Core\Exception\ConfigException
      */
     public function createProcess()
     {

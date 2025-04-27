@@ -9,7 +9,7 @@ namespace Yew\Framework\Db;
 
 use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 
 /**
  * Transaction represents a DB transaction.

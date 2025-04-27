@@ -9,10 +9,6 @@ namespace Yew\Plugins\Route\RouteTool;
 use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\RouteException;
 
-/**
- * Class NormalErrorController
- * @package ESD\Plugins\EasyRoute
- */
 class NormalErrorController extends RouteController
 {
 

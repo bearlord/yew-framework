@@ -905,11 +905,9 @@ class PortConfig extends BaseConfig
     {
         $this->wsOpcode = $wsOpcode;
     }
-
+    
     /**
-     * Get base Type
      * @return string
-     * @throws ConfigException
      */
     public function getBaseType(): string
     {

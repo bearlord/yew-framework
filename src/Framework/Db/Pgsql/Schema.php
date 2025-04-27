@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Db\Pgsql;
 
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\CheckConstraint;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\ConstraintFinderInterface;
@@ -36,7 +36,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * @var string the default schema used for the current session.
      */
-    public $defaultSchema = 'public';
+    public string $defaultSchema = 'public';
     /**
      * {@inheritdoc}
      */
@@ -134,7 +134,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function resolveTableName($name)
+    protected function resolveTableName(string $name): TableSchema
     {
         $resolvedName = new TableSchema();
         $parts = explode('.', str_replace('"', '', $name));
@@ -152,7 +152,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function findSchemaNames()
+    protected function findSchemaNames(): array
     {
         static $sql = <<<'SQL'
 SELECT "ns"."nspname"
@@ -167,7 +167,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         if ($schema === '') {
             $schema = $this->defaultSchema;
@@ -185,7 +185,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableSchema($name)
+    protected function loadTableSchema(string $name): ?TableSchema
     {
         $table = new TableSchema();
         $this->resolveTableNames($table, $name);
@@ -286,7 +286,7 @@ SQL;
      * Creates a query builder for the PostgreSQL database.
      * @return QueryBuilder query builder instance
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -434,7 +434,7 @@ SQL;
      * @param TableSchema $table the table metadata
      * @return array all unique indexes for the given table.
      */
-    public function findUniqueIndexes($table)
+    public function findUniqueIndexes(TableSchema $table): array
     {
         $uniqueIndexes = [];
 
@@ -599,7 +599,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function insert($table, $columns)
+    public function insert(string $table, array $columns)
     {
         $params = [];
         $sql = $this->db->getQueryBuilder()->insert($table, $columns, $params);
@@ -733,7 +733,7 @@ SQL;
      * @return string the properly quoted column name
      * @see quoteSimpleColumnName()
      */
-    public function quoteColumnName($name)
+    public function quoteColumnName(string $name): string
     {
         if (strpos($name, '(') !== false
             || strpos($name, '[') !== false

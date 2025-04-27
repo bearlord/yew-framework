@@ -20,7 +20,7 @@ class AppPort extends ServerPort
     /**
      * @param int $fd
      * @param int $reactorId
-     * @return mixed|void
+     * @return void
      */
     public function onTcpConnect(int $fd, int $reactorId)
     {

@@ -32,7 +32,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * @var string the default schema used for the current session.
      */
-    public $defaultSchema = 'dbo';
+    public string $defaultSchema = 'dbo';
     /**
      * @var array mapping from physical column types (keys) to abstract column types (values)
      */
@@ -95,7 +95,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * @param string $name the table name
      * @return TableSchema resolved table, schema, etc. names.
      */
-    protected function resolveTableName($name)
+    protected function resolveTableName(string $name): TableSchema
     {
         $resolvedName = new TableSchema();
         $parts = explode('.', str_replace(['[', ']'], '', $name));
@@ -130,7 +130,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * {@inheritdoc}
      * @see https://docs.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-database-principals-transact-sql
      */
-    protected function findSchemaNames()
+    protected function findSchemaNames(): array
     {
         static $sql = <<<'SQL'
 SELECT [s].[name]
@@ -146,7 +146,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         if ($schema === '') {
             $schema = $this->defaultSchema;
@@ -165,7 +165,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableSchema($name)
+    protected function loadTableSchema(string $name): ?TableSchema
     {
         $table = new TableSchema();
         $this->resolveTableNames($table, $name);
@@ -260,7 +260,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function createSavepoint($name)
+    public function createSavepoint(string $name)
     {
         $this->db->createCommand("SAVE TRANSACTION $name")->execute();
     }
@@ -268,7 +268,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function releaseSavepoint($name)
+    public function releaseSavepoint(string $name)
     {
         // does nothing as MSSQL does not support this
     }
@@ -276,7 +276,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function rollBackSavepoint($name)
+    public function rollBackSavepoint(string $name)
     {
         $this->db->createCommand("ROLLBACK TRANSACTION $name")->execute();
     }
@@ -285,7 +285,7 @@ SQL;
      * Creates a query builder for the MSSQL database.
      * @return QueryBuilder query builder interface.
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -577,7 +577,7 @@ SQL;
      * @return array all unique indexes for the given table.
      * @since 2.0.4
      */
-    public function findUniqueIndexes($table)
+    public function findUniqueIndexes(\Yew\Framework\Db\TableSchema $table): array
     {
         $result = [];
         foreach ($this->findTableConstraints($table, 'UNIQUE') as $row) {

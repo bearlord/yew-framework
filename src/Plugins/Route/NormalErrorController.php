@@ -18,7 +18,7 @@ class NormalErrorController extends RouteController
     /**
      * Called when no method is found
      *
-     * @param $methodName
+     * @param string|null $methodName
      * @return mixed
      * @throws RouteException
      */

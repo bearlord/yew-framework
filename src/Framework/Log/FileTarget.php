@@ -84,7 +84,7 @@ class FileTarget extends Target
         if ($this->logFile === null) {
             $this->logFile = Server::$instance->getServerConfig()->getLogDir() . '/app.log';
         } else {
-            $this->logFile = Yii::getAlias($this->logFile);
+            $this->logFile = Yew::getAlias($this->logFile);
         }
         if ($this->maxLogFiles < 1) {
             $this->maxLogFiles = 1;

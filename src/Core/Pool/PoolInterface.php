@@ -11,7 +11,7 @@ interface PoolInterface
     /**
      * Get a connection from the connection pool.
      */
-    public function get(): ConnectionInterface;
+    public function get(): ?ConnectionInterface;
 
     /**
      * Release a connection back to the connection pool.

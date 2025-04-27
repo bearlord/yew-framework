@@ -12,10 +12,6 @@ use DI\DependencyException;
 use DI\NotFoundException;
 use Exception;
 
-/**
- * Class DI
- * @package Yew\Core\DI
- */
 class DI
 {
     public static array $definitions = [];

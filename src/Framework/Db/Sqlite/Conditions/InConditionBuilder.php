@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Db\Sqlite\conditions;
 
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 
 /**
  * {@inheritdoc}

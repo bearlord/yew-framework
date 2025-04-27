@@ -98,7 +98,7 @@ class EmailTarget extends Target
     protected function composeMessage($body)
     {
         $message = $this->mailer->compose();
-        Yii::configure($message, $this->message);
+        Yew::configure($message, $this->message);
         $message->setTextBody($body);
 
         return $message;

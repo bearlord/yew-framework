@@ -11,11 +11,10 @@ use Yew\Yew;
 use Yew\Framework\Base\BaseObject;
 use Yew\Framework\Exception\InvalidCallException;
 use Yew\Framework\Exception\InvalidConfigException;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Caching\Cache;
 use Yew\Framework\Caching\CacheInterface;
 use Yew\Framework\Caching\TagDependency;
-use Yew\Framework\Helpers\StringHelper;
 
 /**
  * Schema is the base class for concrete DBMS-specific schema classes.
@@ -74,16 +73,16 @@ abstract class Schema extends BaseObject
     /**
      * @var Connection the database connection
      */
-    public $db;
+    public Connection $db;
     /**
      * @var string the default schema name used for the current session.
      */
-    public $defaultSchema;
+    public string $defaultSchema;
     /**
      * @var array map of DB errors and corresponding exceptions
      * If left part is found in DB error message exception class from the right part is used.
      */
-    public $exceptionMap = [
+    public array $exceptionMap = [
         'SQLSTATE[23' => 'Yew\Framework\Db\IntegrityException',
     ];
     /**
@@ -106,25 +105,29 @@ abstract class Schema extends BaseObject
     protected $columnQuoteCharacter = '"';
 
     /**
-     * @var array list of ALL schema names in the database, except system schemas
+     * @var array|null list of ALL schema names in the database, except system schemas
      */
-    private $_schemaNames;
+    private ?array $_schemaNames = null;
+
     /**
      * @var array list of ALL table names in the database
      */
-    private $_tableNames = [];
+    private array $_tableNames = [];
+
     /**
      * @var array list of loaded table metadata (table name => metadata type => metadata).
      */
-    private $_tableMetadata = [];
+    private array $_tableMetadata = [];
+
     /**
-     * @var QueryBuilder the query builder for this database
+     * @var QueryBuilder|null the query builder for this database
      */
-    private $_builder;
+    private ?QueryBuilder $_builder = null;
+
     /**
-     * @var string server version as a string.
+     * @var string|null server version as a string.
      */
-    private $_serverVersion;
+    private ?string $_serverVersion = null;
 
 
     /**
@@ -134,7 +137,7 @@ abstract class Schema extends BaseObject
      * @throws NotSupportedException if this method is not supported by the DBMS.
      * @since 2.0.13
      */
-    protected function resolveTableName($name)
+    protected function resolveTableName(string $name): TableSchema
     {
         throw new NotSupportedException(get_class($this) . ' does not support resolving table names.');
     }
@@ -147,7 +150,7 @@ abstract class Schema extends BaseObject
      * @throws NotSupportedException if this method is not supported by the DBMS.
      * @since 2.0.4
      */
-    protected function findSchemaNames()
+    protected function findSchemaNames(): array
     {
         throw new NotSupportedException(get_class($this) . ' does not support fetching all schema names.');
     }
@@ -160,7 +163,7 @@ abstract class Schema extends BaseObject
      * @return array all table names in the database. The names have NO schema name prefix.
      * @throws NotSupportedException if this method is not supported by the DBMS.
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         throw new NotSupportedException(get_class($this) . ' does not support fetching all table names.');
     }
@@ -170,7 +173,7 @@ abstract class Schema extends BaseObject
      * @param string $name table name
      * @return TableSchema|null DBMS-dependent table metadata, `null` if the table does not exist.
      */
-    abstract protected function loadTableSchema($name);
+    abstract protected function loadTableSchema(string $name): ?TableSchema;
 
     /**
      * Creates a column schema for the database.
@@ -188,8 +191,9 @@ abstract class Schema extends BaseObject
      * @param string $name table name. The table name may contain schema name if any. Do not quote the table name.
      * @param bool $refresh whether to reload the table schema even if it is found in the cache.
      * @return TableSchema|null table metadata. `null` if the named table does not exist.
+     * @throws InvalidConfigException
      */
-    public function getTableSchema($name, $refresh = false)
+    public function getTableSchema(string $name, bool $refresh = false): ?TableSchema
     {
         return $this->getTableMetadata($name, 'schema', $refresh);
     }
@@ -201,8 +205,9 @@ abstract class Schema extends BaseObject
      * cached data may be returned if available.
      * @return TableSchema[] the metadata for all tables in the database.
      * Each array element is an instance of [[TableSchema]] or its child class.
+     * @throws NotSupportedException
      */
-    public function getTableSchemas($schema = '', $refresh = false)
+    public function getTableSchemas(string $schema = '', bool $refresh = false)
     {
         return $this->getSchemaMetadata($schema, 'schema', $refresh);
     }
@@ -212,9 +217,10 @@ abstract class Schema extends BaseObject
      * @param bool $refresh whether to fetch the latest available schema names. If this is false,
      * schema names fetched previously (if available) will be returned.
      * @return string[] all schema names in the database, except system schemas.
+     * @throws NotSupportedException
      * @since 2.0.4
      */
-    public function getSchemaNames($refresh = false)
+    public function getSchemaNames(bool $refresh = false)
     {
         if ($this->_schemaNames === null || $refresh) {
             $this->_schemaNames = $this->findSchemaNames();
@@ -230,8 +236,9 @@ abstract class Schema extends BaseObject
      * @param bool $refresh whether to fetch the latest available table names. If this is false,
      * table names fetched previously (if available) will be returned.
      * @return string[] all table names in the database.
+     * @throws NotSupportedException
      */
-    public function getTableNames($schema = '', $refresh = false)
+    public function getTableNames(string $schema = '', bool $refresh = false): array
     {
         if (!isset($this->_tableNames[$schema]) || $refresh) {
             $this->_tableNames[$schema] = $this->findTableNames($schema);
@@ -243,7 +250,7 @@ abstract class Schema extends BaseObject
     /**
      * @return QueryBuilder the query builder for this connection.
      */
-    public function getQueryBuilder()
+    public function getQueryBuilder(): QueryBuilder
     {
         if ($this->_builder === null) {
             $this->_builder = $this->createQueryBuilder();
@@ -258,7 +265,7 @@ abstract class Schema extends BaseObject
      * @return int the PDO type
      * @see https://secure.php.net/manual/en/pdo.constants.php
      */
-    public function getPdoType($data)
+    public function getPdoType($data): int
     {
         static $typeMap = [
             // php type => PDO type
@@ -294,9 +301,10 @@ abstract class Schema extends BaseObject
      * This method cleans up cached table schema so that it can be re-created later
      * to reflect the database schema change.
      * @param string $name table name.
+     * @throws InvalidConfigException
      * @since 2.0.6
      */
-    public function refreshTableSchema($name)
+    public function refreshTableSchema(string $name)
     {
         $rawName = $this->getRawTableName($name);
         unset($this->_tableMetadata[$rawName]);
@@ -313,7 +321,7 @@ abstract class Schema extends BaseObject
      * This method may be overridden by child classes to create a DBMS-specific query builder.
      * @return QueryBuilder query builder instance
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -328,7 +336,7 @@ abstract class Schema extends BaseObject
      * @return ColumnSchemaBuilder column schema builder instance
      * @since 2.0.6
      */
-    public function createColumnSchemaBuilder($type, $length = null)
+    public function createColumnSchemaBuilder(string $type, $length = null): ColumnSchemaBuilder
     {
         return new ColumnSchemaBuilder($type, $length);
     }
@@ -351,7 +359,7 @@ abstract class Schema extends BaseObject
      * @return array all unique indexes for the given table.
      * @throws NotSupportedException if this method is called
      */
-    public function findUniqueIndexes($table)
+    public function findUniqueIndexes(TableSchema $table): array
     {
         throw new NotSupportedException(get_class($this) . ' does not support getting unique indexes information.');
     }
@@ -363,7 +371,7 @@ abstract class Schema extends BaseObject
      * @throws InvalidCallException if the DB connection is not active
      * @see https://secure.php.net/manual/en/function.PDO-lastInsertId.php
      */
-    public function getLastInsertID($sequenceName = '')
+    public function getLastInsertID(string $sequenceName = ''): string
     {
         if ($this->db->isActive) {
             return $this->db->pdo->lastInsertId($sequenceName === '' ? null : $this->quoteTableName($sequenceName));
@@ -375,7 +383,7 @@ abstract class Schema extends BaseObject
     /**
      * @return bool whether this DBMS supports [savepoint](http://en.wikipedia.org/wiki/Savepoint).
      */
-    public function supportsSavepoint()
+    public function supportsSavepoint(): bool
     {
         return $this->db->enableSavepoint;
     }
@@ -383,8 +391,9 @@ abstract class Schema extends BaseObject
     /**
      * Creates a new savepoint.
      * @param string $name the savepoint name
+     * @throws Exception
      */
-    public function createSavepoint($name)
+    public function createSavepoint(string $name)
     {
         $this->db->createCommand("SAVEPOINT $name")->execute();
     }
@@ -392,8 +401,9 @@ abstract class Schema extends BaseObject
     /**
      * Releases an existing savepoint.
      * @param string $name the savepoint name
+     * @throws Exception
      */
-    public function releaseSavepoint($name)
+    public function releaseSavepoint(string $name)
     {
         $this->db->createCommand("RELEASE SAVEPOINT $name")->execute();
     }
@@ -401,8 +411,9 @@ abstract class Schema extends BaseObject
     /**
      * Rolls back to a previously created savepoint.
      * @param string $name the savepoint name
+     * @throws Exception
      */
-    public function rollBackSavepoint($name)
+    public function rollBackSavepoint(string $name)
     {
         $this->db->createCommand("ROLLBACK TO SAVEPOINT $name")->execute();
     }
@@ -413,9 +424,10 @@ abstract class Schema extends BaseObject
      * This can be one of [[Transaction::READ_UNCOMMITTED]], [[Transaction::READ_COMMITTED]], [[Transaction::REPEATABLE_READ]]
      * and [[Transaction::SERIALIZABLE]] but also a string containing DBMS specific syntax to be used
      * after `SET TRANSACTION ISOLATION LEVEL`.
+     * @throws Exception
      * @see http://en.wikipedia.org/wiki/Isolation_%28database_systems%29#Isolation_levels
      */
-    public function setTransactionIsolationLevel($level)
+    public function setTransactionIsolationLevel(string $level)
     {
         $this->db->createCommand("SET TRANSACTION ISOLATION LEVEL $level")->execute();
     }
@@ -425,9 +437,10 @@ abstract class Schema extends BaseObject
      * @param string $table the table that new rows will be inserted into.
      * @param array $columns the column data (name => value) to be inserted into the table.
      * @return array|false primary key values or false if the command fails
+     * @throws Exception|InvalidConfigException
      * @since 2.0.4
      */
-    public function insert($table, $columns)
+    public function insert(string $table, array $columns)
     {
         $command = $this->db->createCommand()->insert($table, $columns);
         if (!$command->execute()) {
@@ -454,12 +467,8 @@ abstract class Schema extends BaseObject
      * @return string the properly quoted string
      * @see https://secure.php.net/manual/en/function.PDO-quote.php
      */
-    public function quoteValue($str)
+    public function quoteValue(string $str): string
     {
-        if (!is_string($str)) {
-            return $str;
-        }
-
         if (($value = $this->db->getSlavePdo()->quote($str)) !== false) {
             return $value;
         }
@@ -477,7 +486,7 @@ abstract class Schema extends BaseObject
      * @return string the properly quoted table name
      * @see quoteSimpleTableName()
      */
-    public function quoteTableName($name)
+    public function quoteTableName(string $name): string
     {
         if (strpos($name, '(') !== false || strpos($name, '{{') !== false) {
             return $name;
@@ -502,7 +511,7 @@ abstract class Schema extends BaseObject
      * @return string the properly quoted column name
      * @see quoteSimpleColumnName()
      */
-    public function quoteColumnName($name)
+    public function quoteColumnName(string $name): string
     {
         if (strpos($name, '(') !== false || strpos($name, '[[') !== false) {
             return $name;
@@ -527,7 +536,7 @@ abstract class Schema extends BaseObject
      * @param string $name table name
      * @return string the properly quoted table name
      */
-    public function quoteSimpleTableName($name)
+    public function quoteSimpleTableName(string $name): string
     {
         if (is_string($this->tableQuoteCharacter)) {
             $startingCharacter = $endingCharacter = $this->tableQuoteCharacter;
@@ -544,7 +553,7 @@ abstract class Schema extends BaseObject
      * @param string $name column name
      * @return string the properly quoted column name
      */
-    public function quoteSimpleColumnName($name)
+    public function quoteSimpleColumnName(string $name): string
     {
         if (is_string($this->tableQuoteCharacter)) {
             $startingCharacter = $endingCharacter = $this->columnQuoteCharacter;
@@ -562,7 +571,7 @@ abstract class Schema extends BaseObject
      * @return string unquoted table name.
      * @since 2.0.14
      */
-    public function unquoteSimpleTableName($name)
+    public function unquoteSimpleTableName(string $name): string
     {
         if (is_string($this->tableQuoteCharacter)) {
             $startingCharacter = $this->tableQuoteCharacter;
@@ -580,7 +589,7 @@ abstract class Schema extends BaseObject
      * @return string unquoted column name.
      * @since 2.0.14
      */
-    public function unquoteSimpleColumnName($name)
+    public function unquoteSimpleColumnName(string $name): string
     {
         if (is_string($this->columnQuoteCharacter)) {
             $startingCharacter = $this->columnQuoteCharacter;
@@ -597,7 +606,7 @@ abstract class Schema extends BaseObject
      * @param string $name the table name to be converted
      * @return string the real name of the given table name
      */
-    public function getRawTableName($name)
+    public function getRawTableName(string $name): string
     {
         if (strpos($name, '{{') !== false) {
             $name = preg_replace('/\\{\\{(.*?)\\}\\}/', '\1', $name);
@@ -613,7 +622,7 @@ abstract class Schema extends BaseObject
      * @param ColumnSchema $column the column schema information
      * @return string PHP type name
      */
-    protected function getColumnPhpType($column)
+    protected function getColumnPhpType(ColumnSchema $column): string
     {
         static $typeMap = [
             // abstract type => php type
@@ -647,7 +656,7 @@ abstract class Schema extends BaseObject
      * @param string $rawSql SQL that produced exception
      * @return Exception
      */
-    public function convertException(\Exception $e, $rawSql)
+    public function convertException(\Exception $e, string $rawSql): Exception
     {
         if ($e instanceof Exception) {
             return $e;
@@ -669,7 +678,7 @@ abstract class Schema extends BaseObject
      * @param string $sql the SQL statement
      * @return bool whether a SQL statement is for read purpose.
      */
-    public function isReadQuery($sql)
+    public function isReadQuery(string $sql): bool
     {
         $pattern = '/^\s*(SELECT|SHOW|DESCRIBE)\b/i';
         return preg_match($pattern, $sql) > 0;
@@ -680,7 +689,7 @@ abstract class Schema extends BaseObject
      * @return string server version as a string.
      * @since 2.0.14
      */
-    public function getServerVersion()
+    public function getServerVersion(): ?string
     {
         if ($this->_serverVersion === null) {
             $this->_serverVersion = $this->db->getSlavePdo()->getAttribute(\PDO::ATTR_SERVER_VERSION);
@@ -691,9 +700,9 @@ abstract class Schema extends BaseObject
     /**
      * Returns the cache key for the specified table name.
      * @param string $name the table name.
-     * @return mixed the cache key.
+     * @return array the cache key.
      */
-    protected function getCacheKey($name)
+    protected function getCacheKey(string $name): array
     {
         return [
             __CLASS__,
@@ -708,7 +717,7 @@ abstract class Schema extends BaseObject
      * This allows [[refresh()]] to invalidate all cached table schemas.
      * @return string the cache tag name
      */
-    protected function getCacheTag()
+    protected function getCacheTag(): string
     {
         return md5(serialize([
             __CLASS__,
@@ -725,9 +734,10 @@ abstract class Schema extends BaseObject
      * @param string $type metadata type.
      * @param bool $refresh whether to reload the table metadata even if it is found in the cache.
      * @return mixed metadata.
+     * @throws InvalidConfigException
      * @since 2.0.13
      */
-    protected function getTableMetadata($name, $type, $refresh)
+    protected function getTableMetadata(string $name, string $type, bool $refresh)
     {
         $cache = null;
         if ($this->db->enableSchemaCache && !in_array($name, $this->db->schemaCacheExclude, true)) {
@@ -757,9 +767,10 @@ abstract class Schema extends BaseObject
      * @param bool $refresh whether to fetch the latest available table metadata. If this is `false`,
      * cached data may be returned if available.
      * @return array array of metadata.
+     * @throws NotSupportedException
      * @since 2.0.13
      */
-    protected function getSchemaMetadata($schema, $type, $refresh)
+    protected function getSchemaMetadata(string $schema, string $type, bool $refresh): array
     {
         $metadata = [];
         $methodName = 'getTable' . ucfirst($type);
@@ -783,7 +794,7 @@ abstract class Schema extends BaseObject
      * @param mixed $data metadata.
      * @since 2.0.13
      */
-    protected function setTableMetadata($name, $type, $data)
+    protected function setTableMetadata(string $name, string $type, $data)
     {
         $this->_tableMetadata[$this->getRawTableName($name)][$type] = $data;
     }
@@ -795,7 +806,7 @@ abstract class Schema extends BaseObject
      * @return array normalized row or rows.
      * @since 2.0.13
      */
-    protected function normalizePdoRowKeyCase(array $row, $multiple)
+    protected function normalizePdoRowKeyCase(array $row, bool $multiple): array
     {
         if ($this->db->getSlavePdo()->getAttribute(\PDO::ATTR_CASE) !== \PDO::CASE_UPPER) {
             return $row;
@@ -815,7 +826,7 @@ abstract class Schema extends BaseObject
      * @param Cache|null $cache
      * @param string $name
      */
-    private function loadTableMetadataFromCache($cache, $name)
+    private function loadTableMetadataFromCache(?Cache $cache, string $name)
     {
         if ($cache === null) {
             $this->_tableMetadata[$name] = [];
@@ -837,7 +848,7 @@ abstract class Schema extends BaseObject
      * @param Cache|null $cache
      * @param string $name
      */
-    private function saveTableMetadataToCache($cache, $name)
+    private function saveTableMetadataToCache(?Cache $cache, string $name)
     {
         if ($cache === null) {
             return;

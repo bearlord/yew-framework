@@ -16,10 +16,6 @@ use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Server\Server;
 use Psr\Log\LoggerInterface;
 
-/**
- * Class Process
- * @package Yew\Core\Server\process
- */
 abstract class Process
 {
     const DEFAULT_GROUP = "DefaultGroup";

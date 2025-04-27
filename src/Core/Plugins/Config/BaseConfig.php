@@ -20,12 +20,12 @@ class BaseConfig
     /**
      * @var int
      */
-    protected static $uuid = 1000;
+    protected static int $uuid = 1000;
 
     /**
      * @var string
      */
-    private $configPrefix;
+    private string $configPrefix;
 
     /**
      * @var array

@@ -32,7 +32,7 @@ final class PdoValue implements ExpressionInterface
      * @var int One of PDO_PARAM_* constants
      * @see https://secure.php.net/manual/en/pdo.constants.php
      */
-    private $type;
+    private int $type;
 
 
     /**
@@ -58,7 +58,7 @@ final class PdoValue implements ExpressionInterface
     /**
      * @return int
      */
-    public function getType()
+    public function getType(): int
     {
         return $this->type;
     }

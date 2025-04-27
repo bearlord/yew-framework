@@ -199,15 +199,11 @@ class RouteAspect extends OrderAspect
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onConnectPath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
-            return false;
+            return;
         }
 
-        try {
-            $instance = new $routeInfo[1][0]->name();
-            call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-        }
+        $instance = new $routeInfo[1][0]->name();
+        call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
     }
 
     /**
@@ -283,15 +279,11 @@ class RouteAspect extends OrderAspect
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
-            return false;
+            return;
         }
 
-        try {
-            $instance = new $routeInfo[1][0]->name();
-            call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-        }
+        $instance = new $routeInfo[1][0]->name();
+        call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
     }
 
     /**
@@ -316,15 +308,11 @@ class RouteAspect extends OrderAspect
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
-            return false;
+            return;
         }
 
-        try {
-            $instance = new $routeInfo[1][0]->name();
-            call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-        }
+        $instance = new $routeInfo[1][0]->name();
+        call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
     }
 
     /**
@@ -353,15 +341,11 @@ class RouteAspect extends OrderAspect
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onConnectPath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
-            return false;
+            return;
         }
 
-        try {
-            $instance = new $routeInfo[1][0]->name();
-            call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId, $request]);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-        }
+        $instance = new $routeInfo[1][0]->name();
+        call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId, $request]);
     }
 
     /**
@@ -437,15 +421,11 @@ class RouteAspect extends OrderAspect
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
-            return false;
+            return;
         }
 
-        try {
-            $instance = new $routeInfo[1][0]->name();
-            call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-        }
+        $instance = new $routeInfo[1][0]->name();
+        call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
     }
 
     /**
@@ -470,15 +450,11 @@ class RouteAspect extends OrderAspect
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
-            return false;
+            return;
         }
 
-        try {
-            $instance = new $routeInfo[1][0]->name();
-            call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
-        } catch (Exception $exception) {
-            $this->error($exception->getMessage());
-        }
+        $instance = new $routeInfo[1][0]->name();
+        call_user_func_array([$instance, $routeInfo[1][1]->name], [$fd, $reactorId]);
     }
 
     /**

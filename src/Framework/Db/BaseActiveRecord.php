@@ -7,14 +7,14 @@
 
 namespace Yew\Framework\Db;
 
-use Yii;
+use Yew\Yew;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Exception\InvalidCallException;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidParamException;
 use Yew\Framework\Base\Model;
 use Yew\Framework\Base\ModelEvent;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Exception\UnknownMethodException;
 use Yew\Framework\Helpers\ArrayHelper;
 
@@ -116,7 +116,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * {@inheritdoc}
      * @return static[] an array of ActiveRecord instances, or an empty array if nothing matches.
      */
-    public static function findAll($condition)
+    public static function findAll($condition): array
     {
         return static::findByCondition($condition)->all();
     }
@@ -203,7 +203,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * @return int the number of rows deleted
      * @throws NotSupportedException if not overridden.
      */
-    public static function deleteAll(array $condition = null)
+    public static function deleteAll(array $condition = null): int
     {
         throw new NotSupportedException(__METHOD__ . ' is not supported.');
     }
@@ -1096,7 +1096,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * @param ActiveRecordInterface $record record to compare to
      * @return bool whether the two active records refer to the same row in the same database table.
      */
-    public function equals($record): bool
+    public function equals(ActiveRecordInterface $record): bool
     {
         if ($this->getIsNewRecord() || $record->getIsNewRecord()) {
             return false;
@@ -1234,7 +1234,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * and `$throwException` is `false`, `null` will be returned.
      * @throws InvalidArgumentException if the named relation does not exist.
      */
-    public function getRelation(string $name, bool $throwException = true)
+    public function getRelation(string $name, bool $throwException = true): ?ActiveQueryInterface
     {
         $getter = 'get' . $name;
         try {
@@ -1290,7 +1290,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * (i.e., a relation set with [[ActiveRelationTrait::via()]] or [[ActiveQuery::viaTable()]].)
      * @throws InvalidCallException if the method is unable to link two models.
      */
-    public function link(string $name, $model, array $extraColumns = [])
+    public function link(string $name, ActiveRecordInterface $model, array $extraColumns = [])
     {
         $relation = $this->getRelation($name);
 
@@ -1383,7 +1383,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * If `true`, the model containing the foreign key will be deleted.
      * @throws InvalidCallException if the models cannot be unlinked
      */
-    public function unlink(string $name, $model, bool $delete = false)
+    public function unlink(string $name, ActiveRecordInterface $model, bool $delete = false)
     {
         $relation = $this->getRelation($name);
 
@@ -1583,7 +1583,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * @param array $keys the set of attributes to check
      * @return bool whether the given set of attributes represents the primary key for this model
      */
-    public static function isPrimaryKey(array $keys)
+    public static function isPrimaryKey(array $keys): bool
     {
         $pks = static::primaryKey();
         if (count($keys) === count($pks)) {

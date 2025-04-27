@@ -8,7 +8,7 @@
 namespace Yew\Framework\Db\Oci;
 
 use Yew\Framework\Exception\InvalidCallException;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\CheckConstraint;
 use Yew\Framework\Db\ColumnSchema;
 use Yew\Framework\Db\Connection;
@@ -38,7 +38,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * @var array map of DB errors and corresponding exceptions
      * If left part is found in DB error message exception class from the right part is used.
      */
-    public $exceptionMap = [
+    public array $exceptionMap = [
         'ORA-00001: unique constraint' => 'Yew\Framework\Db\IntegrityException',
     ];
 
@@ -66,7 +66,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function resolveTableName($name)
+    protected function resolveTableName(string $name): TableSchema
     {
         $resolvedName = new TableSchema();
         $parts = explode('.', str_replace('"', '', $name));
@@ -85,7 +85,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * {@inheritdoc}
      * @see https://docs.oracle.com/cd/B28359_01/server.111/b28337/tdpsg_user_accounts.htm
      */
-    protected function findSchemaNames()
+    protected function findSchemaNames(): array
     {
         static $sql = <<<'SQL'
 SELECT "u"."USERNAME"
@@ -100,7 +100,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         if ($schema === '') {
             $sql = <<<'SQL'
@@ -146,7 +146,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableSchema($name)
+    protected function loadTableSchema(string $name): ?TableSchema
     {
         $table = new TableSchema();
         $this->resolveTableNames($table, $name);
@@ -243,7 +243,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function releaseSavepoint($name)
+    public function releaseSavepoint(string $name)
     {
         // does nothing as Oracle does not support this
     }
@@ -251,7 +251,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function quoteSimpleTableName($name)
+    public function quoteSimpleTableName(string $name): string
     {
         return strpos($name, '"') !== false ? $name : '"' . $name . '"';
     }
@@ -259,7 +259,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -267,7 +267,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function createColumnSchemaBuilder($type, $length = null)
+    public function createColumnSchemaBuilder(string $type, $length = null): ColumnSchemaBuilder
     {
         return new ColumnSchemaBuilder($type, $length, $this->db);
     }
@@ -379,7 +379,7 @@ SQL;
      * @return string the row ID of the last row inserted, or the last value retrieved from the sequence object
      * @throws InvalidCallException if the DB connection is not active
      */
-    public function getLastInsertID($sequenceName = '')
+    public function getLastInsertID(string $sequenceName = ''): string
     {
         if ($this->db->isActive) {
             // get the last insert id from the master connection
@@ -517,7 +517,7 @@ SQL;
      * @return array all unique indexes for the given table.
      * @since 2.0.4
      */
-    public function findUniqueIndexes($table)
+    public function findUniqueIndexes(TableSchema $table): array
     {
         $query = <<<'SQL'
 SELECT
@@ -600,7 +600,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function insert($table, $columns)
+    public function insert(string $table, array $columns)
     {
         $params = [];
         $returnParams = [];

@@ -33,7 +33,7 @@ class m141106_185632_log_init extends Migration
     protected function getDbTargets()
     {
         if ($this->dbTargets === []) {
-            $log = Yii::$app->getLog();
+            $log = Yew::$app->getLog();
 
             $usedTargets = [];
             foreach ($log->targets as $target) {

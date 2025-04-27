@@ -10,7 +10,7 @@ namespace Yew\Framework\Db;
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Caching\Dependency;
 use Yew\Framework\Base\Component;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Yew;
 
 /**

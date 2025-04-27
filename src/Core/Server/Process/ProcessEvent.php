@@ -8,10 +8,6 @@ namespace Yew\Core\Server\Process;
 
 use Yew\Core\Plugins\Event\Event;
 
-/**
- * Class ProcessEvent
- * @package Yew\Core\Server\Process
- */
 class ProcessEvent extends Event
 {
     /**

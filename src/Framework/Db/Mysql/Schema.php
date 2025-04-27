@@ -8,7 +8,7 @@
 namespace Yew\Framework\Db\Mysql;
 
 use Yew\Framework\Exception\InvalidConfigException;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\ConstraintFinderInterface;
 use Yew\Framework\Db\ConstraintFinderTrait;
@@ -86,7 +86,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function resolveTableName($name)
+    protected function resolveTableName(string $name): TableSchema
     {
         $resolvedName = new TableSchema();
         $parts = explode('.', str_replace('`', '', $name));
@@ -104,7 +104,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function findTableNames($schema = '')
+    protected function findTableNames(string $schema = ''): array
     {
         $sql = 'SHOW TABLES';
         if ($schema !== '') {
@@ -117,7 +117,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableSchema($name)
+    protected function loadTableSchema(string $name): ?TableSchema
     {
         $table = new TableSchema();
         $this->resolveTableNames($table, $name);
@@ -212,7 +212,7 @@ SQL;
      * Creates a query builder for the MySQL database.
      * @return QueryBuilder query builder instance
      */
-    public function createQueryBuilder()
+    public function createQueryBuilder(): \Yew\Framework\Db\QueryBuilder
     {
         return new QueryBuilder($this->db);
     }
@@ -238,6 +238,7 @@ SQL;
      * Loads the column information into a [[ColumnSchema]] object.
      * @param array $info column information
      * @return ColumnSchema the column schema object
+     * @throws InvalidConfigException
      */
     protected function loadColumnSchema($info)
     {
@@ -312,7 +313,7 @@ SQL;
      * @return bool whether the table exists in the database
      * @throws \Exception if DB query fails
      */
-    protected function findColumns($table)
+    protected function findColumns($table): bool
     {
         $sql = 'SHOW FULL COLUMNS FROM ' . $this->quoteTableName($table->fullName);
         try {
@@ -347,6 +348,7 @@ SQL;
      * Gets the CREATE TABLE sql string.
      * @param TableSchema $table the table metadata
      * @return string $sql the result of 'SHOW CREATE TABLE'
+     * @throws Exception
      */
     protected function getCreateTableSql($table)
     {
@@ -441,7 +443,7 @@ SQL;
      * @param TableSchema $table the table metadata
      * @return array all unique indexes for the given table.
      */
-    public function findUniqueIndexes($table)
+    public function findUniqueIndexes(TableSchema $table): array
     {
         $sql = $this->getCreateTableSql($table);
         $uniqueIndexes = [];
@@ -461,7 +463,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    public function createColumnSchemaBuilder($type, $length = null)
+    public function createColumnSchemaBuilder(string $type, $length = null): \Yew\Framework\Db\ColumnSchemaBuilder
     {
         return new ColumnSchemaBuilder($type, $length, $this->db);
     }
@@ -491,7 +493,7 @@ SQL;
      * - uniques
      * @return mixed constraints.
      */
-    private function loadTableConstraints($tableName, $returnType)
+    private function loadTableConstraints(string $tableName, string $returnType)
     {
         static $sql = <<<'SQL'
 SELECT

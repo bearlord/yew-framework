@@ -7,7 +7,6 @@
 
 namespace Yew\Framework\Db;
 
-use Yew\Framework\Base\Application;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Caching\Dependency;
@@ -56,32 +55,32 @@ class Query extends Component implements QueryInterface, ExpressionInterface
     use QueryTrait;
 
     /**
-     * @var array the columns being selected. For example, `['id', 'name']`.
+     * @var array|null the columns being selected. For example, `['id', 'name']`.
      * This is used to construct the SELECT clause in a SQL statement. If not set, it means selecting all columns.
      * @see select()
      */
-    public $select;
+    public ?array $select = [];
     /**
      * @var string additional option that should be appended to the 'SELECT' keyword. For example,
      * in MySQL, the option 'SQL_CALC_FOUND_ROWS' can be used.
      */
-    public $selectOption;
+    public string $selectOption = "";
     /**
      * @var bool whether to select distinct rows of data only. If this is set true,
      * the SELECT clause would be changed to SELECT DISTINCT.
      */
-    public $distinct;
+    public bool $distinct = false;
     /**
      * @var array the table(s) to be selected from. For example, `['user', 'post']`.
      * This is used to construct the FROM clause in a SQL statement.
      * @see from()
      */
-    public $from;
+    public ?array $from = null;
     /**
      * @var array how to group the query results. For example, `['company', 'department']`.
      * This is used to construct the GROUP BY clause in a SQL statement.
      */
-    public $groupBy;
+    public ?array $groupBy = null;
     /**
      * @var array how to join with other tables. Each array element represents the specification
      * of one join which has the following structure:
@@ -99,7 +98,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * ]
      * ```
      */
-    public $join;
+    public array $join = [];
     /**
      * @var string|array|ExpressionInterface the condition to be applied in the GROUP BY clause.
      * It can be either a string or an array. Please refer to [[where()]] on how to specify the condition.
@@ -112,12 +111,12 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * - `query`: either a string or a [[Query]] object representing a query
      * - `all`: boolean, whether it should be `UNION ALL` or `UNION`
      */
-    public $union;
+    public array $union = [];
     /**
      * @var array list of query parameter values indexed by parameter placeholders.
      * For example, `[':name' => 'Dan', ':age' => 31]`.
      */
-    public $params = [];
+    public array $params = [];
     /**
      * @var int|true the default number of seconds that query results can remain valid in cache.
      * Use 0 to indicate that the cached data will never expire.
@@ -128,11 +127,11 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      */
     public $queryCacheDuration;
     /**
-     * @var \Yew\Framework\Caching\Dependency the dependency to be associated with the cached query result for this query
+     * @var Dependency|null the dependency to be associated with the cached query result for this query
      * @see cache()
      * @since 2.0.14
      */
-    public $queryCacheDependency;
+    public ?Dependency $queryCacheDependency = null;
 
 
     /**
@@ -140,8 +139,10 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return Command the created DB command instance.
+     * @throws Exception
+     * @throws InvalidConfigException
      */
-    public function createCommand(?Connection $db = null)
+    public function createCommand(?Connection $db = null): Command
     {
         if ($db === null) {
             $db = Yew::$app->getDb();
@@ -162,7 +163,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param QueryBuilder $builder
      * @return $this a prepared query instance which will be used by [[QueryBuilder]] to build the SQL
      */
-    public function prepare(QueryBuilder $builder)
+    public function prepare(QueryBuilder $builder): Query
     {
         return $this;
     }
@@ -187,6 +188,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param Connection|null $db the database connection. If not set, the "db" application component will be used.
      * @return BatchQueryResult the batch query result. It implements the [[\Iterator]] interface
      * and can be traversed to retrieve the data in batches.
+     * @throws InvalidConfigException
      */
     public function batch(?int $batchSize = 100, ?Connection $db = null): BatchQueryResult
     {
@@ -212,9 +214,10 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * ```
      *
      * @param int|null $batchSize the number of records to be fetched in each batch.
-     * @param Connection $db the database connection. If not set, the "db" application component will be used.
+     * @param Connection|null $db the database connection. If not set, the "db" application component will be used.
      * @return BatchQueryResult the batch query result. It implements the [[\Iterator]] interface
      * and can be traversed to retrieve the data in batches.
+     * @throws InvalidConfigException
      */
     public function each(?int $batchSize = 100, ?Connection $db = null): BatchQueryResult
     {
@@ -248,6 +251,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * into the format as required by this query.
      * @param array $rows the raw query result from database
      * @return array the converted query result
+     * @throws \Exception
      */
     public function populate(array $rows)
     {
@@ -268,6 +272,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * If this parameter is not given, the `db` application component will be used.
      * @return array|bool the first row (in terms of an array) of the query result. False is returned if the query
      * results in nothing.
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     public function one(?Connection $db = null)
     {
@@ -300,6 +306,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return array the first column of the query result. An empty array is returned if the query results in nothing.
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     public function column(?Connection $db = null): array
     {
@@ -414,7 +422,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * If this parameter is not given, the `db` application component will be used.
      * @return mixed the maximum of the specified column values.
      */
-    public function max(sting $q, ?Connection $db = null)
+    public function max(string $q, ?Connection $db = null)
     {
         return $this->queryScalar("MAX($q)", $db);
     }
@@ -488,7 +496,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * Returns table names used in [[from]] indexed by aliases.
      * Both aliases and names are enclosed into {{ and }}.
      * @return string[] table names indexed by aliases
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @since 2.0.12
      */
     public function getTablesUsedInFrom(): array
@@ -1247,7 +1255,7 @@ PATTERN;
      * Use a negative number to indicate that query cache should not be used.
      * Use boolean `true` to indicate that [[Connection::queryCacheDuration]] should be used.
      * Defaults to `true`.
-     * @param \Yew\Framework\Caching\Dependency $dependency the cache dependency associated with the cached result.
+     * @param Dependency $dependency the cache dependency associated with the cached result.
      * @return $this the Query object itself
      * @since 2.0.14
      */

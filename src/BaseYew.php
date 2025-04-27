@@ -6,10 +6,11 @@
 
 namespace Yew;
 
-use Monolog\Logger;
 use Yew\Coroutine\Server\Server;
-use Yew\Framework\Base\Di\Container;
+use Yew\Framework\Di\Container;
+use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Log\Logger;
 
 /**
  * This constant defines the framework installation directory.

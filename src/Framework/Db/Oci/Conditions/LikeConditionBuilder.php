@@ -33,7 +33,7 @@ class LikeConditionBuilder extends \Yew\Framework\Db\Conditions\LikeConditionBui
     /**
      * {@inheritdoc}
      */
-    public function build(ExpressionInterface $expression, array &$params = [])
+    public function build(ExpressionInterface $expression, array &$params = []): string
     {
         if (!isset($this->escapingReplacements['\\'])) {
             /*

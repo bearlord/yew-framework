@@ -13,16 +13,16 @@ use Yew\Framework\Base\Component;
 /**
  * Logger records logged messages in memory and sends them to different targets if [[dispatcher]] is set.
  *
- * A Logger instance can be accessed via `Yii::getLogger()`. You can call the method [[log()]] to record a single log message.
+ * A Logger instance can be accessed via `Yew::getLogger()`. You can call the method [[log()]] to record a single log message.
  * For convenience, a set of shortcut methods are provided for logging messages of various severity levels
  * via the [[Yii]] class:
  *
- * - [[Yii::trace()]]
- * - [[Yii::error()]]
- * - [[Yii::warning()]]
- * - [[Yii::info()]]
- * - [[Yii::beginProfile()]]
- * - [[Yii::endProfile()]]
+ * - [[Yew::trace()]]
+ * - [[Yew::error()]]
+ * - [[Yew::warning()]]
+ * - [[Yew::info()]]
+ * - [[Yew::beginProfile()]]
+ * - [[Yew::endProfile()]]
  *
  * For more details and usage information on Logger, see the [guide article on logging](guide:runtime-logging).
  *

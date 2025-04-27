@@ -9,7 +9,7 @@ namespace Yew\Framework\Db\Mysql;
 
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Exception\InvalidArgumentException;
-use Yew\Framework\Exceptioin\NotSupportedException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Exception;
 use Yew\Framework\Db\Expression;
 use Yew\Framework\Db\Query;

@@ -70,7 +70,7 @@ class AnnotationRoute implements IRoute
             case Dispatcher::NOT_FOUND:
                 $message = "Path not found";
 
-                $debug = Server::$instance->getConfigContext()->get("esd.server.debug");
+                $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
                 if ($debug) {
                     throw new RouteException($message);
                     break;
@@ -153,7 +153,7 @@ class AnnotationRoute implements IRoute
                                 break;
                             }
                             if (!$json = json_decode($request->getBody()->getContents(), true)) {
-                                $this->warning('RequestRawJson errror, raw:' . $request->getBody()->getContents());
+                                $this->warning('RequestRawJson error, raw:' . $request->getBody()->getContents());
                                 throw new RouteException('RawJson Format error');
                             }
                             if (!empty($annotation->value)) {
@@ -177,7 +177,7 @@ class AnnotationRoute implements IRoute
                             }
                             $raw = $request->getBody()->getContents();
                             if (!$xml = simplexml_load_string($raw, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
-                                $this->warning('RequestRawXml errror, raw:' . $request->getBody()->getContents());
+                                $this->warning('RequestRawXml error, raw:' . $request->getBody()->getContents());
                                 throw new RouteException('RawXml Format error');
                             }
                             $params[$annotation->value] = json_decode(json_encode($xml), true);

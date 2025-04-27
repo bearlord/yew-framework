@@ -8,7 +8,7 @@ namespace Yew\Core\Pool;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-abstract class Config extends BaseConfig
+abstract class Config extends BaseConfig implements ConfigInterface
 {
     /**
      * @var string
@@ -27,10 +27,10 @@ abstract class Config extends BaseConfig
 
 
     /**
-     * Config constructor.
-     * @param $name
+     *
+     * @param string $name
      */
-    public function __construct($name)
+    public function __construct(string $name)
     {
         parent::__construct($this->getKey(), true, "name");
         $this->setName($name);

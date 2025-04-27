@@ -7,8 +7,6 @@
 
 namespace Yew\Framework\Db;
 
-use Yew\Framework\Base\StaticInstanceInterface;
-
 /**
  * ActiveRecordInterface.
  *
@@ -58,7 +56,7 @@ interface ActiveRecordInterface
      * @param string $name the name of the attribute
      * @return bool whether the record has an attribute with the specified name.
      */
-    public function hasAttribute(string $name);
+    public function hasAttribute(string $name): bool;
 
     /**
      * Returns the primary key value(s).
@@ -93,7 +91,7 @@ interface ActiveRecordInterface
      * @param array $keys the set of attributes to check
      * @return bool whether the given set of attributes represents the primary key for this model
      */
-    public static function isPrimaryKey(array $keys);
+    public static function isPrimaryKey(array $keys): bool;
 
     /**
      * Creates an [[ActiveQueryInterface]] instance for query purpose.
@@ -150,7 +148,7 @@ interface ActiveRecordInterface
      *
      * @return ActiveQueryInterface the newly created [[ActiveQueryInterface]] instance.
      */
-    public static function find();
+    public static function find(): ActiveQueryInterface;
 
     /**
      * Returns a single active record model instance by a primary key or an array of column values.
@@ -214,7 +212,7 @@ interface ActiveRecordInterface
      * @param mixed $condition primary key value or a set of column values
      * @return static ActiveRecord instance matching the condition, or `null` if nothing matches.
      */
-    public static function findOne($condition);
+    public static function findOne($condition): ActiveRecordInterface;
 
     /**
      * Returns a list of active record models that match the specified primary key value(s) or a set of column values.
@@ -281,7 +279,7 @@ interface ActiveRecordInterface
      * @param mixed $condition primary key value or a set of column values
      * @return array an array of ActiveRecord instance, or an empty array if nothing matches.
      */
-    public static function findAll($condition);
+    public static function findAll($condition): array;
 
     /**
      * Updates records using the provided attribute values and conditions.
@@ -316,7 +314,7 @@ interface ActiveRecordInterface
      * An empty condition will match all records.
      * @return int the number of rows deleted
      */
-    public static function deleteAll(?array $condition = null);
+    public static function deleteAll(?array $condition = null): int;
 
     /**
      * Saves the current record.
@@ -407,7 +405,7 @@ interface ActiveRecordInterface
      * @param static $record record to compare to
      * @return bool whether the two active records refer to the same row in the same database table.
      */
-    public function equals($record): bool;
+    public function equals(ActiveRecordInterface $record): bool;
 
     /**
      * Returns the relation object with the specified name.
@@ -416,9 +414,9 @@ interface ActiveRecordInterface
      * It can be declared in either the ActiveRecord class itself or one of its behaviors.
      * @param string $name the relation name, e.g. `orders` for a relation defined via `getOrders()` method (case-sensitive).
      * @param bool $throwException whether to throw exception if the relation does not exist.
-     * @return ActiveQueryInterface the relational query object
+     * @return ActiveQueryInterface|null the relational query object
      */
-    public function getRelation(string $name, bool $throwException = true);
+    public function getRelation(string $name, bool $throwException = true): ?ActiveQueryInterface;
 
     /**
      * Populates the named relation with the related records.
@@ -447,7 +445,7 @@ interface ActiveRecordInterface
      * This parameter is only meaningful for a relationship involving a junction table
      * (i.e., a relation set with [[ActiveQueryInterface::via()]]).
      */
-    public function link(string $name, $model, array $extraColumns = []);
+    public function link(string $name, ActiveRecordInterface $model, array $extraColumns = []);
 
     /**
      * Destroys the relationship between two records.
@@ -461,7 +459,7 @@ interface ActiveRecordInterface
      * If false, the model's foreign key will be set `null` and saved.
      * If true, the model containing the foreign key will be deleted.
      */
-    public function unlink(string $name, $model, bool $delete = false);
+    public function unlink(string $name, ActiveRecordInterface $model, bool $delete = false);
 
     /**
      * Returns the connection used by this AR class.

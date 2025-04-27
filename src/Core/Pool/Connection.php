@@ -25,13 +25,13 @@ abstract class Connection implements ConnectionInterface
     /**
      * @var Config
      */
-    protected Config $config;
+    protected ConfigInterface $config;
 
     /**
      * @param PoolInterface $pool
-     * @param Config $config
+     * @param ConfigInterface $config
      */
-    public function __construct(PoolInterface $pool, Config $config)
+    public function __construct(PoolInterface $pool, ConfigInterface $config)
     {
         $this->pool = $pool;
         $this->config = $config;
