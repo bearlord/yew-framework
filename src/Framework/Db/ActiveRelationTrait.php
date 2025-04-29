@@ -17,8 +17,8 @@ use Yew\Framework\Exception\InvalidConfigException;
  * @author Carsten Brandt <mail@cebe.cc>
  * @since 2.0
  *
- * @method ActiveRecordInterface one()
- * @method ActiveRecordInterface[] all()
+ * @method ActiveRecordInterface|null one()
+ * @method ActiveRecordInterface[]|null all()
  * @property ActiveRecord $modelClass
  */
 trait ActiveRelationTrait
@@ -31,10 +31,10 @@ trait ActiveRelationTrait
      */
     public bool $multiple;
     /**
-     * @var ActiveRecord the primary model of a relational query.
+     * @var ActiveRecord|null the primary model of a relational query.
      * This is used only in lazy loading with dynamic query options.
      */
-    public ActiveRecord $primaryModel;
+    public ?ActiveRecord $primaryModel = null;
     /**
      * @var array the columns of the primary and foreign tables that establish a relation.
      * The array keys must be columns of the table for this relation, and the array values
@@ -102,7 +102,7 @@ trait ActiveRelationTrait
      * Its signature should be `function($query)`, where `$query` is the query to be customized.
      * @return $this the relation object itself.
      */
-    public function via(string $relationName, ?callable $callable = null)
+    public function via(string $relationName, ?callable $callable = null): ActiveRelationTrait
     {
         $relation = $this->primaryModel->getRelation($relationName);
         $callableUsed = $callable !== null;

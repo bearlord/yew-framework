@@ -27,7 +27,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * @var array mapping from abstract column types (keys) to physical column types (values).
      */
-    public $typeMap = [
+    public array $typeMap = [
         Schema::TYPE_PK => 'NUMBER(10) NOT NULL PRIMARY KEY',
         Schema::TYPE_UPK => 'NUMBER(10) UNSIGNED NOT NULL PRIMARY KEY',
         Schema::TYPE_BIGPK => 'NUMBER(20) NOT NULL PRIMARY KEY',

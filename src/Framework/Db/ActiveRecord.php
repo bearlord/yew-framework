@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Db;
 
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Yew;
 use Yew\Framework\Base\Application;
 use Yew\Framework\Exception\InvalidArgumentException;
@@ -71,8 +72,8 @@ use Yew\Framework\Helpers\StringHelper;
  *
  * For more details and usage information on ActiveRecord, see the [guide article on ActiveRecord](guide:db-active-record).
  *
- * @method ActiveQuery hasMany($class, array $link) see [[BaseActiveRecord::hasMany()]] for more info
- * @method ActiveQuery hasOne($class, array $link) see [[BaseActiveRecord::hasOne()]] for more info
+ * @method ActiveQuery hasMany(string $class, array array $link) see [[BaseActiveRecord::hasMany()]] for more info
+ * @method ActiveQuery hasOne(string $class, array array $link) see [[BaseActiveRecord::hasOne()]] for more info
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Carsten Brandt <mail@cebe.cc>
@@ -113,8 +114,12 @@ class ActiveRecord extends BaseActiveRecord
      * @param bool $skipIfSet whether existing value should be preserved.
      * This will only set defaults for attributes that are `null`.
      * @return $this the model instance itself.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
-    public function loadDefaultValues($skipIfSet = true)
+    public function loadDefaultValues(bool $skipIfSet = true): ActiveRecord
     {
         foreach (static::getTableSchema()->columns as $column) {
             if ($column->defaultValue !== null && (!$skipIfSet || $this->{$column->name} === null)) {
@@ -130,8 +135,11 @@ class ActiveRecord extends BaseActiveRecord
      * By default, the "db" application component is used as the database connection.
      * You may override this method if you want to use a different database connection.
      * @return Connection the database connection used by this AR class.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
-    public static function getDb()
+    public static function getDb(): Connection
     {
         return Application::instance()->getDb();
     }
@@ -153,8 +161,9 @@ class ActiveRecord extends BaseActiveRecord
      * @param string $sql the SQL statement to be executed
      * @param array $params parameters to be bound to the SQL statement during execution.
      * @return ActiveQuery the newly created [[ActiveQuery]] instance
+     * @throws InvalidConfigException
      */
-    public static function findBySql($sql, $params = [])
+    public static function findBySql(string $sql, array $params = []): ActiveQuery
     {
         $query = static::find();
         $query->sql = $sql;
@@ -167,10 +176,13 @@ class ActiveRecord extends BaseActiveRecord
      * This method is internally called by [[findOne()]] and [[findAll()]].
      * @param mixed $condition please refer to [[findOne()]] for the explanation of this parameter
      * @return ActiveQueryInterface the newly created [[ActiveQueryInterface|ActiveQuery]] instance.
+     * @throws Exception
      * @throws InvalidConfigException if there is no primary key defined.
+     * @throws NotSupportedException
+     * @throws \Throwable
      * @internal
      */
-    protected static function findByCondition($condition)
+    protected static function findByCondition($condition): ActiveQueryInterface
     {
         $query = static::find();
 
@@ -204,7 +216,7 @@ class ActiveRecord extends BaseActiveRecord
      * @since 2.0.17
      * @internal
      */
-    protected static function filterValidAliases(Query $query)
+    protected static function filterValidAliases(Query $query): array
     {
         $tables = $query->getTablesUsedInFrom();
 
@@ -223,12 +235,14 @@ class ActiveRecord extends BaseActiveRecord
      * @param array $condition condition to filter.
      * @param array $aliases
      * @return array filtered condition.
-     * @throws InvalidArgumentException in case array contains unsafe values.
+     * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      * @since 2.0.15
      * @internal
      */
-    protected static function filterCondition(array $condition, array $aliases = [])
+    protected static function filterCondition(array $condition, array $aliases = []): array
     {
         $result = [];
         $db = static::getDb();
@@ -250,11 +264,14 @@ class ActiveRecord extends BaseActiveRecord
      * @param Connection $db
      * @param array $aliases
      * @return array
+     * @throws Exception
      * @throws InvalidConfigException
+     * @throws \Throwable
+     * @throws NotSupportedException
      * @since 2.0.17
      * @internal
      */
-    protected static function filterValidColumnNames($db, array $aliases)
+    protected static function filterValidColumnNames(Connection $db, array $aliases): array
     {
         $columnNames = [];
         $tableName = static::tableName();
@@ -277,8 +294,9 @@ class ActiveRecord extends BaseActiveRecord
 
     /**
      * {@inheritdoc}
+     * @throws \Exception
      */
-    public function refresh()
+    public function refresh(): bool
     {
         $query = static::find();
         $tableName = key($query->getTablesUsedInFrom());
@@ -324,8 +342,11 @@ class ActiveRecord extends BaseActiveRecord
      * Please refer to [[Query::where()]] on how to specify this parameter.
      * @param array $params the parameters (name => value) to be bound to the query.
      * @return int the number of rows updated
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
-    public static function updateAll($attributes, $condition = '', $params = []): int
+    public static function updateAll(array $attributes, $condition = '', array $params = []): int
     {
         $command = static::getDb()->createCommand();
         $command->update(static::tableName(), $attributes, $condition, $params);
@@ -348,12 +369,14 @@ class ActiveRecord extends BaseActiveRecord
      * Use negative values if you want to decrement the counters.
      * @param string|array $condition the conditions that will be put in the WHERE part of the UPDATE SQL.
      * Please refer to [[Query::where()]] on how to specify this parameter.
-     * @param array|null $params the parameters (name => value) to be bound to the query.
+     * @param array $params the parameters (name => value) to be bound to the query.
      * Do not name the parameters as `:bp0`, `:bp1`, etc., because they are used internally by this method.
      * @return int the number of rows updated
-     * @throws \Yew\Framework\Db\Exception
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
-    public static function updateAllCounters($counters, $condition = '', ?array $params = []): int
+    public static function updateAllCounters(array $counters, $condition = '', array $params = []): int
     {
         $n = 0;
         foreach ($counters as $name => $value) {
@@ -394,7 +417,9 @@ class ActiveRecord extends BaseActiveRecord
      * Please refer to [[Query::where()]] on how to specify this parameter.
      * @param array|null $params the parameters (name => value) to be bound to the query.
      * @return int the number of rows deleted
-     * @throws \Yew\Framework\Db\Exception
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
     public static function deleteAll($condition = null, ?array $params = []): int
     {
@@ -407,7 +432,7 @@ class ActiveRecord extends BaseActiveRecord
     /**
      * {@inheritdoc}
      * @return ActiveQuery the newly created [[ActiveQuery]] instance.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws InvalidConfigException
      */
     public static function find(): ActiveQuery
     {
@@ -430,7 +455,10 @@ class ActiveRecord extends BaseActiveRecord
     /**
      * Returns the schema information of the DB table associated with this AR class.
      * @return TableSchema the schema information of the DB table associated with this AR class.
+     * @throws Exception
      * @throws InvalidConfigException if the table for the AR class does not exist.
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public static function getTableSchema(): TableSchema
     {
@@ -457,6 +485,10 @@ class ActiveRecord extends BaseActiveRecord
      * Note that an array should be returned even for a table with single primary key.
      *
      * @return string[] the primary keys of the associated database table.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public static function primaryKey(): ?array
     {
@@ -467,6 +499,10 @@ class ActiveRecord extends BaseActiveRecord
      * Returns the list of all attribute names of the model.
      * The default implementation will return all column names of the table associated with this AR class.
      * @return array list of attribute names.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function attributes(): array
     {
@@ -508,7 +544,7 @@ class ActiveRecord extends BaseActiveRecord
     /**
      * {@inheritdoc}
      */
-    public static function populateRecord($record, $row)
+    public static function populateRecord(BaseActiveRecord $record, array $row)
     {
         $columns = static::getTableSchema()->columns;
         foreach ($row as $name => $value) {
@@ -588,11 +624,15 @@ class ActiveRecord extends BaseActiveRecord
 
     /**
      * Inserts an ActiveRecord into DB without considering transaction.
-     * @param array $attributes list of attributes that need to be saved. Defaults to `null`,
+     * @param null $attributes list of attributes that need to be saved. Defaults to `null`,
      * meaning all attributes that are loaded from DB will be saved.
      * @return bool whether the record is inserted successfully.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
-    protected function insertInternal($attributes = null)
+    protected function insertInternal($attributes = null): bool
     {
         if (!$this->beforeSave(true)) {
             return false;
@@ -738,7 +778,10 @@ class ActiveRecord extends BaseActiveRecord
      * Deletes an ActiveRecord without considering transaction.
      * @return int|false the number of rows deleted, or `false` if the deletion is unsuccessful for some reason.
      * Note that it is possible the number of rows deleted is 0, even though the deletion execution is successful.
+     * @throws Exception
+     * @throws InvalidConfigException
      * @throws StaleObjectException
+     * @throws \Throwable
      */
     protected function deleteInternal()
     {
@@ -784,7 +827,7 @@ class ActiveRecord extends BaseActiveRecord
      * @param int $operation the operation to check. Possible values are [[OP_INSERT]], [[OP_UPDATE]] and [[OP_DELETE]].
      * @return bool whether the specified operation is transactional in the current [[scenario]].
      */
-    public function isTransactional($operation)
+    public function isTransactional(int $operation): bool
     {
         $scenario = $this->getScenario();
         $transactions = $this->transactions();

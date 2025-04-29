@@ -42,7 +42,7 @@ class HashCondition implements ConditionInterface
     /**
      * {@inheritdoc}
      */
-    public static function fromArrayDefinition(string $operator, array $operands)
+    public static function fromArrayDefinition(string $operator, array $operands): ConditionInterface
     {
         return new static($operands);
     }

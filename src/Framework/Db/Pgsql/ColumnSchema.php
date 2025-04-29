@@ -21,7 +21,7 @@ class ColumnSchema extends \Yew\Framework\Db\ColumnSchema
     /**
      * @var int the dimension of array. Defaults to 0, means this column is not an array.
      */
-    public $dimension = 0;
+    public int $dimension = 0;
     /**
      * @var bool whether the column schema should OMIT using JSON support feature.
      * You can use this property to make upgrade to Yii 2.0.14 easier.
@@ -30,7 +30,7 @@ class ColumnSchema extends \Yew\Framework\Db\ColumnSchema
      * @since 2.0.14.1
      * @deprecated Since 2.0.14.1 and will be removed in 2.1.
      */
-    public $disableJsonSupport = false;
+    public bool $disableJsonSupport = false;
     /**
      * @var bool whether the column schema should OMIT using PgSQL Arrays support feature.
      * You can use this property to make upgrade to Yii 2.0.14 easier.
@@ -39,7 +39,7 @@ class ColumnSchema extends \Yew\Framework\Db\ColumnSchema
      * @since 2.0.14.1
      * @deprecated Since 2.0.14.1 and will be removed in 2.1.
      */
-    public $disableArraySupport = false;
+    public bool $disableArraySupport = false;
     /**
      * @var bool whether the Array column value should be unserialized to an [[ArrayExpression]] object.
      * You can use this property to make upgrade to Yii 2.0.14 easier.
@@ -48,18 +48,18 @@ class ColumnSchema extends \Yew\Framework\Db\ColumnSchema
      * @since 2.0.14.1
      * @deprecated Since 2.0.14.1 and will be removed in 2.1.
      */
-    public $deserializeArrayColumnToArrayExpression = true;
+    public bool $deserializeArrayColumnToArrayExpression = true;
     /**
      * @var string name of associated sequence if column is auto-incremental
      * @since 2.0.29
      */
-    public $sequenceName;
+    public string $sequenceName;
 
 
     /**
      * {@inheritdoc}
      */
-    public function dbTypecast($value)
+    public function dbTypecast($value = null)
     {
         if ($value === null) {
             return $value;
@@ -115,7 +115,7 @@ class ColumnSchema extends \Yew\Framework\Db\ColumnSchema
      * @param string|null $value
      * @return bool|mixed|null
      */
-    protected function phpTypecastValue($value)
+    protected function phpTypecastValue(?string $value)
     {
         if ($value === null) {
             return null;

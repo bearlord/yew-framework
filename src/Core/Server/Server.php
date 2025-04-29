@@ -845,7 +845,6 @@ abstract class Server
 
     /**
      * @return LoggerInterface
-     * @throws Exception
      */
     public function getLog(): LoggerInterface
     {

@@ -22,7 +22,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * @var array mapping from abstract column types (keys) to physical column types (values).
      */
-    public $typeMap = [
+    public array $typeMap = [
         Schema::TYPE_PK => 'int IDENTITY PRIMARY KEY',
         Schema::TYPE_UPK => 'int IDENTITY PRIMARY KEY',
         Schema::TYPE_BIGPK => 'bigint IDENTITY PRIMARY KEY',

@@ -45,7 +45,7 @@ class Command extends \Yew\Framework\Db\Command
     /**
      * {@inheritdoc}
      */
-    protected function queryInternal($method, $fetchMode = null)
+    protected function queryInternal(string $method, int $fetchMode = null)
     {
         $sql = $this->getSql();
         $params = $this->params;
@@ -73,7 +73,7 @@ class Command extends \Yew\Framework\Db\Command
      * @param array $params
      * @return string[]|false
      */
-    private function splitStatements($sql, $params)
+    private function splitStatements(string $sql, array $params)
     {
         $semicolonIndex = strpos($sql, ';');
         if ($semicolonIndex === false || $semicolonIndex === StringHelper::byteLength($sql) - 1) {
@@ -99,7 +99,7 @@ class Command extends \Yew\Framework\Db\Command
      * @param array $params
      * @return array
      */
-    private function extractUsedParams(SqlToken $statement, $params)
+    private function extractUsedParams(SqlToken $statement, array $params): array
     {
         preg_match_all('/(?P<placeholder>[:][a-zA-Z0-9_]+)/', $statement->getSql(), $matches, PREG_SET_ORDER);
         $result = [];

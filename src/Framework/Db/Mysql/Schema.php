@@ -34,15 +34,15 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      */
     public $columnSchemaClass = 'Yew\Framework\Db\Mysql\ColumnSchema';
     /**
-     * @var bool whether MySQL used is older than 5.1.
+     * @var bool|null whether MySQL used is older than 5.1.
      */
-    private $_oldMysql;
+    private ?bool $_oldMysql = null;
 
 
     /**
      * @var array mapping from physical column types (keys) to abstract column types (values)
      */
-    public $typeMap = [
+    public array $typeMap = [
         'tinyint' => self::TYPE_TINYINT,
         'bit' => self::TYPE_INTEGER,
         'smallint' => self::TYPE_SMALLINT,
@@ -103,6 +103,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      */
     protected function findTableNames(string $schema = ''): array
     {
@@ -116,6 +117,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
 
     /**
      * {@inheritdoc}
+     * @throws \Exception
      */
     protected function loadTableSchema(string $name): ?TableSchema
     {
@@ -148,8 +150,10 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
 
     /**
      * {@inheritdoc}
+     * @throws Exception
+     * @throws NotSupportedException
      */
-    protected function loadTableIndexes($tableName)
+    protected function loadTableIndexes($tableName): array
     {
         static $sql = <<<'SQL'
 SELECT
@@ -222,7 +226,7 @@ SQL;
      * @param TableSchema $table the table metadata object
      * @param string $name the table name
      */
-    protected function resolveTableNames($table, $name)
+    protected function resolveTableNames(TableSchema $table, string $name)
     {
         $parts = explode('.', str_replace('`', '', $name));
         if (isset($parts[1])) {
@@ -240,7 +244,7 @@ SQL;
      * @return ColumnSchema the column schema object
      * @throws InvalidConfigException
      */
-    protected function loadColumnSchema($info)
+    protected function loadColumnSchema(array $info): ColumnSchema
     {
         $column = $this->createColumnSchema();
 
@@ -313,7 +317,7 @@ SQL;
      * @return bool whether the table exists in the database
      * @throws \Exception if DB query fails
      */
-    protected function findColumns($table): bool
+    protected function findColumns(TableSchema $table): bool
     {
         $sql = 'SHOW FULL COLUMNS FROM ' . $this->quoteTableName($table->fullName);
         try {
@@ -350,7 +354,7 @@ SQL;
      * @return string $sql the result of 'SHOW CREATE TABLE'
      * @throws Exception
      */
-    protected function getCreateTableSql($table)
+    protected function getCreateTableSql(TableSchema $table): string
     {
         $row = $this->db->createCommand('SHOW CREATE TABLE ' . $this->quoteTableName($table->fullName))->queryOne();
         if (isset($row['Create Table'])) {
@@ -442,6 +446,7 @@ SQL;
      *
      * @param TableSchema $table the table metadata
      * @return array all unique indexes for the given table.
+     * @throws Exception
      */
     public function findUniqueIndexes(TableSchema $table): array
     {
@@ -470,11 +475,9 @@ SQL;
 
     /**
      * @return bool whether the version of the MySQL being used is older than 5.1.
-     * @throws InvalidConfigException
-     * @throws Exception
      * @since 2.0.13
      */
-    protected function isOldMysql()
+    protected function isOldMysql(): ?bool
     {
         if ($this->_oldMysql === null) {
             $version = $this->db->getSlavePdo()->getAttribute(\PDO::ATTR_SERVER_VERSION);

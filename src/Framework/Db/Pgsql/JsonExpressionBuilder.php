@@ -8,6 +8,7 @@
 namespace Yew\Framework\Db\Pgsql;
 
 use Yew\Framework\Db\ArrayExpression;
+use Yew\Framework\Db\Exception;
 use Yew\Framework\Db\ExpressionBuilderInterface;
 use Yew\Framework\Db\ExpressionBuilderTrait;
 use Yew\Framework\Db\ExpressionInterface;
@@ -29,8 +30,9 @@ class JsonExpressionBuilder implements ExpressionBuilderInterface
     /**
      * {@inheritdoc}
      * @param JsonExpression|ExpressionInterface $expression the expression to be built
+     * @throws Exception
      */
-    public function build(ExpressionInterface $expression, array &$params = [])
+    public function build(ExpressionInterface $expression, array &$params = []): string
     {
         $value = $expression->getValue();
 
@@ -51,7 +53,7 @@ class JsonExpressionBuilder implements ExpressionBuilderInterface
      * @param JsonExpression $expression
      * @return string the typecast expression based on [[type]].
      */
-    protected function getTypecast(JsonExpression $expression)
+    protected function getTypecast(JsonExpression $expression): string
     {
         if ($expression->getType() === null) {
             return '';

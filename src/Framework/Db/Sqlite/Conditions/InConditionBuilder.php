@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Db\Sqlite\conditions;
 
+use Yew\Framework\Db\Query;
 use Yew\Framework\Exception\NotSupportedException;
 
 /**
@@ -21,7 +22,7 @@ class InConditionBuilder extends \Yew\Framework\Db\Conditions\InConditionBuilder
      * {@inheritdoc}
      * @throws NotSupportedException if `$columns` is an array
      */
-    protected function buildSubqueryInCondition($operator, $columns, $values, &$params)
+    protected function buildSubqueryInCondition(string $operator, $columns, Query $values, array &$params)
     {
         if (is_array($columns)) {
             throw new NotSupportedException(__METHOD__ . ' is not supported by SQLite.');
@@ -33,7 +34,7 @@ class InConditionBuilder extends \Yew\Framework\Db\Conditions\InConditionBuilder
     /**
      * {@inheritdoc}
      */
-    protected function buildCompositeInCondition($operator, $columns, $values, &$params)
+    protected function buildCompositeInCondition(string $operator, $columns, array $values, array &$params)
     {
         $quotedColumns = [];
         foreach ($columns as $i => $column) {

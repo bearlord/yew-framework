@@ -8,6 +8,7 @@
 namespace Yew\Framework\Db;
 
 use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\NotSupportedException;
 
 /**
  * ActiveQuery represents a DB query associated with an Active Record class.
@@ -84,7 +85,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @var string the SQL statement to be executed for retrieving AR records.
      * This is set by [[ActiveRecord::findBySql()]].
      */
-    public string $sql;
+    public ?string $sql = null;
     /**
      * @var string|array the join condition to be used when this query is used in a relational context.
      * The condition will be used in the ON part when [[ActiveQuery::joinWith()]] is called.
@@ -94,9 +95,9 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      */
     public $on;
     /**
-     * @var array a list of relations that this query should be joined with
+     * @var array|null a list of relations that this query should be joined with
      */
-    public array $joinWith;
+    public ?array $joinWith = null;
 
 
     /**
@@ -298,6 +299,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @return ActiveRecord|array|null a single row of query result. Depending on the setting of [[asArray]],
      * the query result may be either an array or an ActiveRecord object. `null` will be returned
      * if the query results in nothing.
+     * @throws \Exception
      */
     public function one(?Connection $db = null)
     {
@@ -316,6 +318,9 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * If `null`, the DB connection returned by [[modelClass]] will be used.
      * @return Command the created DB command instance.
      * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
+     * @throws NotSupportedException
      */
     public function createCommand(?Connection $db = null): Command
     {
@@ -340,6 +345,8 @@ class ActiveQuery extends Query implements ActiveQueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     protected function queryScalar($selectExpression, ?Connection $db)
     {
@@ -450,6 +457,9 @@ class ActiveQuery extends Query implements ActiveQueryInterface
         return $this;
     }
 
+    /**
+     * @throws InvalidConfigException
+     */
     private function buildJoinWith()
     {
         $join = $this->join;
@@ -516,6 +526,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @param ActiveRecord $model the primary model
      * @param array $with the relations to be joined
      * @param string|array $joinType the join type
+     * @throws InvalidConfigException
      */
     private function joinWithRelations(ActiveRecord $model, array $with, $joinType)
     {

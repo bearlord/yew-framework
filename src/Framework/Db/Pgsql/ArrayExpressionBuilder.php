@@ -8,6 +8,7 @@
 namespace Yew\Framework\Db\Pgsql;
 
 use Yew\Framework\Db\ArrayExpression;
+use Yew\Framework\Db\Exception;
 use Yew\Framework\Db\ExpressionBuilderInterface;
 use Yew\Framework\Db\ExpressionBuilderTrait;
 use Yew\Framework\Db\ExpressionInterface;
@@ -30,7 +31,7 @@ class ArrayExpressionBuilder implements ExpressionBuilderInterface
      * @param ArrayExpression|ExpressionInterface $expression the expression to be built
      * @param array $params
      * @return string
-     * @throws \Yew\Framework\Db\Exception
+     * @throws Exception
      */
     public function build(ExpressionInterface $expression, array &$params = []): string
     {
@@ -54,6 +55,7 @@ class ArrayExpressionBuilder implements ExpressionBuilderInterface
      * @param ExpressionInterface|ArrayExpression $expression
      * @param array $params the binding parameters.
      * @return array
+     * @throws Exception
      */
     protected function buildPlaceholders(ExpressionInterface $expression, array &$params): array
     {
@@ -95,7 +97,7 @@ class ArrayExpressionBuilder implements ExpressionBuilderInterface
      * @param mixed $value
      * @return ArrayExpression
      */
-    private function unnestArrayExpression(ArrayExpression $expression, $value)
+    private function unnestArrayExpression(ArrayExpression $expression, $value): ArrayExpression
     {
         $expressionClass = get_class($expression);
 
@@ -106,7 +108,7 @@ class ArrayExpressionBuilder implements ExpressionBuilderInterface
      * @param ArrayExpression $expression
      * @return string the typecast expression based on [[type]].
      */
-    protected function getTypehint(ArrayExpression $expression)
+    protected function getTypehint(ArrayExpression $expression): string
     {
         if ($expression->getType() === null) {
             return '';
@@ -125,7 +127,7 @@ class ArrayExpressionBuilder implements ExpressionBuilderInterface
      * @param ArrayExpression $expression
      * @return string the subquery array expression.
      */
-    protected function buildSubqueryArray($sql, ArrayExpression $expression)
+    protected function buildSubqueryArray(string $sql, ArrayExpression $expression): string
     {
         return 'ARRAY(' . $sql . ')' . $this->getTypehint($expression);
     }
@@ -135,7 +137,7 @@ class ArrayExpressionBuilder implements ExpressionBuilderInterface
      *
      * @param ArrayExpression $expression
      * @param mixed $value
-     * @return JsonExpression
+     * @return ExpressionInterface
      */
     protected function typecastValue(ArrayExpression $expression, $value)
     {

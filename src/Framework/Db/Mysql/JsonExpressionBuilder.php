@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Db\Mysql;
 
+use Yew\Framework\Db\Exception;
 use Yew\Framework\Db\ExpressionBuilderInterface;
 use Yew\Framework\Db\ExpressionBuilderTrait;
 use Yew\Framework\Db\ExpressionInterface;
@@ -31,8 +32,9 @@ class JsonExpressionBuilder implements ExpressionBuilderInterface
      * {@inheritdoc}
      * @param JsonExpression|ExpressionInterface $expression the expression to be built
      * @param array|null $params
+     * @throws Exception
      */
-    public function build(ExpressionInterface $expression, ?array &$params = [])
+    public function build(ExpressionInterface $expression, ?array &$params = []): string
     {
         $value = $expression->getValue();
 

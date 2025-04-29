@@ -275,21 +275,21 @@ class Security
         if (function_exists('hash_hkdf')) {
             $outputKey = hash_hkdf($algo, $inputKey, $length, $info, $salt);
             if ($outputKey === false) {
-                throw new InvalidParamException('Invalid parameters to hash_hkdf()');
+                throw new InvalidArgumentException('Invalid parameters to hash_hkdf()');
             }
             return $outputKey;
         }
 
         $test = @hash_hmac($algo, '', '', true);
         if (!$test) {
-            throw new InvalidParamException('Failed to generate HMAC with hash algorithm: ' . $algo);
+            throw new InvalidArgumentException('Failed to generate HMAC with hash algorithm: ' . $algo);
         }
         $hashLength = StringHelper::byteLength($test);
         if (is_string($length) && preg_match('{^\d{1,16}$}', $length)) {
             $length = (int) $length;
         }
         if (!is_int($length) || $length < 0 || $length > 255 * $hashLength) {
-            throw new InvalidParamException('Invalid length');
+            throw new InvalidArgumentException('Invalid length');
         }
         $blocks = $length !== 0 ? ceil($length / $hashLength) : 1;
 
@@ -330,7 +330,7 @@ class Security
         if (function_exists('hash_pbkdf2')) {
             $outputKey = hash_pbkdf2($algo, $password, $salt, $iterations, $length, true);
             if ($outputKey === false) {
-                throw new InvalidParamException('Invalid parameters to hash_pbkdf2()');
+                throw new InvalidArgumentException('Invalid parameters to hash_pbkdf2()');
             }
             return $outputKey;
         }
@@ -338,19 +338,19 @@ class Security
         // todo: is there a nice way to reduce the code repetition in hkdf() and pbkdf2()?
         $test = @hash_hmac($algo, '', '', true);
         if (!$test) {
-            throw new InvalidParamException('Failed to generate HMAC with hash algorithm: ' . $algo);
+            throw new InvalidArgumentException('Failed to generate HMAC with hash algorithm: ' . $algo);
         }
         if (is_string($iterations) && preg_match('{^\d{1,16}$}', $iterations)) {
             $iterations = (int) $iterations;
         }
         if (!is_int($iterations) || $iterations < 1) {
-            throw new InvalidParamException('Invalid iterations');
+            throw new InvalidArgumentException('Invalid iterations');
         }
         if (is_string($length) && preg_match('{^\d{1,16}$}', $length)) {
             $length = (int) $length;
         }
         if (!is_int($length) || $length < 0) {
-            throw new InvalidParamException('Invalid length');
+            throw new InvalidArgumentException('Invalid length');
         }
         $hashLength = StringHelper::byteLength($test);
         $blocks = $length !== 0 ? ceil($length / $hashLength) : 1;
@@ -448,11 +448,11 @@ class Security
     public function generateRandomKey($length = 32)
     {
         if (!is_int($length)) {
-            throw new InvalidParamException('First parameter ($length) must be an integer');
+            throw new InvalidArgumentException('First parameter ($length) must be an integer');
         }
 
         if ($length < 1) {
-            throw new InvalidParamException('First parameter ($length) must be greater than 0');
+            throw new InvalidArgumentException('First parameter ($length) must be greater than 0');
         }
 
         // always use random_bytes() if it is available
@@ -549,11 +549,11 @@ class Security
     public function generateRandomString($length = 32)
     {
         if (!is_int($length)) {
-            throw new InvalidParamException('First parameter ($length) must be an integer');
+            throw new InvalidArgumentException('First parameter ($length) must be an integer');
         }
 
         if ($length < 1) {
-            throw new InvalidParamException('First parameter ($length) must be greater than 0');
+            throw new InvalidArgumentException('First parameter ($length) must be greater than 0');
         }
 
         $bytes = $this->generateRandomKey($length);
@@ -624,14 +624,14 @@ class Security
     public function validatePassword($password, $hash)
     {
         if (!is_string($password) || $password === '') {
-            throw new InvalidParamException('Password must be a string and cannot be empty.');
+            throw new InvalidArgumentException('Password must be a string and cannot be empty.');
         }
 
         if (!preg_match('/^\$2[axy]\$(\d\d)\$[\.\/0-9A-Za-z]{22}/', $hash, $matches)
             || $matches[1] < 4
             || $matches[1] > 30
         ) {
-            throw new InvalidParamException('Hash is invalid.');
+            throw new InvalidArgumentException('Hash is invalid.');
         }
 
         if (function_exists('password_verify')) {
@@ -663,7 +663,7 @@ class Security
     {
         $cost = (int) $cost;
         if ($cost < 4 || $cost > 31) {
-            throw new InvalidParamException('Cost must be between 4 and 31.');
+            throw new InvalidArgumentException('Cost must be between 4 and 31.');
         }
 
         // Get a 20-byte random string

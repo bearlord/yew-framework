@@ -45,7 +45,7 @@ class NotCondition implements ConditionInterface
      * {@inheritdoc}
      * @throws InvalidArgumentException if wrong number of operands have been given.
      */
-    public static function fromArrayDefinition(string $operator, array $operands)
+    public static function fromArrayDefinition(string $operator, array $operands): ConditionInterface
     {
         if (count($operands) !== 1) {
             throw new InvalidArgumentException("Operator '$operator' requires exactly one operand.");

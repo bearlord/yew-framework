@@ -8,6 +8,7 @@
 namespace Yew\Framework\Db\Cubrid;
 
 use Yew\Framework\Exception\InvalidArgumentException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\Exception;
@@ -24,7 +25,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * @var array mapping from abstract column types (keys) to physical column types (values).
      */
-    public $typeMap = [
+    public array $typeMap = [
         Schema::TYPE_PK => 'int NOT NULL AUTO_INCREMENT PRIMARY KEY',
         Schema::TYPE_UPK => 'int UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
         Schema::TYPE_BIGPK => 'bigint NOT NULL AUTO_INCREMENT PRIMARY KEY',
@@ -62,6 +63,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * {@inheritdoc}
      * @see https://www.cubrid.org/manual/en/9.3.0/sql/query/merge.html
+     * @throws Exception|InvalidConfigException
      */
     public function upsert(string $table, $insertColumns, $updateColumns, array &$params): string
     {
@@ -119,30 +121,32 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * Creates a SQL statement for resetting the sequence value of a table's primary key.
      * The sequence will be reset such that the primary key of the next new row inserted
      * will have the specified value or 1.
-     * @param string $table the name of the table whose primary key sequence will be reset
+     * @param string $tableName the name of the table whose primary key sequence will be reset
      * @param mixed $value the value for the primary key of the next new row inserted. If this is not set,
      * the next new row's primary key will have a value 1.
      * @return string the SQL statement for resetting sequence
-     * @throws InvalidArgumentException if the table does not exist or there is no sequence associated with the table.
+     * @throws Exception
+     * @throws NotSupportedException
+     * @throws InvalidConfigException
      */
-    public function resetSequence(string $table, $value = null): string
+    public function resetSequence(string $tableName, $value = null): string
     {
-        $table = $this->db->getTableSchema($table);
+        $table = $this->db->getTableSchema($tableName);
         if ($table !== null && $table->sequenceName !== null) {
-            $table = $this->db->quoteTableName($table);
+            $tableName = $this->db->quoteTableName($tableName);
             if ($value === null) {
                 $key = reset($table->primaryKey);
-                $value = (int) $this->db->createCommand("SELECT MAX(`$key`) FROM " . $this->db->schema->quoteTableName($table))->queryScalar() + 1;
+                $value = (int) $this->db->createCommand("SELECT MAX(`$key`) FROM " . $this->db->schema->quoteTableName($tableName))->queryScalar() + 1;
             } else {
                 $value = (int) $value;
             }
 
-            return 'ALTER TABLE ' . $this->db->schema->quoteTableName($table) . " AUTO_INCREMENT=$value;";
+            return 'ALTER TABLE ' . $this->db->schema->quoteTableName($tableName) . " AUTO_INCREMENT=$value;";
         } elseif ($table === null) {
-            throw new InvalidArgumentException("Table not found: $table");
+            throw new InvalidArgumentException("Table not found: $tableName");
         }
 
-        throw new InvalidArgumentException("There is not sequence associated with table '$table'.");
+        throw new InvalidArgumentException("There is not sequence associated with table '$tableName'.");
     }
 
     /**
@@ -178,6 +182,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * {@inheritdoc}
      * @see http://www.cubrid.org/manual/93/en/sql/schema/table.html#drop-index-clause
+     * @throws NotSupportedException
      */
     public function dropIndex(string $name, string $table): string
     {
@@ -212,6 +217,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      * @since 2.0.8
      */
     public function addCommentOnColumn(string $table, string $column, string $comment): string
@@ -237,6 +243,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      * @since 2.0.8
      */
     public function dropCommentFromColumn(string $table, string $column): string
@@ -263,7 +270,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @throws Exception in case when table does not contain column
      * @since 2.0.8
      */
-    private function getColumnDefinition($table, $column)
+    private function getColumnDefinition($table, $column): ?string
     {
         $row = $this->db->createCommand('SHOW CREATE TABLE ' . $this->db->quoteTableName($table))->queryOne();
         if ($row === false) {

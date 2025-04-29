@@ -32,7 +32,7 @@ class LikeCondition extends SimpleCondition
      * If it is an empty array the generated expression will  be a `false` value if operator is `LIKE` or `OR LIKE`
      * and empty if operator is `NOT LIKE` or `OR NOT LIKE`.
      */
-    public function __construct($column, $operator, $value)
+    public function __construct($column, string $operator, $value)
     {
         parent::__construct($column, $operator, $value);
     }
@@ -62,7 +62,7 @@ class LikeCondition extends SimpleCondition
      * {@inheritdoc}
      * @throws InvalidArgumentException if wrong number of operands have been given.
      */
-    public static function fromArrayDefinition(string $operator, array $operands)
+    public static function fromArrayDefinition(string $operator, array $operands): ConditionInterface
     {
         if (!isset($operands[0], $operands[1])) {
             throw new InvalidArgumentException("Operator '$operator' requires two operands.");

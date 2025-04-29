@@ -19,16 +19,16 @@ class ArrayParser
     /**
      * @var string Character used in array
      */
-    private $delimiter = ',';
+    private string $delimiter = ',';
 
 
     /**
      * Convert array from PostgreSQL to PHP
      *
-     * @param string $value string to be converted
+     * @param string|null $value string to be converted
      * @return array|null
      */
-    public function parse($value)
+    public function parse(?string $value = null): ?array
     {
         if ($value === null) {
             return null;
@@ -48,7 +48,7 @@ class ArrayParser
      * @param int $i parse starting position
      * @return array
      */
-    private function parseArray($value, &$i = 0)
+    private function parseArray(string $value, int &$i = 0): array
     {
         $result = [];
         $len = strlen($value);
@@ -82,7 +82,7 @@ class ArrayParser
      * @param int $i parse starting position
      * @return null|string
      */
-    private function parseString($value, &$i)
+    private function parseString(string $value, int &$i): ?string
     {
         $isQuoted = $value[$i] === '"';
         $stringEndChars = $isQuoted ? ['"'] : [$this->delimiter, '}'];

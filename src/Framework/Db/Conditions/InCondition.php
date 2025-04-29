@@ -78,7 +78,7 @@ class InCondition implements ConditionInterface
      * {@inheritdoc}
      * @throws InvalidArgumentException if wrong number of operands have been given.
      */
-    public static function fromArrayDefinition(string $operator, array $operands)
+    public static function fromArrayDefinition(string $operator, array $operands): ConditionInterface
     {
         if (!isset($operands[0], $operands[1])) {
             throw new InvalidArgumentException("Operator '$operator' requires two operands.");

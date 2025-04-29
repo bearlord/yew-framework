@@ -7,8 +7,8 @@
 
 namespace Yew\Framework\Db\Mysql;
 
-use Yew\Coroutine\Server\Server;
 use Yew\Framework\Exception\InvalidArgumentException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Exception;
 use Yew\Framework\Db\Expression;
@@ -25,7 +25,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * @var array mapping from abstract column types (keys) to physical column types (values).
      */
-    public $typeMap = [
+    public array $typeMap = [
         Schema::TYPE_PK => 'int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY',
         Schema::TYPE_UPK => 'int(10) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
         Schema::TYPE_BIGPK => 'bigint(20) NOT NULL AUTO_INCREMENT PRIMARY KEY',
@@ -175,33 +175,35 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param mixed $value the value for the primary key of the next new row inserted. If this is not set,
      * the next new row's primary key will have a value 1.
      * @return string the SQL statement for resetting sequence
-     * @throws InvalidArgumentException if the table does not exist or there is no sequence associated with the table.
+     * @throws Exception
+     * @throws NotSupportedException
+     * @throws InvalidConfigException
      */
-    public function resetSequence(string $table, $value = null): string
+    public function resetSequence(string $tableName, $value = null): string
     {
-        $table = $this->db->getTableSchema($table);
+        $table = $this->db->getTableSchema($tableName);
         if ($table !== null && $table->sequenceName !== null) {
-            $table = $this->db->quoteTableName($table);
+            $tableName = $this->db->quoteTableName($tableName);
             if ($value === null) {
                 $key = reset($table->primaryKey);
-                $value = $this->db->createCommand("SELECT MAX(`$key`) FROM $table")->queryScalar() + 1;
+                $value = $this->db->createCommand("SELECT MAX(`$key`) FROM $tableName")->queryScalar() + 1;
             } else {
                 $value = (int) $value;
             }
 
-            return "ALTER TABLE $table AUTO_INCREMENT=$value";
+            return "ALTER TABLE $tableName AUTO_INCREMENT=$value";
         } elseif ($table === null) {
             throw new InvalidArgumentException("Table not found: $table");
         }
 
-        throw new InvalidArgumentException("There is no sequence associated with table '$table'.");
+        throw new InvalidArgumentException("There is no sequence associated with table '$tableName'.");
     }
 
     /**
      * Builds a SQL statement for enabling or disabling integrity check.
      * @param bool $check whether to turn on or off the integrity check.
-     * @param string $schema the schema of the tables. Meaningless for MySQL.
-     * @param string $table the table name. Meaningless for MySQL.
+     * @param string|null $schema the schema of the tables. Meaningless for MySQL.
+     * @param string|null $table the table name. Meaningless for MySQL.
      * @return string the SQL statement for checking integrity
      */
     public function checkIntegrity(bool $check = true, ?string $schema = '', ?string $table = ''): string
@@ -212,7 +214,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * {@inheritdoc}
      */
-    public function buildLimit($limit, $offset): string
+    public function buildLimit(int $limit, int $offset): string
     {
         $sql = '';
         if ($this->hasLimit($limit)) {
@@ -251,6 +253,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * {@inheritdoc}
+     * @throws NotSupportedException|InvalidConfigException
      */
     protected function prepareInsertValues(string $table, $columns, ?array $params = []): array
     {
@@ -271,6 +274,8 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * {@inheritdoc}
      * @see https://downloads.mysql.com/docs/refman-5.1-en.pdf
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     public function upsert(string $table, $insertColumns, $updateColumns, array &$params): string
     {
@@ -295,6 +300,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      * @since 2.0.8
      */
     public function addCommentOnColumn(string $table, string $column, string $comment): string
@@ -321,6 +327,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * {@inheritdoc}
+     * @throws Exception
      * @since 2.0.8
      */
     public function dropCommentFromColumn(string $table, string $column): string
@@ -346,7 +353,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @return null|string the column definition
      * @throws Exception in case when table does not contain column
      */
-    private function getColumnDefinition(string $table, string $column)
+    private function getColumnDefinition(string $table, string $column): ?string
     {
         $quotedTable = $this->db->quoteTableName($table);
         $row = $this->db->createCommand('SHOW CREATE TABLE ' . $quotedTable)->queryOne();

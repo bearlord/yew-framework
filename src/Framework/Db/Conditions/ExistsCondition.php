@@ -43,7 +43,7 @@ class ExistsCondition implements ConditionInterface
     /**
      * {@inheritdoc}
      */
-    public static function fromArrayDefinition(string $operator, array $operands)
+    public static function fromArrayDefinition(string $operator, array $operands): ConditionInterface
     {
         if (!isset($operands[0]) || !$operands[0] instanceof Query) {
             throw new InvalidArgumentException('Subquery for EXISTS operator must be a Query object.');

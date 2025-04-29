@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace Yew\Framework\Db\Cubrid\conditions;
+namespace Yew\Framework\Db\Cubrid\Conditions;
 
 /**
  * {@inheritdoc}

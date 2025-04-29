@@ -168,7 +168,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return Constraint[] table unique constraints.
      */
-    public function getTableUniques($name, $refresh = false)
+    public function getTableUniques($name, $refresh = false): array
     {
         return $this->getTableMetadata($name, 'uniques', $refresh);
     }

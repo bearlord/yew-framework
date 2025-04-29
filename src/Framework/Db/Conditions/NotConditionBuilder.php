@@ -37,8 +37,8 @@ class NotConditionBuilder implements ExpressionBuilderInterface
             return '';
         }
 
-        $expession = $this->queryBuilder->buildCondition($operand, $params);
-        return "{$this->getNegationOperator()} ($expession)";
+        $condition = $this->queryBuilder->buildCondition($operand, $params);
+        return "{$this->getNegationOperator()} ($condition)";
     }
 
     /**

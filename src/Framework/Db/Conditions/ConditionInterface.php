@@ -8,7 +8,7 @@
 namespace Yew\Framework\Db\Conditions;
 
 use Yew\Framework\Db\ExpressionInterface;
-use Yew\Framework\Exception\InvalidParamException;
+use Yew\Framework\Exception\InvalidArgumentException;
 
 /**
  * Interface ConditionInterface should be implemented by classes that represent a condition
@@ -27,7 +27,7 @@ interface ConditionInterface extends ExpressionInterface
      * @param array $operands array of corresponding operands
      *
      * @return $this
-     * @throws InvalidParamException if input parameters are not suitable for this condition
+     * @throws InvalidArgumentException if input parameters are not suitable for this condition
      */
-    public static function fromArrayDefinition(string $operator, array $operands);
+    public static function fromArrayDefinition(string $operator, array $operands): ConditionInterface;
 }

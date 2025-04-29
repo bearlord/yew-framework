@@ -7,12 +7,15 @@
 
 namespace Yew\Framework\Db\Pgsql;
 
+use Yew\Framework\Db\Exception;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\Expression;
 use Yew\Framework\Db\ExpressionInterface;
 use Yew\Framework\Db\Query;
 use Yew\Framework\Db\PdoValue;
+use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Helpers\StringHelper;
 
 /**
@@ -52,7 +55,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * @var array mapping from abstract column types (keys) to physical column types (values).
      */
-    public $typeMap = [
+    public array $typeMap = [
         Schema::TYPE_PK => 'serial NOT NULL PRIMARY KEY',
         Schema::TYPE_UPK => 'serial NOT NULL PRIMARY KEY',
         Schema::TYPE_BIGPK => 'bigserial NOT NULL PRIMARY KEY',
@@ -109,13 +112,13 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param string|array $columns the column(s) that should be included in the index. If there are multiple columns,
      * separate them with commas or use an array to represent them. Each column name will be properly quoted
      * by the method, unless a parenthesis is found in the name.
-     * @param bool $unique whether to make this a UNIQUE index constraint. You can pass `true` or [[INDEX_UNIQUE]] to create
+     * @param bool|string $unique whether to make this a UNIQUE index constraint. You can pass `true` or [[INDEX_UNIQUE]] to create
      * a unique index, `false` to make a non-unique index using the default index type, or one of the following constants to specify
      * the index method to use: [[INDEX_B_TREE]], [[INDEX_HASH]], [[INDEX_GIST]], [[INDEX_GIN]].
      * @return string the SQL statement for creating a new index.
      * @see http://www.postgresql.org/docs/8.2/static/sql-createindex.html
      */
-    public function createIndex(string $name, string $table, $columns, bool $unique = false): string
+    public function createIndex(string $name, string $table, $columns, $unique = false): string
     {
         if ($unique === self::INDEX_UNIQUE || $unique === true) {
             $index = false;
@@ -171,40 +174,42 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * Creates a SQL statement for resetting the sequence value of a table's primary key.
      * The sequence will be reset such that the primary key of the next new row inserted
      * will have the specified value or 1.
-     * @param string $table the name of the table whose primary key sequence will be reset
+     * @param string $tableName
      * @param mixed $value the value for the primary key of the next new row inserted. If this is not set,
      * the next new row's primary key will have a value 1.
      * @return string the SQL statement for resetting sequence
-     * @throws InvalidArgumentException if the table does not exist or there is no sequence associated with the table.
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
      */
-    public function resetSequence(string $table, $value = null): string
+    public function resetSequence(string $tableName, $value = null): string
     {
-        $table = $this->db->getTableSchema($table);
+        $table = $this->db->getTableSchema($tableName);
         if ($table !== null && $table->sequenceName !== null) {
-            // c.f. http://www.postgresql.org/docs/8.1/static/functions-sequence.html
+            // c.f. https://www.postgresql.org/docs/8.1/functions-sequence.html
             $sequence = $this->db->quoteTableName($table->sequenceName);
-            $table = $this->db->quoteTableName($table);
+            $tableName = $this->db->quoteTableName($tableName);
             if ($value === null) {
                 $key = $this->db->quoteColumnName(reset($table->primaryKey));
-                $value = "(SELECT COALESCE(MAX({$key}),0) FROM {$table})+1";
+                $value = "(SELECT COALESCE(MAX({$key}),0) FROM {$tableName})+1";
             } else {
                 $value = (int) $value;
             }
 
             return "SELECT SETVAL('$sequence',$value,false)";
         } elseif ($table === null) {
-            throw new InvalidArgumentException("Table not found: $table");
+            throw new InvalidArgumentException("Table not found: $tableName");
         }
 
-        throw new InvalidArgumentException("There is not sequence associated with table '$table'.");
+        throw new InvalidArgumentException("There is not sequence associated with table '$tableName'.");
     }
 
     /**
      * Builds a SQL statement for enabling or disabling integrity check.
      * @param bool $check whether to turn on or off the integrity check.
-     * @param string $schema the schema of the tables.
-     * @param string $table the table name.
+     * @param string|null $schema the schema of the tables.
+     * @param string|null $table the table name.
      * @return string the SQL statement for checking integrity
+     * @throws NotSupportedException
      */
     public function checkIntegrity(bool $check = true, ?string $schema = '', ?string $table = ''): string
     {
@@ -330,8 +335,11 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param array|bool $updateColumns
      * @param array $params
      * @return string
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws Exception
      */
-    private function newUpsert($table, $insertColumns, $updateColumns, &$params)
+    private function newUpsert(string $table, $insertColumns, $updateColumns, array &$params): string
     {
         $insertSql = $this->insert($table, $insertColumns, $params);
         list($uniqueNames, , $updateNames) = $this->prepareUpsertColumns($table, $insertColumns, $updateColumns);
@@ -364,8 +372,11 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param array|bool $updateColumns
      * @param array $params
      * @return string
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
      */
-    private function oldUpsert($table, $insertColumns, $updateColumns, &$params)
+    private function oldUpsert(string $table, $insertColumns, $updateColumns, array &$params): string
     {
         /** @var Constraint[] $constraints */
         list($uniqueNames, $insertNames, $updateNames) = $this->prepareUpsertColumns($table, $insertColumns, $updateColumns, $constraints);
@@ -463,10 +474,12 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param array|Query $columns the column data (name => value) to be saved into the table or instance
      * of [[Yew\Framework\Db\Query|Query]] to perform INSERT INTO ... SELECT SQL statement.
      * Passing of [[Yew\Framework\Db\Query|Query]] is available since version 2.0.11.
-     * @return array normalized columns
+     * @return array|Query normalized columns
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
      * @since 2.0.9
      */
-    private function normalizeTableRowData($table, $columns)
+    private function normalizeTableRowData(string $table, $columns)
     {
         if ($columns instanceof Query) {
             return $columns;
@@ -486,6 +499,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * {@inheritdoc}
+     * @throws InvalidConfigException
      */
     public function batchInsert(string $table, array $columns, $rows, ?array &$params = []): string
     {

@@ -189,7 +189,7 @@ class Application extends ServiceLocator
         if ($p !== false && is_dir($p)) {
             $this->_basePath = $p;
         } else {
-            throw new InvalidParamException("The directory does not exist: $path");
+            throw new InvalidArgumentException("The directory does not exist: $path");
         }
         Yew::setAlias('@app', $this->getBasePath());
         Yew::setAlias('@App', $this->getBasePath());

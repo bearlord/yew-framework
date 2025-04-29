@@ -14,6 +14,8 @@
 
 namespace Yew\Framework\Db\Cubrid;
 
+use Yew\Framework\Db\ColumnSchema;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\ConstraintFinderInterface;
@@ -178,9 +180,10 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $tableName
+     * @return array
      */
-    protected function loadTableForeignKeys($tableName)
+    protected function loadTableForeignKeys(string $tableName): array
     {
         static $actionTypes = [
             0 => 'CASCADE',
@@ -261,9 +264,10 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * Loads the column information into a [[ColumnSchema]] object.
      * @param array $info column information
-     * @return \Yew\Framework\Db\ColumnSchema the column schema object
+     * @return ColumnSchema the column schema object
+     * @throws InvalidConfigException
      */
-    protected function loadColumnSchema($info)
+    protected function loadColumnSchema(array $info): ColumnSchema
     {
         $column = $this->createColumnSchema();
 
@@ -390,7 +394,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * - uniques
      * @return mixed constraints.
      */
-    private function loadTableConstraints($tableName, $returnType)
+    private function loadTableConstraints(string $tableName, string $returnType)
     {
         $constraints = $this->db->getSlavePdo()->cubrid_schema(\PDO::CUBRID_SCH_CONSTRAINT, $tableName);
         $constraints = ArrayHelper::index($constraints, null, ['TYPE', 'NAME']);

@@ -26,7 +26,7 @@ class ColumnSchema extends \Yew\Framework\Db\ColumnSchema
      * @since 2.0.14.1
      * @deprecated Since 2.0.14.1 and will be removed in 2.1.
      */
-    public $disableJsonSupport = false;
+    public bool $disableJsonSupport = false;
 
 
     /**

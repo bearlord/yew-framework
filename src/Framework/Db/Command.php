@@ -8,8 +8,10 @@
 namespace Yew\Framework\Db;
 
 use Yew\Coroutine\Server\Server;
+use Yew\Framework\Caching\CacheInterface;
 use Yew\Framework\Caching\Dependency;
 use Yew\Framework\Base\Component;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\NotSupportedException;
 use Yew\Yew;
 
@@ -1173,13 +1175,16 @@ class Command extends Component
     /**
      * Performs the actual DB query of a SQL statement.
      * @param string $method method of PDOStatement to be called
-     * @param int $fetchMode the result fetch mode. Please refer to [PHP manual](https://secure.php.net/manual/en/function.PDOStatement-setFetchMode.php)
+     * @param int|null $fetchMode the result fetch mode. Please refer to [PHP manual](https://secure.php.net/manual/en/function.PDOStatement-setFetchMode.php)
      * for valid fetch modes. If this parameter is null, the value set in [[fetchMode]] will be used.
      * @return mixed the method execution result
      * @throws Exception if the query causes any problem
+     * @throws NotSupportedException
+     * @throws \Throwable
+     * @throws InvalidConfigException
      * @since 2.0.1 this method is protected (was private before).
      */
-    protected function queryInternal($method, $fetchMode = null)
+    protected function queryInternal(string $method, ?int $fetchMode = null)
     {
         list($profile, $rawSql) = $this->logQuery('Yew\Framework\Db\Command::query');
 
@@ -1187,7 +1192,7 @@ class Command extends Component
         if ($method !== '') {
             $info = $this->db->getQueryCacheInfo($this->queryCacheDuration, $this->queryCacheDependency);
             if (is_array($info)) {
-                /* @var $cache \Yew\Framework\Caching\CacheInterface */
+                /* @var $cache CacheInterface */
                 $cache = $info[0];
                 $rawSql = $rawSql ?: $this->getRawSql();
                 $cacheKey = $this->getCacheKey($method, $fetchMode, $rawSql);

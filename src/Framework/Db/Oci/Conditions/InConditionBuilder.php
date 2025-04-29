@@ -41,7 +41,7 @@ class InConditionBuilder extends \Yew\Framework\Db\Conditions\InConditionBuilder
      * @param array $params the binding parameters.
      * @return null|string null when split is not required. Otherwise - built SQL condition.
      */
-    protected function splitCondition(InCondition $condition, &$params)
+    protected function splitCondition(InCondition $condition, array &$params): ?string
     {
         $operator = $condition->getOperator();
         $values = $condition->getValues();

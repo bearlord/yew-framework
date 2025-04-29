@@ -10,6 +10,7 @@ namespace Yew\Framework\Db;
 
 use Yew\Framework\Base\BaseObject;
 use Yew\Framework\Exception\InvalidArgumentException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Db\Conditions\ConditionInterface;
 use Yew\Framework\Db\Conditions\HashCondition;
@@ -42,25 +43,25 @@ class QueryBuilder extends BaseObject
     /**
      * @var Connection the database connection.
      */
-    public $db;
+    public Connection $db;
     /**
      * @var string the separator between different fragments of a SQL statement.
      * Defaults to an empty space. This is mainly used by [[build()]] when generating a SQL statement.
      */
-    public $separator = ' ';
+    public string $separator = ' ';
     /**
      * @var array the abstract column types mapped to physical column types.
      * This is mainly used to support creating/modifying tables using DB-independent data type specifications.
      * Child classes should override this property to declare supported type mappings.
      */
-    public $typeMap = [];
+    public array $typeMap = [];
 
     /**
      * @var array map of query condition to builder methods.
      * These methods are used by [[buildCondition]] to build SQL conditions from array syntax.
      * @deprecated since 2.0.14. Is not used, will be dropped in 2.1.0.
      */
-    protected $conditionBuilders = [];
+    protected array $conditionBuilders = [];
     /**
      * @var array map of condition aliases to condition classes. For example:
      *
@@ -79,7 +80,7 @@ class QueryBuilder extends BaseObject
      * @see defaultConditionClasses()
      * @since 2.0.14
      */
-    protected $conditionClasses = [];
+    protected array $conditionClasses = [];
     /**
      * @var string[]|ExpressionBuilderInterface[] maps expression class to expression builder class.
      * For example:
@@ -104,7 +105,7 @@ class QueryBuilder extends BaseObject
      * @see defaultExpressionBuilders()
      * @since 2.0.14
      */
-    protected $expressionBuilders = [];
+    protected array $expressionBuilders = [];
 
 
     /**
@@ -447,6 +448,7 @@ class QueryBuilder extends BaseObject
      * @param array|\Generator $rows the rows to be batch inserted into the table
      * @param array|null $params the binding parameters. This parameter exists since 2.0.14
      * @return string the batch INSERT SQL statement
+     * @throws NotSupportedException
      */
     public function batchInsert(string $table, array $columns, $rows, ?array &$params = []): string
     {
@@ -542,7 +544,7 @@ class QueryBuilder extends BaseObject
      * @throws Exception
      * @since 2.0.14
      */
-    protected function prepareUpsertColumns(string $table, $insertColumns, $updateColumns, ?array &$constraints = [])
+    protected function prepareUpsertColumns(string $table, $insertColumns, $updateColumns, ?array &$constraints = []): array
     {
         if ($insertColumns instanceof Query) {
             list($insertNames) = $this->prepareInsertSelectSubQuery($insertColumns, $this->db->getSchema());
@@ -568,6 +570,7 @@ class QueryBuilder extends BaseObject
      * @param Constraint[] $constraints this parameter optionally recieves a matched constraint list.
      * The constraints will be unique by their column names.
      * @return string[] column list.
+     * @throws NotSupportedException
      */
     private function getTableUniqueColumnNames(string $name, array $columns, ?array &$constraints = []): array
     {
@@ -625,6 +628,8 @@ class QueryBuilder extends BaseObject
      * @param array $params the binding parameters that will be modified by this method
      * so that they can be bound to the DB command later.
      * @return string the UPDATE SQL
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
      */
     public function update(string $table, array $columns, $condition, array &$params): string
     {
@@ -641,6 +646,8 @@ class QueryBuilder extends BaseObject
      * @param array|null $params the binding parameters that will be modified by this method
      * so that they can be bound to the DB command later.
      * @return array an array `SET` parts for an `UPDATE` SQL statement (the first array element) and params (the second array element).
+     * @throws NotSupportedException
+     * @throws InvalidConfigException
      * @since 2.0.14
      */
     protected function prepareUpdateSets(string $table, array $columns, ?array $params = []): array
@@ -1035,13 +1042,13 @@ class QueryBuilder extends BaseObject
      * Creates a SQL statement for resetting the sequence value of a table's primary key.
      * The sequence will be reset such that the primary key of the next new row inserted
      * will have the specified value or the maximum existing value +1.
-     * @param string $table the name of the table whose primary key sequence will be reset
+     * @param string $tableName the name of the table whose primary key sequence will be reset
      * @param array|string $value the value for the primary key of the next new row inserted. If this is not set,
      * the next new row's primary key will have the maximum existing value +1.
      * @return string the SQL statement for resetting sequence
      * @throws NotSupportedException if this is not supported by the underlying DBMS
      */
-    public function resetSequence(string $table, $value = null): string
+    public function resetSequence(string $tableName, $value = null): string
     {
         throw new NotSupportedException($this->db->getDriverName() . ' does not support resetting sequence.');
     }
@@ -1054,7 +1061,7 @@ class QueryBuilder extends BaseObject
      * @param string $table the name of the table whose primary key sequence is reset
      * @param array|string $value the value for the primary key of the next new row inserted. If this is not set,
      * the next new row's primary key will have the maximum existing value +1.
-     * @throws NotSupportedException if this is not supported by the underlying DBMS
+     * @throws NotSupportedException|Exception if this is not supported by the underlying DBMS
      * @since 2.0.16
      */
     public function executeResetSequence(string $table, $value = null)
@@ -1068,7 +1075,7 @@ class QueryBuilder extends BaseObject
      * @param string|null $schema the schema of the tables. Defaults to empty string, meaning the current or default schema.
      * @param string|null $table the table name. Defaults to empty string, meaning that no table will be changed.
      * @return string the SQL statement for checking integrity
-     * @throws \Yew\Framework\Base\NotSupportedException if this is not supported by the underlying DBMS
+     * @throws NotSupportedException if this is not supported by the underlying DBMS
      */
     public function checkIntegrity(bool $check = true, ?string $schema = '', ?string $table = ''): string
     {
@@ -1290,7 +1297,7 @@ class QueryBuilder extends BaseObject
     }
 
     /**
-     * @param array|bool $joins
+     * @param array|null $joins
      * @param array $params the binding parameters to be populated
      * @return string the JOIN clause built from [[Query::$join]].
      * @throws Exception if the $joins parameter is not in proper format
@@ -1444,7 +1451,7 @@ class QueryBuilder extends BaseObject
      * @param int $offset
      * @return string the LIMIT and OFFSET clauses
      */
-    public function buildLimit($limit, $offset): string
+    public function buildLimit(int $limit, int $offset): string
     {
         $sql = '';
         if ($this->hasLimit($limit)) {

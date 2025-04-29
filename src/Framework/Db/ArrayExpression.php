@@ -77,7 +77,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
     }
 
     /**
-     * @return array|mixed|QueryInterface
+     * @return array|mixed|QueryInterface|null
      * @see value
      */
     public function getValue()
