@@ -8,11 +8,11 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\Widget;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Json;
-use ESD\Yii\Web\Response;
+use Yew\Framework\Web\Response;
 
 /**
  * Pjax is a widget integrating the [pjax](https://github.com/yiisoft/jquery-pjax) jQuery plugin.
@@ -28,7 +28,7 @@ use ESD\Yii\Web\Response;
  *
  * You may disable pjax for a specific link inside the container by adding `data-pjax="0"` attribute to this link.
  *
- * The following example shows how to use Pjax with the [[\ESD\Yii\Grid\GridView]] widget so that the grid pagination,
+ * The following example shows how to use Pjax with the [[\Yew\Framework\Grid\GridView]] widget so that the grid pagination,
  * sorting and filtering can be done via pjax:
  *
  * ```php
@@ -49,9 +49,9 @@ class Pjax extends Widget
      *
      * - `tag`: string, the tag name for the container. Defaults to `div`
      *   This option is available since version 2.0.7.
-     *   See also [[\ESD\Yii\Helpers\Html::tag()]].
+     *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      *
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = [];
     /**

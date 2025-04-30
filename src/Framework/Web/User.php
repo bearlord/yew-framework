@@ -300,7 +300,7 @@ class User extends Component
      * If authentication fails or [[login()]] is unsuccessful, it will return null.
      * @param string $token the access token
      * @param mixed $type the type of the token. The value of this parameter depends on the implementation.
-     * For example, [[\ESD\Yii\Filters\auth\HttpBearerAuth]] will set this parameter to be `ESD\Yii\Filters\auth\HttpBearerAuth`.
+     * For example, [[\Yew\Framework\Filters\auth\HttpBearerAuth]] will set this parameter to be `Yew\Framework\Filters\auth\HttpBearerAuth`.
      * @return IdentityInterface|null the identity associated with the given access token. Null is returned if
      * the access token is invalid or [[login()]] is unsuccessful.
      */
@@ -550,7 +550,7 @@ class User extends Component
             $data = json_decode($value, true);
             if (is_array($data) && isset($data[2])) {
                 $cookie = Yew::createObject(array_merge($this->identityCookie, [
-                    'class' => 'ESD\Yii\Web\Cookie',
+                    'class' => 'Yew\Framework\Web\Cookie',
                     'value' => $value,
                     'expire' => time() + (int)$data[2],
                 ]));
@@ -752,7 +752,7 @@ class User extends Component
      * When this parameter is true (default), if the access check of an operation was performed
      * before, its result will be directly returned when calling this method to check the same
      * operation. If this parameter is false, this method will always call
-     * [[\ESD\Yii\Rbac\CheckAccessInterface::checkAccess()]] to obtain the up-to-date access result. Note that this
+     * [[\Yew\Framework\Rbac\CheckAccessInterface::checkAccess()]] to obtain the up-to-date access result. Note that this
      * caching is effective only within the same request and only works when `$params = []`.
      * @return bool whether the user can perform the operation as specified by the given permission.
      */
@@ -801,7 +801,7 @@ class User extends Component
      *
      * By default this is the `authManager` application component.
      * You may override this method to return a different auth manager instance if needed.
-     * @return \ESD\Yii\Rbac\ManagerInterface
+     * @return \Yew\Framework\Rbac\ManagerInterface
      * @since 2.0.6
      * @deprecated since version 2.0.9, to be removed in 2.1. Use [[getAccessChecker()]] instead.
      */

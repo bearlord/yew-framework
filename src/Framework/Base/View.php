@@ -62,8 +62,8 @@ class View extends Component implements DynamicContentAwareInterface
      *
      * ```php
      * [
-     *     'tpl' => ['class' => 'ESD\Yii\Smarty\ViewRenderer'],
-     *     'twig' => ['class' => 'ESD\Yii\Twig\ViewRenderer'],
+     *     'tpl' => ['class' => 'Yew\Framework\Smarty\ViewRenderer'],
+     *     'twig' => ['class' => 'Yew\Framework\Twig\ViewRenderer'],
      * ]
      * ```
      *
@@ -121,7 +121,7 @@ class View extends Component implements DynamicContentAwareInterface
         parent::init();
         if (is_array($this->theme)) {
             if (!isset($this->theme['class'])) {
-                $this->theme['class'] = 'ESD\Yii\Base\Theme';
+                $this->theme['class'] = 'Yew\Framework\Base\Theme';
             }
             $this->theme = Yew::createObject($this->theme);
         } elseif (is_string($this->theme)) {

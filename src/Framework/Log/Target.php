@@ -45,15 +45,15 @@ abstract class Target extends Component
      * @var array list of message categories that this target is interested in. Defaults to empty, meaning all categories.
      * You can use an asterisk at the end of a category so that the category may be used to
      * match those categories sharing the same common prefix. For example, 'Yew\Framework\Db\*' will match
-     * categories starting with 'Yew\Framework\Db\', such as 'ESD\Yii\Db\Connection'.
+     * categories starting with 'Yew\Framework\Db\', such as 'Yew\Framework\Db\Connection'.
      */
     public $categories = [];
     /**
      * @var array list of message categories that this target is NOT interested in. Defaults to empty, meaning no uninteresting messages.
      * If this property is not empty, then any category listed here will be excluded from [[categories]].
      * You can use an asterisk at the end of a category so that the category can be used to
-     * match those categories sharing the same common prefix. For example, 'ESD\Yii\Db\*' will match
-     * categories starting with 'ESD\Yii\Db\', such as 'ESD\Yii\Db\Connection'.
+     * match those categories sharing the same common prefix. For example, 'Yew\Framework\Db\*' will match
+     * categories starting with 'Yew\Framework\Db\', such as 'Yew\Framework\Db\Connection'.
      * @see categories
      */
     public $except = [];
@@ -73,7 +73,7 @@ abstract class Target extends Component
      * Note that if you need $_SESSION to logged regardless if session was used you have to open it right at
      * the start of your request.
      *
-     * @see \ESD\Yii\Helpers\ArrayHelper::filter()
+     * @see \Yew\Framework\Helpers\ArrayHelper::filter()
      */
     public $logVars = [
         '_GET',
@@ -349,7 +349,7 @@ abstract class Target extends Component
 
         $ip = $request instanceof Request ? $request->getServer(Request::SERVER_REMOTE_ADDR) : '-';
 
-        /* @var $user \ESD\Yii\Web\User */
+        /* @var $user \Yew\Framework\Web\User */
         $user = Yew::$app->has('user', true) ? Yew::$app->get('user') : null;
         if ($user && ($identity = $user->getIdentity(false))) {
             $userID = $identity->getId();
@@ -357,7 +357,7 @@ abstract class Target extends Component
             $userID = '-';
         }
 
-        /* @var $session \ESD\Yii\Web\Session */
+        /* @var $session \Yew\Framework\Web\Session */
         $session = Yew::$app->has('session', true) ? Yew::$app->get('session') : null;
         $sessionID = $session && $session->getIsActive() ? $session->getId() : '-';
 

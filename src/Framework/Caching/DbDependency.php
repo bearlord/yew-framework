@@ -7,10 +7,10 @@
 
 namespace Yew\Framework\Caching;
 
-use ESD\Yii\Yii;
+use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
-use ESD\Yii\Db\Connection;
-use ESD\Yii\Di\Instance;
+use Yew\Framework\Db\Connection;
+use Yew\Framework\Di\Instance;
 
 /**
  * DbDependency represents a dependency based on the query result of a SQL statement.

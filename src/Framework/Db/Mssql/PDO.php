@@ -18,10 +18,10 @@ class PDO extends \PDO
 {
     /**
      * Returns value of the last inserted ID.
-     * @param string|null $sequence the sequence name. Defaults to null.
+     * @param string|null $name the sequence name. Defaults to null.
      * @return int last inserted ID value.
      */
-    public function lastInsertId($sequence = null)
+    public function lastInsertId(?string $name = null): int
     {
         return $this->query('SELECT CAST(COALESCE(SCOPE_IDENTITY(), @@IDENTITY) AS bigint)')->fetchColumn();
     }
@@ -31,7 +31,7 @@ class PDO extends \PDO
      * natively support transactions.
      * @return bool the result of a transaction start.
      */
-    public function beginTransaction()
+    public function beginTransaction(): bool
     {
         $this->exec('BEGIN TRANSACTION');
 
@@ -43,7 +43,7 @@ class PDO extends \PDO
      * natively support transactions.
      * @return bool the result of a transaction commit.
      */
-    public function commit()
+    public function commit(): bool
     {
         $this->exec('COMMIT TRANSACTION');
 
@@ -55,7 +55,7 @@ class PDO extends \PDO
      * natively support transactions.
      * @return bool the result of a transaction roll back.
      */
-    public function rollBack()
+    public function rollBack(): bool
     {
         $this->exec('ROLLBACK TRANSACTION');
 

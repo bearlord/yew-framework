@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\Widget;
 
 /**
  * Spaceless widget removes whitespace characters between HTML tags. Whitespaces within HTML tags

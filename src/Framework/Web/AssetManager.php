@@ -58,7 +58,7 @@ class AssetManager extends Component
      *
      * ```php
      * [
-     *     'ESD\Yii\Bootstrap\\BootstrapAsset' => [
+     *     'Yew\Framework\Bootstrap\\BootstrapAsset' => [
      *         'css' => [],
      *     ],
      * ]

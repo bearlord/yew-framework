@@ -7,7 +7,6 @@
 
 namespace Yew\Framework\Db;
 
-use Yii;
 use Yew\Framework\Base\BaseObject;
 use Yew\Framework\Helpers\StringHelper;
 
@@ -33,57 +32,65 @@ class ColumnSchemaBuilder extends BaseObject
     /**
      * @var string the column type definition such as INTEGER, VARCHAR, DATETIME, etc.
      */
-    protected $type;
+    protected string $type;
+
     /**
      * @var int|string|array column size or precision definition. This is what goes into the parenthesis after
      * the column type. This can be either a string, an integer or an array. If it is an array, the array values will
      * be joined into a string separated by comma.
      */
     protected $length;
+
     /**
      * @var bool|null whether the column is or not nullable. If this is `true`, a `NOT NULL` constraint will be added.
      * If this is `false`, a `NULL` constraint will be added.
      */
-    protected $isNotNull;
+    protected ?bool $isNotNull = null;
+
     /**
      * @var bool whether the column values should be unique. If this is `true`, a `UNIQUE` constraint will be added.
      */
-    protected $isUnique = false;
+    protected bool $isUnique = false;
+
     /**
-     * @var string the `CHECK` constraint for the column.
+     * @var string|null the `CHECK` constraint for the column.
      */
-    protected $check;
+    protected ?string $check = null;
+
     /**
      * @var mixed default value of the column.
      */
     protected $default;
+
     /**
      * @var mixed SQL string to be appended to column schema definition.
      * @since 2.0.9
      */
     protected $append;
+
     /**
      * @var bool whether the column values should be unsigned. If this is `true`, an `UNSIGNED` keyword will be added.
      * @since 2.0.7
      */
-    protected $isUnsigned = false;
+    protected bool $isUnsigned = false;
+
     /**
      * @var string the column after which this column will be added.
      * @since 2.0.8
      */
-    protected $after;
+    protected string $after;
+
     /**
      * @var bool whether this column is to be inserted at the beginning of the table.
      * @since 2.0.8
      */
-    protected $isFirst;
-
+    protected bool $isFirst;
 
     /**
      * @var array mapping of abstract column types (keys) to type categories (values).
      * @since 2.0.8
      */
-    public $categoryMap = [
+    public array $categoryMap = [
         Schema::TYPE_PK => self::CATEGORY_PK,
         Schema::TYPE_UPK => self::CATEGORY_PK,
         Schema::TYPE_BIGPK => self::CATEGORY_PK,
@@ -107,26 +114,26 @@ class ColumnSchemaBuilder extends BaseObject
         Schema::TYPE_MONEY => self::CATEGORY_NUMERIC,
     ];
     /**
-     * @var \Yew\Framework\Db\Connection the current database connection. It is used mainly to escape strings
+     * @var Connection|null the current database connection. It is used mainly to escape strings
      * safely when building the final column schema string.
      * @since 2.0.8
      */
-    public $db;
+    public ?Connection $db = null;
     /**
      * @var string comment value of the column.
      * @since 2.0.8
      */
-    public $comment;
+    public string $comment;
 
     /**
      * Create a column schema builder instance giving the type and value precision.
      *
      * @param string $type type of the column. See [[$type]].
      * @param int|string|array $length length or precision of the column. See [[$length]].
-     * @param \Yew\Framework\Db\Connection $db the current database connection. See [[$db]].
+     * @param Connection|null $db the current database connection. See [[$db]].
      * @param array $config name-value pairs that will be used to initialize the object properties
      */
-    public function __construct($type, $length = null, $db = null, $config = [])
+    public function __construct(string $type, $length = null, Connection $db = null, array $config = [])
     {
         $this->type = $type;
         $this->length = $length;
@@ -138,7 +145,7 @@ class ColumnSchemaBuilder extends BaseObject
      * Adds a `NOT NULL` constraint to the column.
      * @return $this
      */
-    public function notNull()
+    public function notNull(): ColumnSchemaBuilder
     {
         $this->isNotNull = true;
         return $this;
@@ -149,7 +156,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.9
      */
-    public function null()
+    public function null(): ColumnSchemaBuilder
     {
         $this->isNotNull = false;
         return $this;
@@ -159,7 +166,7 @@ class ColumnSchemaBuilder extends BaseObject
      * Adds a `UNIQUE` constraint to the column.
      * @return $this
      */
-    public function unique()
+    public function unique(): ColumnSchemaBuilder
     {
         $this->isUnique = true;
         return $this;
@@ -170,7 +177,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @param string $check the SQL of the `CHECK` constraint to be added.
      * @return $this
      */
-    public function check($check)
+    public function check(string $check): ColumnSchemaBuilder
     {
         $this->check = $check;
         return $this;
@@ -181,7 +188,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @param mixed $default the default value.
      * @return $this
      */
-    public function defaultValue($default)
+    public function defaultValue($default): ColumnSchemaBuilder
     {
         if ($default === null) {
             $this->null();
@@ -197,7 +204,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.8
      */
-    public function comment($comment)
+    public function comment(string $comment): ColumnSchemaBuilder
     {
         $this->comment = $comment;
         return $this;
@@ -208,7 +215,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.7
      */
-    public function unsigned()
+    public function unsigned(): ColumnSchemaBuilder
     {
         switch ($this->type) {
             case Schema::TYPE_PK:
@@ -229,7 +236,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.8
      */
-    public function after($after)
+    public function after(string $after): ColumnSchemaBuilder
     {
         $this->after = $after;
         return $this;
@@ -241,7 +248,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.8
      */
-    public function first()
+    public function first(): ColumnSchemaBuilder
     {
         $this->isFirst = true;
         return $this;
@@ -253,7 +260,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.7
      */
-    public function defaultExpression($default)
+    public function defaultExpression(string $default): ColumnSchemaBuilder
     {
         $this->default = new Expression($default);
         return $this;
@@ -266,7 +273,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return $this
      * @since 2.0.9
      */
-    public function append($sql)
+    public function append(string $sql): ColumnSchemaBuilder
     {
         $this->append = $sql;
         return $this;
@@ -293,7 +300,7 @@ class ColumnSchemaBuilder extends BaseObject
      * Builds the length/precision part of the column.
      * @return string
      */
-    protected function buildLengthString()
+    protected function buildLengthString(): string
     {
         if ($this->length === null || $this->length === []) {
             return '';
@@ -310,7 +317,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string returns 'NOT NULL' if [[isNotNull]] is true,
      * 'NULL' if [[isNotNull]] is false or an empty string otherwise.
      */
-    protected function buildNotNullString()
+    protected function buildNotNullString(): string
     {
         if ($this->isNotNull === true) {
             return ' NOT NULL';
@@ -325,7 +332,7 @@ class ColumnSchemaBuilder extends BaseObject
      * Builds the unique constraint for the column.
      * @return string returns string 'UNIQUE' if [[isUnique]] is true, otherwise it returns an empty string.
      */
-    protected function buildUniqueString()
+    protected function buildUniqueString(): string
     {
         return $this->isUnique ? ' UNIQUE' : '';
     }
@@ -334,7 +341,7 @@ class ColumnSchemaBuilder extends BaseObject
      * Builds the default value specification for the column.
      * @return string string with default value of column.
      */
-    protected function buildDefaultString()
+    protected function buildDefaultString(): string
     {
         if ($this->default === null) {
             return $this->isNotNull === false ? ' DEFAULT NULL' : '';
@@ -342,19 +349,20 @@ class ColumnSchemaBuilder extends BaseObject
 
         $string = ' DEFAULT ';
         switch (gettype($this->default)) {
+            case 'object':
             case 'integer':
                 $string .= (string) $this->default;
                 break;
+
             case 'double':
                 // ensure type cast always has . as decimal separator in all locales
                 $string .= StringHelper::floatToString($this->default);
                 break;
+
             case 'boolean':
                 $string .= $this->default ? 'TRUE' : 'FALSE';
                 break;
-            case 'object':
-                $string .= (string) $this->default;
-                break;
+
             default:
                 $string .= "'{$this->default}'";
         }
@@ -366,7 +374,7 @@ class ColumnSchemaBuilder extends BaseObject
      * Builds the check constraint for the column.
      * @return string a string containing the CHECK constraint.
      */
-    protected function buildCheckString()
+    protected function buildCheckString(): string
     {
         return $this->check !== null ? " CHECK ({$this->check})" : '';
     }
@@ -376,7 +384,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string a string containing UNSIGNED keyword.
      * @since 2.0.7
      */
-    protected function buildUnsignedString()
+    protected function buildUnsignedString(): string
     {
         return '';
     }
@@ -386,7 +394,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string a string containing the AFTER constraint.
      * @since 2.0.8
      */
-    protected function buildAfterString()
+    protected function buildAfterString(): string
     {
         return '';
     }
@@ -396,7 +404,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string a string containing the FIRST constraint.
      * @since 2.0.8
      */
-    protected function buildFirstString()
+    protected function buildFirstString(): string
     {
         return '';
     }
@@ -406,7 +414,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string custom string to append.
      * @since 2.0.9
      */
-    protected function buildAppendString()
+    protected function buildAppendString(): string
     {
         return $this->append !== null ? ' ' . $this->append : '';
     }
@@ -416,7 +424,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string a string containing the column type category name.
      * @since 2.0.8
      */
-    protected function getTypeCategory()
+    protected function getTypeCategory(): ?string
     {
         return $this->categoryMap[$this->type] ?? null;
     }
@@ -426,7 +434,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string a string containing the COMMENT keyword and the comment itself
      * @since 2.0.8
      */
-    protected function buildCommentString()
+    protected function buildCommentString(): string
     {
         return '';
     }
@@ -437,7 +445,7 @@ class ColumnSchemaBuilder extends BaseObject
      * @return string a string containing the complete column definition.
      * @since 2.0.8
      */
-    protected function buildCompleteString($format)
+    protected function buildCompleteString(string $format): string
     {
         $placeholderValues = [
             '{type}' => $this->type,

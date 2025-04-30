@@ -18,7 +18,7 @@ namespace Yew\Framework\Caching;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-abstract class Dependency extends \ESD\Yii\Base\BaseObject
+abstract class Dependency extends \Yew\Framework\Base\BaseObject
 {
     /**
      * @var mixed the dependency data that is saved in cache and later is compared with the

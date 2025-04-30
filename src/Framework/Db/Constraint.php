@@ -21,6 +21,7 @@ class Constraint extends BaseObject
      * @var string[]|null list of column names the constraint belongs to.
      */
     public ?array $columnNames;
+
     /**
      * @var string|null the constraint name.
      */

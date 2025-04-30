@@ -9,7 +9,7 @@ namespace Yew\Framework\Web;
 
 use Yew\Yew;
 use Yew\Framework\Base\BaseObject;
-use ESD\Yii\Helpers\ArrayHelper;
+use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Url;
 
 /**
@@ -68,8 +68,8 @@ class AssetBundle extends BaseObject
      *
      * ```php
      * public $depends = [
-     *    'ESD\Yii\Web\YiiAsset',
-     *    'ESD\Yii\Bootstrap\\BootstrapAsset',
+     *    'Yew\Framework\Web\YiiAsset',
+     *    'Yew\Framework\Bootstrap\\BootstrapAsset',
      * ];
      * ```
      */

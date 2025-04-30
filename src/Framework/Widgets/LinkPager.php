@@ -8,9 +8,9 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Base\Widget;
-use ESD\Yii\Data\Pagination;
+use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Base\Widget;
+use Yew\Framework\Data\Pagination;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Html;
 
@@ -38,7 +38,7 @@ class LinkPager extends Widget
     public $pagination;
     /**
      * @var array HTML attributes for the pager container tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'pagination'];
     /**
@@ -48,7 +48,7 @@ class LinkPager extends Widget
     public $linkContainerOptions = [];
     /**
      * @var array HTML attributes for the link in a pager container tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $linkOptions = [];
     /**
@@ -160,7 +160,7 @@ class LinkPager extends Widget
 
     /**
      * Registers relational link tags in the html header for prev, next, first and last page.
-     * These links are generated using [[\ESD\Yii\Data\Pagination::getLinks()]].
+     * These links are generated using [[\Yew\Framework\Data\Pagination::getLinks()]].
      * @see http://www.w3.org/TR/html401/struct/links.html#h-12.1.2
      */
     protected function registerLinkTags()

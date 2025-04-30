@@ -5,10 +5,10 @@
  * @license http://www.yiiframework.com/license/
  */
 
-use ESD\Yii\Yii;
+use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
-use ESD\Yii\Caching\DbCache;
-use ESD\Yii\Db\Migration;
+use Yew\Framework\Caching\DbCache;
+use Yew\Framework\Db\Migration;
 
 /**
  * Initializes Cache tables.
@@ -19,7 +19,7 @@ use ESD\Yii\Db\Migration;
 class m150909_153426_cache_init extends Migration
 {
     /**
-     * @throws ESD\Yii\Base\InvalidConfigException
+     * @throws Yew\Framework\Base\InvalidConfigException
      * @return DbCache
      */
     protected function getCache()

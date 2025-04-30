@@ -11,13 +11,13 @@ use Yew\Core\Server\Beans\Request;
 use Yew\Yew;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Exception\InvalidConfigException;
-use ESD\Yii\Caching\CacheInterface;
+use Yew\Framework\Caching\CacheInterface;
 use Yew\Framework\Helpers\Url;
 
 /**
  * UrlManager handles HTTP request parsing and creation of URLs based on a set of rules.
  *
- * UrlManager is configured as an application component in [[\ESD\Yii\Base\Application]] by default.
+ * UrlManager is configured as an application component in [[\Yew\Framework\Base\Application]] by default.
  * You can access that instance via `Yew::$app->urlManager`.
  *
  * You can modify its configuration by adding an array to your application config under `components`
@@ -126,7 +126,7 @@ class UrlManager extends Component
      * you should only assign it with a cache object.
      * Set this property to `false` if you do not want to cache the URL rules.
      *
-     * Cache entries are stored for the time set by [[\ESD\Yii\Caching\Cache::$defaultDuration|$defaultDuration]] in
+     * Cache entries are stored for the time set by [[\Yew\Framework\Caching\Cache::$defaultDuration|$defaultDuration]] in
      * the cache configuration, which is unlimited by default. You may want to tune this value if your [[rules]]
      * change frequently.
      */
@@ -144,7 +144,7 @@ class UrlManager extends Component
      *
      * ```php
      * [
-     *     'class' => 'ESD\Yii\Web\UrlNormalizer',
+     *     'class' => 'Yew\Framework\Web\UrlNormalizer',
      *     'collapseSlashes' => true,
      *     'normalizeTrailingSlash' => true,
      * ]

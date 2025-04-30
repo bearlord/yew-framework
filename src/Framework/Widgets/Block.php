@@ -7,13 +7,13 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\Widget;
 
 /**
- * Block records all output between [[begin()]] and [[end()]] calls and stores it in [[\ESD\Yii\Base\View::$blocks]].
+ * Block records all output between [[begin()]] and [[end()]] calls and stores it in [[\Yew\Framework\Base\View::$blocks]].
  * for later use.
  *
- * [[\ESD\Yii\Base\View]] component contains two methods [[\ESD\Yii\Base\View::beginBlock()]] and [[\ESD\Yii\Base\View::endBlock()]].
+ * [[\Yew\Framework\Base\View]] component contains two methods [[\Yew\Framework\Base\View::beginBlock()]] and [[\Yew\Framework\Base\View::endBlock()]].
  * The general idea is that you're defining block default in a view or layout:
  *
  * ```php

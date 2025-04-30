@@ -194,16 +194,16 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @return string the SQL statement for resetting sequence
      * @throws InvalidArgumentException if the table does not exist or there is no sequence associated with the table.
      */
-    public function resetSequence(string $table, $value = null): string
+    public function resetSequence(string $tableName, $value = null): string
     {
         $db = $this->db;
-        $table = $db->getTableSchema($table);
+        $table = $db->getTableSchema($tableName);
         if ($table !== null && $table->sequenceName !== null) {
-            $table = $db->quoteTableName($table);
+            $tableName = $db->quoteTableName($tableName);
             if ($value === null) {
                 $key = $this->db->quoteColumnName(reset($table->primaryKey));
-                $value = $this->db->useMaster(function (Connection $db) use ($key, $table) {
-                    return $db->createCommand("SELECT MAX($key) FROM $table")->queryScalar();
+                $value = $this->db->useMaster(function (Connection $db) use ($key, $tableName) {
+                    return $db->createCommand("SELECT MAX($key) FROM $tableName")->queryScalar();
                 });
             } else {
                 $value = (int) $value - 1;
@@ -211,10 +211,10 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
             return "UPDATE sqlite_sequence SET seq='$value' WHERE name='{$table->name}'";
         } elseif ($table === null) {
-            throw new InvalidArgumentException("Table not found: $table");
+            throw new InvalidArgumentException("Table not found: $tableName");
         }
 
-        throw new InvalidArgumentException("There is not sequence associated with table '$table'.'");
+        throw new InvalidArgumentException("There is not sequence associated with table '$tableName'.'");
     }
 
     /**
@@ -519,9 +519,15 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     }
 
     /**
-     * {@inheritdoc}
+     * @param array|null $unions
+     * @param array $params
+     * @return string
+     * @throws NotSupportedException
+     * @throws \Throwable
+     * @throws \Yew\Framework\Db\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
-    public function buildUnion(array $unions, array &$params): string
+    public function buildUnion(?array $unions = null, array &$params = []): string
     {
         if (empty($unions)) {
             return '';

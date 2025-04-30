@@ -19,7 +19,7 @@ use Yew\Yew;
  *
  * View provides a set of methods (e.g. [[render()]]) for rendering purpose.
  *
- * View is configured as an application component in [[\ESD\Yii\Base\Application]] by default.
+ * View is configured as an application component in [[\Yew\Framework\Base\Application]] by default.
  * You can access that instance via `Yew::$app->view`.
  *
  * You can modify its configuration by adding an array to your application config under `components`
@@ -353,7 +353,7 @@ class View extends \Yew\Framework\Base\View
      * $view->registerCsrfMetaTags();
      * ```
      *
-     * The above code will result in `<meta name="csrf-param" content="[ESD\Yii\Web\Request::$csrfParam]">`
+     * The above code will result in `<meta name="csrf-param" content="[Yew\Framework\Web\Request::$csrfParam]">`
      * and `<meta name="csrf-token" content="tTNpWKpdy-bx8ZmIq9R72...K1y8IP3XGkzZA==">` added to the page.
      *
      * Note: Hidden CSRF input of ActiveForm will be automatically refreshed by calling `window.yii.refreshCsrfToken()`
@@ -363,7 +363,7 @@ class View extends \Yew\Framework\Base\View
      */
     public function registerCsrfMetaTags()
     {
-        $this->metaTags['csrf_meta_tags'] = $this->renderDynamic('return ESD\Yii\Helpers\Html::csrfMetaTags();');
+        $this->metaTags['csrf_meta_tags'] = $this->renderDynamic('return Yew\Framework\Helpers\Html::csrfMetaTags();');
     }
 
     /**

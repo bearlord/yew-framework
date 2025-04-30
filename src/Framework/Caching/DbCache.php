@@ -7,12 +7,12 @@
 
 namespace Yew\Framework\Caching;
 
-use ESD\Yii\Yii;
+use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
-use ESD\Yii\Db\Connection;
-use ESD\Yii\Db\PdoValue;
-use ESD\Yii\Db\Query;
-use ESD\Yii\Di\Instance;
+use Yew\Framework\Db\Connection;
+use Yew\Framework\Db\PdoValue;
+use Yew\Framework\Db\Query;
+use Yew\Framework\Di\Instance;
 
 /**
  * DbCache implements a cache application component by storing cached data in a database.
@@ -26,7 +26,7 @@ use ESD\Yii\Di\Instance;
  *
  * ```php
  * 'cache' => [
- *     'class' => 'ESD\Yii\Caching\DbCache',
+ *     'class' => 'Yew\Framework\Caching\DbCache',
  *     // 'db' => 'mydb',
  *     // 'cacheTable' => 'my_cache',
  * ]
@@ -85,7 +85,7 @@ class DbCache extends Cache
     public function init()
     {
         parent::init();
-        $this->db = Yii::$app->getDb();
+        $this->db = Yew::$app->getDb();
     }
 
     /**
@@ -205,7 +205,7 @@ class DbCache extends Cache
 
             return true;
         } catch (\Exception $e) {
-            Yii::warning("Unable to update or insert cache data: {$e->getMessage()}", __METHOD__);
+            Yew::warning("Unable to update or insert cache data: {$e->getMessage()}", __METHOD__);
 
             return false;
         }
@@ -236,7 +236,7 @@ class DbCache extends Cache
 
             return true;
         } catch (\Exception $e) {
-            Yii::warning("Unable to insert cache data: {$e->getMessage()}", __METHOD__);
+            Yew::warning("Unable to insert cache data: {$e->getMessage()}", __METHOD__);
 
             return false;
         }

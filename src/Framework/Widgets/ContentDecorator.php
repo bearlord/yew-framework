@@ -7,8 +7,8 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Base\Widget;
 
 /**
  * ContentDecorator records all output between [[begin()]] and [[end()]] calls, passes it to the given view file
@@ -26,8 +26,8 @@ use ESD\Yii\Base\Widget;
  * <?php ContentDecorator::end() ?>
  * ```
  *
- * There are [[\ESD\Yii\Base\View::beginContent()]] and [[\ESD\Yii\Base\View::endContent()]] wrapper methods in the
- * [[\ESD\Yii\Base\View]] component to make syntax more friendly. In the view these could be used as follows:
+ * There are [[\Yew\Framework\Base\View::beginContent()]] and [[\Yew\Framework\Base\View::endContent()]] wrapper methods in the
+ * [[\Yew\Framework\Base\View]] component to make syntax more friendly. In the view these could be used as follows:
  *
  * ```php
  * <?php $this->beginContent('@app/views/layouts/base.php') ?>

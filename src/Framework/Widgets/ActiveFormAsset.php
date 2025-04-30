@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Web\AssetBundle;
+use Yew\Framework\Web\AssetBundle;
 
 /**
  * The asset bundle for the [[ActiveForm]] widget.
@@ -22,6 +22,6 @@ class ActiveFormAsset extends AssetBundle
         'yii.activeForm.js',
     ];
     public $depends = [
-        'ESD\Yii\Web\YiiAsset',
+        'Yew\Framework\Web\YiiAsset',
     ];
 }

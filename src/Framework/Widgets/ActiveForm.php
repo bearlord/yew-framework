@@ -8,9 +8,9 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\InvalidCallException;
-use ESD\Yii\Base\Model;
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\InvalidCallException;
+use Yew\Framework\Base\Model;
+use Yew\Framework\Base\Widget;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Json;
@@ -38,7 +38,7 @@ class ActiveForm extends Widget
     const VALIDATION_STATE_ON_INPUT = 'input';
 
     /**
-     * @var array|string the form action URL. This parameter will be processed by [[\ESD\Yii\Helpers\Url::to()]].
+     * @var array|string the form action URL. This parameter will be processed by [[\Yew\Framework\Helpers\Url::to()]].
      * @see method for specifying the HTTP method for this form.
      */
     public $action = '';
@@ -60,7 +60,7 @@ class ActiveForm extends Widget
     public $method = 'post';
     /**
      * @var array the HTML attributes (name-value pairs) for the form tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = [];
     /**
@@ -295,7 +295,7 @@ class ActiveForm extends Widget
      * - `footer`: string, the footer HTML for the error summary.
      *
      * The rest of the options will be rendered as the attributes of the container tag. The values will
-     * be HTML-encoded using [[\ESD\Yii\Helpers\Html::encode()]]. If a value is `null`, the corresponding attribute will not be rendered.
+     * be HTML-encoded using [[\Yew\Framework\Helpers\Html::encode()]]. If a value is `null`, the corresponding attribute will not be rendered.
      * @return string the generated error summary.
      * @see errorSummaryCssClass
      */
@@ -316,7 +316,7 @@ class ActiveForm extends Widget
      * @param array|null $options the additional configurations for the field object. These are properties of [[ActiveField]]
      * or a subclass, depending on the value of [[fieldClass]].
      * @return ActiveField the created ActiveField object.
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Base\InvalidConfigException
      * @see fieldConfig
      */
     public function field(Model $model, string $attribute, ?array $options = [])
@@ -404,7 +404,7 @@ class ActiveForm extends Widget
      * as a model.
      *
      * @return array the error message array indexed by the attribute IDs.
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Base\InvalidConfigException
      */
     public static function validate(Model $model, $attributes = null): array
     {
@@ -448,7 +448,7 @@ class ActiveForm extends Widget
      * If this parameter is empty, it means any attribute listed in the applicable
      * validation rules should be validated.
      * @return array the error message array indexed by the attribute IDs.
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Base\InvalidConfigException
      */
     public static function validateMultiple(array $models, $attributes = null): array
     {

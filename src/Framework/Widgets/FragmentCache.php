@@ -8,15 +8,15 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\DynamicContentAwareInterface;
-use ESD\Yii\Base\DynamicContentAwareTrait;
-use ESD\Yii\Base\Widget;
-use ESD\Yii\Caching\CacheInterface;
-use ESD\Yii\Caching\Dependency;
-use ESD\Yii\Di\Instance;
+use Yew\Framework\Base\DynamicContentAwareInterface;
+use Yew\Framework\Base\DynamicContentAwareTrait;
+use Yew\Framework\Base\Widget;
+use Yew\Framework\Caching\CacheInterface;
+use Yew\Framework\Caching\Dependency;
+use Yew\Framework\Di\Instance;
 
 /**
- * FragmentCache is used by [[\ESD\Yii\Base\View]] to provide caching of page fragments.
+ * FragmentCache is used by [[\Yew\Framework\Base\View]] to provide caching of page fragments.
  *
  * @property string|false $cachedContent The cached content. False is returned if valid content is not found
  * in the cache. This property is read-only.
@@ -47,7 +47,7 @@ class FragmentCache extends Widget implements DynamicContentAwareInterface
      *
      * ```php
      * [
-     *     'class' => 'ESD\Yii\Caching\DbDependency',
+     *     'class' => 'Yew\Framework\Caching\DbDependency',
      *     'sql' => 'SELECT MAX(updated_at) FROM post',
      * ]
      * ```
@@ -83,7 +83,7 @@ class FragmentCache extends Widget implements DynamicContentAwareInterface
     {
         parent::init();
 
-        $this->cache = $this->enabled ? Instance::ensure($this->cache, 'ESD\Yii\Caching\CacheInterface') : null;
+        $this->cache = $this->enabled ? Instance::ensure($this->cache, 'Yew\Framework\Caching\CacheInterface') : null;
 
         if ($this->cache instanceof CacheInterface && $this->getCachedContent() === false) {
             $this->getView()->pushDynamicContent($this);

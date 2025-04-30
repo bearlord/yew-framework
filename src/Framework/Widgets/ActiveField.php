@@ -9,7 +9,7 @@ namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
 use Yew\Framework\Base\Component;
-use ESD\Yii\Base\Model;
+use Yew\Framework\Base\Model;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Web\JsExpression;
@@ -43,11 +43,11 @@ class ActiveField extends Component
      * The following special options are recognized:
      *
      * - `tag`: the tag name of the container element. Defaults to `div`. Setting it to `false` will not render a container tag.
-     *   See also [[\ESD\Yii\Helpers\Html::tag()]].
+     *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      *
      * If you set a custom `id` for the container element, you may need to adjust the [[$selectors]] accordingly.
      *
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'form-group'];
     /**
@@ -61,7 +61,7 @@ class ActiveField extends Component
      *
      * If you set a custom `id` for the input element, you may need to adjust the [[$selectors]] accordingly.
      *
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $inputOptions = ['class' => 'form-control'];
     /**
@@ -70,18 +70,18 @@ class ActiveField extends Component
      * The following special options are recognized:
      *
      * - `tag`: the tag name of the container element. Defaults to `div`. Setting it to `false` will not render a container tag.
-     *   See also [[\ESD\Yii\Helpers\Html::tag()]].
+     *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      * - `encode`: whether to encode the error output. Defaults to `true`.
      *
      * If you set a custom `id` for the error element, you may need to adjust the [[$selectors]] accordingly.
      *
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $errorOptions = ['class' => 'help-block'];
     /**
      * @var array the default options for the label tags. The parameter passed to [[label()]] will be
      * merged with this property when rendering the label tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $labelOptions = ['class' => 'control-label'];
     /**
@@ -90,7 +90,7 @@ class ActiveField extends Component
      * The following special options are recognized:
      *
      * - `tag`: the tag name of the container element. Defaults to `div`. Setting it to `false` will not render a container tag.
-     *   See also [[\ESD\Yii\Helpers\Html::tag()]].
+     *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      *
      * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */

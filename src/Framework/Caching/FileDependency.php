@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Caching;
 
-use ESD\Yii\Yii;
+use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
 
 /**

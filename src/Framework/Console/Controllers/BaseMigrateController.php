@@ -8,17 +8,17 @@
 namespace Yew\Framework\Console\Controllers;
 
 use Yew\Framework\Base\Action;
-use Yew\Yii\Yii;
+use Yew\Yew;
 use Yew\Framework\Base\BaseObject;
 use Yew\Framework\Base\InvalidConfigException;
 use Yew\Framework\Base\NotSupportedException;
 use Yew\Framework\Console\Controller;
 use Yew\Framework\Console\Exception;
 use Yew\Framework\Console\ExitCode;
-use Yew\Yii\Db\MigrationInterface;
-use Yew\Yii\Helpers\Console;
-use Yew\Yii\Helpers\FileHelper;
-use Yew\Yii\Helpers\Inflector;
+use Yew\Framework\Db\MigrationInterface;
+use Yew\Framework\Helpers\Console;
+use Yew\Framework\Helpers\FileHelper;
+use Yew\Framework\Helpers\Inflector;
 
 /**
  * BaseMigrateController is the base class for migrate controllers.

@@ -8,12 +8,8 @@ namespace Yew\Plugins\Database;
 
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Db\Connection;
-use Yew\Yii\Yii;
+use Yew\Yew;
 
-/**
- * Trait GetDatabase
- * @package ESD\Yii\Plugin\Pdo]
- */
 trait GetDatabase
 {
     /**

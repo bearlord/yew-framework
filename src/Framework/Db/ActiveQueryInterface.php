@@ -105,5 +105,5 @@ interface ActiveQueryInterface extends QueryInterface
      * @param ActiveRecordInterface $model the primary model
      * @return mixed the related record(s)
      */
-    public function findFor($name, $model);
+    public function findFor(string $name, ActiveRecordInterface $model);
 }

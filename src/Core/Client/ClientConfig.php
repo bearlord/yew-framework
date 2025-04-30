@@ -4,9 +4,9 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Core\Client;
+namespace Yew\Core\Client;
 
-use ESD\Core\Plugins\Config\ToConfigArray;
+use Yew\Core\Plugins\Config\ToConfigArray;
 
 /**
  * Class ClientConfig

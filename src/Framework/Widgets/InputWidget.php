@@ -8,9 +8,9 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Base\Model;
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Base\Model;
+use Yew\Framework\Base\Widget;
 use Yew\Framework\Helpers\Html;
 
 /**
@@ -60,7 +60,7 @@ class InputWidget extends Widget
     public $value;
     /**
      * @var array the HTML attributes for the input tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = [];
 

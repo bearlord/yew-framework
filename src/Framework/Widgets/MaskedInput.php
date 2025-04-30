@@ -7,11 +7,11 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Base\InvalidConfigException;
+use Yew\Framework\Base\InvalidConfigException;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Json;
-use ESD\Yii\Web\JsExpression;
-use ESD\Yii\Web\View;
+use Yew\Framework\Web\JsExpression;
+use Yew\Framework\Web\View;
 
 /**
  * MaskedInput generates a masked text input.
@@ -89,7 +89,7 @@ class MaskedInput extends InputWidget
     public $clientOptions = [];
     /**
      * @var array the HTML attributes for the input tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'form-control'];
     /**

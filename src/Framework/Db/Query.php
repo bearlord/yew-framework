@@ -451,6 +451,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param string|ExpressionInterface $selectExpression
      * @param Connection|null $db
      * @return bool|string
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     protected function queryScalar($selectExpression, ?Connection $db)
     {
@@ -496,7 +498,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * Returns table names used in [[from]] indexed by aliases.
      * Both aliases and names are enclosed into {{ and }}.
      * @return string[] table names indexed by aliases
-     * @throws \Yew\Framework\Exception\InvalidConfigException
+     * @throws InvalidConfigException
      * @since 2.0.12
      */
     public function getTablesUsedInFrom(): array

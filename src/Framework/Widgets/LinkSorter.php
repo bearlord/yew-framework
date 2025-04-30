@@ -8,9 +8,9 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Base\Widget;
-use ESD\Yii\Data\Sort;
+use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Base\Widget;
+use Yew\Framework\Data\Sort;
 use Yew\Framework\Helpers\Html;
 
 /**
@@ -36,13 +36,13 @@ class LinkSorter extends Widget
     public $attributes;
     /**
      * @var array HTML attributes for the sorter container tag.
-     * @see \ESD\Yii\Helpers\Html::ul() for special attributes.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::ul() for special attributes.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'sorter'];
     /**
      * @var array HTML attributes for the link in a sorter container tag which are passed to [[Sort::link()]].
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      * @since 2.0.6
      */
     public $linkOptions = [];

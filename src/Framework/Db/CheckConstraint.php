@@ -18,5 +18,5 @@ class CheckConstraint extends Constraint
     /**
      * @var string the SQL of the `CHECK` constraint.
      */
-    public $expression;
+    public string $expression;
 }

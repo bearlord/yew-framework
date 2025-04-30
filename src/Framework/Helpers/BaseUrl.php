@@ -346,7 +346,7 @@ class BaseUrl
      * @param bool|string $scheme the URI scheme to use for the returned URL:
      *
      * - `false` (default): returning a relative URL.
-     * - `true`: returning an absolute base URL whose scheme is the same as that in [[\ESD\Yii\Web\UrlManager::$hostInfo]].
+     * - `true`: returning an absolute base URL whose scheme is the same as that in [[\Yew\Framework\Web\UrlManager::$hostInfo]].
      * - string: returning an absolute URL with the specified scheme (either `http`, `https` or empty string
      *   for protocol-relative URL).
      *
@@ -412,7 +412,7 @@ class BaseUrl
      * @param bool|string $scheme the URI scheme to use in the generated URL:
      *
      * - `false` (default): generating a relative URL.
-     * - `true`: returning an absolute base URL whose scheme is the same as that in [[\ESD\Yii\Web\UrlManager::$hostInfo]].
+     * - `true`: returning an absolute base URL whose scheme is the same as that in [[\Yew\Framework\Web\UrlManager::$hostInfo]].
      * - string: generating an absolute URL with the specified scheme (either `http`, `https` or empty string
      *   for protocol-relative URL).
      *
@@ -428,7 +428,7 @@ class BaseUrl
     }
 
     /**
-     * @return \ESD\Yii\Web\UrlManager URL manager used to create URLs
+     * @return \Yew\Framework\Web\UrlManager URL manager used to create URLs
      * @since 2.0.8
      */
     protected static function getUrlManager()

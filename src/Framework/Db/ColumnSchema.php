@@ -21,63 +21,76 @@ class ColumnSchema extends BaseObject
     /**
      * @var string name of this column (without quotes).
      */
-    public $name;
+    public string $name;
+
     /**
      * @var bool whether this column can be null.
      */
-    public $allowNull;
+    public bool $allowNull;
+
     /**
      * @var string abstract type of this column. Possible abstract types include:
      * char, string, text, boolean, smallint, integer, bigint, float, decimal, datetime,
      * timestamp, time, date, binary, and money.
      */
-    public $type;
+    public string $type;
+
     /**
      * @var string the PHP type of this column. Possible PHP types include:
      * `string`, `boolean`, `integer`, `double`, `array`.
      */
-    public $phpType;
+    public string $phpType;
+
     /**
      * @var string the DB type of this column. Possible DB types vary according to the type of DBMS.
      */
-    public $dbType;
+    public string $dbType;
+
     /**
      * @var mixed default value of this column
      */
     public $defaultValue;
+
     /**
      * @var array enumerable values. This is set only if the column is declared to be an enumerable type.
      */
-    public $enumValues;
+    public array $enumValues;
+
     /**
      * @var int display size of the column.
      */
-    public $size;
+    public int $size;
+
     /**
      * @var int precision of the column data, if it is numeric.
      */
-    public $precision;
+    public int $precision;
+
     /**
      * @var int scale of the column data, if it is numeric.
      */
-    public $scale;
+    public int $scale;
+
     /**
      * @var bool whether this column is a primary key
      */
-    public $isPrimaryKey;
+    public bool $isPrimaryKey;
+
     /**
      * @var bool whether this column is auto-incremental
      */
-    public $autoIncrement = false;
+    public bool $autoIncrement = false;
+
     /**
      * @var bool whether this column is unsigned. This is only meaningful
      * when [[type]] is `smallint`, `integer` or `bigint`.
      */
-    public $unsigned;
+    public bool $unsigned;
+
     /**
      * @var string comment of this column. Not all DBMS support this.
      */
-    public $comment;
+    public string $comment;
 
 
     /**
@@ -112,7 +125,7 @@ class ColumnSchema extends BaseObject
      * @return mixed converted value
      * @since 2.0.3
      */
-    protected function typecast($value)
+    protected function typecast($value = null)
     {
         if ($value === ''
             && !in_array(
@@ -160,7 +173,7 @@ class ColumnSchema extends BaseObject
             case 'boolean':
                 // treating a 0 bit value as false too
                 // https://github.com/yiisoft/yii2/issues/9006
-                return (bool) $value && $value !== "\0";
+                return $value && $value !== "\0";
             case 'double':
                 return (float) $value;
         }
@@ -171,8 +184,15 @@ class ColumnSchema extends BaseObject
     /**
      * @return int[] array of numbers that represent possible PDO parameter types
      */
-    private function getPdoParamTypes()
+    private function getPdoParamTypes(): array
     {
-        return [\PDO::PARAM_BOOL, \PDO::PARAM_INT, \PDO::PARAM_STR, \PDO::PARAM_LOB, \PDO::PARAM_NULL, \PDO::PARAM_STMT];
+        return [
+            \PDO::PARAM_BOOL,
+            \PDO::PARAM_INT,
+            \PDO::PARAM_STR,
+            \PDO::PARAM_LOB,
+            \PDO::PARAM_NULL,
+            \PDO::PARAM_STMT
+        ];
     }
 }

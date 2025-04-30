@@ -136,7 +136,7 @@ class UploadedFile extends BaseObject
 
     /**
      * Returns an uploaded file for the given model attribute.
-     * The file should be uploaded using [[\ESD\Yii\Widgets\ActiveField::fileInput()]].
+     * The file should be uploaded using [[\Yew\Framework\Widgets\ActiveField::fileInput()]].
      * @param \Yew\Framework\Base\Model $model the data model
      * @param string $attribute the attribute name. The attribute name may contain array indexes.
      * For example, '[1]file' for tabular file uploading; and 'file[1]' for an element in a file array.

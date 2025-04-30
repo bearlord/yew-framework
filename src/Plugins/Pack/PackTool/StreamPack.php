@@ -12,8 +12,8 @@ use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Core\Server\Config\PortConfig;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Pack\ClientData;
-use Yew\Yii\Helpers\Json;
-use Yew\Yii\Yii;
+use Yew\Framework\Helpers\Json;
+use Yew\Yew;
 
 /**
  * Class StreamPack

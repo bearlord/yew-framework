@@ -7,8 +7,8 @@
 
 namespace Yew\Framework\Caching;
 
-use ESD\Yii\Yii;
-use ESD\Yii\Helpers\FileHelper;
+use Yew\Yew;
+use Yew\Framework\Helpers\FileHelper;
 
 /**
  * FileCache implements a cache component using files.

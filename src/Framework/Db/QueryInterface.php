@@ -24,7 +24,7 @@ interface QueryInterface
 {
     /**
      * Executes the query and returns all results as an array.
-     * @param \Yew\Framework\Db\Connection|null $db the database connection used to execute the query.
+     * @param Connection|null $db the database connection used to execute the query.
      * If this parameter is not given, the `db` application component will be used.
      * @return array the query results. If the query results in nothing, an empty array will be returned.
      */
@@ -32,7 +32,7 @@ interface QueryInterface
 
     /**
      * Executes the query and returns a single row of result.
-     * @param \Yew\Framework\Db\Connection|null $db the database connection used to execute the query.
+     * @param Connection|null $db the database connection used to execute the query.
      * If this parameter is not given, the `db` application component will be used.
      * @return array|bool the first row (in terms of an array) of the query result. False is returned if the query
      * results in nothing.
@@ -42,7 +42,7 @@ interface QueryInterface
     /**
      * Returns the number of records.
      * @param string|null $q the COUNT expression. Defaults to '*'.
-     * @param \Yew\Framework\Db\Connection|null $db the database connection used to execute the query.
+     * @param Connection|null $db the database connection used to execute the query.
      * If this parameter is not given, the `db` application component will be used.
      * @return int number of records.
      */
@@ -50,7 +50,7 @@ interface QueryInterface
 
     /**
      * Returns a value indicating whether the query result contains any row of data.
-     * @param \Yew\Framework\Db\Connection|null $db the database connection used to execute the query.
+     * @param Connection|null $db the database connection used to execute the query.
      * If this parameter is not given, the `db` application component will be used.
      * @return bool whether the query result contains any row of data.
      */

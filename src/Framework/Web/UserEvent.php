@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Web;
 
-use ESD\Yii\Base\Event;
+use Yew\Framework\Base\Event;
 
 /**
  * This event class is used for Events triggered by the [[User]] class.

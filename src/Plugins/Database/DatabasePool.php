@@ -13,10 +13,6 @@ use Yew\Core\Pool\Pool;
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Db\Exception;
 
-/**
- * Class DatabasePool
- * @package ESD\Yii\Plugin\Pdo
- */
 class DatabasePool extends Pool
 {
     /**

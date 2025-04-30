@@ -8,8 +8,8 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Base\Widget;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Html;
 
@@ -60,7 +60,7 @@ class Breadcrumbs extends Widget
     public $tag = 'ul';
     /**
      * @var array the HTML attributes for the breadcrumb container tag.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'breadcrumb'];
     /**
@@ -70,7 +70,7 @@ class Breadcrumbs extends Widget
     /**
      * @var array the first hyperlink in the breadcrumbs (called home link).
      * Please refer to [[links]] on the format of the link.
-     * If this property is not set, it will default to a link pointing to [[\ESD\Yii\Web\Application::homeUrl]]
+     * If this property is not set, it will default to a link pointing to [[\Yew\Framework\Web\Application::homeUrl]]
      * with the label 'Home'. If this property is false, the home link will not be rendered.
      */
     public $homeLink;

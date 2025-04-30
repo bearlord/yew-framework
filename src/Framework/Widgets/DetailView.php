@@ -8,14 +8,14 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use ESD\Yii\Base\Arrayable;
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Base\Model;
-use ESD\Yii\Base\Widget;
+use Yew\Framework\Base\Arrayable;
+use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Base\Model;
+use Yew\Framework\Base\Widget;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Inflector;
-use ESD\Yii\I18n\Formatter;
+use Yew\Framework\I18n\Formatter;
 
 /**
  * DetailView displays the detail of a single data [[model]].
@@ -86,9 +86,9 @@ class DetailView extends Widget
      *   Please refer to [[Formatter]] for supported types and [[Formatter::format()]] on how to specify this value.
      * - `visible`: whether the attribute is visible. If set to `false`, the attribute will NOT be displayed.
      * - `contentOptions`: the HTML attributes to customize value tag. For example: `['class' => 'bg-red']`.
-     *   Please refer to [[\ESD\Yii\Helpers\BaseHtml::renderTagAttributes()]] for the supported syntax.
+     *   Please refer to [[\Yew\Framework\Helpers\BaseHtml::renderTagAttributes()]] for the supported syntax.
      * - `captionOptions`: the HTML attributes to customize label tag. For example: `['class' => 'bg-red']`.
-     *   Please refer to [[\ESD\Yii\Helpers\BaseHtml::renderTagAttributes()]] for the supported syntax.
+     *   Please refer to [[\Yew\Framework\Helpers\BaseHtml::renderTagAttributes()]] for the supported syntax.
      */
     public $attributes;
     /**
@@ -110,7 +110,7 @@ class DetailView extends Widget
     /**
      * @var array the HTML attributes for the container tag of this widget. The `tag` option specifies
      * what container tag should be used. It defaults to `table` if not set.
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $options = ['class' => 'table table-striped table-bordered detail-view'];
     /**

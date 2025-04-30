@@ -7,9 +7,12 @@
 
 namespace Yew\Framework\Db\Mssql;
 
+use Yew\Framework\Db\Exception;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Db\Constraint;
 use Yew\Framework\Db\Expression;
+use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\NotSupportedException;
 
 /**
  * QueryBuilder is the query builder for MS SQL Server databases (version 2008 and above).
@@ -59,9 +62,17 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     }
 
     /**
-     * {@inheritdoc}
+     * @param string $sql
+     * @param array $orderBy
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return string
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
-    public function buildOrderByAndLimit(string $sql, array $orderBy, int $limit, int $offset): string
+    public function buildOrderByAndLimit(string $sql, array $orderBy, ?int $limit = null, ?int $offset = null): string
     {
         if (!$this->hasOffset($offset) && !$this->hasLimit($limit)) {
             $orderBy = $this->buildOrderBy($orderBy);
@@ -83,7 +94,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param int $offset the offset number. See [[\Yew\Framework\Db\Query::offset]] for more details.
      * @return string the SQL completed with ORDER BY/LIMIT/OFFSET (if any)
      */
-    protected function newBuildOrderByAndLimit($sql, $orderBy, $limit, $offset)
+    protected function newBuildOrderByAndLimit(string $sql, array $orderBy, int $limit, int $offset): string
     {
         $orderBy = $this->buildOrderBy($orderBy);
         if ($orderBy === '') {
@@ -206,24 +217,24 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @return string the SQL statement for resetting sequence
      * @throws InvalidArgumentException if the table does not exist or there is no sequence associated with the table.
      */
-    public function resetSequence(string $table, $value = null): string
+    public function resetSequence(string $tableName, $value = null): string
     {
-        $table = $this->db->getTableSchema($table);
+        $table = $this->db->getTableSchema($tableName);
         if ($table !== null && $table->sequenceName !== null) {
-            $table = $this->db->quoteTableName($table);
+            $tableName = $this->db->quoteTableName($tableName);
             if ($value === null) {
                 $key = $this->db->quoteColumnName(reset($table->primaryKey));
-                $value = "(SELECT COALESCE(MAX({$key}),0) FROM {$table})+1";
+                $value = "(SELECT COALESCE(MAX({$key}),0) FROM {$tableName})+1";
             } else {
                 $value = (int) $value;
             }
 
-            return "DBCC CHECKIDENT ('{$table}', RESEED, {$value})";
+            return "DBCC CHECKIDENT ('{$tableName}', RESEED, {$value})";
         } elseif ($table === null) {
-            throw new InvalidArgumentException("Table not found: $table");
+            throw new InvalidArgumentException("Table not found: $tableName");
         }
 
-        throw new InvalidArgumentException("There is not sequence associated with table '$table'.");
+        throw new InvalidArgumentException("There is not sequence associated with table '$tableName'.");
     }
 
     /**
@@ -232,6 +243,10 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
      * @param string|null $schema the schema of the tables.
      * @param string|null $table the table name.
      * @return string the SQL statement for checking integrity
+     * @throws \Throwable
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
      */
     public function checkIntegrity(bool $check = true, ?string $schema = '', ?string $table = ''): string
     {

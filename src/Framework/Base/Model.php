@@ -15,8 +15,8 @@ use ReflectionClass;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Yew;
 use Yew\Framework\Helpers\Inflector;
-use ESD\Yii\Validators\RequiredValidator;
-use ESD\Yii\Validators\Validator;
+use Yew\Framework\Validators\RequiredValidator;
+use Yew\Framework\Validators\Validator;
 use Yew\Coroutine\Server\Server;
 
 /**

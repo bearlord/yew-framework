@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Web\AssetBundle;
+use Yew\Framework\Web\AssetBundle;
 
 /**
  * This asset bundle provides the javascript files required by [[Pjax]] widget.
@@ -22,6 +22,6 @@ class PjaxAsset extends AssetBundle
         'jquery.pjax.js',
     ];
     public $depends = [
-        'ESD\Yii\Web\YiiAsset',
+        'Yew\Framework\Web\YiiAsset',
     ];
 }

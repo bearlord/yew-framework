@@ -8,7 +8,7 @@ namespace Yew\Plugins\Pack\PackTool;
 
 use Yew\Core\Server\Config\PortConfig;
 use Yew\Plugins\Pack\PackException;
-use Yew\Yii\Yii;
+use Yew\Yew;
 
 /**
  * Class AbstractPack

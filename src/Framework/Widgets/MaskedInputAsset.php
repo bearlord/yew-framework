@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Widgets;
 
-use ESD\Yii\Web\AssetBundle;
+use Yew\Framework\Web\AssetBundle;
 
 /**
  * The asset bundle for the [[MaskedInput]] widget.
@@ -24,6 +24,6 @@ class MaskedInputAsset extends AssetBundle
         'jquery.inputmask.bundle.js',
     ];
     public $depends = [
-        'ESD\Yii\Web\YiiAsset',
+        'Yew\Framework\Web\YiiAsset',
     ];
 }
