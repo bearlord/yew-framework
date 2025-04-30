@@ -319,11 +319,6 @@ abstract class Process
         }
     }
 
-    /**
-     * Process start
-     *
-     * @return mixed
-     */
     public abstract function init();
 
     /**

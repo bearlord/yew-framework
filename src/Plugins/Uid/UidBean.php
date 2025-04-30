@@ -17,15 +17,15 @@ class UidBean
     /**
      * @var Table
      */
-    protected $uidFdTable;
+    protected Table $uidFdTable;
     /**
      * @var Table
      */
-    protected $fdUidTable;
+    protected Table $fdUidTable;
     /**
      * @var UidConfig
      */
-    protected $uidConfig;
+    protected UidConfig $uidConfig;
 
     /**
      * @param int $getMaxCoroutine
@@ -34,6 +34,7 @@ class UidBean
     public function __construct(int $getMaxCoroutine, UidConfig $uidConfig)
     {
         $this->uidConfig = $uidConfig;
+
         $this->uidFdTable = new Table($getMaxCoroutine);
         $this->uidFdTable->column("fd", Table::TYPE_INT);
         $this->uidFdTable->create();
@@ -85,6 +86,7 @@ class UidBean
         if ($autoKick) {
             $this->kickUid($uid);
         }
+
         $this->fdUidTable->set($fd, ["uid" => $uid]);
         $this->uidFdTable->set($uid, ["fd" => $fd]);
 
@@ -92,8 +94,7 @@ class UidBean
     }
 
     /**
-     * @param $fd
-     * @throws \Exception
+     * @param int $fd
      */
     public function unBindUid(int $fd)
     {
@@ -161,6 +162,9 @@ class UidBean
         return $result;
     }
 
+    /**
+     * @return array
+     */
     public function getAllFd(): array
     {
         $result = [];
