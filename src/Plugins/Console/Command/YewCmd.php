@@ -7,6 +7,8 @@
 namespace Yew\Plugins\Console\Command;
 
 use Yew\Core\Context\Context;
+use Yew\Framework\Console\Exception;
+use Yew\Framework\Console\UnknownCommandException;
 use Yew\Plugins\Console\ConsolePlugin;
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Console\Application;
@@ -46,11 +48,6 @@ class YewCmd extends Command
     {
         $this->setName('yew')->setDescription("Yew console");
         $this->addArgument('route', InputOption::VALUE_NONE, 'Route');
-
-        $argMaxNumber = 50;
-        for ($i = 1; $i <= $argMaxNumber; $i++) {
-            $this->addArgument('arg' . $i, 2, 'arg' . $i);
-        }
     }
 
     /**
@@ -58,8 +55,10 @@ class YewCmd extends Command
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int
+     * @throws Exception
+     * @throws UnknownCommandException
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $arguments = $input->getArguments();
         unset($arguments['command'], $arguments['route']);

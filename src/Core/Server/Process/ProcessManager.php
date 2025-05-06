@@ -27,14 +27,14 @@ class ProcessManager
     private Server $server;
 
     /**
-     * @var Process
+     * @var Process|null
      */
-    private Process $masterProcess;
+    private ?Process $masterProcess = null;
 
     /**
-     * @var Process
+     * @var Process|null
      */
-    private Process $managerProcess;
+    private ?Process $managerProcess = null;
 
     /**
      * Default process class

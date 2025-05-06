@@ -64,7 +64,7 @@ abstract class RouteController extends Controller implements IController
      * @return mixed
      * @throws \Throwable
      */
-    public function handle(?string $controllerName, ?string $methodName, ?array $params)
+    public function handle(?string $controllerName = null, ?string $methodName = null, ?array $params = null)
     {
         if (!is_callable([$this, $methodName]) || $methodName == null) {
             $callMethodName = 'defaultMethod';
@@ -92,14 +92,13 @@ abstract class RouteController extends Controller implements IController
             $annotations = $clientData->getAnnotations();
             foreach ($annotations as $annotation) {
                 if ($annotation instanceof ResponseBody) {
-                    $data = [
+                    return [
                         "code" => $exception->getCode(),
                         "message" => $exception->getMessage(),
                         "file" => $exception->getFile(),
                         "line" => $exception->getLine(),
                         "trace" => $exception->getTrace()
                     ];
-                    return $data;
                 }
             }
 

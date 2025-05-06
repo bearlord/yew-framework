@@ -8,10 +8,6 @@ namespace Yew\Plugins\Console;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class ConsoleConfig
- * @package Yew\Plugins\Console
- */
 class ConsoleConfig extends BaseConfig
 {
     const KEY = "console";

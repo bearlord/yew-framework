@@ -7,6 +7,8 @@
 
 namespace Yew\Framework\Base;
 
+use Yew\Framework\Exception\Exception;
+use Yew\Framework\Exception\InvalidRouteException;
 use Yew\Yew;
 
 /**
@@ -20,7 +22,7 @@ use Yew\Yew;
  * property is read-only.
  * @property string $uniqueId The controller ID that is prefixed with the module ID (if any). This property is
  * read-only.
- * @property View|\Yew\Yew\Web\View $view The view object that can be used to render views or view files.
+ * @property View|\Yew\Framework\Web\View $view The view object that can be used to render views or view files.
  * @property string $viewPath The directory containing the view files for this controller.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -252,7 +254,7 @@ class Controller extends Component implements ViewContextInterface
      * method will be created and returned.
      * @param string $id the action ID.
      * @return Action|null|object the newly created action instance. Null if the ID doesn't resolve into any action.
-     * @throws \Yew\Yew\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function createAction(string $id)
     {
@@ -474,7 +476,7 @@ class Controller extends Component implements ViewContextInterface
 
     /**
      * Sets the view object to be used by this controller.
-     * @param View|\Yew\Yew\Web\View $view the view object that can be used to render views or view files.
+     * @param View|\Yew\Framework\Web\View $view the view object that can be used to render views or view files.
      */
     public function setView($view)
     {
@@ -552,6 +554,7 @@ class Controller extends Component implements ViewContextInterface
      * @throws \Yew\Framework\Exception\Exception
      * @throws \Yew\Framework\Exception\InvalidConfigException Thrown when there is an error in the DI configuration.
      * @throws \Yew\Framework\Di\NotInstantiableException
+     * @throws \ReflectionException
      * @since 2.0.36
      */
     final protected function bindInjectedParams(\ReflectionType $type, string $name, array &$args, array &$requestedParams)

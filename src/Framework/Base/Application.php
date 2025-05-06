@@ -66,9 +66,9 @@ class Application extends ServiceLocator
     public string $cookieValidationKey = 'yew';
 
     /**
-     * @var string the root directory of the application.
+     * @var string|null the root directory of the application.
      */
-    private string $_basePath;
+    private ?string $_basePath = null;
 
     /**
      * @var Application[]
@@ -78,10 +78,11 @@ class Application extends ServiceLocator
     /**
      * Application constructor.
      */
-    public function __construct()
+    public function __construct($config = [])
     {
         Yew::$app = $this;
         $this->preInit();
+        Component::__construct($config);
     }
 
     /**
@@ -195,7 +196,7 @@ class Application extends ServiceLocator
         Yew::setAlias('@App', $this->getBasePath());
     }
 
-    private $_vendorPath;
+    private string $_vendorPath;
 
     /**
      * Returns the directory that stores vendor files.
@@ -573,11 +574,11 @@ class Application extends ServiceLocator
     }
 
     /**
-     * @param $route
+     * @param string $route
      * @return array
      * @throws InvalidConfigException
      */
-    public function createController($route): array
+    public function createController(string $route): ?array
     {
         $route = "/" . trim($route, "/");
         if (strpos($route, '/') !== false) {
@@ -602,7 +603,7 @@ class Application extends ServiceLocator
                 ], [$id, $this]);
                 return [$controller, $actionName];
         }
-        return [];
+        return null;
     }
 
     /**

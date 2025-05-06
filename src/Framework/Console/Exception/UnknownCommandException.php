@@ -20,12 +20,12 @@ class UnknownCommandException extends Exception
     /**
      * @var string the name of the command that could not be recognized.
      */
-    public $command;
+    public string $command;
 
     /**
      * @var Application
      */
-    protected $application;
+    protected Application $application;
 
 
     /**

@@ -22,11 +22,8 @@ use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\ConsoleOutput;
+use Yew\Plugins\Console\Command\YewCmd;
 
-/**
- * Class ConsolePlugin
- * @package Yew\Plugins\Console
- */
 class ConsolePlugin extends AbstractPlugin
 {
     const SUCCESS_EXIT = 0;
@@ -109,6 +106,7 @@ class ConsolePlugin extends AbstractPlugin
         StartCmd::class,
         StatusCmd::class,
         StopCmd::class,
+        YewCmd::class
     ];
 
     /**

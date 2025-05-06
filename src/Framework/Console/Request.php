@@ -20,14 +20,14 @@ namespace Yew\Framework\Console;
  */
 class Request
 {
-    private $_params;
+    private ?array $_params = null;
 
 
     /**
      * Returns the command line arguments.
-     * @return array the command line arguments. It does not include the entry script name.
+     * @return array|null the command line arguments. It does not include the entry script name.
      */
-    public function getParams()
+    public function getParams(): ?array
     {
         if ($this->_params === null) {
             if (isset($_SERVER['argv'])) {
@@ -43,9 +43,9 @@ class Request
 
     /**
      * Sets the command line arguments.
-     * @param array $params the command line arguments
+     * @param array|null $params the command line arguments
      */
-    public function setParams($params)
+    public function setParams(?array $params)
     {
         $this->_params = $params;
     }
@@ -55,7 +55,7 @@ class Request
      * @return array the first element is the route, and the second is the associated parameters.
      * @throws Exception when parameter is wrong and can not be resolved
      */
-    public function resolve()
+    public function resolve(): array
     {
         $rawParams = $this->getParams();
         $endOfOptionsFound = false;
