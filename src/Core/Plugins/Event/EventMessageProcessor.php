@@ -9,10 +9,7 @@ namespace Yew\Core\Plugins\Event;
 use Yew\Core\Message\Message;
 use Yew\Core\Message\MessageProcessor;
 
-/**
- * Class EventMessageProcessor
- * @package Yew\BaseServer\Plugins\Event
- */
+
 class EventMessageProcessor extends MessageProcessor
 {
     /**

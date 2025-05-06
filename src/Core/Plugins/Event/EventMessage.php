@@ -8,10 +8,6 @@ namespace Yew\Core\Plugins\Event;
 
 use Yew\Core\Message\Message;
 
-/**
- * Class Event
- * @package Yew\BaseServer\Plugins\Event
- */
 class EventMessage extends Message
 {
     const type = "@event";

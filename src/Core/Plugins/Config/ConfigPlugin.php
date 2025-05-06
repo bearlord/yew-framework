@@ -13,10 +13,6 @@ use Yew\Core\Plugins\Event\EventPlugin;
 use Yew\Core\Server\Server;
 use Symfony\Component\Yaml\Yaml;
 
-/**
- * Class ConfigPlugin
- * @package Yew\Core\Plugins\Config
- */
 class ConfigPlugin extends AbstractPlugin
 {
     //manually configuration

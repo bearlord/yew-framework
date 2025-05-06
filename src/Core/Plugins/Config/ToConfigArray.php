@@ -9,10 +9,6 @@ namespace Yew\Core\Plugins\Config;
 use ReflectionClass;
 use ReflectionException;
 
-/**
- * Trait ToConfigArray
- * @package Yew\Core\Plugins\Config
- */
 trait ToConfigArray
 {
     /**

@@ -11,10 +11,6 @@ use Yew\Core\Server\Beans\Response;
 use Yew\Core\Server\Beans\WebSocketFrame;
 use Yew\Core\Server\Port\ServerPort;
 
-/**
- * Class GoPort
- * @package Yew\Go
- */
 class AppPort extends ServerPort
 {
     /**

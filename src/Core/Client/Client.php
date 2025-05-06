@@ -9,10 +9,6 @@ namespace Yew\Core\Client;
 use Yew\Core\Server\Config\PortConfig;
 use Swoole;
 
-/**
- * Class Client
- * @package ESD\Core\Client
- */
 class Client
 {
     /**

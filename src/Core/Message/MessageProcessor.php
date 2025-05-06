@@ -8,10 +8,6 @@ namespace Yew\Core\Message;
 
 use Yew\Core\Exception\Exception;
 
-/**
- * Class MessageProcessor
- * @package Yew\Core\Message
- */
 abstract class MessageProcessor
 {
     /**

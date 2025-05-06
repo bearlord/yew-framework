@@ -8,10 +8,6 @@ namespace Yew\Core\Plugins\Config;
 
 use Yew\Core\Plugins\Event\Event;
 
-/**
- * Class ConfigChangeEvent
- * @package Yew\Core\Plugins\Config
- */
 class ConfigChangeEvent extends Event
 {
     const ConfigChangeEvent = "ConfigChangeEvent";

@@ -24,10 +24,6 @@ use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
 use Psr\Log\LoggerInterface;
 
-/**
- * Class LoggerPlugin
- * @package Yew\Core\Plugins\Logger
- */
 class LoggerPlugin extends AbstractPlugin
 {
     /**

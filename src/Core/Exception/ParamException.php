@@ -8,10 +8,6 @@ namespace Yew\Core\Exception;
 
 use Throwable;
 
-/**
- * Class ParamException
- * @package ESD\Core
- */
 class ParamException extends Exception
 {
     /**

@@ -6,10 +6,6 @@
 
 namespace Yew\Coroutine\Pool;
 
-/**
- * Class CoroutineExecutor
- * @package Yew\Coroutine\Pool
- */
 class CoroutineExecutor implements Executor
 {
     /**

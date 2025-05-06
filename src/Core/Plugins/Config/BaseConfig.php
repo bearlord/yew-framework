@@ -9,10 +9,6 @@ namespace Yew\Core\Plugins\Config;
 use Yew\Core\Server\Server;
 use Yew\Core\Exception\ConfigException;
 
-/**
- * Class BaseConfig
- * @package Yew\Core\Plugins\Config
- */
 class BaseConfig
 {
     use ToConfigArray;

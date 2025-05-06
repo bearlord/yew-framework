@@ -10,10 +10,6 @@ use Yew\Core\Exception;
 use Yew\Core\Server\Beans\Http\Cookie;
 use Yew\Core\Server\Beans\Response;
 
-/**
- * Class SwooleResponse
- * @package Yew\Server\Coroutine\Http
- */
 class SwooleResponse extends Response
 {
 

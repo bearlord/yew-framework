@@ -6,10 +6,6 @@
 
 namespace Yew\Coroutine\Pool;
 
-/**
- * Interface Executor
- * @package Yew\Coroutine\Pool
- */
 interface Executor
 {
     /**

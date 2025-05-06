@@ -10,10 +10,6 @@ use Yew\Core\Plugins\Config\BaseConfig;
 use Yew\Core\Exception\ConfigException;
 use Yew\Core\Server\Process\Process;
 
-/**
- * Class ProcessConfig
- * @package Yew\Core\Server\Config
- */
 class ProcessConfig extends BaseConfig
 {
     const key = "yew.process";

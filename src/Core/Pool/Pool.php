@@ -10,10 +10,6 @@ use Yew\Core\Channel\Channel;
 use Yew\Coroutine\Server\Server;
 use Yew\Core\Pool\FrequencyInterface;
 
-/**
- * Class Pool
- * @package Yew\Core\Pool
- */
 abstract class Pool implements PoolInterface
 {
     /**

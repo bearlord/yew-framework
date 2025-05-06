@@ -9,10 +9,6 @@ namespace Yew\Core\Server\Config;
 use Yew\Core\Exception\ConfigException;
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class PortConfig
- * @package Yew\Core\Server\Config
- */
 class PortConfig extends BaseConfig
 {
     const SWOOLE_SOCK_TCP = SWOOLE_SOCK_TCP;

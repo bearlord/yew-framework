@@ -8,10 +8,6 @@ namespace Yew\Core\Plugin;
 
 use Yew\Core\Plugins\Event\Event;
 
-/**
- * Class PluginEvent
- * @package Yew\Core\Plugin
- */
 class PluginEvent extends Event
 {
     /**

@@ -10,13 +10,11 @@ use Yew\Core\Channel\Channel;
 use Yew\Coroutine\Beans\ChannelStats;
 
 /**
- * Class ChannelImpl
  * Channel, similar to chan of go language, supports multi-producer coroutines and multi-consumer coroutines.
  * The bottom layer automatically implements the switching and scheduling of coroutines.
  * The channel is similar to PHP's Array, it only takes up memory, no other additional resource requests,
  * all operations are memory operations, no IO consumption.
  *
- * @package Yew\Coroutine
  */
 class ChannelImpl implements Channel
 {

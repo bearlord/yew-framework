@@ -9,10 +9,7 @@ namespace Yew\Core\Plugins\Event;
 use Yew\Core\Order\OrderOwnerTrait;
 use Yew\Core\Server\Process\Process;
 
-/**
- * Class EventDispatcher
- * @package Yew\Core\Plugins\Event
- */
+
 class EventDispatcher
 {
     use OrderOwnerTrait;

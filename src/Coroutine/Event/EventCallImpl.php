@@ -10,10 +10,6 @@ use Yew\Core\Plugins\Event\EventCall;
 use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Coroutine\Channel\ChannelImpl;
 
-/**
- * Class EventCallImpl
- * @package Yew\Coroutine\Event
- */
 class EventCallImpl extends ChannelImpl implements EventCall
 {
     /**

@@ -9,10 +9,6 @@ namespace Yew\Coroutine\Http\Factory;
 use Yew\Core\DI\Factory;
 use Yew\Coroutine\Http\SwooleRequest;
 
-/**
- * Class RequestFactory
- * @package Yew\Server\Coroutine\Http\Factory
- */
 class RequestFactory implements Factory
 {
 

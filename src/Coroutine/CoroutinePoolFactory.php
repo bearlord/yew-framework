@@ -8,10 +8,6 @@ namespace Yew\Coroutine;
 
 use Yew\Coroutine\Pool\CoroutinePoolExecutor;
 
-/**
- * Class CoroutinePoolFactory
- * @package Yew\Coroutine
- */
 class CoroutinePoolFactory
 {
     /**

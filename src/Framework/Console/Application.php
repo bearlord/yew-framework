@@ -15,8 +15,6 @@ use Yew\Framework\Base\Controller;
 use Yew\Yew;
 
 /**
- * Class Application
- * @package \Yew\Yii\Base
  * @property \Yew\Core\Server\Beans\Request $request The request component. This property is read-only.
  * @property \Yew\Core\Server\Beans\Response $response The response component. This property is read-only.
  * @property \Yew\Plugins\Session\HttpSession $session The session component. This property is read-only.

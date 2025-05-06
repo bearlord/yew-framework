@@ -8,10 +8,6 @@ namespace Yew\Core\Client;
 
 use Yew\Core\Plugins\Config\ToConfigArray;
 
-/**
- * Class ClientConfig
- * @package ESD\Core\Client
- */
 class ClientConfig
 {
     use ToConfigArray;

@@ -10,10 +10,6 @@ use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Server\Server;
 use Symfony\Component\Yaml\Yaml;
 
-/**
- * Class ConfigContext
- * @package Yew\Core\Plugins\Config
- */
 class ConfigContext
 {
     /**

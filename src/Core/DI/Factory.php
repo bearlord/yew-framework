@@ -6,10 +6,6 @@
 
 namespace Yew\Core\DI;
 
-/**
- * Interface Factory
- * @package Yew\Core\DI
- */
 interface Factory
 {
     /**

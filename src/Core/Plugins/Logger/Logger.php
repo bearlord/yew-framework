@@ -8,10 +8,6 @@ namespace Yew\Core\Plugins\Logger;
 
 use Yew\Core\Exception\Exception;
 
-/**
- * Class Logger
- * @package Yew\Core\Plugins\Logger
- */
 class Logger extends \Monolog\Logger
 {
     /**

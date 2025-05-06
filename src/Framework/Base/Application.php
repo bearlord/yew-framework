@@ -24,11 +24,9 @@ use Yew\Framework\Plugin\Pdo\PdoPool;
 use Yew\Yew;
 
 /**
- * Class Application
- * @package \Yew\Framework\Base
  * @property \Yew\Core\Server\Beans\Request $request The request component. This property is read-only.
  * @property \Yew\Core\Server\Beans\Response $response The response component. This property is read-only.
- * @property \ESD\Plugins\Session\HttpSession $session The session component. This property is read-only.
+ * @property \Yew\Plugins\Session\HttpSession $session The session component. This property is read-only.
  * @property \Yew\Framework\Web\User $user The user component. This property is read-only.
  * @property \Yew\Framework\Caching\Cache $cache The cache application component. Null if the component is not enabled.
  * @property \Yew\Framework\Base\Security $security The security application component. This property is read-only.

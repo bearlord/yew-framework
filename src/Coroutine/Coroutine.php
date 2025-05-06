@@ -11,10 +11,6 @@ use Yew\Core\Context\ContextManager;
 use Yew\Core\Runtime;
 use Yew\Coroutine\Pool\Runnable;
 
-/**
- * Class Coroutine
- * @package Yew\Coroutine
- */
 class Coroutine
 {
 

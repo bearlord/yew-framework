@@ -6,10 +6,6 @@
 
 namespace Yew\Core\Plugins\Event;
 
-/**
- * Interface EventCall
- * @package Yew\Core\Plugins\Event
- */
 interface EventCall
 {
     /**

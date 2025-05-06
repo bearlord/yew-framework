@@ -18,12 +18,6 @@ use Yew\Core\Server\Beans\WebSocketFrame;
 use Yew\Core\Server\Config\PortConfig;
 use Yew\Core\Server\Server;
 
-/**
- * AbstractServerPort
- *
- * Class ServerPort
- * @package Yew\Core\Server
- */
 abstract class AbstractServerPort
 {
     /**

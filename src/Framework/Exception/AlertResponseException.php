@@ -9,10 +9,6 @@ namespace Yew\Framework\Exception;
 use Throwable;
 use Yew\Core\Plugins\Logger\GetLogger;
 
-/**
- * Class AlertResponseException
- * @package ESD\Go\Exception
- */
 class AlertResponseException extends \Exception
 {
 

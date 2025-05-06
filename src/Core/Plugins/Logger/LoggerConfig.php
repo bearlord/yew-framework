@@ -8,10 +8,6 @@ namespace Yew\Core\Plugins\Logger;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class LoggerConfig
- * @package Yew\Core\Plugins\Logger
- */
 class LoggerConfig extends BaseConfig
 {
     const key = "yew.logger";

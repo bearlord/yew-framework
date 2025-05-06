@@ -4,12 +4,8 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Psr\Cloud;
+namespace Yew\Psr\Cloud;
 
-/**
- * Class ServiceInfoList
- * @package ESD\Psr\Cloud
- */
 class ServiceInfoList
 {
     /**

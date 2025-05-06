@@ -9,10 +9,6 @@ namespace Yew\Coroutine;
 use Yew\Core\Context\Context;
 use Yew\Core\Context\ContextBuilder;
 
-/**
- * Class CoroutineContextBuilder
- * @package Yew\Coroutine
- */
 class CoroutineContextBuilder implements ContextBuilder
 {
     /**

@@ -6,10 +6,6 @@
 
 namespace Yew\Coroutine\Beans;
 
-/**
- * Class ChannelStats
- * @package Yew\Coroutine\Beans
- */
 class ChannelStats
 {
     /**

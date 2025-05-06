@@ -8,10 +8,6 @@ namespace Yew\Framework\Exception;
 
 use Yew\Core\Plugins\Logger\GetLogger;
 
-/**
- * Class ResponseException
- * @package ESD\Go\Exception
- */
 class ResponseException extends \Exception{
 
     use GetLogger;

@@ -12,10 +12,6 @@ use Yew\Core\Server\Beans\Http\HttpStream;
 use Yew\Core\Server\Beans\Http\Uri;
 use Yew\Core\Server\Beans\Request;
 
-/**
- * Class SwooleRequest
- * @package Yew\Server\Coroutine\Http
- */
 class SwooleRequest extends Request
 {
 

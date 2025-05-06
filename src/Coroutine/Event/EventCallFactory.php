@@ -8,10 +8,6 @@ namespace Yew\Coroutine\Event;
 
 use Yew\Core\DI\Factory;
 
-/**
- * Class EventCallFactory
- * @package Yew\Coroutine\Event
- */
 class EventCallFactory implements Factory
 {
     /**

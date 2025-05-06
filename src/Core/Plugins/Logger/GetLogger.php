@@ -10,10 +10,6 @@ use Exception;
 use Yew\Core\Server\Server;
 use Monolog\Logger;
 
-/**
- * Trait GetLogger
- * @package Yew\Core\Plugins\Logger
- */
 trait GetLogger
 {
     /**

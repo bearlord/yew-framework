@@ -10,10 +10,6 @@ use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
 use Yew\Core\Server\Beans\WebSocketFrame;
 
-/**
- * Interface IServerPort
- * @package Yew\Core\Server\Port
- */
 interface IServerPort
 {
     /**

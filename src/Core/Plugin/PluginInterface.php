@@ -9,10 +9,6 @@ namespace Yew\Core\Plugin;
 use Yew\Core\Channel\Channel;
 use Yew\Core\Context\Context;
 
-/**
- * Interface PluginInterface
- * @package Yew\Core\Plugin
- */
 interface PluginInterface
 {
     /**

@@ -6,10 +6,6 @@
 
 namespace Yew\Core\Server\Beans\Http;
 
-/**
- * Trait InteractsWithInput
- * @package Yew\Core\Server\Beans\Http
- */
 trait InteractsWithInput
 {
 

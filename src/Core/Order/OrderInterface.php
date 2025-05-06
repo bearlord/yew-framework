@@ -6,10 +6,6 @@
 
 namespace Yew\Core\Order;
 
-/**
- * Interface OrderInterface
- * @package Yew\Core\Order
- */
 interface OrderInterface
 {
     /**

@@ -12,10 +12,6 @@ use Yew\Core\Exception\ConfigException;
 use Yew\Core\Plugins\Config\BaseConfig;
 use Yew\Core\Runtime;
 
-/**
- * Class ServerConfig
- * @package Yew\Core\Server\Config
- */
 class ServerConfig extends BaseConfig
 {
     const key = "yew.server";

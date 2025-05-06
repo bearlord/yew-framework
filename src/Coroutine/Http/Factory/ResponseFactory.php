@@ -9,10 +9,6 @@ namespace Yew\Coroutine\Http\Factory;
 use Yew\Core\DI\Factory;
 use Yew\Coroutine\Http\SwooleResponse;
 
-/**
- * Class ResponseFactory
- * @package Yew\Server\Coroutine\Http\Factory
- */
 class ResponseFactory implements Factory
 {
 

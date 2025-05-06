@@ -4,12 +4,8 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Psr\Cloud;
+namespace Yew\Psr\Cloud;
 
-/**
- * Interface Leader
- * @package ESD\Psr\Cloud
- */
 interface Leader
 {
     /**

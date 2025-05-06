@@ -8,10 +8,6 @@ namespace Yew\Core\Log;
 
 use Psr\Log\LoggerInterface;
 
-/**
- * Class Log
- * @package Yew\Core\Log
- */
 class Log implements LoggerInterface
 {
 

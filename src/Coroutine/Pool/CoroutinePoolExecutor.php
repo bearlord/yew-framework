@@ -9,10 +9,6 @@ namespace Yew\Coroutine\Pool;
 use Yew\Coroutine\Channel\ChannelImpl;
 use Yew\Coroutine\Coroutine;
 
-/**
- * Class CoroutinePoolExecutor
- * @package Yew\Coroutine\Pool
- */
 class CoroutinePoolExecutor implements Executor
 {
     /**

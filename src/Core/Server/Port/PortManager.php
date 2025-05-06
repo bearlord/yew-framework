@@ -10,10 +10,6 @@ use Yew\Core\Exception\ConfigException;
 use Yew\Core\Server\Config\PortConfig;
 use Yew\Core\Server\Server;
 
-/**
- * Class PortManager
- * @package Yew\Core\Server\Port
- */
 class PortManager
 {
     /**
