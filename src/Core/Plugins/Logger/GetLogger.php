@@ -44,13 +44,10 @@ trait GetLogger
     }
 
     /**
-     * Adds a log record.
-     *
      * @param int $level
      * @param $message
      * @param array|null $context
      * @return void
-     * @throws Exception
      */
     public function addRecord(int $level, $message, ?array $context = [])
     {
@@ -95,7 +92,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function warn($message, ?array $context = [])
     {
@@ -110,7 +106,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function warning($message, ?array $context = [])
     {
@@ -125,7 +120,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function err($message, ?array $context = [])
     {
@@ -140,7 +134,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function error($message, ?array $context = [])
     {
@@ -155,7 +148,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function crit($message, ?array $context = [])
     {
@@ -170,7 +162,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function critical($message, ?array $context = [])
     {
@@ -185,7 +176,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function alert($message, ?array $context = [])
     {
@@ -200,7 +190,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function emerg($message, ?array $context = [])
     {
@@ -215,7 +204,6 @@ trait GetLogger
      * @param mixed $message The log message
      * @param array|null $context The log context
      * @return void Whether the record has been processed
-     * @throws Exception
      */
     public function emergency($message, ?array $context = [])
     {

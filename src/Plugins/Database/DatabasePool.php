@@ -11,7 +11,6 @@ use Yew\Core\Pool\ConnectionInterface;
 use Yew\Core\Pool\DefaultFrequency;
 use Yew\Core\Pool\Pool;
 use Yew\Coroutine\Server\Server;
-use Yew\Framework\Db\Exception;
 
 class DatabasePool extends Pool
 {
@@ -29,6 +28,7 @@ class DatabasePool extends Pool
     /**
      * @return ConnectionInterface
      * @throws \Yew\Framework\Db\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     protected function createConnection(): ConnectionInterface
     {
@@ -43,7 +43,7 @@ class DatabasePool extends Pool
      * @return \Yew\Framework\Db\Connection
      * @throws \Exception|\Throwable
      */
-    public function db(): \Yew\Framework\Db\Connection
+    public function db(): ?\Yew\Framework\Db\Connection
     {
         $contextKey = sprintf("db:%s", $this->getConfig()->getName());
 
@@ -57,7 +57,6 @@ class DatabasePool extends Pool
                 throw new \RuntimeException($errorMessage);
             }
 
-            /** @var \Yew\Framework\Db\Connection $db */
             $db = $poolConnection->getDbConnection();
 
             \Swoole\Coroutine::defer(function () use ($poolConnection, $contextKey) {

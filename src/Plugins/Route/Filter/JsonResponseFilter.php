@@ -18,7 +18,7 @@ use Yew\Utils\ArrayToXml;
 class JsonResponseFilter extends AbstractFilter
 {
     /**
-     * @return mixed|string
+     * @return string
      */
     public function getType()
     {
@@ -65,7 +65,7 @@ class JsonResponseFilter extends AbstractFilter
 
     /**
      * @param ClientData $clientData
-     * @return bool|mixed
+     * @return bool
      */
     public function isEnable(ClientData $clientData)
     {

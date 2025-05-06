@@ -18,7 +18,7 @@ use Yew\Utils\ArrayToXml;
 class XmlResponseFilter extends AbstractFilter
 {
     /**
-     * @return mixed|string
+     * @return string
      */
     public function getType()
     {
@@ -61,9 +61,9 @@ class XmlResponseFilter extends AbstractFilter
 
     /**
      * @param ClientData $clientData
-     * @return bool|mixed
+     * @return bool
      */
-    public function isEnable(ClientData $clientData)
+    public function isEnable(ClientData $clientData): bool
     {
         return $this->isHttp($clientData);
     }

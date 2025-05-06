@@ -73,7 +73,6 @@ class AnnotationRoute implements IRoute
                 $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
                 if ($debug) {
                     throw new RouteException($message);
-                    break;
                 }
 
                 $contentType = $this->clientData->getRequest()->getContentType();
@@ -222,7 +221,7 @@ class AnnotationRoute implements IRoute
      * @inheritDoc
      * @return string
      */
-    public function getControllerName()
+    public function getControllerName(): ?string
     {
         if ($this->clientData == null) {
             return null;

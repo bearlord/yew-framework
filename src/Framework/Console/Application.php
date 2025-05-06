@@ -243,10 +243,7 @@ class Application extends \Yew\Framework\Base\Application
         }
 
         if (is_subclass_of($className, 'Yew\Framework\Console\Controller')) {
-            $controller = Yew::createObject($className, [
-                $id,
-                $this
-            ]);
+            $controller = Yew::createObject($className);
             return get_class($controller) === $className ? $controller : null;
         } elseif (true) {
             throw new InvalidConfigException("Controller class must extend from \\Yew\Framework\\Console\\Controller.");
@@ -318,7 +315,6 @@ class Application extends \Yew\Framework\Base\Application
             if (!is_array($parts)) {
                 throw new Exception('Unable to resolve the request "' . $route . '".');
             }
-            var_dump($parts);
             if (is_array($parts)) {
                 /* @var $controller \Yew\Framework\Console\Controller */
                 list($controller, $actionID) = $parts;

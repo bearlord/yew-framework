@@ -53,6 +53,7 @@ class PoolConnection extends CorePoolConnection
     /**
      * @return bool
      * @throws Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function connect(): bool
     {
@@ -77,7 +78,9 @@ class PoolConnection extends CorePoolConnection
 
     /**
      * @return $this
-     * @throws ConnectionException|Exception
+     * @throws ConnectionException
+     * @throws Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function getActiveConnection(): PoolConnection
     {
@@ -95,6 +98,7 @@ class PoolConnection extends CorePoolConnection
     /**
      * @return bool
      * @throws Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function reconnect(): bool
     {
@@ -106,6 +110,7 @@ class PoolConnection extends CorePoolConnection
 
     /**
      * @return bool
+     * @throws \Exception
      */
     public function close(): bool
     {
@@ -120,7 +125,9 @@ class PoolConnection extends CorePoolConnection
 
     /**
      * @return DbConnection
-     * @throws ConnectionException|Exception
+     * @throws ConnectionException
+     * @throws Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function getDbConnection(): DbConnection
     {

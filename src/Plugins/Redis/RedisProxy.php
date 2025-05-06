@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Redis;
 
-/**
- * Class RedisProxy
- * @package Yew\Plugins\Redis
- */
 class RedisProxy
 {
     use GetRedis;
@@ -17,6 +13,7 @@ class RedisProxy
     /**
      * @param $name
      * @return mixed
+     * @throws \Throwable
      */
     public function __get($name)
     {
@@ -26,6 +23,7 @@ class RedisProxy
     /**
      * @param $name
      * @param $value
+     * @throws \Throwable
      */
     public function __set($name, $value)
     {
@@ -36,6 +34,7 @@ class RedisProxy
      * @param $name
      * @param $arguments
      * @return mixed
+     * @throws \Throwable
      */
     public function __call($name, $arguments)
     {

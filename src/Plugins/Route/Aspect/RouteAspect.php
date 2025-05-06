@@ -145,7 +145,6 @@ class RouteAspect extends OrderAspect
             }
             throw $e;
         }
-        return;
     }
 
     /**
@@ -254,7 +253,6 @@ class RouteAspect extends OrderAspect
             }
             throw $e;
         }
-        return;
     }
 
     /**
@@ -396,7 +394,6 @@ class RouteAspect extends OrderAspect
             }
             throw $e;
         }
-        return;
     }
 
     /**
@@ -497,6 +494,5 @@ class RouteAspect extends OrderAspect
                 $this->warn($e);
             }
         }
-        return;
     }
 }

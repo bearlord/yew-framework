@@ -65,11 +65,10 @@ class YewCmd extends Command
 
         $prettyArguments = array_values($arguments);
         $route = $input->getArgument('route');
-        $content = Application::instance()->runAction($route, $prettyArguments);
+
+        Application::instance()->runAction($route, $prettyArguments);
 
         $io = new SymfonyStyle($input, $output);
-        $io->text($content);
-
         $io->success(sprintf("Route %s execute success", $route));
         return ConsolePlugin::SUCCESS_EXIT;
     }

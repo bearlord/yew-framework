@@ -16,6 +16,10 @@ class RedisSentinelFactory
         $this->isOlderThan6 = (bool)version_compare(phpversion('redis'), '6.0.0', '<');
     }
 
+    /**
+     * @param array $options
+     * @return RedisSentinel
+     */
     public function create(array $options = []): RedisSentinel
     {
         if ($this->isOlderThan6) {

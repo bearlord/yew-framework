@@ -26,6 +26,7 @@ class RedisPools extends Pools
         if ($pool == null) {
             throw new RedisException("No default redis configuration is set");
         }
+
         return $pool->db();
     }
 }

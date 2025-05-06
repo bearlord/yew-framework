@@ -33,8 +33,8 @@ trait GetHttp
     }
 
     /**
-     * @param null $key
-     * @param null $default
+     * @param string|null $key
+     * @param string|null $default
      * @return array|mixed|string
      */
     public function query(?string $key = null, ?string $default = null)
@@ -43,21 +43,21 @@ trait GetHttp
     }
 
     /**
-     * @param null $key
-     * @param null $default
+     * @param string|null $key
+     * @param string|null $default
      * @return array|mixed|string
      */
-    public function post(?string$key = null, ?string$default = null)
+    public function post(?string $key = null, ?string $default = null)
     {
         return $this->getRequest()->post($key, $default);
     }
 
     /**
-     * @param null $key
-     * @param null $default
+     * @param string|null $key
+     * @param string|null $default
      * @return array|mixed|string
      */
-    public function input(?string$key = null, ?string$default = null)
+    public function input(?string $key = null, ?string $default = null)
     {
         return $this->getRequest()->input($key, $default);
     }

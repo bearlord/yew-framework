@@ -245,7 +245,6 @@ function DIGet(string $name, ?array $params = [])
  * @param string $name
  * @param $value
  * @return void
- * @throws Exception
  */
 function DISet(string $name, $value)
 {

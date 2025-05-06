@@ -85,8 +85,8 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
 
     /**
      * @param Context $context
-     * @return false|void
-     * @throws \Exception
+     * @return void
+     * @throws \ReflectionException
      */
     public function beforeProcessStart(Context $context)
     {

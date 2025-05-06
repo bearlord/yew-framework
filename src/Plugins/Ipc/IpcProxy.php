@@ -29,9 +29,9 @@ class IpcProxy
     protected bool $oneway;
 
     /**
-     * @var int
+     * @var int|null
      */
-    protected int $sessionId;
+    protected ?int $sessionId = null;
 
     /**
      * IpcProxy constructor.
@@ -51,8 +51,9 @@ class IpcProxy
     /**
      * @param string $name
      * @param array $arguments
-     * @return mixed
+     * @return mixed|void
      * @throws IpcException
+     * @throws \Exception
      */
     public function __call(string $name, array $arguments)
     {
@@ -60,13 +61,14 @@ class IpcProxy
             $arguments['sessionId'] = $this->sessionId;
         }
         $message = new IpcCallMessage($this->className, $name, $arguments, $this->oneway);
+
+        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
+
         if (!$this->oneway) {
             $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
-        }
-        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
-        if (!$this->oneway) {
             $result = $channel->pop($this->timeOut);
             $channel->close();
+
             if ($result instanceof IpcResultData) {
                 if ($result->getErrorClass() != null) {
                     throw new IpcException("[{$result->getErrorClass()}]{$result->getErrorMessage()}", $result->getErrorCode());
@@ -74,7 +76,7 @@ class IpcProxy
                     return $result->getResult();
                 }
             } else {
-                throw new IpcException(Yii::t('esd', 'Time out'));
+                throw new IpcException('Time out');
             }
         }
     }
@@ -82,13 +84,17 @@ class IpcProxy
     /**
      * Start transaction
      * @param callable $call
-     * @throws \Throwable
+     * @return void
+     * @throws IpcException
      */
     public function startTransaction(callable $call)
     {
-        if ($this->sessionId != null) return;
+        if ($this->sessionId != null) {
+            return;
+        }
         $oneway = $this->oneway;
         $this->oneway = false;
+
         try {
             $this->sessionId = $this->__call("__getSession", []);
         } catch (\Throwable $e) {
@@ -96,6 +102,7 @@ class IpcProxy
         } finally {
             $this->oneway = $oneway;
         }
+
         try {
             $call();
         } catch (\Throwable $e) {
@@ -108,10 +115,15 @@ class IpcProxy
 
     /**
      * End transaction
+     *
+     * @return void
+     * @throws IpcException
      */
     protected function _endTransaction()
     {
-        if ($this->sessionId == null) return;
+        if ($this->sessionId == null) {
+            return;
+        }
         $oneway = $this->oneway;
         $this->oneway = false;
         try {
@@ -121,6 +133,7 @@ class IpcProxy
         } finally {
             $this->oneway = $oneway;
         }
+
         $this->sessionId = null;
     }
 }

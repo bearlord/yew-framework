@@ -75,7 +75,7 @@ class Controller extends Component implements ViewContextInterface
      */
     public string $moduleName;
 
-    public $id;
+    public string $id = "";
 
     /**
      * Controller constructor.

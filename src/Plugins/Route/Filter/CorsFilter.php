@@ -35,9 +35,9 @@ class CorsFilter extends AbstractFilter
     }
 
     /**
-     * @return mixed|string
+     * @return array
      */
-    public function getType()
+    public function getType(): array
     {
         return [
             AbstractFilter::FILTER_PRE,
@@ -104,7 +104,7 @@ class CorsFilter extends AbstractFilter
 
     /**
      * @param ClientData $clientData
-     * @return bool|mixed
+     * @return bool
      */
     public function isEnable(ClientData $clientData)
     {

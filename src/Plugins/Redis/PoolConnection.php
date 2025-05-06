@@ -9,7 +9,6 @@ namespace Yew\Plugins\Redis;
 use Yew\Core\Pool\ConfigInterface;
 use Yew\Core\Pool\Exception\ConnectionException;
 use Yew\Core\Pool\Connection as CorePoolConnection;
-use Yew\Core\Pool\PoolInterface;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Redis\Exception\RedisException;
 
@@ -21,26 +20,16 @@ class PoolConnection extends CorePoolConnection
     protected ?RedisConnection $connection = null;
 
     /**
-     * @var RedisPool
-     */
-    protected PoolInterface $pool;
-
-    /**
-     * @var Config
-     */
-    protected ConfigInterface $config;
-
-    /**
      * @var array
      */
     protected array $configArray = [];
 
     /**
      * @param RedisPool $pool
-     * @param Config $config
+     * @param ConfigInterface $config
      * @throws RedisException
      */
-    public function __construct(RedisPool $pool, Config $config)
+    public function __construct(RedisPool $pool, ConfigInterface $config)
     {
         parent::__construct($pool, $config);
 

@@ -853,7 +853,6 @@ abstract class Server
 
     /**
      * @return ConfigContext
-     * @throws Exception
      */
     public function getConfigContext(): ConfigContext
     {

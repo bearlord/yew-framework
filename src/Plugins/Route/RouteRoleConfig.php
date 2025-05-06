@@ -38,25 +38,25 @@ class RouteRoleConfig extends BaseConfig
      * Method
      * @var string
      */
-    protected $method;
+    protected string $method;
 
     /**
      * Type
      * @var string
      */
-    protected $type;
+    protected string $type;
 
     /**
      * Allowed port types
      * @var array
      */
-    protected $portTypes = [];
+    protected array $portTypes = [];
 
     /**
      * Allow port names
      * @var array
      */
-    protected $portNames = [];
+    protected array $portNames = [];
 
     /**
      * RouteRoleConfig constructor.
@@ -67,9 +67,9 @@ class RouteRoleConfig extends BaseConfig
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -83,9 +83,9 @@ class RouteRoleConfig extends BaseConfig
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getController()
+    public function getController(): string
     {
         return $this->controller;
     }
@@ -99,25 +99,25 @@ class RouteRoleConfig extends BaseConfig
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getMethod()
+    public function getMethod(): string
     {
         return $this->method;
     }
 
     /**
-     * @param mixed $method
+     * @param string $method
      */
-    public function setMethod($method): void
+    public function setMethod(string $method): void
     {
         $this->method = $method;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -136,9 +136,9 @@ class RouteRoleConfig extends BaseConfig
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getRoute()
+    public function getRoute(): string
     {
         return $this->route;
     }

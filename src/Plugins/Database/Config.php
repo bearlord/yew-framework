@@ -207,7 +207,7 @@ class Config extends \Yew\Core\Pool\Config
     }
 
     /**
-     * Returns the name of the DB driver. Based on the the current [[dsn]], in case it was not set explicitly
+     * Returns the name of the DB driver. Based on the current [[dsn]], in case it was not set explicitly
      * by an end user.
      * @return string name of the DB driver
      */

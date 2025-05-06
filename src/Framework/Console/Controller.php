@@ -7,11 +7,11 @@
 
 namespace Yew\Framework\Console;
 
+use Yew\Framework\Helpers\Console;
 use Yew\Yew;
 use Yew\Framework\Base\Action;
 use Yew\Framework\Base\InlineAction;
 use Yew\Framework\Base\InvalidRouteException;
-use Yew\Yew\Helpers\Console;
 use Yew\Yew\Helpers\Inflector;
 
 /**
@@ -38,7 +38,7 @@ use Yew\Yew\Helpers\Inflector;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Controller extends \Yew\Base\Controller
+class Controller extends \Yew\Framework\Base\Controller
 {
     /**
      * @deprecated since 2.0.13. Use [[ExitCode::OK]] instead.
@@ -52,22 +52,22 @@ class Controller extends \Yew\Base\Controller
     /**
      * @var bool whether to run the command interactively.
      */
-    public $interactive = true;
+    public bool $interactive = true;
     /**
-     * @var bool whether to enable ANSI color in the output.
+     * @var bool|null whether to enable ANSI color in the output.
      * If not set, ANSI color will only be enabled for terminals that support it.
      */
-    public $color;
+    public ?bool $color = null;
     /**
      * @var bool whether to display help information about current command.
      * @since 2.0.10
      */
-    public $help;
+    public bool $help = false;
 
     /**
      * @var array the options passed during execution.
      */
-    private $_passedOptions = [];
+    private array $_passedOptions = [];
 
     /**
      * Returns a value indicating whether ANSI color is enabled.
@@ -89,9 +89,9 @@ class Controller extends \Yew\Base\Controller
      * @param string $id the ID of the action to be executed.
      * @param array|null $params the parameters (name-value pairs) to be passed to the action.
      * @return int|null the status of the action execution. 0 means normal, other values mean abnormal.
-     * @throws \Yew\Yew\Base\Exception
-     * @throws \Yew\Yew\Base\InvalidConfigException
-     * @throws \Yew\Yew\Base\InvalidRouteException if the requested action ID cannot be resolved into an action successfully.
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidRouteException if the requested action ID cannot be resolved into an action successfully.
      * @throws \Yew\Framework\Console\Exception if there are unknown options or missing arguments
      * @throws \Yew\Framework\Console\UnknownCommandException
      * @throws \ReflectionException
