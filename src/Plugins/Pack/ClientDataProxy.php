@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Pack;
 
-/**
- * Class ClientDataProxy
- * @package Yew\Plugins\Pack
- */
 class ClientDataProxy
 {
     use GetClientData;

@@ -9,10 +9,6 @@ namespace Yew\Plugins\Pack;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Pack\Aspect\PackAspect;
 
-/**
- * Trait GetBoostSend
- * @package Yew\Plugins\Pack
- */
 trait GetBoostSend
 {
     protected $packAspect;

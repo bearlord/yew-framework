@@ -9,10 +9,6 @@ namespace Yew\Plugins\Route\Filter;
 use Yew\Core\Order\OrderOwnerTrait;
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Class EveryFilterManager
- * @package Yew\Plugins\Route\Filter
- */
 class EveryFilterManager
 {
     use OrderOwnerTrait;

@@ -11,10 +11,6 @@ use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Plugins\Redis\RedisPlugin;
 
-/**
- * Class SessionPlugin
- * @package ESD\Plugins\Session
- */
 class SessionPlugin extends AbstractPlugin
 {
 

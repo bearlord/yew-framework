@@ -9,11 +9,6 @@ namespace Yew\Plugins\Route\Filter;
 use Yew\Core\Order\Order;
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Filter Middleware
- * Class AbstractFilter
- * @package Yew\Plugins\Route\Filter
- */
 abstract class AbstractFilter extends Order
 {
     const FILTER_PRE = "filter_pre";

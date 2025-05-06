@@ -8,10 +8,6 @@ namespace Yew\Plugins\Security;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class SecurityConfig
- * @package Yew\Plugins\Security
- */
 class SecurityConfig extends BaseConfig
 {
     const KEY = "security";

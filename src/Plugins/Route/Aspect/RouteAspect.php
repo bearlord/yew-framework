@@ -29,10 +29,6 @@ use Yew\Goaop\Lang\Annotation\After;
 use Yew\Goaop\Lang\Annotation\Before;
 use Yew\Utils\ArrayToXml;
 
-/**
- * Class RouteAspect
- * @package Yew\Plugins\Route\Aspect
- */
 class RouteAspect extends OrderAspect
 {
     use GetLogger;

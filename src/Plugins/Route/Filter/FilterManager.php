@@ -8,10 +8,6 @@ namespace Yew\Plugins\Route\Filter;
 
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Class FilterManager
- * @package Yew\Plugins\Route\Filter
- */
 class FilterManager
 {
     /**

@@ -9,10 +9,6 @@ namespace Yew\Plugins\Scheduled\Event;
 use Yew\Core\Plugins\Event\Event;
 use Yew\Plugins\Scheduled\Beans\ScheduledTask;
 
-/**
- * Class ScheduledExecuteEvent
- * @package Yew\Plugins\Scheduled\Event
- */
 class ScheduledExecuteEvent extends Event
 {
     const SCHEDULED_EXECUTE_EVENT = "ScheduledExecuteEvent";

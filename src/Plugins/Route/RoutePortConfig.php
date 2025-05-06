@@ -10,10 +10,6 @@ use Yew\Core\Server\Config\PortConfig;
 use Yew\Plugins\Route\RouteTool\AnnotationRoute;
 use Yew\Plugins\Pack\PackTool\LenJsonPack;
 
-/**
- * Class RoutePortConfig
- * @package Yew\Plugins\Route
- */
 class RoutePortConfig extends PortConfig
 {
     /**

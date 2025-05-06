@@ -8,10 +8,6 @@ namespace Yew\Plugins\AnnotationsScan;
 
 use Yew\Core\Plugins\Event\Event;
 
-/**
- * Class ScanEvent
- * @package Yew\Plugins\AnnotationsScan
- */
 class ScanEvent extends Event
 {
     /**

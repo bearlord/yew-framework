@@ -15,10 +15,6 @@ use Yew\Plugins\Pack\ClientData;
 use Yew\Framework\Helpers\Json;
 use Yew\Yew;
 
-/**
- * Class StreamPack
- * @package Yew\Plugins\Pack\PackTool
- */
 class StreamPack extends AbstractPack
 {
     use GetLogger;

@@ -9,10 +9,6 @@ namespace Yew\Plugins\Route;
 use Yew\Core\Plugins\Config\BaseConfig;
 use Yew\Coroutine\Server\Server;
 
-/**
- * Class RouteConfig
- * @package Yew\Plugins\Route
- */
 class RouteConfig extends BaseConfig
 {
     const KEY = "route";

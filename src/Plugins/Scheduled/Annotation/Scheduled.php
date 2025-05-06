@@ -12,8 +12,6 @@ use Yew\Plugins\Scheduled\Beans\ScheduledTask;
 /**
  * @Annotation
  * @Target("METHOD")
- * Class Scheduled
- * @package Yew\Plugins\Scheduled\Annotation
  */
 class Scheduled extends Annotation
 {

@@ -16,10 +16,6 @@ use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Pack\Aspect\PackAspect;
 
-/**
- * Class PackPlugin
- * @package Yew\Plugins\Pack
- */
 class PackPlugin extends AbstractPlugin
 {
     /**

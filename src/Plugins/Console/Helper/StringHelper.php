@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Console\Helper;
 
-/**
- * Class StringHelper
- * @package Yew\Plugins\Console\Helper
- */
 class StringHelper
 {
     /**

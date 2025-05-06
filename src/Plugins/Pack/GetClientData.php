@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Pack;
 
-/**
- * Trait GetClientData
- * @package Yew\Plugins\Pack
- */
 trait GetClientData
 {
     /**

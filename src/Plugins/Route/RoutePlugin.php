@@ -34,10 +34,6 @@ use ReflectionClass;
 use ReflectionMethod;
 use function Yew\Nikic\FastRoute\simpleDispatcher;
 
-/**
- * Class EasyRoutePlugin
- * @package Yew\Plugins\Route
- */
 class RoutePlugin extends AbstractPlugin
 {
     public static $instance;

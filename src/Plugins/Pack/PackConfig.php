@@ -10,10 +10,6 @@ use Yew\Core\Server\Config\PortConfig;
 use Yew\Plugins\Pack\PackTool\LenJsonPack;
 use Yew\Plugins\Pack\PackTool\NonJsonPack;
 
-/**
- * Class PackConfig
- * @package Yew\Plugins\Pack
- */
 class PackConfig extends PortConfig
 {
     /**

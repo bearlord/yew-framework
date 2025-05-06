@@ -8,10 +8,6 @@ namespace Yew\Plugins\Session;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class SessionConfig
- * @package ESD\Plugins\Session
- */
 class SessionConfig extends BaseConfig
 {
     /**

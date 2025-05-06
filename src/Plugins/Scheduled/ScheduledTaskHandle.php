@@ -12,10 +12,6 @@ use Yew\Plugins\Scheduled\Event\ScheduledExecuteEvent;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 
-/**
- * Class ScheduledTaskHandle
- * @package Yew\Plugins\Scheduled
- */
 class ScheduledTaskHandle
 {
     use GetLogger;

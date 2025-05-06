@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Security\Beans;
 
-/**
- * Class Principal
- * @package Yew\Plugins\Security\Beans
- */
 class Principal
 {
     /**

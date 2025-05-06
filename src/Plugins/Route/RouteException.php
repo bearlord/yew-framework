@@ -9,10 +9,6 @@ namespace Yew\Plugins\Route;
 use Yew\Core\Exception\Exception;
 use Throwable;
 
-/**
- * Class RouteException
- * @package Yew\Plugins\Route
- */
 class RouteException extends Exception
 {
     /**

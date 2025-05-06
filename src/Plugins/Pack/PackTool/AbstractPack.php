@@ -10,10 +10,6 @@ use Yew\Core\Server\Config\PortConfig;
 use Yew\Plugins\Pack\PackException;
 use Yew\Yew;
 
-/**
- * Class AbstractPack
- * @package Yew\Plugins\Pack\PackTool
- */
 abstract class AbstractPack implements IPack
 {
     /**

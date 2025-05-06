@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Route\Filter;
 
-/**
- * Class CorsConfig
- * @package Yew\Plugins\Route\Filter
- */
 class CorsConfig
 {
     /**

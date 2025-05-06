@@ -12,7 +12,6 @@ use Doctrine\Common\Annotations\Annotation;
  * @Annotation
  * @Target("METHOD")
  * Class Scheduled
- * @package Yew\Plugins\Autostart\Annotation
  */
 class Autostart extends Annotation
 {

@@ -11,10 +11,6 @@ use Yew\Plugins\Route\Annotation\ResponseBody;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Utils\ArrayToXml;
 
-/**
- * Class XmlResponseFilter
- * @package Yew\Plugins\Route\Filter
- */
 class XmlResponseFilter extends AbstractFilter
 {
     /**

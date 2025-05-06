@@ -8,10 +8,6 @@ namespace Yew\Plugins\Redis;
 
 use Yew\Coroutine\Server\Server;
 
-/**
- * Trait GetRedis
- * @package Yew\Plugins\Redis
- */
 trait GetRedis
 {
     /**

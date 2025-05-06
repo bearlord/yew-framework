@@ -11,10 +11,6 @@ use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
 use Yew\Coroutine\Server\Server;
 
-/**
- * Class ClientData
- * @package Yew\Plugins\Pack
- */
 class ClientData
 {
     /**

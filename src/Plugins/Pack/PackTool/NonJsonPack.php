@@ -11,10 +11,6 @@ use Yew\Core\Server\Config\PortConfig;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Class NonJsonPack
- * @package Yew\Plugins\Pack\PackTool
- */
 class NonJsonPack implements IPack
 {
     use GetLogger;

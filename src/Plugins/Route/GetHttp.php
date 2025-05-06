@@ -10,10 +10,6 @@ use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
 use Yew\Core\Exception\ParamException;
 
-/**
- * Trait GetHttp
- * @package Yew\Plugins\Route
- */
 trait GetHttp
 {
     /**

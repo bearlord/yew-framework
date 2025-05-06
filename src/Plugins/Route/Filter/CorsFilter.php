@@ -11,10 +11,6 @@ use Yew\Plugins\Route\Annotation\CrossOrigin;
 use Yew\Plugins\Route\Annotation\ResponseBody;
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Class CorsFilter
- * @package Yew\Plugins\Route\Filter
- */
 class CorsFilter extends AbstractFilter
 {
     /**

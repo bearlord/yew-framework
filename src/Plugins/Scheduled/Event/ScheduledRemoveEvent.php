@@ -9,10 +9,6 @@ namespace Yew\Plugins\Scheduled\Event;
 use Yew\Core\Plugins\Event\Event;
 use Yew\Plugins\Scheduled\Beans\ScheduledTask;
 
-/**
- * Class ScheduledRemoveEvent
- * @package Yew\Plugins\Scheduled\Event
- */
 class ScheduledRemoveEvent extends Event
 {
     const SCHEDULED_REMOVE_EVENT = "ScheduledRemoveEvent";

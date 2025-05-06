@@ -9,10 +9,6 @@ namespace Yew\Plugins\Pack\PackTool;
 use Yew\Core\Server\Config\PortConfig;
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Interface IPack
- * @package Yew\Plugins\Pack\PackTool
- */
 interface IPack
 {
     /**

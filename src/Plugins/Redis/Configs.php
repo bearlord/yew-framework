@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\Redis;
 
-/**
- * Class RedisConfig
- * @package Yew\Plugins\Redis
- */
 class Configs extends \Yew\Core\Pool\Configs
 {
 

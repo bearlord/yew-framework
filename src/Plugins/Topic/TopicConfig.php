@@ -8,10 +8,6 @@ namespace Yew\Plugins\Topic;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class TopicConfig
- * @package ESD\Plugins\Topic
- */
 class TopicConfig extends BaseConfig
 {
     const KEY = "topic";

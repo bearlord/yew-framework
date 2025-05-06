@@ -8,10 +8,6 @@ namespace Yew\Plugins\Route;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-/**
- * Class RouteRoleConfig
- * @package Yew\Plugins\Route
- */
 class RouteRoleConfig extends BaseConfig
 {
     const KEY = "route.role";

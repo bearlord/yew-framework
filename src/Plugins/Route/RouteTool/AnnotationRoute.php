@@ -30,10 +30,6 @@ use Yew\Framework\Helpers\Json;
 use Yew\Yew;
 use Yew\Nikic\FastRoute\Dispatcher;
 
-/**
- * Class AnnotationRoute
- * @package Yew\Plugins\Route\RouteTool
- */
 class AnnotationRoute implements IRoute
 {
     use GetLogger;

@@ -16,10 +16,6 @@ use Yew\Plugins\Pack\PackTool\IPack;
 use Yew\Goaop\Aop\Intercept\MethodInvocation;
 use Yew\Goaop\Lang\Annotation\Around;
 
-/**
- * Class PackAspect
- * @package Yew\Plugins\Pack\Aspect
- */
 class PackAspect extends OrderAspect
 {
     use GetLogger;

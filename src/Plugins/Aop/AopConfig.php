@@ -9,10 +9,6 @@ namespace Yew\Plugins\Aop;
 use Yew\Core\Plugins\Config\BaseConfig;
 use Yew\Core\Exception\ConfigException;
 
-/**
- * Class AopConfig
- * @package Yew\Plugins\Aop
- */
 class AopConfig extends BaseConfig
 {
     const KEY = "aop";

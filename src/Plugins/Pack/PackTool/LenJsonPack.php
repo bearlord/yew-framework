@@ -12,10 +12,6 @@ use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Plugins\Pack\PackException;
 
-/**
- * Class LenJsonPack
- * @package Yew\Plugins\Pack\PackTool
- */
 class LenJsonPack extends AbstractPack
 {
     use GetLogger;

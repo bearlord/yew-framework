@@ -8,10 +8,6 @@ namespace Yew\Plugins\Route;
 
 use Yew\Plugins\Route\Controller\RouteController;
 
-/**
- * Class NormalErrorController
- * @package Yew\Plugins\Route
- */
 class NormalErrorController extends RouteController
 {
 

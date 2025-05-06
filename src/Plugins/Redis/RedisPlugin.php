@@ -12,10 +12,6 @@ use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Redis\Exception\RedisException;
 use Yew\Coroutine\Server\Server;
 
-/**
- * Class RedisPlugin
- * @package Yew\Plugins\Redis
- */
 class RedisPlugin extends AbstractPlugin
 {
     use GetLogger;

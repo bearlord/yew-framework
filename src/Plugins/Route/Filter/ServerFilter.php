@@ -9,10 +9,6 @@ namespace Yew\Plugins\Route\Filter;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Coroutine\Server\Server;
 
-/**
- * Class ServerFilter
- * @package Yew\Plugins\Route\Filter
- */
 class ServerFilter extends AbstractFilter
 {
     /**

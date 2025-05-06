@@ -9,10 +9,6 @@ namespace Yew\Plugins\Route\RouteTool;
 use Yew\Plugins\Route\RoutePortConfig;
 use Yew\Plugins\Pack\ClientData;
 
-/**
- * Interface IRoute
- * @package Yew\Plugins\Route\RouteTool
- */
 interface IRoute
 {
     /**

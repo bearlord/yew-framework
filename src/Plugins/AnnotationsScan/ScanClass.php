@@ -9,10 +9,6 @@ namespace Yew\Plugins\AnnotationsScan;
 use Doctrine\Common\Annotations\CachedReader;
 use ReflectionClass;
 
-/**
- * Class ScanClass
- * @package Yew\Plugins\AnnotationsScan
- */
 class ScanClass
 {
     private array $annotationMethod = [];

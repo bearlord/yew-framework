@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\AnnotationsScan;
 
-/**
- * Class ScanReflectionMethod
- * @package Yew\Plugins\AnnotationsScan
- */
 class ScanReflectionMethod
 {
     /**
