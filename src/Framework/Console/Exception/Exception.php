@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace Yew\Framework\Console;
+namespace Yew\Framework\Console\Exception;
 
 use Yew\Framework\Exception\UserException;
 

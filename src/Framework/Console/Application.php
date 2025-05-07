@@ -8,6 +8,8 @@ namespace Yew\Framework\Console;
 
 use Yew\Core\Server\Server;
 use Yew\Core\Server\Beans\Response;
+use Yew\Framework\Console\Exception\Exception;
+use Yew\Framework\Console\Exception\UnknownCommandException;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidRouteException;
 use Yew\Framework\Base\Action;
@@ -240,13 +242,11 @@ class Application extends \Yew\Framework\Base\Application
             return null;
         }
 
-        if (is_subclass_of($className, 'Yew\Framework\Console\Controller')) {
+        if (is_subclass_of($className, "Yew\\Framework\\Console\\Controller")) {
             $controller = Yew::createObject($className);
             return get_class($controller) === $className ? $controller : null;
-        } elseif (true) {
-            throw new InvalidConfigException("Controller class must extend from \\Yew\Framework\\Console\\Controller.");
         } else {
-            return null;
+            throw new InvalidConfigException("Controller class must extend from \\Yew\Framework\\Console\\Controller.");
         }
     }
 
@@ -299,13 +299,15 @@ class Application extends \Yew\Framework\Base\Application
      *
      * @param string $route the route that specifies the action.
      * @param array|null $params the parameters to be passed to the action
-     * @return int|Response the result of the action. This can be either an exit code or Response object.
+     * @return int the result of the action. This can be either an exit code or Response object.
      * Exit code 0 means normal, and other values mean abnormal. Exit code of `null` is treaded as `0` as well.
-     * @throws \Yew\Framework\Exception\InvalidConfigException
-     * @throws \Yew\Framework\Console\Exception if the route is invalid
-     * @throws \Yew\Framework\Console\UnknownCommandException
+     * @throws Exception if the route is invalid
+     * @throws InvalidConfigException
+     * @throws UnknownCommandException
+     * @throws \ReflectionException
+     * @throws \Yew\Framework\Exception\Exception
      */
-    public function runAction(string $route, ?array $params = [])
+    public function runAction(string $route, ?array $params = []): int
     {
         try {
             $parts = $this->createController($route);
@@ -322,6 +324,8 @@ class Application extends \Yew\Framework\Base\Application
         } catch (InvalidRouteException $e) {
             throw new UnknownCommandException($route, $this, 0, $e);
         }
+
+        return 1;
     }
 
     /**

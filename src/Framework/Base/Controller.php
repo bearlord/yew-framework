@@ -172,8 +172,8 @@ class Controller extends Component implements ViewContextInterface
      * @throws \Yew\Framework\Exception\Exception
      * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Yew\Framework\Exception\InvalidRouteException
-     * @throws \Yew\Framework\Console\Exception
-     * @throws \Yew\Framework\Console\UnknownCommandException
+     * @throws \Yew\Framework\Console\Exception\Exception
+     * @throws \Yew\Framework\Console\Exception\UnknownCommandException
      * @throws \ReflectionException
      * @see runAction()
      */
