@@ -41,6 +41,7 @@
     "swlib/saber": "^1.0",
     "symfony/console": "^5.4",
     "symfony/finder": "^5.4",
+    "symfony/var-dumper": "*",
     "symfony/yaml": "^4.2"
   },
   "require-dev": {

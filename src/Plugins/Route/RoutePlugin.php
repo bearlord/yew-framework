@@ -36,32 +36,32 @@ use function Yew\Nikic\FastRoute\simpleDispatcher;
 
 class RoutePlugin extends AbstractPlugin
 {
-    public static $instance;
+    public static RoutePlugin $instance;
 
     /**
      * @var RoutePortConfig[]
      */
-    private $RoutePortConfigs = [];
+    private array $RoutePortConfigs = [];
 
     /**
-     * @var RouteConfig
+     * @var RouteConfig|null
      */
-    private $routeConfig;
+    private ?RouteConfig $routeConfig;
 
     /**
      * @var RouteAspect
      */
-    private $routeAspect;
+    private RouteAspect $routeAspect;
 
     /**
      * @var Dispatcher
      */
-    private $dispatcher;
+    private Dispatcher $dispatcher;
 
     /**
      * @var ScanClass
      */
-    private $scanClass;
+    private ScanClass $scanClass;
 
     /**
      * @var FilterManager
@@ -102,6 +102,7 @@ class RoutePlugin extends AbstractPlugin
      * @return void
      * @throws \ReflectionException
      * @throws \Yew\Core\Exception\ConfigException
+     * @throws \Exception
      */
     public function init(Context $context)
     {
@@ -115,7 +116,7 @@ class RoutePlugin extends AbstractPlugin
             $this->RoutePortConfigs[$RoutePortConfig->getPort()] = $RoutePortConfig;
         }
         $this->routeConfig->merge();
-        $aopConfig = DIget(AopConfig::class);
+        $aopConfig = DIGet(AopConfig::class);
         $this->routeAspect = new RouteAspect($this->RoutePortConfigs, $this->routeConfig);
         $aopConfig->addAspect($this->routeAspect);
     }
@@ -154,6 +155,7 @@ class RoutePlugin extends AbstractPlugin
      * @return void
      * @throws \ReflectionException
      * @throws \Yew\Core\Exception\ConfigException
+     * @throws \Exception
      */
     public function beforeProcessStart(Context $context)
     {

@@ -19,14 +19,15 @@ use Yew\Core\Plugins\Yew\YewPlugin;
 use Yew\Core\Server\Config\ServerConfig;
 use Yew\Core\Server\Process\Process;
 use Yew\Coroutine\Server\Server;
-use Yew\Nikic\FastRoute\RouteCollector;
 use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Aop\OrderAspect;
 use Yew\Plugins\Console\ConsolePlugin;
 use Yew\Plugins\Redis\RedisPlugin;
+use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\RouteConfig;
 use Yew\Plugins\Route\RoutePlugin;
+use Yew\Plugins\Whoops\WhoopsPlugin;
 
 class Application extends Server
 {
@@ -74,6 +75,7 @@ class Application extends Server
      * @return void
      * @throws ConfigException
      * @throws ReflectionException
+     * @throws Exception
      */
     protected function addNormalPlugins()
     {
@@ -105,11 +107,13 @@ class Application extends Server
         $this->addPlugin(new AopPlugin());
 
         $routeConfig = new RouteConfig();
-        $routeConfig->setErrorControllerName(RouteCollector::class);
+        $routeConfig->setErrorControllerName(Controller::class);
 
         $this->addPlugin(new RoutePlugin($routeConfig));
 
         $this->addPlugin(new RedisPlugin());
+
+        $this->addPlugin(new WhoopsPlugin());
 
         //Add aop of Go namespace by default
         $aopConfig = new AopConfig(__DIR__);

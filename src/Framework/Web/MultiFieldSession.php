@@ -82,18 +82,18 @@ abstract class MultiFieldSession extends Session
      * This method overrides the parent implementation and always returns true.
      * @return bool whether to use custom storage.
      */
-    public function getUseCustomStorage()
+    public function getUseCustomStorage(): bool
     {
         return true;
     }
 
     /**
      * Composes storage field set for session writing.
-     * @param string $id Optional session id
-     * @param string $data Optional session data
+     * @param string|null $id Optional session id
+     * @param string|null $data Optional session data
      * @return array storage fields
      */
-    protected function composeFields($id = null, $data = null)
+    protected function composeFields(?string $id = null, ?string $data = null): array
     {
         $fields = $this->writeCallback ? call_user_func($this->writeCallback, $this) : [];
         if ($id !== null) {
@@ -110,7 +110,7 @@ abstract class MultiFieldSession extends Session
      * @param array $fields storage fields.
      * @return string session data.
      */
-    protected function extractData($fields)
+    protected function extractData(array $fields): string
     {
         if ($this->readCallback !== null) {
             if (!isset($fields['data'])) {
@@ -119,13 +119,13 @@ abstract class MultiFieldSession extends Session
             $extraData = call_user_func($this->readCallback, $fields);
             if (!empty($extraData)) {
                 session_decode($fields['data']);
-                $_SESSION = array_merge((array) $_SESSION, (array) $extraData);
+                $_SESSION = array_merge($_SESSION, (array) $extraData);
                 return session_encode();
             }
 
             return $fields['data'];
         }
 
-        return isset($fields['data']) ? $fields['data'] : '';
+        return $fields['data'] ?? '';
     }
 }

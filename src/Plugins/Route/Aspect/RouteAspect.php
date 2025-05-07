@@ -118,10 +118,18 @@ class RouteAspect extends OrderAspect
             }
 
             $controllerInstance = $this->getController($routeTool->getControllerName());
-            $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
-
-            $handleResult = $controllerInstance->handle($routeTool->getControllerName(), $routeTool->getMethodName(), $routeTool->getParams());
-            $clientData->setResponseRaw($handleResult);
+            if (empty($controllerInstance)) {
+                $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
+                if ($debug) {
+                    throw new Exception("Controller not Found");
+                }
+                $handleResult = "Path not Found";
+                $clientData->setResponseRaw($handleResult);
+            } else {
+                $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
+                $handleResult = $controllerInstance->handle($routeTool->getControllerName(), $routeTool->getMethodName(), $routeTool->getParams());
+                $clientData->setResponseRaw($handleResult);
+            }
 
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
@@ -130,6 +138,7 @@ class RouteAspect extends OrderAspect
             $clientData->getResponse()->append($clientData->getResponseRaw());
 
             $this->filterManager->filter(AbstractFilter::FILTER_PRO, $clientData);
+
         } catch (\Throwable $e) {
             //The errors here will be handed over to the IndexController
             $controllerInstance = $this->getController($this->routeConfig->getErrorControllerName());
@@ -153,7 +162,11 @@ class RouteAspect extends OrderAspect
     private function getController($controllerName): ?IController
     {
         if (empty($controllerName)) {
-            throw new RouteException("Controller name not found");
+            $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
+            if ($debug) {
+                throw new RouteException("Controller name not found");
+            }
+            return null;
         }
         if (!isset($this->controllers[$controllerName])) {
             if (class_exists($controllerName)) {

@@ -8,7 +8,6 @@ namespace Yew\Plugins\Whoops;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-
 class WhoopsConfig extends BaseConfig
 {
     const KEY = "whoops";
@@ -16,7 +15,7 @@ class WhoopsConfig extends BaseConfig
     /**
      * @var bool
      */
-    protected $enable = true;
+    protected bool $enable = true;
 
     /**
      * WhoopsConfig constructor.

@@ -16,12 +16,12 @@ class RouteConfig extends BaseConfig
     /**
      * @var string
      */
-    protected $errorControllerName = NormalErrorController::class;
+    protected string $errorControllerName = NormalErrorController::class;
 
     /**
      * @var RouteRoleConfig[]
      */
-    protected $routeRoles = [];
+    protected array $routeRoles = [];
 
     /**
      * RouteConfig constructor.
@@ -40,7 +40,7 @@ class RouteConfig extends BaseConfig
     }
 
     /**
-     * @param RouteRoleConfig[] $routeRoles
+     * @param array $routeRoles
      */
     public function setRouteRoles(array $routeRoles): void
     {

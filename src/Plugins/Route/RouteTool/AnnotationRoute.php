@@ -50,7 +50,7 @@ class AnnotationRoute implements IRoute
      * @throws \Yew\Plugins\Validate\ValidationException
      * @throws \ReflectionException
      */
-    public function handleClientData($clientData, $RoutePortConfig): bool
+    public function handleClientData(ClientData $clientData, RoutePortConfig $RoutePortConfig): bool
     {
         $this->clientData = $clientData;
         //Port

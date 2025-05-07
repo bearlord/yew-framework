@@ -26,53 +26,53 @@ class WhoopsHandler extends Handler
      *
      * @var array
      */
-    private $searchPaths = [];
+    private array $searchPaths = [];
 
     /**
      * Fast lookup cache for known resource locations.
      *
      * @var array
      */
-    private $resourceCache = [];
+    private array $resourceCache = [];
 
     /**
      * The name of the custom css file.
      *
-     * @var string
+     * @var string|null
      */
-    private $customCss = null;
+    private ?string $customCss = null;
 
     /**
      * The name of the custom js file.
      *
      * @var string|null
      */
-    private $customJs = null;
+    private ?string $customJs = null;
 
     /**
      * @var array[]
      */
-    private $extraTables = [];
+    private array $extraTables = [];
 
     /**
      * @var bool
      */
-    private $handleUnconditionally = false;
+    private bool $handleUnconditionally = false;
 
     /**
      * @var string
      */
-    private $pageTitle = "Whoops! There was an error.";
+    private string $pageTitle = "Whoops! There was an error.";
+
+    /**
+     * @var array
+     */
+    private array $applicationPaths = [];
 
     /**
      * @var array[]
      */
-    private $applicationPaths;
-
-    /**
-     * @var array[]
-     */
-    private $blacklist = [
+    private array $blacklist = [
         '_GET' => [],
         '_POST' => [],
         '_FILES' => [],
@@ -98,7 +98,7 @@ class WhoopsHandler extends Handler
      * A list of known editor strings
      * @var array
      */
-    protected $editors = [
+    protected array $editors = [
         "sublime"  => "subl://open?url=file://%file&line=%line",
         "textmate" => "txmt://open?url=file://%file&line=%line",
         "emacs"    => "emacs://open?url=file://%file&line=%line",
@@ -114,7 +114,7 @@ class WhoopsHandler extends Handler
     /**
      * @var TemplateHelper
      */
-    private $templateHelper;
+    private TemplateHelper $templateHelper;
 
     /**
      * Constructor.
@@ -136,7 +136,7 @@ class WhoopsHandler extends Handler
 
         $this->templateHelper = new TemplateHelper();
 
-        if (class_exists('Symfony\Component\VarDumper\Cloner\VarCloner')) {
+        if (class_exists("Symfony\\Component\\VarDumper\\Cloner\\VarCloner")) {
             $thisr = new VarCloner();
             // Only dump object internals if a custom caster exists.
             $thisr->addCasters(['*' => function ($obj, $a, $stub, $isNested, $filter = 0) {
@@ -159,7 +159,7 @@ class WhoopsHandler extends Handler
     /**
      * @return int|null
      */
-    public function handle()
+    public function handle(): ?int
     {
         $templateFile = $this->getResource("views/layout.html.php");
         $cssFile      = $this->getResource("css/whoops.base.css");
@@ -268,7 +268,7 @@ class WhoopsHandler extends Handler
      *
      * @return \Whoops\Exception\FrameCollection;
      */
-    protected function getExceptionFrames()
+    protected function getExceptionFrames(): \Whoops\Exception\FrameCollection
     {
         $frames = $this->getInspector()->getFrames();
 
@@ -291,7 +291,7 @@ class WhoopsHandler extends Handler
      *
      * @return string
      */
-    protected function getExceptionCode()
+    protected function getExceptionCode(): string
     {
         $exception = $this->getException();
 
@@ -307,7 +307,7 @@ class WhoopsHandler extends Handler
     /**
      * @return string
      */
-    public function contentType()
+    public function contentType(): string
     {
         return 'text/html';
     }
@@ -319,7 +319,7 @@ class WhoopsHandler extends Handler
      * @param string $label
      * @param array $data
      */
-    public function addDataTable($label, array $data)
+    public function addDataTable(string $label, array $data)
     {
         $this->extraTables[$label] = $data;
     }
@@ -330,12 +330,11 @@ class WhoopsHandler extends Handler
      * it should produce a simple associative array. Any nested arrays will
      * be flattened with print_r.
      *
-     * @throws InvalidArgumentException If $callback is not callable
      * @param  string $label
-     * @param  callable $callback Callable returning an associative array
+     * @param callable $callback Callable returning an associative array
+     *@throws InvalidArgumentException If $callback is not callable
      */
-    public function addDataTableCallback($label, /* callable */
-                                         $callback)
+    public function addDataTableCallback(string   $label, callable $callback)
     {
         if (!is_callable($callback)) {
             throw new InvalidArgumentException('Expecting callback argument to be callable');
@@ -343,7 +342,7 @@ class WhoopsHandler extends Handler
 
         $this->extraTables[$label] = function (\Whoops\Exception\Inspector $inspector = null) use ($callback) {
             try {
-                $result = sd_call_user_func($callback, $inspector);
+                $result = call_user_func($callback, $inspector);
 
                 // Only return the result if it can be iterated over by foreach().
                 return is_array($result) || $result instanceof \Traversable ? $result : [];
@@ -358,14 +357,13 @@ class WhoopsHandler extends Handler
      * Returns all the extra data tables registered with this handler.
      * Optionally accepts a 'label' parameter, to only return the data
      * table under that label.
-     * @param  string|null $label
+     * @param string|null $label
      * @return array[]|callable
      */
-    public function getDataTables($label = null)
+    public function getDataTables(?string $label = null)
     {
         if ($label !== null) {
-            return isset($this->extraTables[$label]) ?
-                $this->extraTables[$label] : [];
+            return $this->extraTables[$label] ?? [];
         }
 
         return $this->extraTables;
@@ -375,16 +373,17 @@ class WhoopsHandler extends Handler
      * Allows to disable all attempts to dynamically decide whether to
      * handle or return prematurely.
      * Set this to ensure that the handler will perform no matter what.
-     * @param  bool|null $value
+     * @param bool|null $value
      * @return bool|null
      */
-    public function handleUnconditionally($value = null)
+    public function handleUnconditionally(?bool $value = null): ?bool
     {
         if (func_num_args() == 0) {
             return $this->handleUnconditionally;
         }
 
         $this->handleUnconditionally = (bool)$value;
+        return $this->handleUnconditionally;
     }
 
     /**
@@ -393,17 +392,17 @@ class WhoopsHandler extends Handler
      * resolver. If the callable returns a string, it will
      * be set as the file reference's href attribute.
      *
-     * @example
+     * @param string $identifier
+     * @param string $resolver
+     *@example
      *  $run->addEditor('macvim', "mvim://open?url=file://%file&line=%line")
      * @example
      *   $run->addEditor('remove-it', function($file, $line) {
      *       unlink($file);
      *       return "http://stackoverflow.com";
      *   });
-     * @param string $identifier
-     * @param string $resolver
      */
-    public function addEditor($identifier, $resolver)
+    public function addEditor(string $identifier, string $resolver)
     {
         $this->editors[$identifier] = $resolver;
     }
@@ -440,12 +439,12 @@ class WhoopsHandler extends Handler
      * a string that may be used as the href property for that
      * file reference.
      *
-     * @throws InvalidArgumentException If editor resolver does not return a string
      * @param  string $filePath
-     * @param  int $line
+     * @param int $line
      * @return string|bool
+     *@throws InvalidArgumentException If editor resolver does not return a string
      */
-    public function getEditorHref($filePath, $line)
+    public function getEditorHref(string $filePath, int $line)
     {
         $editor = $this->getEditor($filePath, $line);
 
@@ -472,12 +471,12 @@ class WhoopsHandler extends Handler
      * act as an Ajax request. The editor must be a
      * valid callable function/closure
      *
-     * @throws UnexpectedValueException  If editor resolver does not return a boolean
      * @param  string $filePath
-     * @param  int $line
+     * @param int $line
      * @return bool
+     *@throws UnexpectedValueException  If editor resolver does not return a boolean
      */
-    public function getEditorAjax($filePath, $line)
+    public function getEditorAjax(string $filePath, int $line): bool
     {
         $editor = $this->getEditor($filePath, $line);
 
@@ -495,11 +494,11 @@ class WhoopsHandler extends Handler
      * act as an Ajax request. The editor must be a
      * valid callable function/closure
      *
-     * @param  string $filePath
-     * @param  int $line
+     * @param string $filePath
+     * @param int $line
      * @return array
      */
-    protected function getEditor($filePath, $line)
+    protected function getEditor(string $filePath, int $line): array
     {
         if (!$this->editor || (!is_string($this->editor) && !is_callable($this->editor))) {
             return [];
@@ -514,9 +513,9 @@ class WhoopsHandler extends Handler
 
         if (is_callable($this->editor) || (isset($this->editors[$this->editor]) && is_callable($this->editors[$this->editor]))) {
             if (is_callable($this->editor)) {
-                $callback = sd_call_user_func($this->editor, $filePath, $line);
+                $callback = call_user_func($this->editor, $filePath, $line);
             } else {
-                $callback = sd_call_user_func($this->editors[$this->editor], $filePath, $line);
+                $callback = call_user_func($this->editors[$this->editor], $filePath, $line);
             }
 
             if (is_string($callback)) {
@@ -527,8 +526,8 @@ class WhoopsHandler extends Handler
             }
 
             return [
-                'ajax' => isset($callback['ajax']) ? $callback['ajax'] : false,
-                'url' => isset($callback['url']) ? $callback['url'] : $callback,
+                'ajax' => $callback['ajax'] ?? false,
+                'url' => $callback['url'] ?? $callback,
             ];
         }
 
@@ -536,18 +535,18 @@ class WhoopsHandler extends Handler
     }
 
     /**
-     * @param  string $title
+     * @param string $title
      * @return void
      */
-    public function setPageTitle($title)
+    public function setPageTitle(string $title)
     {
-        $this->pageTitle = (string)$title;
+        $this->pageTitle = $title;
     }
 
     /**
      * @return string
      */
-    public function getPageTitle()
+    public function getPageTitle(): string
     {
         return $this->pageTitle;
     }
@@ -556,12 +555,12 @@ class WhoopsHandler extends Handler
      * Adds a path to the list of paths to be searched for
      * resources.
      *
-     * @throws InvalidArgumentException If $path is not a valid directory
-     *
      * @param  string $path
      * @return void
+     *@throws InvalidArgumentException If $path is not a valid directory
+     *
      */
-    public function addResourcePath($path)
+    public function addResourcePath(string $path)
     {
         if (!is_dir($path)) {
             throw new InvalidArgumentException(
@@ -575,10 +574,10 @@ class WhoopsHandler extends Handler
     /**
      * Adds a custom css file to be loaded.
      *
-     * @param  string $name
+     * @param string $name
      * @return void
      */
-    public function addCustomCss($name)
+    public function addCustomCss(string $name)
     {
         $this->customCss = $name;
     }
@@ -586,7 +585,7 @@ class WhoopsHandler extends Handler
     /**
      * @return array
      */
-    public function getResourcePaths()
+    public function getResourcePaths(): array
     {
         return $this->searchPaths;
     }
@@ -597,12 +596,12 @@ class WhoopsHandler extends Handler
      * way back to the first, enabling a cascading-type system of overrides
      * for all resources.
      *
-     * @throws RuntimeException If resource cannot be found in any of the available paths
-     *
      * @param  string $resource
      * @return string
+     *@throws RuntimeException If resource cannot be found in any of the available paths
+     *
      */
-    protected function getResource($resource)
+    protected function getResource(string $resource): string
     {
 
         // If the resource was found before, we can speed things up
@@ -633,9 +632,9 @@ class WhoopsHandler extends Handler
     /**
      * @deprecated
      *
-     * @return string
+     * @return string|null
      */
-    public function getResourcesPath()
+    public function getResourcesPath(): ?string
     {
         $allPaths = $this->getResourcePaths();
 
@@ -644,12 +643,12 @@ class WhoopsHandler extends Handler
     }
 
     /**
-     * @deprecated
-     *
      * @param  string $resourcesPath
      * @return void
+     *@deprecated
+     *
      */
-    public function setResourcesPath($resourcesPath)
+    public function setResourcesPath(string $resourcesPath)
     {
         $this->addResourcePath($resourcesPath);
     }
@@ -659,7 +658,7 @@ class WhoopsHandler extends Handler
      *
      * @return array
      */
-    public function getApplicationPaths()
+    public function getApplicationPaths(): array
     {
         return $this->applicationPaths;
     }
@@ -669,7 +668,7 @@ class WhoopsHandler extends Handler
      *
      * @param array $applicationPaths
      */
-    public function setApplicationPaths($applicationPaths)
+    public function setApplicationPaths(array $applicationPaths)
     {
         $this->applicationPaths = $applicationPaths;
     }
@@ -679,7 +678,7 @@ class WhoopsHandler extends Handler
      *
      * @param string $applicationRootPath
      */
-    public function setApplicationRootPath($applicationRootPath)
+    public function setApplicationRootPath(string $applicationRootPath)
     {
         $this->templateHelper->setApplicationRootPath($applicationRootPath);
     }
@@ -690,7 +689,7 @@ class WhoopsHandler extends Handler
      * @param $superGlobalName string the name of the superglobal array, e.g. '_GET'
      * @param $key string the key within the superglobal
      */
-    public function blacklist($superGlobalName, $key)
+    public function blacklist(string $superGlobalName, string $key)
     {
         $this->blacklist[$superGlobalName][] = $key;
     }
@@ -705,7 +704,7 @@ class WhoopsHandler extends Handler
      * @param $superGlobalName string the name of the superglobal array, e.g. '_GET'
      * @return array $values without sensitive data
      */
-    private function masked(array $superGlobal, $superGlobalName)
+    private function masked(array $superGlobal, string $superGlobalName): array
     {
         $blacklisted = $this->blacklist[$superGlobalName];
 

@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Web;
 
-use Yew\Core\Server\Server;
+use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Exception\InvalidArgumentException;
@@ -78,7 +78,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @var string the name of the session variable that stores the flash message data.
      */
-    public $flashParam = '__flash';
+    public string $flashParam = '__flash';
     /**
      * @var \SessionHandlerInterface|array an object implementing the SessionHandlerInterface or a configuration array. If set, will be used to provide persistency instead of build-in methods.
      */
@@ -89,11 +89,11 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * Array may have the following possible keys: 'lifetime', 'path', 'domain', 'secure', 'httponly'
      * @see https://secure.php.net/manual/en/function.session-set-cookie-params.php
      */
-    private $_cookieParams = ['httponly' => true];
+    private array $_cookieParams = ['httponly' => true];
     /**
      * @var $frozenSessionData array|null is used for saving session between recreations due to session parameters update.
      */
-    private $frozenSessionData;
+    private ?array $frozenSessionData;
 
 
     /**
@@ -117,13 +117,14 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * [[readSession()]], [[writeSession()]], [[destroySession()]] and [[gcSession()]].
      * @return bool whether to use custom storage.
      */
-    public function getUseCustomStorage()
+    public function getUseCustomStorage(): bool
     {
         return false;
     }
 
     /**
      * Starts the session.
+     * @throws InvalidConfigException
      */
     public function open()
     {
@@ -135,7 +136,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
         $this->setCookieParamsInternal();
 
-        $debug = Server::$instance->getConfigContext()->get('yii.debug');
+        $debug = Server::$instance->getServerConfig()->isDebug();
         $debug ? session_start() : @session_start();
 
         if ($this->getIsActive()) {
@@ -143,14 +144,14 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
             $this->updateFlashCounters();
         } else {
             $error = error_get_last();
-            $message = isset($error['message']) ? $error['message'] : 'Failed to start session.';
+            $message = $error['message'] ?? 'Failed to start session.';
             Yew::error($message, __METHOD__);
         }
     }
 
     /**
      * Registers session handler.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     protected function registerSessionHandler()
     {
@@ -206,8 +207,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      *
      * This method has no effect when session is not [[getIsActive()|active]].
      * Make sure to call [[open()]] before calling it.
-     * @see open()
-     * @see isActive
+     * @throws InvalidConfigException
+     * @see       isActive
+     * @see       open()
      */
     public function destroy()
     {
@@ -225,12 +227,12 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @return bool whether the session has started
      */
-    public function getIsActive()
+    public function getIsActive(): bool
     {
         return session_status() === PHP_SESSION_ACTIVE;
     }
 
-    private $_hasSessionId;
+    private ?bool $_hasSessionId = null;
 
     /**
      * Returns a value indicating whether the current request has sent the session ID.
@@ -239,7 +241,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * or call [[setHasSessionId()]] to explicitly set whether the session ID is sent.
      * @return bool whether the current request has sent the session ID.
      */
-    public function getHasSessionId()
+    public function getHasSessionId(): bool
     {
         if ($this->_hasSessionId === null) {
             $name = $this->getName();
@@ -262,7 +264,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * whether the session ID is sent.
      * @param bool $value whether the current request has sent the session ID.
      */
-    public function setHasSessionId($value)
+    public function setHasSessionId(bool $value)
     {
         $this->_hasSessionId = $value;
     }
@@ -272,7 +274,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * This is a wrapper for [PHP session_id()](https://secure.php.net/manual/en/function.session-id.php).
      * @return string the current session ID
      */
-    public function getId()
+    public function getId(): string
     {
         return session_id();
     }
@@ -282,7 +284,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * This is a wrapper for [PHP session_id()](https://secure.php.net/manual/en/function.session-id.php).
      * @param string $value the session ID for the current session
      */
-    public function setId($value)
+    public function setId(string $value)
     {
         session_id($value);
     }
@@ -299,7 +301,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @see open()
      * @see isActive
      */
-    public function regenerateID($deleteOldSession = false)
+    public function regenerateID(bool $deleteOldSession = false)
     {
         $debug = Server::$instance->getConfigContext()->get('yii.debug');
         if ($this->getIsActive()) {
@@ -318,7 +320,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * This is a wrapper for [PHP session_name()](https://secure.php.net/manual/en/function.session-name.php).
      * @return string the current session name
      */
-    public function getName()
+    public function getName(): string
     {
         return session_name();
     }
@@ -329,7 +331,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @param string $value the session name for the current session, must be an alphanumeric string.
      * It defaults to "PHPSESSID".
      */
-    public function setName($value)
+    public function setName(string $value)
     {
         $this->freeze();
         session_name($value);
@@ -341,7 +343,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * This is a wrapper for [PHP session_save_path()](https://secure.php.net/manual/en/function.session-save-path.php).
      * @return string the current session save path, defaults to '/tmp'.
      */
-    public function getSavePath()
+    public function getSavePath(): string
     {
         return session_save_path();
     }
@@ -352,7 +354,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @param string $value the current session save path. This can be either a directory name or a [path alias](guide:concept-aliases).
      * @throws InvalidArgumentException if the path is not a valid directory
      */
-    public function setSavePath($value)
+    public function setSavePath(string $value)
     {
         $path = Yew::getAlias($value);
         if (is_dir($path)) {
@@ -366,7 +368,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @return array the session cookie parameters.
      * @see https://secure.php.net/manual/en/function.session-get-cookie-params.php
      */
-    public function getCookieParams()
+    public function getCookieParams(): array
     {
         return array_merge(session_get_cookie_params(), array_change_key_case($this->_cookieParams));
     }
@@ -398,6 +400,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * Sets the session cookie parameters.
      * This method is called by [[open()]] when it is about to open the session.
      * @throws InvalidArgumentException if the parameters are incomplete.
+     * @throws InvalidConfigException
      * @see https://secure.php.net/manual/en/function.session-set-cookie-params.php
      */
     private function setCookieParamsInternal()
@@ -423,7 +426,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @return bool|null the value indicating whether cookies should be used to store session IDs.
      * @see setUseCookies()
      */
-    public function getUseCookies()
+    public function getUseCookies(): ?bool
     {
         if (ini_get('session.use_cookies') === '0') {
             return false;
@@ -445,7 +448,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      *
      * @param bool|null $value the value indicating whether cookies should be used to store session IDs.
      */
-    public function setUseCookies($value)
+    public function setUseCookies(?bool $value = null)
     {
         $this->freeze();
         if ($value === false) {
@@ -464,7 +467,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @return float the probability (percentage) that the GC (garbage collection) process is started on every session initialization.
      */
-    public function getGCProbability()
+    public function getGCProbability(): float
     {
         return (float) (ini_get('session.gc_probability') / ini_get('session.gc_divisor') * 100);
     }
@@ -473,7 +476,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @param float $value the probability (percentage) that the GC (garbage collection) process is started on every session initialization.
      * @throws InvalidArgumentException if the value is not between 0 and 100.
      */
-    public function setGCProbability($value)
+    public function setGCProbability(float $value)
     {
         $this->freeze();
         if ($value >= 0 && $value <= 100) {
@@ -489,7 +492,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @return bool whether transparent sid support is enabled or not, defaults to false.
      */
-    public function getUseTransparentSessionID()
+    public function getUseTransparentSessionID(): bool
     {
         return ini_get('session.use_trans_sid') == 1;
     }
@@ -497,7 +500,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @param bool $value whether transparent sid support is enabled or not.
      */
-    public function setUseTransparentSessionID($value)
+    public function setUseTransparentSessionID(bool $value)
     {
         $this->freeze();
         ini_set('session.use_trans_sid', $value ? '1' : '0');
@@ -508,7 +511,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @return int the number of seconds after which data will be seen as 'garbage' and cleaned up.
      * The default value is 1440 seconds (or the value of "session.gc_maxlifetime" set in php.ini).
      */
-    public function getTimeout()
+    public function getTimeout(): int
     {
         return (int) ini_get('session.gc_maxlifetime');
     }
@@ -516,7 +519,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @param int $value the number of seconds after which data will be seen as 'garbage' and cleaned up
      */
-    public function setTimeout($value)
+    public function setTimeout(int $value)
     {
         $this->freeze();
         ini_set('session.gc_maxlifetime', $value);
@@ -526,12 +529,12 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * Session open handler.
      * This method should be overridden if [[useCustomStorage]] returns true.
-     * @internal Do not call this method directly.
      * @param string $savePath session save path
      * @param string $sessionName session name
      * @return bool whether session is opened successfully
+     *@internal Do not call this method directly.
      */
-    public function openSession($savePath, $sessionName)
+    public function openSession(string $savePath, string $sessionName): bool
     {
         return true;
     }
@@ -550,11 +553,11 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * Session read handler.
      * This method should be overridden if [[useCustomStorage]] returns true.
-     * @internal Do not call this method directly.
      * @param string $id session ID
      * @return string the session data
+     *@internal Do not call this method directly.
      */
-    public function readSession($id)
+    public function readSession(string $id): string
     {
         return '';
     }
@@ -562,12 +565,12 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * Session write handler.
      * This method should be overridden if [[useCustomStorage]] returns true.
-     * @internal Do not call this method directly.
      * @param string $id session ID
      * @param string $data session data
      * @return bool whether session write is successful
+     *@internal Do not call this method directly.
      */
-    public function writeSession($id, $data)
+    public function writeSession(string $id, string $data): bool
     {
         return true;
     }
@@ -575,11 +578,11 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * Session destroy handler.
      * This method should be overridden if [[useCustomStorage]] returns true.
-     * @internal Do not call this method directly.
      * @param string $id session ID
      * @return bool whether session is destroyed successfully
+     *@internal Do not call this method directly.
      */
-    public function destroySession($id)
+    public function destroySession(string $id): bool
     {
         return true;
     }
@@ -600,8 +603,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * Returns an iterator for traversing the session variables.
      * This method is required by the interface [[\IteratorAggregate]].
      * @return SessionIterator an iterator for traversing the session variables.
+     * @throws InvalidConfigException
      */
-    public function getIterator()
+    public function getIterator(): SessionIterator
     {
         $this->open();
         return new SessionIterator();
@@ -610,8 +614,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * Returns the number of items in the session.
      * @return int the number of session variables
+     * @throws InvalidConfigException
      */
-    public function getCount()
+    public function getCount(): int
     {
         $this->open();
         return count($_SESSION);
@@ -621,8 +626,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * Returns the number of items in the session.
      * This method is required by [[\Countable]] interface.
      * @return int number of items in the session.
+     * @throws InvalidConfigException
      */
-    public function count()
+    public function count(): int
     {
         return $this->getCount();
     }
@@ -633,11 +639,12 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * @param string $key the session variable name
      * @param mixed $defaultValue the default value to be returned when the session variable does not exist.
      * @return mixed the session variable value, or $defaultValue if the session variable does not exist.
+     * @throws InvalidConfigException
      */
-    public function get($key, $defaultValue = null)
+    public function get(string $key, $defaultValue = null)
     {
         $this->open();
-        return isset($_SESSION[$key]) ? $_SESSION[$key] : $defaultValue;
+        return $_SESSION[$key] ?? $defaultValue;
     }
 
     /**
@@ -645,8 +652,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * If the specified name already exists, the old value will be overwritten.
      * @param string $key session variable name
      * @param mixed $value session variable value
+     * @throws InvalidConfigException
      */
-    public function set($key, $value)
+    public function set(string $key, $value)
     {
         $this->open();
         $_SESSION[$key] = $value;
@@ -656,6 +664,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * Removes a session variable.
      * @param string $key the name of the session variable to be removed
      * @return mixed the removed value, null if no such session variable.
+     * @throws InvalidConfigException
      */
     public function remove($key)
     {
@@ -684,8 +693,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     /**
      * @param mixed $key session variable name
      * @return bool whether there is the named session variable
+     * @throws InvalidConfigException
      */
-    public function has($key)
+    public function has($key): bool
     {
         $this->open();
         return isset($_SESSION[$key]);

@@ -13,6 +13,7 @@ use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
+use Yew\Plugins\Route\RoutePlugin;
 use Yew\Plugins\Whoops\Aspect\WhoopsAspect;
 use Yew\Plugins\Whoops\Handler\WhoopsHandler;
 use Whoops\Run;
@@ -24,19 +25,15 @@ class WhoopsPlugin extends AbstractPlugin
     /**
      * @var Run
      */
-    private $whoops;
+    private Run $whoops;
 
     /**
-     * @var WhoopsConfig
+     * @var WhoopsConfig|null
      */
-    protected $whoopsConfig;
+    protected ?WhoopsConfig $whoopsConfig;
 
     /**
-     * WhoopsPlugin constructor.
      * @param WhoopsConfig|null $whoopsConfig
-     * @throws \DI\DependencyException
-     * @throws \ReflectionException
-     * @throws \DI\NotFoundException
      */
     public function __construct(?WhoopsConfig $whoopsConfig = null)
     {
@@ -50,11 +47,10 @@ class WhoopsPlugin extends AbstractPlugin
         $this->atAfter(AopPlugin::class);
 
         //Due to Aspect sorting issues need to be loaded before EasyRoutePlugin
-        $this->atBefore("Yew\Plugins\EasyRoute\EasyRoutePlugin");
+        $this->atBefore(RoutePlugin::class);
     }
 
     /**
-     * @inheritDoc
      * @return string
      */
     public function getName(): string
@@ -63,13 +59,8 @@ class WhoopsPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @param PluginInterfaceManager $pluginInterfaceManager
-     * @return mixed|void
-     * @throws \DI\DependencyException
-     * @throws \DI\NotFoundException
-     * @throws \Yew\Core\Exception
-     * @throws \ReflectionException
+     * @return void
      */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
@@ -81,17 +72,20 @@ class WhoopsPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
-     * @return mixed|void
-     * @throws \Yew\Core\Exception
-     * @throws \Yew\Core\Plugins\Config\ConfigException
+     * @return void
      * @throws \ReflectionException
+     * @throws \Yew\Core\Exception\ConfigException
+     * @throws \Yew\Core\Exception\Exception
+     * @throws \Exception
      */
     public function init(Context $context)
     {
         parent::init($context);
+
+        /** @var AopConfig $aopConfig */
         $aopConfig = DIGet(AopConfig::class);
+
         $serverConfig = Server::$instance->getServerConfig();
 
         $this->whoopsConfig->merge();
@@ -104,16 +98,15 @@ class WhoopsPlugin extends AbstractPlugin
         $handler->setPageTitle("Whoops! There was an error.");
         $this->whoops->pushHandler($handler);
         
-        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew-framework/src/ESD/");
+        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew-framework/src/");
         $aopConfig->addAspect(new WhoopsAspect($this->whoops, $this->whoopsConfig));
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
-     * @return mixed
-     * @throws \Yew\Core\Plugins\Config\ConfigException
+     * @return void
      * @throws \ReflectionException
+     * @throws \Yew\Core\Exception\ConfigException
      */
     public function beforeServerStart(Context $context)
     {
@@ -121,9 +114,8 @@ class WhoopsPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
-     * @return mixed
+     * @return void
      */
     public function beforeProcessStart(Context $context)
     {
