@@ -80,7 +80,7 @@ class AopPlugin extends AbstractPlugin
         //Add src directory automatically
         $serverConfig = Server::$instance->getServerConfig();
         $this->aopConfig->addIncludePath($serverConfig->getSrcDir());
-        $this->aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew/src");
+        $this->aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew-framework/src");
         $this->aopConfig->setCacheDir($cacheDir);
 
         $serverConfig = Server::$instance->getServerConfig();

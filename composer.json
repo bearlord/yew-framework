@@ -51,7 +51,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Yew\\": "src/yew"
+      "Yew\\": "src"
     },
     "files": [
       "src/Yew/Core/Common.php",

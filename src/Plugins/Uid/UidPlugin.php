@@ -74,7 +74,7 @@ class UidPlugin extends AbstractPlugin
         parent::init($context);
         $serverConfig = Server::$instance->getServerConfig();
         $aopConfig = DIGet(AopConfig::class);
-        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/yew-framework/src/");
+        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew-framework/src/");
 
         $this->uidAspect = new UidAspect();
         $aopConfig->addAspect($this->uidAspect);
