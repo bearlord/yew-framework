@@ -61,10 +61,10 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      */
     public ?array $select = [];
     /**
-     * @var string additional option that should be appended to the 'SELECT' keyword. For example,
+     * @var string|null additional option that should be appended to the 'SELECT' keyword. For example,
      * in MySQL, the option 'SQL_CALC_FOUND_ROWS' can be used.
      */
-    public string $selectOption = "";
+    public ?string $selectOption = "";
     /**
      * @var bool whether to select distinct rows of data only. If this is set true,
      * the SELECT clause would be changed to SELECT DISTINCT.

@@ -214,7 +214,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * {@inheritdoc}
      */
-    public function buildLimit(int $limit, int $offset): string
+    public function buildLimit(?int $limit = null, int $offset = null): string
     {
         $sql = '';
         if ($this->hasLimit($limit)) {

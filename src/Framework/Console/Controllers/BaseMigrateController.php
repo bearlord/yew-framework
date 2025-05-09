@@ -165,7 +165,7 @@ abstract class BaseMigrateController extends Controller
      * @return int the status of the action execution. 0 means normal, other values mean abnormal.
      * @throws InvalidConfigException
      */
-    public function actionUp(int $limit = 0): int
+    public function actionUp(?int $limit = 0): int
     {
         $migrations = $this->getNewMigrations();
         if (empty($migrations)) {
