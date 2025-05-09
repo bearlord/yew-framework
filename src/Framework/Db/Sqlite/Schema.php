@@ -107,7 +107,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTablePrimaryKey($tableName)
+    protected function loadTablePrimaryKey(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'primaryKey');
     }
@@ -115,7 +115,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableForeignKeys($tableName)
+    protected function loadTableForeignKeys(string $tableName)
     {
         $foreignKeys = $this->db->createCommand('PRAGMA FOREIGN_KEY_LIST (' . $this->quoteValue($tableName) . ')')->queryAll();
         $foreignKeys = $this->normalizePdoRowKeyCase($foreignKeys, true);
@@ -138,7 +138,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableIndexes($tableName)
+    protected function loadTableIndexes(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'indexes');
     }
@@ -146,7 +146,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableUniques($tableName)
+    protected function loadTableUniques(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'uniques');
     }
@@ -154,7 +154,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableChecks($tableName)
+    protected function loadTableChecks(string $tableName)
     {
         $sql = $this->db->createCommand('SELECT `sql` FROM `sqlite_master` WHERE name = :tableName', [
             ':tableName' => $tableName,
@@ -194,7 +194,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * {@inheritdoc}
      * @throws NotSupportedException if this method is called.
      */
-    protected function loadTableDefaultValues($tableName)
+    protected function loadTableDefaultValues(string $tableName)
     {
         throw new NotSupportedException('SQLite does not support default value constraints.');
     }

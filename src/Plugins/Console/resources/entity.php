@@ -49,7 +49,7 @@ return '<?= $generator->generateTableName($tableName) ?>';
     */
     public static function getDb()
     {
-    return Yii::$app->get('<?= $generator->db ?>');
+    return Yew::$app->get('<?= $generator->db ?>');
     }
 <?php endif; ?>
 

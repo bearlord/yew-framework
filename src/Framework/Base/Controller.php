@@ -80,8 +80,11 @@ class Controller extends Component implements ViewContextInterface
     /**
      * Controller constructor.
      */
-    public function __construct(?array $config = [])
+    public function __construct($id, $module, ?array $config = [])
     {
+        $this->id = $id;
+        $this->module = $module;
+
         parent::__construct($config);
     }
 
@@ -210,6 +213,7 @@ class Controller extends Component implements ViewContextInterface
         $missing = [];
         $actionParams = [];
         $requestedParams = [];
+
         foreach ($method->getParameters() as $i => $param) {
             $name = $param->getName();
             $key = null;

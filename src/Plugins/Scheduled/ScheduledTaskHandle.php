@@ -40,7 +40,7 @@ class ScheduledTaskHandle
         $className = $scheduledTask->getClassName();
         $taskInstance = Server::$instance->getContainer()->get($className);
         call_user_func([$taskInstance, $scheduledTask->getFunctionName()]);
-        $this->debug(Yii::t('esd', 'Execute scheduled task {name}', [
+        $this->debug(Yew::t('esd', 'Execute scheduled task {name}', [
             'name' => $scheduledTask->getName()
         ]));
     }

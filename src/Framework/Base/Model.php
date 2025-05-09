@@ -764,7 +764,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     {
         $debug = Server::$instance->getConfigContext()->get('yii.debug');
         if ($debug) {
-            Yii::debug("Failed to set unsafe attribute '$name' in '" . get_class($this) . "'.", __METHOD__);
+            Yew::debug("Failed to set unsafe attribute '$name' in '" . get_class($this) . "'.", __METHOD__);
         }
     }
 

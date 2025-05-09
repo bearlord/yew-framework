@@ -568,7 +568,7 @@ abstract class Cache extends Component implements CacheInterface
      *
      * ```php
      * public function getTopProducts($count = 10) {
-     *     $cache = $this->cache; // Could be Yii::$app->cache
+     *     $cache = $this->cache; // Could be Yew::$app->cache
      *     return $cache->getOrSet(['top-n-products', 'n' => $count], function ($cache) use ($count) {
      *         return Products::find()->mostPopular()->limit(10)->all();
      *     }, 1000);
@@ -597,7 +597,7 @@ abstract class Cache extends Component implements CacheInterface
 
         $value = call_user_func($callable, $this);
         if (!$this->set($key, $value, $duration, $dependency)) {
-            Yii::warning('Failed to set cache value for key ' . json_encode($key), __METHOD__);
+            Yew::warning('Failed to set cache value for key ' . json_encode($key), __METHOD__);
         }
 
         return $value;

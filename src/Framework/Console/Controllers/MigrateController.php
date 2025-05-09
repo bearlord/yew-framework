@@ -8,6 +8,9 @@
 namespace Yew\Framework\Console\Controllers;
 
 use Yew\Framework\Base\Action;
+use Yew\Framework\Db\Exception;
+use Yew\Framework\Db\Migration;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Yew;
 use Yew\Framework\Db\Connection;
 use Yew\Framework\Db\Query;
@@ -84,11 +87,13 @@ class MigrateController extends BaseMigrateController
     /**
      * @var string the name of the table for keeping applied migration information.
      */
-    public $migrationTable = '{{%migration}}';
+    public string $migrationTable = '{{%migration}}';
+
     /**
      * {@inheritdoc}
      */
-    public $templateFile = '@yii/Views/migration.php';
+    public string $templateFile = '@yii/Views/migration.php';
+
     /**
      * @var array a set of template paths for generating migration code automatically.
      *
@@ -101,20 +106,22 @@ class MigrateController extends BaseMigrateController
      *
      * @since 2.0.7
      */
-    public $generatorTemplateFiles = [
-        'create_table' => '@yii/Views/createTableMigration.php',
-        'drop_table' => '@yii/Views/dropTableMigration.php',
-        'add_column' => '@yii/Views/addColumnMigration.php',
-        'drop_column' => '@yii/Views/dropColumnMigration.php',
-        'create_junction' => '@yii/Views/createTableMigration.php',
+    public array $generatorTemplateFiles = [
+        'create_table' => '@yew/Framework/Views/createTableMigration.php',
+        'drop_table' => '@yew/Framework/Views/dropTableMigration.php',
+        'add_column' => '@yew/Framework/Views/addColumnMigration.php',
+        'drop_column' => '@yew/Framework/Views/dropColumnMigration.php',
+        'create_junction' => '@yew/Framework/Views/createTableMigration.php',
     ];
+
     /**
      * @var bool indicates whether the table names generated should consider
      * the `tablePrefix` setting of the DB connection. For example, if the table
      * name is `post` the generator wil return `{{%post}}`.
      * @since 2.0.8
      */
-    public $useTablePrefix = true;
+    public bool $useTablePrefix = true;
+
     /**
      * @var array column definition strings used for creating migration code.
      *
@@ -127,7 +134,8 @@ class MigrateController extends BaseMigrateController
      * `--fields="id_key:primaryKey,name:string(12):notNull:unique"`
      * @since 2.0.7
      */
-    public $fields = [];
+    public array $fields = [];
+
     /**
      * @var Connection|array|string the DB connection object or the application component ID of the DB connection to use
      * when applying migrations. Starting from version 2.0.3, this can also be a configuration array
@@ -138,7 +146,7 @@ class MigrateController extends BaseMigrateController
      * @var string the comment for the table being created.
      * @since 2.0.14
      */
-    public $comment = '';
+    public string $comment = '';
 
 
     /**
@@ -175,13 +183,16 @@ class MigrateController extends BaseMigrateController
     /**
      * This method is invoked right before an action is to be executed (after all possible filters.)
      * It checks the existence of the [[migrationPath]].
-     * @param \Yew\Framework\Console\Controllers\Action $action the action to be executed.
+     * @param Action $action the action to be executed.
      * @return bool whether the action should continue to be executed.
+     * @throws \ReflectionException
+     * @throws InvalidConfigException
      */
-    public function beforeAction(Action $action)
+    public function beforeAction(Action $action): bool
     {
         if (parent::beforeAction($action)) {
-            $this->db = Instance::ensure($this->db, Connection::className());
+            //$this->db = Instance::ensure($this->db, Connection::class);
+            $this->db = Yew::$app->getDb();
             return true;
         }
 
@@ -191,13 +202,14 @@ class MigrateController extends BaseMigrateController
     /**
      * Creates a new migration instance.
      * @param string $class the migration class name
-     * @return \Yew\Yii\Db\Migration the migration instance
+     * @return \Yew\Framework\Db\Migration the migration instance
+     * @throws InvalidConfigException
      */
-    protected function createMigration($class)
+    protected function createMigration(string $class): Migration
     {
         $this->includeMigrationFile($class);
 
-        return Yii::createObject([
+        return Yew::createObject([
             'class' => $class,
             'db' => $this->db,
             'compact' => $this->compact,
@@ -205,9 +217,13 @@ class MigrateController extends BaseMigrateController
     }
 
     /**
-     * {@inheritdoc}
+     * @param int|null $limit
+     * @return array
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
-    protected function getMigrationHistory($limit)
+    protected function getMigrationHistory(?int $limit = null): array
     {
         if ($this->db->schema->getTableSchema($this->migrationTable, true) === null) {
             $this->createMigrationHistoryTable();
@@ -256,22 +272,25 @@ class MigrateController extends BaseMigrateController
 
         $history = array_slice($history, 0, $limit);
 
-        $history = ArrayHelper::map($history, 'version', 'apply_time');
-
-        return $history;
+        return ArrayHelper::map($history, 'version', 'apply_time');
     }
 
     /**
      * Creates the migration history table.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
     protected function createMigrationHistoryTable()
     {
         $tableName = $this->db->schema->getRawTableName($this->migrationTable);
         $this->stdout("Creating migration history table \"$tableName\"...", Console::FG_YELLOW);
+
         $this->db->createCommand()->createTable($this->migrationTable, [
             'version' => 'varchar(' . static::MAX_NAME_LENGTH . ') NOT NULL PRIMARY KEY',
             'apply_time' => 'integer',
         ])->execute();
+
         $this->db->createCommand()->insert($this->migrationTable, [
             'version' => self::BASE_MIGRATION,
             'apply_time' => time(),
@@ -281,8 +300,12 @@ class MigrateController extends BaseMigrateController
 
     /**
      * {@inheritdoc}
+     * @param string $version
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
-    protected function addMigrationHistory($version)
+    protected function addMigrationHistory(string $version)
     {
         $command = $this->db->createCommand();
         $command->insert($this->migrationTable, [
@@ -293,6 +316,7 @@ class MigrateController extends BaseMigrateController
 
     /**
      * {@inheritdoc}
+     * @throws \Throwable
      * @since 2.0.13
      */
     protected function truncateDatabase()
@@ -331,7 +355,7 @@ class MigrateController extends BaseMigrateController
      * @param string $errorMessage
      * @return bool
      */
-    private function isViewRelated($errorMessage)
+    private function isViewRelated(string $errorMessage): bool
     {
         $dropViewErrors = [
             'DROP VIEW to delete view', // SQLite
@@ -349,8 +373,12 @@ class MigrateController extends BaseMigrateController
 
     /**
      * {@inheritdoc}
+     * @param string $version
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
      */
-    protected function removeMigrationHistory($version)
+    protected function removeMigrationHistory(string $version)
     {
         $command = $this->db->createCommand();
         $command->delete($this->migrationTable, [
@@ -364,7 +392,7 @@ class MigrateController extends BaseMigrateController
      * {@inheritdoc}
      * @since 2.0.13
      */
-    protected function getMigrationNameLimit()
+    protected function getMigrationNameLimit(): ?int
     {
         if ($this->_migrationNameLimit !== null) {
             return $this->_migrationNameLimit;
@@ -384,7 +412,7 @@ class MigrateController extends BaseMigrateController
      * @param string $name
      * @return string
      */
-    private function normalizeTableName($name)
+    private function normalizeTableName(string $name): string
     {
         if (substr($name, -1) === '_') {
             $name = substr($name, 0, -1);
@@ -401,7 +429,7 @@ class MigrateController extends BaseMigrateController
      * {@inheritdoc}
      * @since 2.0.8
      */
-    protected function generateMigrationSourceCode($params)
+    protected function generateMigrationSourceCode(array $params): string
     {
         $parsedFields = $this->parseFields();
         $fields = $parsedFields['fields'];
@@ -474,7 +502,7 @@ class MigrateController extends BaseMigrateController
             if ($relatedColumn === null) {
                 $relatedColumn = 'id';
                 try {
-                    $this->db = Instance::ensure($this->db, Connection::className());
+                    $this->db = Instance::ensure($this->db, Connection::class);
                     $relatedTableSchema = $this->db->getTableSchema($relatedTable);
                     if ($relatedTableSchema !== null) {
                         $primaryKeyCount = count($relatedTableSchema->primaryKey);
@@ -498,7 +526,7 @@ class MigrateController extends BaseMigrateController
             ];
         }
 
-        return $this->renderFile(Yii::getAlias($templateFile), array_merge($params, [
+        return $this->renderFile(Yew::getAlias($templateFile), array_merge($params, [
             'table' => $this->generateTableName($table),
             'fields' => $fields,
             'foreignKeys' => $foreignKeys,
@@ -514,7 +542,7 @@ class MigrateController extends BaseMigrateController
      * @return string
      * @since 2.0.8
      */
-    protected function generateTableName($tableName)
+    protected function generateTableName(string $tableName): string
     {
         if (!$this->useTablePrefix) {
             return $tableName;
@@ -532,7 +560,7 @@ class MigrateController extends BaseMigrateController
      *
      * @since 2.0.7
      */
-    protected function parseFields()
+    protected function parseFields(): array
     {
         $fields = [];
         $foreignKeys = [];
@@ -545,9 +573,7 @@ class MigrateController extends BaseMigrateController
                 if (strncmp($chunk, 'foreignKey', 10) === 0) {
                     preg_match('/foreignKey\((\w*)\s?(\w*)\)/', $chunk, $matches);
                     $foreignKeys[$property] = [
-                        'table' => isset($matches[1])
-                            ? $matches[1]
-                            : preg_replace('/_id$/', '', $property),
+                        'table' => $matches[1] ?? preg_replace('/_id$/', '', $property),
                         'column' => !empty($matches[2])
                             ? $matches[2]
                             : null,
@@ -606,7 +632,7 @@ class MigrateController extends BaseMigrateController
      * @param array $fields parsed fields
      * @since 2.0.7
      */
-    protected function addDefaultPrimaryKey(&$fields)
+    protected function addDefaultPrimaryKey(array &$fields)
     {
         foreach ($fields as $field) {
             if (false !== strripos($field['decorators'], 'primarykey()')) {

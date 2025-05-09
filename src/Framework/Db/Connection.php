@@ -167,17 +167,17 @@ class Connection extends Component
      *
      * @see charset
      */
-    public string $dsn;
+    public string $dsn = "";
 
     /**
      * @var string the username for establishing DB connection. Defaults to `null` meaning no username to use.
      */
-    public string $username;
+    public string $username = "";
 
     /**
      * @var string the password for establishing DB connection. Defaults to `null` meaning no password to use.
      */
-    public string $password;
+    public string $password = "";
 
     /**
      * @var array PDO attributes (name => value) that should be set when calling [[open()]]
@@ -185,7 +185,7 @@ class Connection extends Component
      * [PHP manual](https://secure.php.net/manual/en/pdo.setattribute.php) for
      * details about available attributes.
      */
-    public array $attributes;
+    public array $attributes = [];
 
     /**
      * @var PDO|null the PHP PDO instance associated with this DB connection.
@@ -274,7 +274,7 @@ class Connection extends Component
      * the buggy native prepare support.
      * The default value is null, which means the PDO ATTR_EMULATE_PREPARES value will not be changed.
      */
-    public bool $emulatePrepare;
+    public ?bool $emulatePrepare = null;
 
     /**
      * @var string the common prefix or suffix for table names. If a table name is given

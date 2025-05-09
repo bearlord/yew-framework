@@ -45,42 +45,42 @@ trait ConstraintFinderTrait
      * cached data may be returned if available.
      * @return array array of metadata.
      */
-    abstract protected function getSchemaMetadata(string $schema, string $type, bool $refresh);
+    abstract protected function getSchemaMetadata(string $schema, string $type, bool $refresh): array;
 
     /**
      * Loads a primary key for the given table.
      * @param string $tableName table name.
      * @return Constraint|null primary key for the given table, `null` if the table has no primary key.
      */
-    abstract protected function loadTablePrimaryKey($tableName);
+    abstract protected function loadTablePrimaryKey(string $tableName);
 
     /**
      * Loads all foreign keys for the given table.
      * @param string $tableName table name.
      * @return ForeignKeyConstraint[] foreign keys for the given table.
      */
-    abstract protected function loadTableForeignKeys($tableName);
+    abstract protected function loadTableForeignKeys(string $tableName): array;
 
     /**
      * Loads all indexes for the given table.
      * @param string $tableName table name.
      * @return IndexConstraint[] indexes for the given table.
      */
-    abstract protected function loadTableIndexes($tableName);
+    abstract protected function loadTableIndexes(string $tableName): array;
 
     /**
      * Loads all unique constraints for the given table.
      * @param string $tableName table name.
      * @return Constraint[] unique constraints for the given table.
      */
-    abstract protected function loadTableUniques($tableName);
+    abstract protected function loadTableUniques(string $tableName): array;
 
     /**
      * Loads all check constraints for the given table.
      * @param string $tableName table name.
      * @return CheckConstraint[] check constraints for the given table.
      */
-    abstract protected function loadTableChecks($tableName);
+    abstract protected function loadTableChecks(string $tableName): array;
 
     /**
      * Loads all default value constraints for the given table.
@@ -88,7 +88,7 @@ trait ConstraintFinderTrait
      * @param string $tableName table name.
      * @return DefaultValueConstraint[] default value constraints for the given table.
      */
-    abstract protected function loadTableDefaultValues($tableName);
+    abstract protected function loadTableDefaultValues(string $tableName): array;
 
     /**
      * Obtains the primary key for the named table.
@@ -96,7 +96,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return Constraint|null table primary key, `null` if the table has no primary key.
      */
-    public function getTablePrimaryKey(string $name, bool $refresh = false)
+    public function getTablePrimaryKey(string $name, bool $refresh = false): array
     {
         return $this->getTableMetadata($name, 'primaryKey', $refresh);
     }
@@ -109,7 +109,7 @@ trait ConstraintFinderTrait
      * @return Constraint[] primary keys for all tables in the database.
      * Each array element is an instance of [[Constraint]] or its child class.
      */
-    public function getSchemaPrimaryKeys(string $schema = '', bool $refresh = false)
+    public function getSchemaPrimaryKeys(string $schema = '', bool $refresh = false): array
     {
         return $this->getSchemaMetadata($schema, 'primaryKey', $refresh);
     }
@@ -120,7 +120,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return ForeignKeyConstraint[] table foreign keys.
      */
-    public function getTableForeignKeys(string $name, bool $refresh = false)
+    public function getTableForeignKeys(string $name, bool $refresh = false): array
     {
         return $this->getTableMetadata($name, 'foreignKeys', $refresh);
     }
@@ -133,7 +133,7 @@ trait ConstraintFinderTrait
      * @return ForeignKeyConstraint[][] foreign keys for all tables in the database.
      * Each array element is an array of [[ForeignKeyConstraint]] or its child classes.
      */
-    public function getSchemaForeignKeys(string $schema = '', bool $refresh = false)
+    public function getSchemaForeignKeys(string $schema = '', bool $refresh = false): array
     {
         return $this->getSchemaMetadata($schema, 'foreignKeys', $refresh);
     }
@@ -144,7 +144,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return IndexConstraint[] table indexes.
      */
-    public function getTableIndexes(string $name, bool $refresh = false)
+    public function getTableIndexes(string $name, bool $refresh = false): array
     {
         return $this->getTableMetadata($name, 'indexes', $refresh);
     }
@@ -157,7 +157,7 @@ trait ConstraintFinderTrait
      * @return IndexConstraint[][] indexes for all tables in the database.
      * Each array element is an array of [[IndexConstraint]] or its child classes.
      */
-    public function getSchemaIndexes(string $schema = '', bool $refresh = false)
+    public function getSchemaIndexes(string $schema = '', bool $refresh = false): array
     {
         return $this->getSchemaMetadata($schema, 'indexes', $refresh);
     }
@@ -181,7 +181,7 @@ trait ConstraintFinderTrait
      * @return Constraint[][] unique constraints for all tables in the database.
      * Each array element is an array of [[Constraint]] or its child classes.
      */
-    public function getSchemaUniques(string $schema = '', bool $refresh = false)
+    public function getSchemaUniques(string $schema = '', bool $refresh = false): array
     {
         return $this->getSchemaMetadata($schema, 'uniques', $refresh);
     }
@@ -192,7 +192,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return CheckConstraint[] table check constraints.
      */
-    public function getTableChecks(string $name, bool $refresh = false)
+    public function getTableChecks(string $name, bool $refresh = false): array
     {
         return $this->getTableMetadata($name, 'checks', $refresh);
     }
@@ -205,7 +205,7 @@ trait ConstraintFinderTrait
      * @return CheckConstraint[][] check constraints for all tables in the database.
      * Each array element is an array of [[CheckConstraint]] or its child classes.
      */
-    public function getSchemaChecks(string $schema = '', bool $refresh = false)
+    public function getSchemaChecks(string $schema = '', bool $refresh = false): array
     {
         return $this->getSchemaMetadata($schema, 'checks', $refresh);
     }
@@ -216,7 +216,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return DefaultValueConstraint[] table default value constraints.
      */
-    public function getTableDefaultValues(string $name, bool $refresh = false)
+    public function getTableDefaultValues(string $name, bool $refresh = false): array
     {
         return $this->getTableMetadata($name, 'defaultValues', $refresh);
     }
@@ -229,7 +229,7 @@ trait ConstraintFinderTrait
      * @return DefaultValueConstraint[] default value constraints for all tables in the database.
      * Each array element is an array of [[DefaultValueConstraint]] or its child classes.
      */
-    public function getSchemaDefaultValues(string $schema = '', bool $refresh = false)
+    public function getSchemaDefaultValues(string $schema = '', bool $refresh = false): array
     {
         return $this->getSchemaMetadata($schema, 'defaultValues', $refresh);
     }

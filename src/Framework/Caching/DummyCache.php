@@ -11,7 +11,7 @@ namespace Yew\Framework\Caching;
  * DummyCache is a placeholder cache component.
  *
  * DummyCache does not cache anything. It is provided so that one can always configure
- * a 'cache' application component and save the check of existence of `\Yii::$app->cache`.
+ * a 'cache' application component and save the check of existence of `\Yew::$app->cache`.
  * By replacing DummyCache with some other cache component, one can quickly switch from
  * non-caching mode to caching mode.
  *

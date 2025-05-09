@@ -200,7 +200,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTablePrimaryKey($tableName)
+    protected function loadTablePrimaryKey(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'primaryKey');
     }
@@ -208,7 +208,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableForeignKeys($tableName)
+    protected function loadTableForeignKeys(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'foreignKeys');
     }
@@ -216,7 +216,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableIndexes($tableName)
+    protected function loadTableIndexes(string $tableName)
     {
         static $sql = <<<'SQL'
 SELECT
@@ -260,7 +260,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableUniques($tableName)
+    protected function loadTableUniques(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'uniques');
     }
@@ -268,7 +268,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableChecks($tableName)
+    protected function loadTableChecks(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'checks');
     }
@@ -277,7 +277,7 @@ SQL;
      * {@inheritdoc}
      * @throws NotSupportedException if this method is called.
      */
-    protected function loadTableDefaultValues($tableName)
+    protected function loadTableDefaultValues(string $tableName)
     {
         throw new NotSupportedException('PostgreSQL does not support default value constraints.');
     }

@@ -64,7 +64,7 @@ class FragmentCache extends Widget implements DynamicContentAwareInterface
      *
      * ```php
      * [
-     *     Yii::$app->language,
+     *     Yew::$app->language,
      * ]
      * ```
      */
@@ -110,7 +110,7 @@ class FragmentCache extends Widget implements DynamicContentAwareInterface
                 return;
             }
             if (is_array($this->dependency)) {
-                $this->dependency = Yii::createObject($this->dependency);
+                $this->dependency = Yew::createObject($this->dependency);
             }
             $data = [$content, $this->getDynamicPlaceholders()];
             $this->cache->set($this->calculateKey(), $data, $this->duration, $this->dependency);

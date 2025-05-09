@@ -77,7 +77,7 @@ class FileCache extends Cache
     public function init()
     {
         parent::init();
-        $this->cachePath = Yii::getAlias($this->cachePath);
+        $this->cachePath = Yew::getAlias($this->cachePath);
         if (!is_dir($this->cachePath)) {
             FileHelper::createDirectory($this->cachePath, $this->dirMode, true);
         }
@@ -159,7 +159,7 @@ class FileCache extends Cache
         }
 
         $error = error_get_last();
-        Yii::warning("Unable to write cache file '{$cacheFile}': {$error['message']}", __METHOD__);
+        Yew::warning("Unable to write cache file '{$cacheFile}': {$error['message']}", __METHOD__);
         return false;
     }
 
@@ -263,13 +263,13 @@ class FileCache extends Cache
                     if (!$expiredOnly) {
                         if (!@rmdir($fullPath)) {
                             $error = error_get_last();
-                            Yii::warning("Unable to remove directory '{$fullPath}': {$error['message']}", __METHOD__);
+                            Yew::warning("Unable to remove directory '{$fullPath}': {$error['message']}", __METHOD__);
                         }
                     }
                 } elseif (!$expiredOnly || $expiredOnly && @filemtime($fullPath) < time()) {
                     if (!@unlink($fullPath)) {
                         $error = error_get_last();
-                        Yii::warning("Unable to remove file '{$fullPath}': {$error['message']}", __METHOD__);
+                        Yew::warning("Unable to remove file '{$fullPath}': {$error['message']}", __METHOD__);
                     }
                 }
             }

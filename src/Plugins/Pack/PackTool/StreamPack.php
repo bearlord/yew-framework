@@ -85,7 +85,7 @@ class StreamPack extends AbstractPack
         if ($portConfig->isOpenEofCheck() || $portConfig->isOpenEofSplit()) {
             return true;
         } else {
-            Server::$instance->getLog()->warning(Yii::t('esd', 'Packet used EofJsonPack but EOF protocol is not enabled, Enable open_eof_split automatically'));
+            Server::$instance->getLog()->warning(Yew::t('esd', 'Packet used EofJsonPack but EOF protocol is not enabled, Enable open_eof_split automatically'));
             $portConfig->setOpenEofSplit(true);
         }
     }

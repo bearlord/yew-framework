@@ -162,12 +162,12 @@ class Pjax extends Widget
         $content = ob_get_clean();
 
         // only need the content enclosed within this widget
-        $response = Yii::$app->getResponse();
+        $response = Yew::$app->getResponse();
         $response->clearOutputBuffers();
         $response->setStatusCode(200);
         $response->format = Response::FORMAT_HTML;
         $response->content = $content;
-        $response->headers->setDefault('X-Pjax-Url', Yii::$app->request->url);
+        $response->headers->setDefault('X-Pjax-Url', Yew::$app->request->url);
     }
 
     /**
@@ -175,7 +175,7 @@ class Pjax extends Widget
      */
     protected function requiresPjax()
     {
-        $headers = Yii::$app->getRequest()->getHeaders();
+        $headers = Yew::$app->getRequest()->getHeaders();
 
         return $headers->get('X-Pjax') && explode(' ', $headers->get('X-Pjax-Container'))[0] === '#' . $this->options['id'];
     }

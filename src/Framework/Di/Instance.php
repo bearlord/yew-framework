@@ -55,26 +55,26 @@ use Yew\Framework\Exception\InvalidConfigException;
 class Instance
 {
     /**
-     * @var string the component ID, class name, interface name or alias name
+     * @var string|null the component ID, class name, interface name or alias name
      */
-    public string $id;
+    public ?string $id = null;
 
 
     /**
      * Constructor.
-     * @param string $id the component ID
+     * @param string|null $id the component ID
      */
-    protected function __construct(string $id)
+    protected function __construct(?string $id = null)
     {
         $this->id = $id;
     }
 
     /**
      * Creates a new Instance object.
-     * @param string $id the component ID
+     * @param string|null $id the component ID
      * @return Instance the new Instance object.
      */
-    public static function of(string $id): Instance
+    public static function of(?string $id = null): Instance
     {
         return new static($id);
     }

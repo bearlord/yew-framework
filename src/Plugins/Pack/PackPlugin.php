@@ -82,7 +82,7 @@ class PackPlugin extends AbstractPlugin
         $serverConfig = Server::$instance->getServerConfig();
         /** @var AopConfig $aopConfig */
         $aopConfig = DIget(AopConfig::class);
-        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew-framework/src/yew/");
+        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/bearlord/yew-framework/src/");
         $this->packAspect = new PackAspect($this->packConfigs);
         $aopConfig->addAspect($this->packAspect);
     }

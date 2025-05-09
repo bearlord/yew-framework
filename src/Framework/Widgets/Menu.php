@@ -39,7 +39,7 @@ use Yew\Framework\Helpers\Url;
  *             ['label' => 'New Arrivals', 'url' => ['product/index', 'tag' => 'new']],
  *             ['label' => 'Most Popular', 'url' => ['product/index', 'tag' => 'popular']],
  *         ]],
- *         ['label' => 'Login', 'url' => ['site/login'], 'visible' => Yii::$app->user->isGuest],
+ *         ['label' => 'Login', 'url' => ['site/login'], 'visible' => Yew::$app->user->isGuest],
  *     ],
  * ]);
  * ```
@@ -173,7 +173,7 @@ class Menu extends Widget
     {
 
         if ($this->params === null) {
-            $this->params = Yii::$app->request->getQueryParams();
+            $this->params = Yew::$app->request->getQueryParams();
         }
         $items = $this->normalizeItems($this->items, $hasActiveChild);
         if (!empty($items)) {
@@ -303,7 +303,7 @@ class Menu extends Widget
     protected function isItemActive($item)
     {
         if (isset($item['url']) && is_array($item['url']) && isset($item['url'][0])) {
-            $route = Yii::getAlias($item['url'][0]);
+            $route = Yew::getAlias($item['url'][0]);
 
             if (ltrim($route, '/') !== $this->route) {
                 return false;

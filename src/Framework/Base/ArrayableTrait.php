@@ -70,7 +70,7 @@ trait ArrayableTrait
      */
     public function fields(): array
     {
-        $fields = array_keys(Yii::getObjectVars($this));
+        $fields = array_keys(Yew::getObjectVars($this));
         return array_combine($fields, $fields);
     }
 

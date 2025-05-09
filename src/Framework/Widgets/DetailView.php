@@ -133,9 +133,9 @@ class DetailView extends Widget
             throw new InvalidConfigException('Please specify the "model" property.');
         }
         if ($this->formatter === null) {
-            $this->formatter = Yii::$app->getFormatter();
+            $this->formatter = Yew::$app->getFormatter();
         } elseif (is_array($this->formatter)) {
-            $this->formatter = Yii::createObject($this->formatter);
+            $this->formatter = Yew::createObject($this->formatter);
         }
         if (!$this->formatter instanceof Formatter) {
             throw new InvalidConfigException('The "formatter" property must be either a Format object or a configuration array.');

@@ -273,6 +273,7 @@ class View extends Component implements DynamicContentAwareInterface
         if ($this->beforeRender($viewFile, $params)) {
             Yew::debug("Rendering view file: $viewFile", __METHOD__);
             $ext = pathinfo($viewFile, PATHINFO_EXTENSION);
+
             if (isset($this->renderers[$ext])) {
                 if (is_array($this->renderers[$ext]) || is_string($this->renderers[$ext])) {
                     $this->renderers[$ext] = Yew::createObject($this->renderers[$ext]);
@@ -360,16 +361,16 @@ class View extends Component implements DynamicContentAwareInterface
      * This method should mainly be called by view renderer or [[renderFile()]].
      *
      * @param string $_file_ the view file.
-     * @param array $_params_ the parameters (name-value pairs) that will be extracted and made available in the view file.
+     * @param array|null $_params_ the parameters (name-value pairs) that will be extracted and made available in the view file.
      * @return string the rendering result
      * @throws \Exception
      * @throws \Throwable
      */
-    public function renderPhpFile(string $_file_, array $_params_ = []): string
+    public function renderPhpFile(string $_file_, ?array $_params_ = []): string
     {
         $_obInitialLevel_ = ob_get_level();
         ob_start();
-        ob_implicit_flush(false);
+        //ob_implicit_flush(false);
         extract($_params_, EXTR_OVERWRITE);
         try {
             require $_file_;

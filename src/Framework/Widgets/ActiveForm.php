@@ -329,7 +329,7 @@ class ActiveForm extends Widget
             $config['class'] = $this->fieldClass;
         }
 
-        return Yii::createObject(ArrayHelper::merge($config, $options, [
+        return Yew::createObject(ArrayHelper::merge($config, $options, [
             'model' => $model,
             'attribute' => $attribute,
             'form' => $this,
@@ -380,9 +380,9 @@ class ActiveForm extends Widget
      *
      * ```php
      * $model = new Post;
-     * $model->load(Yii::$app->request->post());
-     * if (Yii::$app->request->isAjax) {
-     *     Yii::$app->response->format = Response::FORMAT_JSON;
+     * $model->load(Yew::$app->request->post());
+     * if (Yew::$app->request->isAjax) {
+     *     Yew::$app->response->format = Response::FORMAT_JSON;
      *     return ActiveForm::validate($model);
      * }
      * // ... respond to non-AJAX request ...
@@ -436,8 +436,8 @@ class ActiveForm extends Widget
      *
      * ```php
      * // ... load $models ...
-     * if (Yii::$app->request->isAjax) {
-     *     Yii::$app->response->format = Response::FORMAT_JSON;
+     * if (Yew::$app->request->isAjax) {
+     *     Yew::$app->response->format = Response::FORMAT_JSON;
      *     return ActiveForm::validateMultiple($models);
      * }
      * // ... respond to non-AJAX request ...

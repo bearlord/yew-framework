@@ -6,6 +6,7 @@
 
 namespace Yew\Framework\Console;
 
+use Swoole\ExitException;
 use Yew\Core\Server\Server;
 use Yew\Core\Server\Beans\Response;
 use Yew\Framework\Console\Exception\Exception;
@@ -139,11 +140,19 @@ class Application extends \Yew\Framework\Base\Application
         //Set language
         if (!empty($config['language'])) {
             $this->setLanguage($config['language']);
+            $this->setContextLanguage($config['language']);
+        }
+
+
+        if (!empty($config['timezone'])) {
+            $this->settimeZone($config['timezone']);
+            $this->setContextTimeZone($config['timezone']);
         }
 
         //Merge core components with custom components
         $newConfig = $config;
-        unset($newConfig['db']);
+        //unset($newConfig['db']);
+
 
         foreach ($this->coreComponents() as $id => $component) {
             if (!isset($newConfig['components'][$id])) {
@@ -163,6 +172,8 @@ class Application extends \Yew\Framework\Base\Application
                 }
             }
         }
+
+        $this->getLog();
     }
 
     /**
@@ -270,6 +281,25 @@ class Application extends \Yew\Framework\Base\Application
     }
 
     /**
+     * Runs the application.
+     * This is the main entrance of an application.
+     * @return int the exit status (0 means normal, non-zero values mean abnormal)
+     */
+    public function run()
+    {
+        try {
+            $response = $this->handleRequest($this->getRequest());
+
+            $response->send();
+
+            return $response->exitStatus;
+        } catch (ExitException $e) {
+            $this->end($e->statusCode, isset($response) ? $response : null);
+            return $e->statusCode;
+        }
+    }
+
+    /**
      * Run route
      *
      * @param $route
@@ -318,6 +348,7 @@ class Application extends \Yew\Framework\Base\Application
             if (is_array($parts)) {
                 /* @var $controller \Yew\Framework\Console\Controller */
                 list($controller, $actionID) = $parts;
+
                 $res = $controller->runAction($actionID, $params);
                 return is_object($res) ? $res : (int) $res;
             }

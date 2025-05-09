@@ -125,7 +125,7 @@ class BaseUrl
      */
     protected static function normalizeRoute($route)
     {
-        $route = Yii::getAlias((string) $route);
+        $route = Yew::getAlias((string) $route);
         if (strncmp($route, '/', 1) === 0) {
             // absolute route
             return ltrim($route, '/');
@@ -208,9 +208,9 @@ class BaseUrl
             return static::toRoute($url, $scheme);
         }
 
-        $url = Yii::getAlias($url);
+        $url = Yew::getAlias($url);
         if ($url === '') {
-            $url = Yii::$app->getRequest()->getUri();
+            $url = Yew::$app->getRequest()->getUri();
         }
 
         if ($scheme === false) {
@@ -294,9 +294,9 @@ class BaseUrl
         $url = static::to($url);
 
         if ($name === null) {
-            Yii::$app->getUser()->setReturnUrl($url);
+            Yew::$app->getUser()->setReturnUrl($url);
         } else {
-            Yii::$app->getSession()->set($name, $url);
+            Yew::$app->getSession()->set($name, $url);
         }
     }
 
@@ -313,10 +313,10 @@ class BaseUrl
     public static function previous($name = null)
     {
         if ($name === null) {
-            return Yii::$app->getUser()->getReturnUrl();
+            return Yew::$app->getUser()->getReturnUrl();
         }
 
-        return Yii::$app->getSession()->get($name);
+        return Yew::$app->getSession()->get($name);
     }
 
     /**
@@ -334,8 +334,8 @@ class BaseUrl
      */
     public static function canonical()
     {
-        $params = Yii::$app->controller->actionParams;
-        $params[0] = Yii::$app->controller->getRoute();
+        $params = Yew::$app->controller->actionParams;
+        $params[0] = Yew::$app->controller->getRoute();
 
         return static::getUrlManager()->createAbsoluteUrl($params);
     }
@@ -354,7 +354,7 @@ class BaseUrl
      */
     public static function home($scheme = false)
     {
-        $url = Yii::$app->getHomeUrl();
+        $url = Yew::$app->getHomeUrl();
 
         if ($scheme !== false) {
             $url = static::getUrlManager()->getHostInfo() . $url;
@@ -421,8 +421,8 @@ class BaseUrl
      */
     public static function current(array $params = [], $scheme = false)
     {
-        $currentParams = Yii::$app->getRequest()->getQueryParams();
-        $currentParams[0] = '/' . Yii::$app->controller->getRoute();
+        $currentParams = Yew::$app->getRequest()->getQueryParams();
+        $currentParams[0] = '/' . Yew::$app->controller->getRoute();
         $route = array_replace_recursive($currentParams, $params);
         return static::toRoute($route, $scheme);
     }
@@ -433,6 +433,6 @@ class BaseUrl
      */
     protected static function getUrlManager()
     {
-        return static::$urlManager ?: Yii::$app->getUrlManager();
+        return static::$urlManager ?: Yew::$app->getUrlManager();
     }
 }

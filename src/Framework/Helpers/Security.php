@@ -569,11 +569,11 @@ class Security
      *
      * ```php
      * // generates the hash (usually done during user registration or when the password is changed)
-     * $hash = Yii::$app->getSecurity()->generatePasswordHash($password);
+     * $hash = Yew::$app->getSecurity()->generatePasswordHash($password);
      * // ...save $hash in database...
      *
      * // during login, validate if the password entered is correct using $hash fetched from database
-     * if (Yii::$app->getSecurity()->validatePassword($password, $hash) {
+     * if (Yew::$app->getSecurity()->validatePassword($password, $hash) {
      *     // password is good
      * } else {
      *     // password is bad

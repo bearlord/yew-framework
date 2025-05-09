@@ -121,5 +121,5 @@ interface ConstraintFinderInterface
      * @return DefaultValueConstraint[] default value constraints for all tables in the database.
      * Each array element is an array of [[DefaultValueConstraint]] or its child classes.
      */
-    public function getSchemaDefaultValues(string $schema = '', bool $refresh = false);
+    public function getSchemaDefaultValues(string $schema = '', bool $refresh = false): array;
 }

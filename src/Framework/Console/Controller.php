@@ -7,12 +7,13 @@
 
 namespace Yew\Framework\Console;
 
+use Yew\Framework\Console\Exception\Exception;
 use Yew\Framework\Helpers\Console;
+use Yew\Framework\Helpers\Inflector;
 use Yew\Yew;
 use Yew\Framework\Base\Action;
 use Yew\Framework\Base\InlineAction;
-use Yew\Framework\Base\InvalidRouteException;
-use Yew\Yew\Helpers\Inflector;
+use Yew\Framework\Exception\InvalidRouteException;
 
 /**
  * Controller is the base class of console command classes.
@@ -92,8 +93,8 @@ class Controller extends \Yew\Framework\Base\Controller
      * @throws \Yew\Framework\Exception\Exception
      * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Yew\Framework\Exception\InvalidRouteException if the requested action ID cannot be resolved into an action successfully.
-     * @throws \Yew\Framework\Console\Exception if there are unknown options or missing arguments
-     * @throws \Yew\Framework\Console\UnknownCommandException
+     * @throws \Yew\Framework\Console\Exception\Exception if there are unknown options or missing arguments
+     * @throws \Yew\Framework\Console\Exception\UnknownCommandException
      * @throws \ReflectionException
      * @see createAction
      */
@@ -180,7 +181,7 @@ class Controller extends \Yew\Framework\Base\Controller
      * @param Action $action the action to be bound with parameters
      * @param array|null $params the parameters to be bound to the action
      * @return array the valid parameters that the action can run with.
-     * @throws \Yew\Framework\Console\Exception if there are unknown options or missing arguments
+     * @throws \Yew\Framework\Console\Exception\Exception if there are unknown options or missing arguments
      * @throws \ReflectionException
      */
     public function bindActionParams(Action $action, ?array $params = null): array
@@ -195,6 +196,7 @@ class Controller extends \Yew\Framework\Base\Controller
         $missing = [];
         $actionParams = [];
         $requestedParams = [];
+
         foreach ($method->getParameters() as $i => $param) {
             $name = $param->getName();
             $key = null;
@@ -214,7 +216,7 @@ class Controller extends \Yew\Framework\Base\Controller
                 PHP_VERSION_ID >= 70000 &&
                 ($type = $param->getType()) !== null &&
                 $type->isBuiltin() &&
-                ($params[$name] !== null || !$type->allowsNull())
+                ((array_key_exists($name, $params)  && $params[$name] !== null) || !$type->allowsNull())
             ) {
                 $typeName = PHP_VERSION_ID >= 70100 ? $type->getName() : (string)$type;
                 switch ($typeName) {
@@ -228,7 +230,7 @@ class Controller extends \Yew\Framework\Base\Controller
                         $params[$name] = filter_var($params[$name], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                         break;
                 }
-                if ($params[$name] === null) {
+                if (array_key_exists($name, $params) && $params[$name] === null) {
                     $isValid = false;
                 }
             } elseif (PHP_VERSION_ID >= 70100 &&
@@ -236,7 +238,7 @@ class Controller extends \Yew\Framework\Base\Controller
                 !$type->isBuiltin()) {
                 try {
                     $this->bindInjectedParams($type, $name, $args, $requestedParams);
-                } catch (\Yew\Yew\Base\Exception $e) {
+                } catch (\Yew\Framework\Exception\Exception $e) {
                     throw new Exception($e->getMessage());
                 }
             } elseif ($param->isDefaultValueAvailable()) {

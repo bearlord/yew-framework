@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Base;
 
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Yew;
 
 /**
@@ -41,9 +42,10 @@ class Action extends Component
     /**
      * @var string ID of the action
      */
-    public $id;
+    public string $id;
+
     /**
-     * @var \Yew\Framework\Base\Controller the controller that owns this action
+     * @var \Yew\Framework\Base\Controller|\Yew\Framework\Console\Controller the controller that owns this action
      */
     public $controller;
 
@@ -78,18 +80,21 @@ class Action extends Component
      *
      * @param array $params the parameters to be bound to the action's run() method.
      * @return mixed the result of the action
-     * @throws InvalidConfigException|\Yew\Framework\Base\Exception|\ReflectionException if the action class does not have a run() method
+     * @throws InvalidConfigException|\Yew\Framework\Exception\Exception|\ReflectionException if the action class does not have a run() method
      */
     public function runWithParams(array $params)
     {
         if (!method_exists($this, 'run')) {
             throw new InvalidConfigException(get_class($this) . ' must define a "run()" method.');
         }
+
         $args = $this->controller->bindActionParams($this, $params);
-        Yii::debug('Running action: ' . get_class($this) . '::run(), invoked by '  . get_class($this->controller), __METHOD__);
-        if (Yii::$app->requestedParams === null) {
-            Yii::$app->requestedParams = $args;
+        Yew::debug('Running action: ' . get_class($this) . '::run(), invoked by '  . get_class($this->controller), __METHOD__);
+
+        if (Yew::$app->requestedParams === null) {
+            Yew::$app->requestedParams = $args;
         }
+
         if ($this->beforeRun()) {
             $result = call_user_func_array([$this, 'run'], $args);
             $this->afterRun();

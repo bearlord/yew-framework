@@ -113,10 +113,10 @@ class BaseFileHelper
         }
 
         if ($language === null) {
-            $language = Yii::$app->getContextLanguage();
+            $language = Yew::$app->getContextLanguage();
         }
         if ($sourceLanguage === null) {
-            $sourceLanguage = Yii::$app->getContextLanguage();
+            $sourceLanguage = Yew::$app->getContextLanguage();
         }
 
         $desiredFile = dirname($file) . DIRECTORY_SEPARATOR . $language . DIRECTORY_SEPARATOR . basename($file);

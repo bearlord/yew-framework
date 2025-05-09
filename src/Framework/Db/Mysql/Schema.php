@@ -135,7 +135,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTablePrimaryKey($tableName)
+    protected function loadTablePrimaryKey(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'primaryKey');
     }
@@ -143,7 +143,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
     /**
      * {@inheritdoc}
      */
-    protected function loadTableForeignKeys($tableName)
+    protected function loadTableForeignKeys(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'foreignKeys');
     }
@@ -153,7 +153,7 @@ class Schema extends \Yew\Framework\Db\Schema implements ConstraintFinderInterfa
      * @throws Exception
      * @throws NotSupportedException
      */
-    protected function loadTableIndexes($tableName): array
+    protected function loadTableIndexes(string $tableName): array
     {
         static $sql = <<<'SQL'
 SELECT
@@ -189,7 +189,7 @@ SQL;
     /**
      * {@inheritdoc}
      */
-    protected function loadTableUniques($tableName)
+    protected function loadTableUniques(string $tableName)
     {
         return $this->loadTableConstraints($tableName, 'uniques');
     }
@@ -198,7 +198,7 @@ SQL;
      * {@inheritdoc}
      * @throws NotSupportedException if this method is called.
      */
-    protected function loadTableChecks($tableName)
+    protected function loadTableChecks(string $tableName)
     {
         throw new NotSupportedException('MySQL does not support check constraints.');
     }
@@ -207,7 +207,7 @@ SQL;
      * {@inheritdoc}
      * @throws NotSupportedException if this method is called.
      */
-    protected function loadTableDefaultValues($tableName)
+    protected function loadTableDefaultValues(string $tableName)
     {
         throw new NotSupportedException('MySQL does not support default value constraints.');
     }

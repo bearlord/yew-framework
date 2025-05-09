@@ -6,9 +6,11 @@
 
 namespace Yew\Plugins\Console\Command;
 
+use Symfony\Component\Console\Input\InputArgument;
 use Yew\Core\Context\Context;
 use Yew\Framework\Console\Exception;
 use Yew\Framework\Console\UnknownCommandException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Plugins\Console\ConsolePlugin;
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Console\Application;
@@ -33,6 +35,7 @@ class YewCmd extends Command
     /**
      * StartCmd constructor.
      * @param Context $context
+     * @throws InvalidConfigException
      */
     public function __construct(Context $context)
     {
@@ -47,23 +50,30 @@ class YewCmd extends Command
     protected function configure()
     {
         $this->setName('yew')->setDescription("Yew console");
-        $this->addArgument('route', InputOption::VALUE_NONE, 'Route');
+        $this->addArgument('route', InputArgument::REQUIRED, 'Route');
+        $this->addArgument('argv', InputArgument::IS_ARRAY, 'argv');
     }
 
     /**
-     * @inheritDoc
      * @param InputInterface $input
      * @param OutputInterface $output
      * @return int
-     * @throws Exception
-     * @throws UnknownCommandException
+     * @throws Exception\Exception
+     * @throws Exception\UnknownCommandException
+     * @throws \ReflectionException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidRouteException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $arguments = $input->getArguments();
         unset($arguments['command'], $arguments['route']);
 
-        $prettyArguments = array_values($arguments);
+        $argumentValues = array_values($arguments);
+
+        $prettyArguments = $argumentValues[0];
+
         $route = $input->getArgument('route');
 
         Application::instance()->runAction($route, $prettyArguments);

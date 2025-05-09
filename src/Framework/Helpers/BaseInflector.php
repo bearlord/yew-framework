@@ -589,7 +589,7 @@ class BaseInflector
         }
         /*
         if ($twoWordsConnector === null) {
-            $twoWordsConnector = Yii::t('yii', ' and ');
+            $twoWordsConnector = Yew::t('yii', ' and ');
         }
         */
         if ($lastWordConnector === null) {
@@ -614,7 +614,7 @@ class BaseInflector
     {
         return 'UTF-8';
         /*
-        return isset(Yii::$app) ? Yii::$app->charset : 'UTF-8';
+        return isset(Yew::$app) ? Yew::$app->charset : 'UTF-8';
         */
     }
 

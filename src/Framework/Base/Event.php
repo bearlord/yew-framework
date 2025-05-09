@@ -74,7 +74,7 @@ class Event extends BaseObject
      *
      * ```php
      * Event::on(ActiveRecord::className(), ActiveRecord::EVENT_AFTER_INSERT, function ($event) {
-     *     Yii::trace(get_class($event->sender) . ' is inserted.');
+     *     Yew::trace(get_class($event->sender) . ' is inserted.');
      * });
      * ```
      *
@@ -84,7 +84,7 @@ class Event extends BaseObject
      *
      * ```php
      * Event::on('app\models\db\*', '*Insert', function ($event) {
-     *     Yii::trace(get_class($event->sender) . ' is inserted.');
+     *     Yew::trace(get_class($event->sender) . ' is inserted.');
      * });
      * ```
      *

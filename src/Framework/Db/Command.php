@@ -1377,6 +1377,9 @@ class Command extends Component
      *
      * @param string|null $rawSql the rawSql if it has been created.
      * @throws Exception if execution failed.
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      * @since 2.0.14
      */
     protected function internalExecute($rawSql)

@@ -25,7 +25,7 @@ class InlineAction extends Action
     /**
      * @var string the controller method that this inline action is associated with
      */
-    public $actionMethod;
+    public string $actionMethod;
 
 
     /**
@@ -45,12 +45,13 @@ class InlineAction extends Action
      * This method is mainly invoked by the controller.
      * @param array|null $params action parameters
      * @return mixed the result of the action
-     * @throws \Yew\Framework\Base\Exception
+     * @throws \Yew\Framework\Exception\Exception
      * @throws \ReflectionException
      */
     public function runWithParams(?array $params = null)
     {
         $args = $this->controller->bindActionParams($this, $params);
+
         Yew::debug('Running action: ' . get_class($this->controller) . '::' . $this->actionMethod . '()', __METHOD__);
 
         return call_user_func_array([$this->controller, $this->actionMethod], $args);

@@ -103,7 +103,7 @@ class Application extends ServiceLocator
      */
     public function preInit()
     {
-        $config = Server::$instance->getConfigContext()->get('yii');
+        $config = Server::$instance->getConfigContext()->get('yew');
 
         //Set base path
         $srcDir = Server::$instance->getServerConfig()->getSrcDir();
@@ -382,18 +382,18 @@ class Application extends ServiceLocator
 
     /**
      * Returns the request component.
-     * @return \Yew\Core\Server\Beans\Request the request component.
+     * @return \Yew\Core\Server\Beans\Request|null the request component.
      */
-    public function getRequest(): Request
+    public function getRequest(): ?Request
     {
         return getDeepContextValueByClassName(Request::class);
     }
 
     /**
      * Returns the response component.
-     * @return \Yew\Core\Server\Beans\Response the response component.
+     * @return \Yew\Core\Server\Beans\Response|null the response component.
      */
-    public function getResponse(): Response
+    public function getResponse(): ?Response
     {
         return getDeepContextValueByClassName(Response::class);
     }
