@@ -381,6 +381,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * underlying database engine and to support integer values higher than a 32bit PHP integer can handle.
      * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function count(?string $q = '*', ?ConnectionInterface $db = null): int
     {
@@ -400,6 +402,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @return bool|int|string|null the sum of the specified column values.
      * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function sum($q, ?Connection $db = null)
     {
@@ -416,7 +420,11 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * Make sure you properly [quote](guide:db-dao#quoting-table-and-column-names) column names in the expression.
      * @param Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
-     * @return mixed the average of the specified column values.
+     * @return bool|int|string|null the average of the specified column values.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function average($q, ?Connection $db = null)
     {

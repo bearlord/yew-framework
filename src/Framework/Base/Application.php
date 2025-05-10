@@ -274,7 +274,7 @@ class Application extends ServiceLocator
         switch ($subName) {
             case "slave":
             case "master":
-                $_configKey = sprintf("db.%s.%s", $name, $subName);
+                $_configKey = sprintf("yew.db.%s.%s", $name, $subName);
                 $_configs = Server::$instance->getConfigContext()->get($_configKey);
 
                 if (empty($_configs)) {
@@ -340,7 +340,7 @@ class Application extends ServiceLocator
             return $db;
         }
 
-        $_configKey = sprintf("db.%s", $name);
+        $_configKey = sprintf("yew.db.%s", $name);
         $_config = Server::$instance->getConfigContext()->get($_configKey);
         $db = Yew::createObject([
             'class' => Connection::class,

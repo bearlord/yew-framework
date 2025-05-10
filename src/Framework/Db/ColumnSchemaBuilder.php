@@ -75,16 +75,16 @@ class ColumnSchemaBuilder extends BaseObject
     protected bool $isUnsigned = false;
 
     /**
-     * @var string the column after which this column will be added.
+     * @var string|null the column after which this column will be added.
      * @since 2.0.8
      */
-    protected string $after;
+    protected ?string $after = null;
 
     /**
      * @var bool whether this column is to be inserted at the beginning of the table.
      * @since 2.0.8
      */
-    protected bool $isFirst;
+    protected ?bool $isFirst = null;
 
     /**
      * @var array mapping of abstract column types (keys) to type categories (values).
@@ -119,11 +119,12 @@ class ColumnSchemaBuilder extends BaseObject
      * @since 2.0.8
      */
     public ?Connection $db = null;
+
     /**
-     * @var string comment value of the column.
+     * @var string|null comment value of the column.
      * @since 2.0.8
      */
-    public string $comment;
+    public ?string $comment = null;
 
     /**
      * Create a column schema builder instance giving the type and value precision.

@@ -84,18 +84,18 @@ class Command extends Component
     public array $params = [];
 
     /**
-     * @var int the default number of seconds that query results can remain valid in cache.
+     * @var int|null the default number of seconds that query results can remain valid in cache.
      * Use 0 to indicate that the cached data will never expire. And use a negative number to indicate
      * query cache should not be used.
      * @see cache()
      */
-    public int $queryCacheDuration;
+    public ?int $queryCacheDuration = null;
 
     /**
-     * @var \Yew\Framework\Caching\Dependency the dependency to be associated with the cached query result for this command
+     * @var \Yew\Framework\Caching\Dependency|null the dependency to be associated with the cached query result for this command
      * @see cache()
      */
-    public Dependency $queryCacheDependency;
+    public ?Dependency $queryCacheDependency = null;
 
     /**
      * @var array pending parameters to be bound to the current PDO statement.
@@ -103,9 +103,9 @@ class Command extends Component
     protected array $_pendingParams = [];
 
     /**
-     * @var string the SQL statement that this command represents
+     * @var string|null the SQL statement that this command represents
      */
-    protected string $_sql;
+    protected ?string $_sql = null;
 
     /**
      * @var string|null name of the table, which schema, should be refreshed after command execution.

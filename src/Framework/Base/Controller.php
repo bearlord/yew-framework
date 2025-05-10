@@ -75,12 +75,12 @@ class Controller extends Component implements ViewContextInterface
      */
     public string $moduleName;
 
-    public string $id = "";
+    public ?string $id = "";
 
     /**
      * Controller constructor.
      */
-    public function __construct($id, $module, ?array $config = [])
+    public function __construct(?string $id = null, $module = null, ?array $config = [])
     {
         $this->id = $id;
         $this->module = $module;

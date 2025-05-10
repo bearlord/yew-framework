@@ -88,9 +88,9 @@ class ColumnSchema extends BaseObject
     public bool $unsigned;
 
     /**
-     * @var string comment of this column. Not all DBMS support this.
+     * @var string|null comment of this column. Not all DBMS support this.
      */
-    public string $comment;
+    public ?string $comment = null;
 
 
     /**

@@ -198,24 +198,24 @@ interface QueryInterface
     /**
      * Adds an additional WHERE condition to the existing one ignoring empty parameters.
      * The new condition and the existing one will be joined using the 'AND' operator.
-     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
+     * @param array $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see filterWhere()
      * @see orFilterWhere()
      */
-    public function andFilterWhere($condition);
+    public function andFilterWhere(array $condition);
 
     /**
      * Adds an additional WHERE condition to the existing one ignoring empty parameters.
      * The new condition and the existing one will be joined using the 'OR' operator.
-     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
+     * @param array $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see filterWhere()
      * @see andFilterWhere()
      */
-    public function orFilterWhere($condition);
+    public function orFilterWhere(array $condition);
 
     /**
      * Sets the ORDER BY part of the query.
