@@ -9,6 +9,7 @@ namespace Yew\Framework\Db;
 
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\NotSupportedException;
 
 /**
  * ActiveRelationTrait implements the common methods and properties for active record relational queries.
@@ -31,7 +32,7 @@ trait ActiveRelationTrait
      */
     public bool $multiple;
     /**
-     * @var ActiveRecord|null the primary model of a relational query.
+     * @var ActiveRecord|BaseActiveRecord|null the primary model of a relational query.
      * This is used only in lazy loading with dynamic query options.
      */
     public ?ActiveRecord $primaryModel = null;
@@ -50,8 +51,9 @@ trait ActiveRelationTrait
      * @see via()
      */
     public $via;
+
     /**
-     * @var string the name of the relation that is the inverse of this relation.
+     * @var string|null the name of the relation that is the inverse of this relation.
      * For example, an order has a customer, which means the inverse of the "customer" relation
      * is the "orders", and the inverse of the "orders" relation is the "customer".
      * If this property is set, the primary record(s) will be referenced through the specified relation.
@@ -60,9 +62,9 @@ trait ActiveRelationTrait
      * This property is only used in relational context.
      * @see inverseOf()
      */
-    public string $inverseOf;
+    public ?string $inverseOf = null;
 
-    private $viaMap;
+    private array $viaMap = [];
 
     /**
      * Clones internal objects.
@@ -102,7 +104,7 @@ trait ActiveRelationTrait
      * Its signature should be `function($query)`, where `$query` is the query to be customized.
      * @return $this the relation object itself.
      */
-    public function via(string $relationName, ?callable $callable = null): ActiveRelationTrait
+    public function via(string $relationName, ?callable $callable = null)
     {
         $relation = $this->primaryModel->getRelation($relationName);
         $callableUsed = $callable !== null;
@@ -171,7 +173,11 @@ trait ActiveRelationTrait
      * @param string $name the relation name
      * @param ActiveRecordInterface $model the primary model
      * @return mixed the related record(s)
-     * @throws InvalidArgumentException|\ReflectionException if the relation is invalid
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \ReflectionException if the relation is invalid
+     * @throws \Throwable
+     * @throws NotSupportedException
      */
     public function findFor(string $name, ActiveRecordInterface $model)
     {
@@ -220,7 +226,10 @@ trait ActiveRelationTrait
      * @param string $name the relation name
      * @param array $primaryModels primary models
      * @return array the related models
+     * @throws Exception
      * @throws InvalidConfigException if [[link]] is invalid
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function populateRelation(string $name, array &$primaryModels): array
     {

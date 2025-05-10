@@ -7,6 +7,9 @@
 
 namespace Yew\Framework\Db;
 
+use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\NotSupportedException;
+
 /**
  * ActiveQueryTrait implements the common methods and properties for active record query classes.
  *
@@ -19,16 +22,18 @@ trait ActiveQueryTrait
     /**
      * @var string the name of the ActiveRecord class.
      */
-    public $modelClass;
+    public string $modelClass;
+
     /**
      * @var array a list of relations that this query should be performed with
      */
-    public $with;
+    public array $with;
+
     /**
-     * @var bool whether to return each record as an array. If false (default), an object
+     * @var bool|null whether to return each record as an array. If false (default), an object
      * of [[modelClass]] will be created to represent each record.
      */
-    public $asArray;
+    public ?bool $asArray = null;
 
 
     /**
@@ -109,7 +114,7 @@ trait ActiveQueryTrait
      * @return array|ActiveRecord[]
      * @since 2.0.11
      */
-    protected function createModels($rows)
+    protected function createModels(array $rows): array
     {
         if ($this->asArray) {
             return $rows;
@@ -132,8 +137,12 @@ trait ActiveQueryTrait
      * @param array $with a list of relations that this query should be performed with. Please
      * refer to [[with()]] for details about specifying this parameter.
      * @param array|ActiveRecord[] $models the primary models (can be either AR instances or arrays)
+     * @throws Exception
+     * @throws \Throwable
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
      */
-    public function findWith($with, &$models)
+    public function findWith(array $with, array &$models)
     {
         $primaryModel = reset($models);
         if (!$primaryModel instanceof ActiveRecordInterface) {
@@ -157,7 +166,7 @@ trait ActiveQueryTrait
      * @param array $with
      * @return ActiveQueryInterface[]
      */
-    private function normalizeRelations($model, $with)
+    private function normalizeRelations(ActiveRecord $model, array $with): array
     {
         $relations = [];
         foreach ($with as $name => $callback) {

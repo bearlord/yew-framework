@@ -45,7 +45,7 @@ class WinCache extends Cache
      * @param string $key a unique key identifying the cached value
      * @return string|bool the value stored in cache, false if the value is not in the cache or expired.
      */
-    protected function getValue($key)
+    protected function getValue(string $key)
     {
         return wincache_ucache_get($key);
     }
@@ -55,7 +55,7 @@ class WinCache extends Cache
      * @param array $keys a list of keys identifying the cached values
      * @return array a list of cached values indexed by the keys
      */
-    protected function getValues($keys)
+    protected function getValues(array $keys)
     {
         return wincache_ucache_get($keys);
     }
@@ -70,7 +70,7 @@ class WinCache extends Cache
      * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @return bool true if the value is successfully stored into cache, false otherwise
      */
-    protected function setValue($key, $value, $duration)
+    protected function setValue(string $key, $value, int $duration)
     {
         return wincache_ucache_set($key, $value, $duration);
     }
@@ -81,7 +81,7 @@ class WinCache extends Cache
      * @param int $duration the number of seconds in which the cached values will expire. 0 means never expire.
      * @return array array of failed keys
      */
-    protected function setValues($data, $duration)
+    protected function setValues(array $data, int $duration)
     {
         return wincache_ucache_set($data, null, $duration);
     }
@@ -96,7 +96,7 @@ class WinCache extends Cache
      * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @return bool true if the value is successfully stored into cache, false otherwise
      */
-    protected function addValue($key, $value, $duration)
+    protected function addValue(string $key, $value, int $duration)
     {
         return wincache_ucache_add($key, $value, $duration);
     }
@@ -109,7 +109,7 @@ class WinCache extends Cache
      * @param int $duration the number of seconds in which the cached values will expire. 0 means never expire.
      * @return array array of failed keys
      */
-    protected function addValues($data, $duration)
+    protected function addValues(array $data, $duration)
     {
         return wincache_ucache_add($data, null, $duration);
     }
@@ -120,7 +120,7 @@ class WinCache extends Cache
      * @param string $key the key of the value to be deleted
      * @return bool if no error happens during deletion
      */
-    protected function deleteValue($key)
+    protected function deleteValue(string $key)
     {
         return wincache_ucache_delete($key);
     }

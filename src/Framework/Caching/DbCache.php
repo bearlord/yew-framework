@@ -124,7 +124,7 @@ class DbCache extends Cache
      * @param string $key a unique key identifying the cached value
      * @return string|false the value stored in cache, false if the value is not in the cache or expired.
      */
-    protected function getValue($key)
+    protected function getValue(string $key)
     {
         $query = new Query();
         $query->select(['data'])
@@ -147,7 +147,7 @@ class DbCache extends Cache
      * @param array $keys a list of keys identifying the cached values
      * @return array a list of cached values indexed by the keys
      */
-    protected function getValues($keys)
+    protected function getValues(array $keys)
     {
         if (empty($keys)) {
             return [];
@@ -190,7 +190,7 @@ class DbCache extends Cache
      * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @return bool true if the value is successfully stored into cache, false otherwise
      */
-    protected function setValue($key, $value, $duration)
+    protected function setValue(string $key, $value, int $duration)
     {
         try {
             $this->db->noCache(function (Connection $db) use ($key, $value, $duration) {
@@ -220,7 +220,7 @@ class DbCache extends Cache
      * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @return bool true if the value is successfully stored into cache, false otherwise
      */
-    protected function addValue($key, $value, $duration)
+    protected function addValue(string $key, $value, int $duration)
     {
         $this->gc();
 
@@ -248,7 +248,7 @@ class DbCache extends Cache
      * @param string $key the key of the value to be deleted
      * @return bool if no error happens during deletion
      */
-    protected function deleteValue($key)
+    protected function deleteValue(string $key)
     {
         $this->db->noCache(function (Connection $db) use ($key) {
             $db->createCommand()

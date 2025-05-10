@@ -34,7 +34,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * Note that in case when type is not specified explicitly and DBMS can not guess it from the context,
      * SQL error will be raised.
      */
-    private $type;
+    private ?string $type;
     /**
      * @var array|QueryInterface the array's content.
      * In can be represented as an array of values or a [[Query]] that returns these values.
@@ -43,7 +43,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
     /**
      * @var int the number of indices needed to select an element
      */
-    private $dimension;
+    private int $dimension;
 
 
     /**

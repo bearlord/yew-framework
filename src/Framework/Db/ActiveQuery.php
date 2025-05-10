@@ -82,10 +82,11 @@ class ActiveQuery extends Query implements ActiveQueryInterface
     const EVENT_INIT = 'init';
 
     /**
-     * @var string the SQL statement to be executed for retrieving AR records.
+     * @var string|null the SQL statement to be executed for retrieving AR records.
      * This is set by [[ActiveRecord::findBySql()]].
      */
     public ?string $sql = null;
+
     /**
      * @var string|array the join condition to be used when this query is used in a relational context.
      * The condition will be used in the ON part when [[ActiveQuery::joinWith()]] is called.
@@ -94,6 +95,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @see onCondition()
      */
     public $on;
+
     /**
      * @var array|null a list of relations that this query should be joined with
      */
@@ -128,14 +130,19 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * @param Connection|null $db the DB connection used to create the DB command.
      * If null, the DB connection returned by [[modelClass]] will be used.
      * @return array|ActiveRecord[] the query results. If the query results in nothing, an empty array will be returned.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
-    public function all(?Connection $db = null): array
+    public function all(?ConnectionInterface $db = null): array
     {
         return parent::all($db);
     }
 
     /**
      * {@inheritdoc}
+     * @throws \Exception
      */
     public function prepare(QueryBuilder $builder): Query
     {
@@ -211,7 +218,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
     /**
      * {@inheritdoc}
      */
-    public function populate(array $rows)
+    public function populate(array $rows): array
     {
         if (empty($rows)) {
             return [];
@@ -301,7 +308,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * if the query results in nothing.
      * @throws \Exception
      */
-    public function one(?Connection $db = null)
+    public function one(?ConnectionInterface $db = null)
     {
         $row = parent::one($db);
         if ($row !== false) {

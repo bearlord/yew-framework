@@ -22,7 +22,7 @@ class InConditionBuilder extends \Yew\Framework\Db\Conditions\InConditionBuilder
      * {@inheritdoc}
      * @throws NotSupportedException if `$columns` is an array
      */
-    protected function buildSubqueryInCondition(string $operator, $columns, Query $values, array &$params)
+    protected function buildSubqueryInCondition(string $operator, $columns, Query $values, array &$params): string
     {
         if (is_array($columns)) {
             throw new NotSupportedException(__METHOD__ . ' is not supported by MSSQL.');
@@ -34,7 +34,7 @@ class InConditionBuilder extends \Yew\Framework\Db\Conditions\InConditionBuilder
     /**
      * {@inheritdoc}
      */
-    protected function buildCompositeInCondition(string $operator, $columns, array $values, array &$params)
+    protected function buildCompositeInCondition(string $operator, $columns, array $values, array &$params): string
     {
         $quotedColumns = [];
         foreach ($columns as $i => $column) {

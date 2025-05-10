@@ -90,12 +90,12 @@ trait QueryTrait
      *
      * See [[QueryInterface::where()]] for detailed documentation.
      *
-     * @param array $condition the conditions that should be put in the WHERE part.
+     * @param string|array|ExpressionInterface $condition the conditions that should be put in the WHERE part.
      * @return $this the query object itself
      * @see andWhere()
      * @see orWhere()
      */
-    public function where(array $condition)
+    public function where($condition)
     {
         $this->where = $condition;
         return $this;
@@ -104,13 +104,13 @@ trait QueryTrait
     /**
      * Adds an additional WHERE condition to the existing one.
      * The new condition and the existing one will be joined using the 'AND' operator.
-     * @param array $condition the new WHERE condition. Please refer to [[where()]]
+     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see where()
      * @see orWhere()
      */
-    public function andWhere(array $condition)
+    public function andWhere($condition)
     {
         if ($this->where === null) {
             $this->where = $condition;
@@ -124,13 +124,13 @@ trait QueryTrait
     /**
      * Adds an additional WHERE condition to the existing one.
      * The new condition and the existing one will be joined using the 'OR' operator.
-     * @param array $condition the new WHERE condition. Please refer to [[where()]]
+     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see where()
      * @see andWhere()
      */
-    public function orWhere(array $condition)
+    public function orWhere($condition)
     {
         if ($this->where === null) {
             $this->where = $condition;
@@ -169,7 +169,7 @@ trait QueryTrait
      * @see orFilterWhere()
      * @see where()
      */
-    public function filterWhere(array $condition)
+    public function filterWhere($condition)
     {
         $condition = $this->filterCondition($condition);
         if ($condition !== []) {
@@ -238,10 +238,6 @@ trait QueryTrait
      */
     protected function filterCondition(array $condition): array
     {
-        if (!is_array($condition)) {
-            return $condition;
-        }
-
         if (!isset($condition[0])) {
             // hash format: 'column1' => 'value1', 'column2' => 'value2', ...
             foreach ($condition as $name => $value) {

@@ -33,7 +33,7 @@ class FileCache extends Cache
      *
      * To ensure interoperability, only alphanumeric characters should be used.
      */
-    public $keyPrefix = '';
+    public string $keyPrefix = '';
     /**
      * @var string the directory to store cache files. You may use [path alias](guide:concept-aliases) here.
      * If not set, it will use the "cache" subdirectory under the application runtime path.
@@ -106,7 +106,7 @@ class FileCache extends Cache
      * @param string $key a unique key identifying the cached value
      * @return string|false the value stored in cache, false if the value is not in the cache or expired.
      */
-    protected function getValue($key)
+    protected function getValue(string $key)
     {
         $cacheFile = $this->getCacheFile($key);
 
@@ -134,7 +134,7 @@ class FileCache extends Cache
      * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @return bool true if the value is successfully stored into cache, false otherwise
      */
-    protected function setValue($key, $value, $duration)
+    protected function setValue(string $key, $value, int $duration)
     {
         $this->gc();
         $cacheFile = $this->getCacheFile($key);
@@ -173,7 +173,7 @@ class FileCache extends Cache
      * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @return bool true if the value is successfully stored into cache, false otherwise
      */
-    protected function addValue($key, $value, $duration)
+    protected function addValue(string $key, $value, int $duration)
     {
         $cacheFile = $this->getCacheFile($key);
         if (@filemtime($cacheFile) > time()) {
@@ -189,7 +189,7 @@ class FileCache extends Cache
      * @param string $key the key of the value to be deleted
      * @return bool if no error happens during deletion
      */
-    protected function deleteValue($key)
+    protected function deleteValue(string $key)
     {
         $cacheFile = $this->getCacheFile($key);
 

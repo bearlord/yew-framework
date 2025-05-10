@@ -542,7 +542,13 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
-     * {@inheritdoc}
+     * @param BaseActiveRecord $record
+     * @param array $row
+     * @return void
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public static function populateRecord(BaseActiveRecord $record, array $row)
     {

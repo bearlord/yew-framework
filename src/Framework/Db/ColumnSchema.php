@@ -74,7 +74,7 @@ class ColumnSchema extends BaseObject
     /**
      * @var bool whether this column is a primary key
      */
-    public bool $isPrimaryKey;
+    public ?bool $isPrimaryKey = null;
 
     /**
      * @var bool whether this column is auto-incremental

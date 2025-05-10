@@ -10,6 +10,7 @@ namespace Yew\Framework\Db;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Caching\Dependency;
+use Yew\Framework\Exception\NotSupportedException;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Yew;
@@ -70,17 +71,20 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * the SELECT clause would be changed to SELECT DISTINCT.
      */
     public bool $distinct = false;
+
     /**
-     * @var array the table(s) to be selected from. For example, `['user', 'post']`.
+     * @var array|null the table(s) to be selected from. For example, `['user', 'post']`.
      * This is used to construct the FROM clause in a SQL statement.
      * @see from()
      */
     public ?array $from = null;
+
     /**
-     * @var array how to group the query results. For example, `['company', 'department']`.
+     * @var array|null how to group the query results. For example, `['company', 'department']`.
      * This is used to construct the GROUP BY clause in a SQL statement.
      */
     public ?array $groupBy = null;
+
     /**
      * @var array how to join with other tables. Each array element represents the specification
      * of one join which has the following structure:
@@ -99,11 +103,13 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * ```
      */
     public array $join = [];
+
     /**
      * @var string|array|ExpressionInterface the condition to be applied in the GROUP BY clause.
      * It can be either a string or an array. Please refer to [[where()]] on how to specify the condition.
      */
     public $having;
+
     /**
      * @var array this is used to construct the UNION clause(s) in a SQL statement.
      * Each array element is an array of the following structure:
@@ -112,11 +118,13 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * - `all`: boolean, whether it should be `UNION ALL` or `UNION`
      */
     public array $union = [];
+
     /**
      * @var array list of query parameter values indexed by parameter placeholders.
      * For example, `[':name' => 'Dan', ':age' => 31]`.
      */
     public array $params = [];
+
     /**
      * @var int|true the default number of seconds that query results can remain valid in cache.
      * Use 0 to indicate that the cached data will never expire.
@@ -126,13 +134,13 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @since 2.0.14
      */
     public $queryCacheDuration;
+
     /**
      * @var Dependency|null the dependency to be associated with the cached query result for this query
      * @see cache()
      * @since 2.0.14
      */
     public ?Dependency $queryCacheDependency = null;
-
 
     /**
      * Creates a DB command that can be used to execute this query.
@@ -141,6 +149,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @return Command the created DB command instance.
      * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function createCommand(?Connection $db = null): Command
     {
@@ -193,7 +203,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
     public function batch(?int $batchSize = 100, ?Connection $db = null): BatchQueryResult
     {
         return Yew::createObject([
-            'class' => BatchQueryResult::className(),
+            'class' => BatchQueryResult::class,
             'query' => $this,
             'batchSize' => $batchSize,
             'db' => $db,
@@ -222,7 +232,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
     public function each(?int $batchSize = 100, ?Connection $db = null): BatchQueryResult
     {
         return Yew::createObject([
-            'class' => BatchQueryResult::className(),
+            'class' => BatchQueryResult::class,
             'query' => $this,
             'batchSize' => $batchSize,
             'db' => $db,
@@ -235,8 +245,12 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return array the query results. If the query results in nothing, an empty array will be returned.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
-    public function all(?Connection $db = null)
+    public function all(?ConnectionInterface $db = null): array
     {
         if ($this->emulateExecution) {
             return [];
@@ -253,7 +267,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @return array the converted query result
      * @throws \Exception
      */
-    public function populate(array $rows)
+    public function populate(array $rows): array
     {
         if ($this->indexBy === null) {
             return $rows;
@@ -268,14 +282,16 @@ class Query extends Component implements QueryInterface, ExpressionInterface
 
     /**
      * Executes the query and returns a single row of result.
-     * @param Connection|null $db the database connection used to generate the SQL statement.
+     * @param ConnectionInterface|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return array|bool the first row (in terms of an array) of the query result. False is returned if the query
      * results in nothing.
      * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
-    public function one(?Connection $db = null)
+    public function one(?ConnectionInterface $db = null)
     {
         if ($this->emulateExecution) {
             return false;
@@ -291,6 +307,10 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * If this parameter is not given, the `db` application component will be used.
      * @return string|null|false the value of the first column in the first row of the query result.
      * False is returned if the query result is empty.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function scalar(?Connection $db = null)
     {
@@ -308,6 +328,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @return array the first column of the query result. An empty array is returned if the query results in nothing.
      * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function column(?Connection $db = null): array
     {
@@ -357,8 +379,10 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * If this parameter is not given (or null), the `db` application component will be used.
      * @return int|string number of records. The result may be a string depending on the
      * underlying database engine and to support integer values higher than a 32bit PHP integer can handle.
+     * @throws Exception
+     * @throws InvalidConfigException
      */
-    public function count(?string $q = '*', ?Connection $db = null)
+    public function count(?string $q = '*', ?ConnectionInterface $db = null): int
     {
         if ($this->emulateExecution) {
             return 0;
@@ -373,7 +397,9 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * Make sure you properly [quote](guide:db-dao#quoting-table-and-column-names) column names in the expression.
      * @param Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
-     * @return mixed the sum of the specified column values.
+     * @return bool|int|string|null the sum of the specified column values.
+     * @throws Exception
+     * @throws InvalidConfigException
      */
     public function sum($q, ?Connection $db = null)
     {
@@ -432,8 +458,12 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @param Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return bool whether the query result contains any row of data.
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws \Throwable
+     * @throws NotSupportedException
      */
-    public function exists(?Connection $db = null)
+    public function exists(?ConnectionInterface $db = null): bool
     {
         if ($this->emulateExecution) {
             return false;
@@ -453,6 +483,8 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * @return bool|string
      * @throws Exception
      * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     protected function queryScalar($selectExpression, ?Connection $db)
     {

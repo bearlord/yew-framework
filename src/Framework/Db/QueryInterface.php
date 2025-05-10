@@ -24,11 +24,11 @@ interface QueryInterface
 {
     /**
      * Executes the query and returns all results as an array.
-     * @param Connection|null $db the database connection used to execute the query.
+     * @param ConnectionInterface|null $db the database connection used to execute the query.
      * If this parameter is not given, the `db` application component will be used.
      * @return array the query results. If the query results in nothing, an empty array will be returned.
      */
-    public function all(Connection $db = null);
+    public function all(?ConnectionInterface $db = null): array;
 
     /**
      * Executes the query and returns a single row of result.
@@ -37,16 +37,16 @@ interface QueryInterface
      * @return array|bool the first row (in terms of an array) of the query result. False is returned if the query
      * results in nothing.
      */
-    public function one(Connection $db = null);
+    public function one(?ConnectionInterface $db = null);
 
     /**
      * Returns the number of records.
      * @param string|null $q the COUNT expression. Defaults to '*'.
-     * @param Connection|null $db the database connection used to execute the query.
+     * @param ConnectionInterface|null $db the database connection used to execute the query.
      * If this parameter is not given, the `db` application component will be used.
      * @return int number of records.
      */
-    public function count(?string $q = '*', Connection $db = null);
+    public function count(?string $q = '*', ?ConnectionInterface $db = null): int;
 
     /**
      * Returns a value indicating whether the query result contains any row of data.
@@ -54,7 +54,7 @@ interface QueryInterface
      * If this parameter is not given, the `db` application component will be used.
      * @return bool whether the query result contains any row of data.
      */
-    public function exists(Connection $db = null);
+    public function exists(?ConnectionInterface $db = null): bool;
 
     /**
      * Sets the [[indexBy]] property.

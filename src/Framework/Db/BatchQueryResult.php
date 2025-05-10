@@ -43,21 +43,21 @@ class BatchQueryResult extends BaseObject implements \Iterator
     /**
      * @var int the number of rows to be returned in each batch.
      */
-    public $batchSize = 100;
+    public int $batchSize = 100;
     /**
      * @var bool whether to return a single row during each iteration.
      * If false, a whole batch of rows will be returned in each iteration.
      */
-    public $each = false;
+    public bool $each = false;
 
     /**
      * @var DataReader the data reader associated with this batch query.
      */
-    private $_dataReader;
+    private DataReader $_dataReader;
     /**
      * @var array the data retrieved in the current batch
      */
-    private $_batch;
+    private array $_batch;
     /**
      * @var mixed the value for the current iteration
      */
@@ -70,7 +70,7 @@ class BatchQueryResult extends BaseObject implements \Iterator
      * @var int MSSQL error code for exception that is thrown when last batch is size less than specified batch size
      * @see https://github.com/yiisoft/yii2/issues/10023
      */
-    private $mssqlNoMoreRowsErrorCode = -13;
+    private int $mssqlNoMoreRowsErrorCode = -13;
 
 
     /**
