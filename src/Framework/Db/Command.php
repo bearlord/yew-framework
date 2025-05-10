@@ -1284,8 +1284,6 @@ class Command extends Component
         } catch (Exception $e) {
             $_message = sprintf("\nFile: %s, \nLine: %s, \nCode: %s, \nMessage: %s, \nTrace: %s\n",
                 $e->getFile(), $e->getLine(), $e->getCode(), $e->getMessage(), $e->getTraceAsString());
-            Server::$instance->getLog()->error($_message);
-
             Yew::error($_message);
 
             if (!$this->isBreak($e)) {
@@ -1323,7 +1321,6 @@ class Command extends Component
             } catch (Exception $e) {
                 $_message = sprintf("\nFile: %s, \nLine: %s, \nCode: %s, \nMessage: %s, \nTrace: %s\n",
                     $e->getFile(), $e->getLine(), $e->getCode(), $e->getMessage(), $e->getTraceAsString());
-                Server::$instance->getLog()->error($_message);
 
                 Yew::error($_message);
                 $profile and Yew::endProfile($rawSql, __METHOD__);
@@ -1410,7 +1407,6 @@ class Command extends Component
         } catch (Exception $e) {
             $_message = sprintf("\nFile: %s, \nLine: %s, \nCode: %s, \nMessage: %s, \nTrace: %s\n",
                 $e->getFile(), $e->getLine(), $e->getCode(), $e->getMessage(), $e->getTraceAsString());
-            Server::$instance->getLog()->error($_message);
 
             Yew::error($_message);
 
@@ -1455,7 +1451,6 @@ class Command extends Component
             } catch (Exception $e) {
                 $_message = sprintf("\nFile: %s, \nLine: %s, \nCode: %s, \nMessage: %s, \nTrace: %s\n",
                     $e->getFile(), $e->getLine(), $e->getCode(), $e->getMessage(), $e->getTraceAsString());
-                Server::$instance->getLog()->error($_message);
 
                 Yew::error($_message);
                 $profile and Yew::endProfile($rawSql, __METHOD__);

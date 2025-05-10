@@ -230,7 +230,7 @@ abstract class BaseMigrateController extends Controller
      *
      * @param int|string $limit the number of migrations to be reverted. Defaults to 1,
      * meaning the last applied migration will be reverted. When value is "all", all migrations will be reverted.
-     * @throws Exception if the number of the steps specified is less than 1.
+     * @throws Exception|InvalidConfigException if the number of the steps specified is less than 1.
      *
      * @return int the status of the action execution. 0 means normal, other values mean abnormal.
      */

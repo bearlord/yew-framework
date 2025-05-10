@@ -6,21 +6,19 @@
 
 namespace Yew\Framework\Base;
 
-use DI\Container;
-use Yew\Core\DI\DI;
+use Yew\Core\Exception\Exception;
 use Yew\Coroutine\Server\Server;
 use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
+use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Exception\InvalidConfigException;
-use Yew\Framework\Exception\InvalidParamException;
+use Yew\Framework\Exception\InvalidRouteException;
 use Yew\Nikic\FastRoute\Dispatcher;
 use Yew\Plugins\Database\DatabasePools;
 use Yew\Plugins\Route\RoutePlugin;
 use Yew\Plugins\Session\HttpSession;
 use Yew\Framework\Di\ServiceLocator;
 use Yew\Framework\Db\Connection;
-use Yew\Framework\Plugin\Pdo\PdoPools;
-use Yew\Framework\Plugin\Pdo\PdoPool;
 use Yew\Yew;
 
 /**
@@ -74,9 +72,11 @@ class Application extends ServiceLocator
     private static array $_instances = [];
 
     /**
-     * Application constructor.
+     * @param array $config
+     * @throws Exception
+     * @throws InvalidConfigException
      */
-    public function __construct($config = [])
+    public function __construct(array $config = [])
     {
         Yew::$app = $this;
         $this->preInit();
@@ -100,6 +100,8 @@ class Application extends ServiceLocator
 
     /**
      * Prepare init
+     * @throws InvalidConfigException
+     * @throws Exception
      */
     public function preInit()
     {
@@ -119,7 +121,7 @@ class Application extends ServiceLocator
             if (empty($documentRoot)) {
                 $documentRoot = realpath(dirname($srcDir) . '/web');
             }
-            $this->setWebPath(Server::$instance->getServerConfig()->getDocumentRoot());
+            $this->setWebPath($documentRoot);
         }
 
 		// set "@runtime"
@@ -132,7 +134,7 @@ class Application extends ServiceLocator
         }
 
         if (!empty($config['timezone'])) {
-            $this->settimeZone($config['timezone']);
+            $this->setTimeZone($config['timezone']);
             $this->setContextTimeZone($config['timezone']);
         }
 
@@ -179,7 +181,7 @@ class Application extends ServiceLocator
      * Sets the root directory of the module.
      * This method can only be invoked at the beginning of the constructor.
      * @param string $path the root directory of the module. This can be either a directory name or a [path alias](guide:concept-aliases).
-     * @throws InvalidParamException if the directory does not exist.
+     * @throws InvalidArgumentException if the directory does not exist.
      */
     public function setBasePath(string $path)
     {
@@ -194,7 +196,7 @@ class Application extends ServiceLocator
         Yew::setAlias('@App', $this->getBasePath());
     }
 
-    private string $_vendorPath;
+    private ?string $_vendorPath = null;
 
     /**
      * Returns the directory that stores vendor files.
@@ -327,12 +329,12 @@ class Application extends ServiceLocator
     }
 
     /**
-     * @param $name
+     * @param string $name
      * @return Connection|null|object
      * @throws InvalidConfigException
      * @throws \Exception
      */
-    public function getDbOnce($name): ?Connection
+    public function getDbOnce(?string $name = "default"): ?Connection
     {
         $contextKey = sprintf("db:%s", $name);
         $db = getContextValue($contextKey);
@@ -594,11 +596,13 @@ class Application extends ServiceLocator
             case Dispatcher::FOUND:
                 $handler = $routeInfo[1];
                 $vars = $routeInfo[2];
+
                 $controllerName = $handler[0]->name;
                 $actionName = $handler[1]->name;
                 $controller = Yew::createObject([
                     'class' => $controllerName
                 ], [$id, $this]);
+
                 return [$controller, $actionName];
         }
         return null;
@@ -628,9 +632,10 @@ class Application extends ServiceLocator
      * @param string $route the route that specifies the action.
      * @param array|null $params the parameters to be passed to the action
      * @return mixed the result of the action.
-     * @throws \Yew\Framework\Exception\Exception
      * @throws InvalidConfigException
-     * @throws \Yew\Framework\Exception\InvalidRouteException if the requested route cannot be resolved into an action successfully.
+     * @throws \ReflectionException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws InvalidRouteException
      */
     public function runAction(string $route, ?array $params = [])
     {

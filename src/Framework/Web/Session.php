@@ -155,7 +155,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      */
     protected function registerSessionHandler()
     {
-        $debug = Server::$instance->getConfigContext()->get('yii.debug');
+        $debug = Server::$instance->getConfigContext()->get('yew.debug');
         if ($this->handler !== null) {
             if (!is_object($this->handler)) {
                 $this->handler = Yew::createObject($this->handler);
@@ -192,7 +192,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      */
     public function close()
     {
-        $debug = Server::$instance->getConfigContext()->get('yii.debug');
+        $debug = Server::$instance->getConfigContext()->get('yew.debug');
         if ($this->getIsActive()) {
             if ($debug) {
                 session_write_close();
@@ -303,7 +303,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      */
     public function regenerateID(bool $deleteOldSession = false)
     {
-        $debug = Server::$instance->getConfigContext()->get('yii.debug');
+        $debug = Server::$instance->getConfigContext()->get('yew.debug');
         if ($this->getIsActive()) {
             // add @ to inhibit possible warning due to race condition
             // https://github.com/yiisoft/yii2/pull/1812
@@ -975,7 +975,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      */
     protected function unfreeze()
     {
-        $debug = Server::$instance->getConfigContext()->get('yii.debug');
+        $debug = Server::$instance->getConfigContext()->get('yew.debug');
         if (null !== $this->frozenSessionData) {
 
             $debug ? session_start() : @session_start();

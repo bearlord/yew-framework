@@ -6,9 +6,7 @@
 
 namespace Yew\Framework\Console;
 
-use Swoole\ExitException;
 use Yew\Core\Server\Server;
-use Yew\Core\Server\Beans\Response;
 use Yew\Framework\Console\Exception\Exception;
 use Yew\Framework\Console\Exception\UnknownCommandException;
 use Yew\Framework\Exception\InvalidConfigException;
@@ -35,7 +33,7 @@ class Application extends \Yew\Framework\Base\Application
     /**
      * @var static[] static instances in format: `[className => object]`
      */
-    private static $_instances = [];
+    private static array $_instances = [];
 
     /**
      * @var array mapping from controller ID to controller configurations.
@@ -114,7 +112,9 @@ class Application extends \Yew\Framework\Base\Application
     }
 
     /**
-     * Prepare init
+     * @return void
+     * @throws InvalidConfigException
+     * @throws \Yew\Core\Exception\Exception
      */
     public function preInit()
     {
@@ -134,7 +134,7 @@ class Application extends \Yew\Framework\Base\Application
             if (empty($documentRoot)) {
                 $documentRoot = realpath(dirname($srcDir) . '/web');
             }
-            $this->setWebPath(Server::$instance->getServerConfig()->getDocumentRoot());
+            $this->setWebPath($documentRoot);
         }
 
         //Set language
@@ -145,7 +145,7 @@ class Application extends \Yew\Framework\Base\Application
 
 
         if (!empty($config['timezone'])) {
-            $this->settimeZone($config['timezone']);
+            $this->setTimeZone($config['timezone']);
             $this->setContextTimeZone($config['timezone']);
         }
 
@@ -281,29 +281,10 @@ class Application extends \Yew\Framework\Base\Application
     }
 
     /**
-     * Runs the application.
-     * This is the main entrance of an application.
-     * @return int the exit status (0 means normal, non-zero values mean abnormal)
-     */
-    public function run()
-    {
-        try {
-            $response = $this->handleRequest($this->getRequest());
-
-            $response->send();
-
-            return $response->exitStatus;
-        } catch (ExitException $e) {
-            $this->end($e->statusCode, isset($response) ? $response : null);
-            return $e->statusCode;
-        }
-    }
-
-    /**
      * Run route
      *
      * @param $route
-     * @return mixed
+     * @return mixed|void
      * @throws InvalidConfigException
      */
     public function runRoute($route)
@@ -345,18 +326,13 @@ class Application extends \Yew\Framework\Base\Application
             if (!is_array($parts)) {
                 throw new Exception('Unable to resolve the request "' . $route . '".');
             }
-            if (is_array($parts)) {
-                /* @var $controller \Yew\Framework\Console\Controller */
-                list($controller, $actionID) = $parts;
+            /* @var $controller \Yew\Framework\Console\Controller */
+            list($controller, $actionID) = $parts;
 
-                $res = $controller->runAction($actionID, $params);
-                return is_object($res) ? $res : (int) $res;
-            }
+            return $controller->runAction($actionID, $params);
         } catch (InvalidRouteException $e) {
             throw new UnknownCommandException($route, $this, 0, $e);
         }
-
-        return 1;
     }
 
     /**

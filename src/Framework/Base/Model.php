@@ -762,7 +762,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      */
     public function onUnsafeAttribute(string $name, $value)
     {
-        $debug = Server::$instance->getConfigContext()->get('yii.debug');
+        $debug = Server::$instance->getConfigContext()->get('yew.debug');
         if ($debug) {
             Yew::debug("Failed to set unsafe attribute '$name' in '" . get_class($this) . "'.", __METHOD__);
         }

@@ -228,6 +228,7 @@ class MigrateController extends BaseMigrateController
         if ($this->db->schema->getTableSchema($this->migrationTable, true) === null) {
             $this->createMigrationHistoryTable();
         }
+
         $query = (new Query())
             ->select(['version', 'apply_time'])
             ->from($this->migrationTable)
