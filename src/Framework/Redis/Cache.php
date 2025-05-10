@@ -126,16 +126,6 @@ class Cache extends \Yew\Framework\Caching\Cache
      */
     private $_replica;
 
-//    /**
-//     * @param array|string|Connection $redis
-//     */
-//    public function __construct($a = null, $b = null, $c = null)
-//    {
-////        var_dump($a, $b, $c);
-//        parent::__construct($c);
-//    }
-
-
     /**
      * Initializes the redis Cache component.
      * This method will initialize the [[redis]] property to make sure it refers to a valid redis connection.
