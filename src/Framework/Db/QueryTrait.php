@@ -418,7 +418,7 @@ trait QueryTrait
      * @return $this the query object itself.
      * @since 2.0.11
      */
-    public function emulateExecution($value = true)
+    public function emulateExecution(bool $value = true)
     {
         $this->emulateExecution = $value;
         return $this;

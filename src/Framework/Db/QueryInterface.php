@@ -155,34 +155,34 @@ interface QueryInterface
      *
      * **Note that this method will override any existing WHERE condition. You might want to use [[andWhere()]] or [[orWhere()]] instead.**
      *
-     * @param array $condition the conditions that should be put in the WHERE part.
+     * @param string|array|ExpressionInterface $condition the conditions that should be put in the WHERE part.
      * @return $this the query object itself
      * @see andWhere()
      * @see orWhere()
      */
-    public function where(array $condition);
+    public function where($condition);
 
     /**
      * Adds an additional WHERE condition to the existing one.
      * The new condition and the existing one will be joined using the 'AND' operator.
-     * @param array $condition the new WHERE condition. Please refer to [[where()]]
+     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see where()
      * @see orWhere()
      */
-    public function andWhere(array $condition);
+    public function andWhere($condition);
 
     /**
      * Adds an additional WHERE condition to the existing one.
      * The new condition and the existing one will be joined using the 'OR' operator.
-     * @param array $condition the new WHERE condition. Please refer to [[where()]]
+     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see where()
      * @see andWhere()
      */
-    public function orWhere(array $condition);
+    public function orWhere($condition);
 
     /**
      * Sets the WHERE part of the query ignoring empty parameters.
@@ -193,29 +193,29 @@ interface QueryInterface
      * @see andFilterWhere()
      * @see orFilterWhere()
      */
-    public function filterWhere(array $condition);
+    public function filterWhere($condition);
 
     /**
      * Adds an additional WHERE condition to the existing one ignoring empty parameters.
      * The new condition and the existing one will be joined using the 'AND' operator.
-     * @param array $condition the new WHERE condition. Please refer to [[where()]]
+     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see filterWhere()
      * @see orFilterWhere()
      */
-    public function andFilterWhere(array $condition);
+    public function andFilterWhere($condition);
 
     /**
      * Adds an additional WHERE condition to the existing one ignoring empty parameters.
      * The new condition and the existing one will be joined using the 'OR' operator.
-     * @param array $condition the new WHERE condition. Please refer to [[where()]]
+     * @param string|array|ExpressionInterface $condition the new WHERE condition. Please refer to [[where()]]
      * on how to specify this parameter.
      * @return $this the query object itself
      * @see filterWhere()
      * @see andFilterWhere()
      */
-    public function orFilterWhere(array $condition);
+    public function orFilterWhere($condition);
 
     /**
      * Sets the ORDER BY part of the query.
@@ -243,14 +243,14 @@ interface QueryInterface
 
     /**
      * Sets the LIMIT part of the query.
-     * @param int|null $limit the limit. Use null or negative value to disable limit.
+     * @param int|ExpressionInterface|null $limit the limit. Use null or negative value to disable limit.
      * @return $this the query object itself
      */
     public function limit($limit);
 
     /**
      * Sets the OFFSET part of the query.
-     * @param int|null $offset the offset. Use null or negative value to disable offset.
+     * @param int|ExpressionInterface|null $offset the offset. Use null or negative value to disable offset.
      * @return $this the query object itself
      */
     public function offset($offset);
@@ -265,5 +265,5 @@ interface QueryInterface
      * @return $this the query object itself.
      * @since 2.0.11
      */
-    public function emulateExecution($value = true);
+    public function emulateExecution(bool $value = true);
 }

@@ -123,7 +123,7 @@ class Command extends Component
      * when executing the command.
      */
     protected $_retryHandler;
-    
+
     /**
      * Enables query cache for this command.
      * @param int|null $duration the number of seconds that query result of this command can remain valid in the cache.

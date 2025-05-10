@@ -127,7 +127,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
 
     /**
      * Executes query and returns all results as an array.
-     * @param Connection|null $db the DB connection used to create the DB command.
+     * @param ConnectionInterface|Connection|null $db the DB connection used to create the DB command.
      * If null, the DB connection returned by [[modelClass]] will be used.
      * @return array|ActiveRecord[] the query results. If the query results in nothing, an empty array will be returned.
      * @throws Exception
@@ -142,7 +142,12 @@ class ActiveQuery extends Query implements ActiveQueryInterface
 
     /**
      * {@inheritdoc}
-     * @throws \Exception
+     * @param QueryBuilder $builder
+     * @return Query
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function prepare(QueryBuilder $builder): Query
     {
@@ -217,6 +222,7 @@ class ActiveQuery extends Query implements ActiveQueryInterface
 
     /**
      * {@inheritdoc}
+     * @throws \Throwable
      */
     public function populate(array $rows): array
     {
@@ -249,8 +255,11 @@ class ActiveQuery extends Query implements ActiveQueryInterface
      * Removes duplicated models by checking their primary key values.
      * This method is mainly called when a join query is performed, which may cause duplicated rows being returned.
      * @param array $models the models to be checked
-     * @throws InvalidConfigException if model primary key is empty
      * @return array the distinctive models
+     * @throws Exception
+     * @throws InvalidConfigException if model primary key is empty
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     private function removeDuplicatedModels(array $models): array
     {
@@ -301,12 +310,15 @@ class ActiveQuery extends Query implements ActiveQueryInterface
 
     /**
      * Executes query and returns a single row of result.
-     * @param Connection|null $db the DB connection used to create the DB command.
+     * @param ConnectionInterface|Connection|null $db the DB connection used to create the DB command.
      * If `null`, the DB connection returned by [[modelClass]] will be used.
      * @return ActiveRecord|array|null a single row of query result. Depending on the setting of [[asArray]],
      * the query result may be either an array or an ActiveRecord object. `null` will be returned
      * if the query results in nothing.
-     * @throws \Exception
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws NotSupportedException
+     * @throws \Throwable
      */
     public function one(?ConnectionInterface $db = null)
     {

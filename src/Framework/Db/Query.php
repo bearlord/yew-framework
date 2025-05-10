@@ -242,7 +242,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
 
     /**
      * Executes the query and returns all results as an array.
-     * @param Connection|null $db the database connection used to generate the SQL statement.
+     * @param ConnectionInterface|Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return array the query results. If the query results in nothing, an empty array will be returned.
      * @throws Exception
@@ -375,7 +375,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
      * Returns the number of records.
      * @param string|null $q the COUNT expression. Defaults to '*'.
      * Make sure you properly [quote](guide:db-dao#quoting-table-and-column-names) column names in the expression.
-     * @param Connection|null $db the database connection used to generate the SQL statement.
+     * @param ConnectionInterface|Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given (or null), the `db` application component will be used.
      * @return int|string number of records. The result may be a string depending on the
      * underlying database engine and to support integer values higher than a 32bit PHP integer can handle.
@@ -455,7 +455,7 @@ class Query extends Component implements QueryInterface, ExpressionInterface
 
     /**
      * Returns a value indicating whether the query result contains any row of data.
-     * @param Connection|null $db the database connection used to generate the SQL statement.
+     * @param ConnectionInterface|Connection|null $db the database connection used to generate the SQL statement.
      * If this parameter is not given, the `db` application component will be used.
      * @return bool whether the query result contains any row of data.
      * @throws Exception
