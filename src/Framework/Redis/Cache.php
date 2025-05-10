@@ -8,6 +8,7 @@
 namespace Yew\Framework\Redis;
 
 use Yew\Framework\Db\Exception;
+use Yew\Plugins\Redis\GetRedis;
 use Yew\Yew;
 use Yew\Framework\Di\Instance;
 
@@ -82,6 +83,8 @@ use Yew\Framework\Di\Instance;
 class Cache extends \Yew\Framework\Caching\Cache
 {
 
+    use GetRedis;
+
     /**
      * @var Connection|string|array the Redis [[Connection]] object or the application component ID of the Redis [[Connection]].
      * This can also be an array that is used to create a redis [[Connection]] instance in case you do not want do configure
@@ -123,6 +126,15 @@ class Cache extends \Yew\Framework\Caching\Cache
      */
     private $_replica;
 
+//    /**
+//     * @param array|string|Connection $redis
+//     */
+//    public function __construct($a = null, $b = null, $c = null)
+//    {
+////        var_dump($a, $b, $c);
+//        parent::__construct($c);
+//    }
+
 
     /**
      * Initializes the redis Cache component.
@@ -132,7 +144,10 @@ class Cache extends \Yew\Framework\Caching\Cache
     public function init()
     {
         parent::init();
-        $this->redis = Yew::createObject(Connection::class);
+
+        $_redisOld["class"] = Connection::class;
+        $_redisOld = array_merge($_redisOld, $this->redis);
+        $this->redis = Yew::createObject($_redisOld);
     }
 
     /**

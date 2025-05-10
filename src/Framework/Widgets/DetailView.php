@@ -9,7 +9,7 @@ namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
 use Yew\Framework\Base\Arrayable;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Base\Model;
 use Yew\Framework\Base\Widget;
 use Yew\Framework\Helpers\ArrayHelper;

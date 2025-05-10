@@ -54,13 +54,13 @@ use Yew\Framework\Helpers\StringHelper;
 abstract class Cache extends Component implements CacheInterface
 {
     /**
-     * @var string a string prefixed to every cache key so that it is unique globally in the whole cache storage.
+     * @var string|null a string prefixed to every cache key so that it is unique globally in the whole cache storage.
      * It is recommended that you set a unique cache key prefix for each application if the same cache
      * storage is being used by different applications.
      *
      * To ensure interoperability, only alphanumeric characters should be used.
      */
-    public string $keyPrefix;
+    public ?string $keyPrefix = null;
     /**
      * @var null|array|false the functions used to serialize and unserialize cached data. Defaults to null, meaning
      * using the default PHP `serialize()` and `unserialize()` functions. If you want to use some more efficient
@@ -84,6 +84,8 @@ abstract class Cache extends Component implements CacheInterface
      */
     private bool $_igbinaryAvailable = false;
 
+
+    public $database;
 
     /**
      * {@inheritdoc}

@@ -316,7 +316,7 @@ class ActiveForm extends Widget
      * @param array|null $options the additional configurations for the field object. These are properties of [[ActiveField]]
      * or a subclass, depending on the value of [[fieldClass]].
      * @return ActiveField the created ActiveField object.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @see fieldConfig
      */
     public function field(Model $model, string $attribute, ?array $options = [])
@@ -404,7 +404,7 @@ class ActiveForm extends Widget
      * as a model.
      *
      * @return array the error message array indexed by the attribute IDs.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public static function validate(Model $model, $attributes = null): array
     {
@@ -448,7 +448,7 @@ class ActiveForm extends Widget
      * If this parameter is empty, it means any attribute listed in the applicable
      * validation rules should be validated.
      * @return array the error message array indexed by the attribute IDs.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public static function validateMultiple(array $models, $attributes = null): array
     {

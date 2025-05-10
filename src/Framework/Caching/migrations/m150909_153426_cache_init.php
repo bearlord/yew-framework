@@ -19,8 +19,8 @@ use Yew\Framework\Db\Migration;
 class m150909_153426_cache_init extends Migration
 {
     /**
-     * @throws Yew\Framework\Base\InvalidConfigException
      * @return DbCache
+     * @throws InvalidConfigException
      */
     protected function getCache()
     {

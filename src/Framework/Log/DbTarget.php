@@ -8,7 +8,7 @@
 namespace Yew\Framework\Log;
 
 use Yew\Yew;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Db\Connection;
 use Yew\Framework\Db\Exception;
 use Yew\Framework\Di\Instance;
@@ -48,12 +48,12 @@ class DbTarget extends Target
     /**
      * Initializes the DbTarget component.
      * This method will initialize the [[db]] property to make sure it refers to a valid DB connection.
-     * @throws InvalidConfigException if [[db]] is invalid.
+     * @throws InvalidConfigException|\ReflectionException if [[db]] is invalid.
      */
     public function init()
     {
         parent::init();
-        $this->db = Instance::ensure($this->db, Connection::className());
+        $this->db = Instance::ensure($this->db, Connection::class);
     }
 
     /**

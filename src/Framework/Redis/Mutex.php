@@ -8,7 +8,7 @@
 namespace Yew\Framework\Redis;
 
 use Yew\Yew;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Di\Instance;
 
 /**

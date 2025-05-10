@@ -218,7 +218,6 @@ class Controller extends \Yew\Framework\Base\Controller
                 $type->isBuiltin() &&
                 ((array_key_exists($name, $params)  && $params[$name] !== null) || !$type->allowsNull())
             ) {
-                var_dump($name);
                 $typeName = PHP_VERSION_ID >= 70100 ? $type->getName() : (string)$type;
                 switch ($typeName) {
                     case 'int':

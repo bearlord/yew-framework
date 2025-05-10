@@ -183,7 +183,7 @@ abstract class AbstractResponse implements \Psr\Http\Message\ResponseInterface
      * @param string $content
      * @return $this
      */
-    public function withContent(string $content = ''): self
+    public function withContent(?string $content = null): self
     {
         if($content == null || !is_string($content)) {
             $content = '';
@@ -196,7 +196,7 @@ abstract class AbstractResponse implements \Psr\Http\Message\ResponseInterface
      * @param string|null $content
      * @return $this
      */
-    public function appendBody(?string $content): self
+    public function appendBody(?string $content = null): self
     {
         if($content == null) {
             $content = '';
@@ -212,7 +212,7 @@ abstract class AbstractResponse implements \Psr\Http\Message\ResponseInterface
      * @param string|null $content
      * @return $this
      */
-    public function append(?string $content): self
+    public function append(?string $content = null): self
     {
         if($content == null) {
             $content = '';

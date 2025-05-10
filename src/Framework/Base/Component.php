@@ -8,6 +8,9 @@
 namespace Yew\Framework\Base;
 
 use Yew\Framework\Exception\InvalidCallException;
+use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Exception\UnknownMethodException;
+use Yew\Framework\Exception\UnknownPropertyException;
 use Yew\Yew;
 use Yew\Framework\Helpers\StringHelper;
 
@@ -104,16 +107,16 @@ class Component extends BaseObject
     /**
      * @var array the attached event handlers (event name => handlers)
      */
-    private $_events = [];
+    private array $_events = [];
     /**
      * @var array the event handlers attached for wildcard patterns (event name wildcard => handlers)
      * @since 2.0.14
      */
-    private $_eventWildcards = [];
+    private array $_eventWildcards = [];
     /**
      * @var Behavior[]|null the attached behaviors (behavior name => behavior). This is `null` when not initialized.
      */
-    private $_behaviors;
+    private ?array $_behaviors = null;
 
 
     /**
@@ -130,6 +133,7 @@ class Component extends BaseObject
      * @return mixed the property value or the value of a behavior's property
      * @throws UnknownPropertyException if the property is not defined
      * @throws InvalidCallException if the property is write-only.
+     * @throws InvalidConfigException
      * @see __set()
      */
     public function __get(string $name)
@@ -223,6 +227,7 @@ class Component extends BaseObject
      * will be implicitly called when executing `isset($component->property)`.
      * @param string $name the property name or the event name
      * @return bool whether the named property is set
+     * @throws InvalidConfigException
      * @see https://secure.php.net/manual/en/function.isset.php
      */
     public function __isset(string $name)
@@ -254,7 +259,7 @@ class Component extends BaseObject
      * Do not call this method directly as it is a PHP magic method that
      * will be implicitly called when executing `unset($component->property)`.
      * @param string $name the property name
-     * @throws InvalidCallException if the property is read only.
+     * @throws InvalidConfigException
      * @see https://secure.php.net/manual/en/function.unset.php
      */
     public function __unset(string $name)
@@ -288,7 +293,7 @@ class Component extends BaseObject
      * @param string $name the method name
      * @param array $params method parameters
      * @return mixed the method return value
-     * @throws UnknownMethodException when calling unknown method
+     * @throws UnknownMethodException|InvalidConfigException when calling unknown method
      */
     public function __call(string $name, array $params)
     {
@@ -326,10 +331,11 @@ class Component extends BaseObject
      * @param bool $checkVars whether to treat member variables as properties
      * @param bool $checkBehaviors whether to treat behaviors' properties as properties of this component
      * @return bool whether the property is defined
+     * @throws InvalidConfigException
      * @see canGetProperty()
      * @see canSetProperty()
      */
-    public function hasProperty(string $name, ?bool $checkVars = true, ?bool $checkBehaviors = true)
+    public function hasProperty(string $name, ?bool $checkVars = true, ?bool $checkBehaviors = true): bool
     {
         return $this->canGetProperty($name, $checkVars, $checkBehaviors) || $this->canSetProperty($name, false, $checkBehaviors);
     }
@@ -348,6 +354,7 @@ class Component extends BaseObject
      * @param bool $checkVars whether to treat member variables as properties
      * @param bool $checkBehaviors whether to treat behaviors' properties as properties of this component
      * @return bool whether the property can be read
+     * @throws InvalidConfigException
      * @see canSetProperty()
      */
     public function canGetProperty(string $name, ?bool $checkVars = true, ?bool $checkBehaviors = true): bool
@@ -380,6 +387,7 @@ class Component extends BaseObject
      * @param bool $checkVars whether to treat member variables as properties
      * @param bool $checkBehaviors whether to treat behaviors' properties as properties of this component
      * @return bool whether the property can be written
+     * @throws InvalidConfigException
      * @see canGetProperty()
      */
     public function canSetProperty(string $name, ?bool $checkVars = true, ?bool $checkBehaviors = true): bool
@@ -409,6 +417,7 @@ class Component extends BaseObject
      * @param string $name the property name
      * @param bool $checkBehaviors whether to treat behaviors' methods as methods of this component
      * @return bool whether the method is defined
+     * @throws InvalidConfigException
      */
     public function hasMethod(string $name, ?bool $checkBehaviors = true): bool
     {
@@ -451,7 +460,7 @@ class Component extends BaseObject
      *
      * @return array the behavior configurations.
      */
-    public function behaviors()
+    public function behaviors(): array
     {
         return [];
     }
@@ -460,8 +469,9 @@ class Component extends BaseObject
      * Returns a value indicating whether there is any handler attached to the named event.
      * @param string $name the event name
      * @return bool whether there is any handler attached to the event.
+     * @throws InvalidConfigException
      */
-    public function hasEventHandlers($name)
+    public function hasEventHandlers(string $name): bool
     {
         $this->ensureBehaviors();
 
@@ -510,9 +520,10 @@ class Component extends BaseObject
      * @param bool $append whether to append new event handler to the end of the existing
      * handler list. If false, the new handler will be inserted at the beginning of the existing
      * handler list.
+     * @throws InvalidConfigException
      * @see off()
      */
-    public function on($name, $handler, $data = null, $append = true)
+    public function on(string $name, callable $handler, $data = null, bool $append = true)
     {
         $this->ensureBehaviors();
 
@@ -541,12 +552,13 @@ class Component extends BaseObject
      * wildcard will be removed, while handlers registered with plain names matching this wildcard will remain.
      *
      * @param string $name event name
-     * @param callable $handler the event handler to be removed.
+     * @param callable|null $handler the event handler to be removed.
      * If it is null, all handlers attached to the named event will be removed.
      * @return bool if a handler is found and detached
+     * @throws InvalidConfigException
      * @see on()
      */
-    public function off($name, $handler = null)
+    public function off(string $name, callable $handler = null): bool
     {
         $this->ensureBehaviors();
         if (empty($this->_events[$name]) && empty($this->_eventWildcards[$name])) {
@@ -597,7 +609,8 @@ class Component extends BaseObject
      * This method represents the happening of an event. It invokes
      * all attached handlers for the event including class-level handlers.
      * @param string $name the event name
-     * @param Event $event the event parameter. If not set, a default [[Event]] object will be created.
+     * @param Event|null $event the event parameter. If not set, a default [[Event]] object will be created.
+     * @throws InvalidConfigException
      */
     public function trigger(string $name, ?Event $event = null)
     {
@@ -641,18 +654,20 @@ class Component extends BaseObject
      * Returns the named behavior object.
      * @param string $name the behavior name
      * @return null|Behavior the behavior object, or null if the behavior does not exist
+     * @throws InvalidConfigException
      */
-    public function getBehavior($name)
+    public function getBehavior(string $name): ?Behavior
     {
         $this->ensureBehaviors();
-        return isset($this->_behaviors[$name]) ? $this->_behaviors[$name] : null;
+        return $this->_behaviors[$name] ?? null;
     }
 
     /**
      * Returns all behaviors attached to this component.
      * @return Behavior[] list of behaviors attached to this component
+     * @throws InvalidConfigException
      */
-    public function getBehaviors()
+    public function getBehaviors(): ?array
     {
         $this->ensureBehaviors();
         return $this->_behaviors;
@@ -671,9 +686,10 @@ class Component extends BaseObject
      *  - an object configuration array that will be passed to [[Yew::createObject()]] to create the behavior object.
      *
      * @return Behavior the behavior object
+     * @throws InvalidConfigException
      * @see detachBehavior()
      */
-    public function attachBehavior($name, $behavior)
+    public function attachBehavior(string $name, $behavior)
     {
         $this->ensureBehaviors();
         return $this->attachBehaviorInternal($name, $behavior);
@@ -684,9 +700,10 @@ class Component extends BaseObject
      * Each behavior is indexed by its name and should be a [[Behavior]] object,
      * a string specifying the behavior class, or an configuration array for creating the behavior.
      * @param array $behaviors list of behaviors to be attached to the component
+     * @throws InvalidConfigException
      * @see attachBehavior()
      */
-    public function attachBehaviors($behaviors)
+    public function attachBehaviors(array $behaviors)
     {
         $this->ensureBehaviors();
         foreach ($behaviors as $name => $behavior) {
@@ -699,8 +716,9 @@ class Component extends BaseObject
      * The behavior's [[Behavior::detach()]] method will be invoked.
      * @param string $name the behavior's name.
      * @return null|Behavior the detached behavior. Null if the behavior does not exist.
+     * @throws InvalidConfigException
      */
-    public function detachBehavior($name)
+    public function detachBehavior(string $name): ?Behavior
     {
         $this->ensureBehaviors();
         if (isset($this->_behaviors[$name])) {
@@ -715,6 +733,7 @@ class Component extends BaseObject
 
     /**
      * Detaches all behaviors from the component.
+     * @throws InvalidConfigException
      */
     public function detachBehaviors()
     {
@@ -726,6 +745,7 @@ class Component extends BaseObject
 
     /**
      * Makes sure that the behaviors declared in [[behaviors()]] are attached to this component.
+     * @throws InvalidConfigException
      */
     public function ensureBehaviors()
     {

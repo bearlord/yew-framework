@@ -7,7 +7,6 @@
 
 namespace Yew\Framework\Log;
 
-use Yew\Yew;
 use Yew\Framework\Helpers\VarDumper;
 
 /**
@@ -21,23 +20,23 @@ class SyslogTarget extends Target
     /**
      * @var string syslog identity
      */
-    public $identity;
+    public string $identity;
     /**
      * @var int syslog facility.
      */
-    public $facility = LOG_USER;
+    public int $facility = LOG_USER;
     /**
-     * @var int openlog options. This is a bitfield passed as the `$option` parameter to [openlog()](https://secure.php.net/openlog).
+     * @var int|null openlog options. This is a bitfield passed as the `$option` parameter to [openlog()](https://secure.php.net/openlog).
      * Defaults to `null` which means to use the default options `LOG_ODELAY | LOG_PID`.
      * @see https://secure.php.net/openlog for available options.
      * @since 2.0.11
      */
-    public $options;
+    public ?int $options = null;
 
     /**
      * @var array syslog levels
      */
-    private $_syslogLevels = [
+    private array $_syslogLevels = [
         Logger::LEVEL_TRACE => LOG_DEBUG,
         Logger::LEVEL_PROFILE_BEGIN => LOG_DEBUG,
         Logger::LEVEL_PROFILE_END => LOG_DEBUG,
@@ -78,7 +77,7 @@ class SyslogTarget extends Target
     /**
      * {@inheritdoc}
      */
-    public function formatMessage($message)
+    public function formatMessage($message): string
     {
         list($text, $level, $category, $timestamp) = $message;
         $level = Logger::getLevelName($level);

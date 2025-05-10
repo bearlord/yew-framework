@@ -6,7 +6,7 @@
 
 namespace Yew\Framework\Helpers;
 
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 
 /**
  * Object that represents the replacement of array value while performing [[ArrayHelper::merge()]].

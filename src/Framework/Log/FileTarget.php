@@ -7,9 +7,10 @@
 
 namespace Yew\Framework\Log;
 
+use Yew\Core\Exception\Exception;
 use Yew\Core\Server\Server;
 use Yew\Yew;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\FileHelper;
 
 /**
@@ -27,38 +28,44 @@ use Yew\Framework\Helpers\FileHelper;
 class FileTarget extends Target
 {
     /**
-     * @var string log file path or [path alias](guide:concept-aliases). If not set, it will use the "@runtime/logs/app.log" file.
+     * @var string|null log file path or [path alias](guide:concept-aliases). If not set, it will use the "@runtime/logs/app.log" file.
      * The directory containing the log files will be automatically created if not existing.
      */
-    public $logFile;
+    public ?string $logFile = null;
+
     /**
      * @var bool whether log files should be rotated when they reach a certain [[maxFileSize|maximum size]].
      * Log rotation is enabled by default. This property allows you to disable it, when you have configured
      * an external tools for log rotation on your server.
      * @since 2.0.3
      */
-    public $enableRotation = true;
+    public bool $enableRotation = true;
+
     /**
      * @var int maximum log file size, in kilo-bytes. Defaults to 10240, meaning 10MB.
      */
-    public $maxFileSize = 10240; // in KB
+    public int $maxFileSize = 10240; // in KB
+
     /**
      * @var int number of log files used for rotation. Defaults to 5.
      */
-    public $maxLogFiles = 5;
+    public int $maxLogFiles = 5;
+
     /**
-     * @var int the permission to be set for newly created log files.
+     * @var int|null the permission to be set for newly created log files.
      * This value will be used by PHP chmod() function. No umask will be applied.
      * If not set, the permission will be determined by the current environment.
      */
-    public $fileMode;
+    public ?int $fileMode = null;
+
     /**
      * @var int the permission to be set for newly created directories.
      * This value will be used by PHP chmod() function. No umask will be applied.
      * Defaults to 0775, meaning the directory is read-writable by owner and group,
      * but read-only for other users.
      */
-    public $dirMode = 0775;
+    public int $dirMode = 0775;
+
     /**
      * @var bool Whether to rotate log files by copy and truncate in contrast to rotation by
      * renaming files. Defaults to `true` to be more compatible with log tailers and is windows
@@ -71,12 +78,13 @@ class FileTarget extends Target
      * the PHP documentation. By setting rotateByCopy to `true` you can work
      * around this problem.
      */
-    public $rotateByCopy = true;
+    public bool $rotateByCopy = true;
 
 
     /**
      * Initializes the route.
      * This method is invoked after the route is created by the route manager.
+     * @throws Exception
      */
     public function init()
     {
@@ -174,7 +182,7 @@ class FileTarget extends Target
      * Clear log file without closing any other process open handles
      * @param string $rotateFile
      */
-    private function clearLogFile($rotateFile)
+    private function clearLogFile(string $rotateFile)
     {
         if ($filePointer = @fopen($rotateFile, 'a')) {
             @ftruncate($filePointer, 0);
@@ -187,7 +195,7 @@ class FileTarget extends Target
      * @param string $rotateFile
      * @param string $newFile
      */
-    private function rotateByCopy($rotateFile, $newFile)
+    private function rotateByCopy(string $rotateFile, string $newFile)
     {
         @copy($rotateFile, $newFile);
         if ($this->fileMode !== null) {
@@ -200,7 +208,7 @@ class FileTarget extends Target
      * @param string $rotateFile
      * @param string $newFile
      */
-    private function rotateByRename($rotateFile, $newFile)
+    private function rotateByRename(string $rotateFile, string $newFile)
     {
         @rename($rotateFile, $newFile);
     }

@@ -319,7 +319,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
 
     /**
      * @return bool whether the version of the MSSQL being used is older than 2012.
-     * @throws \Yew\Framework\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @throws \Yew\Framework\Db\Exception
      * @deprecated 2.0.14 Use [[Schema::getServerVersion]] with [[\version_compare()]].
      */

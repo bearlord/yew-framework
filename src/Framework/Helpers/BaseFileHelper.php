@@ -10,7 +10,7 @@ use Yew\Framework\Yii;
 use Yew\Framework\Base\Exception;
 use Yew\Framework\Base\ErrorException;
 use Yew\Framework\Base\InvalidArgumentException;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 
 /**
  * BaseFileHelper provides concrete implementation for [[FileHelper]].

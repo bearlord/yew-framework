@@ -11,7 +11,7 @@ use Yew\Core\Server\Server;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Yew;
 use Yew\Framework\Base\Component;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\StringHelper;
 use Yew\Framework\Helpers\VarDumper;

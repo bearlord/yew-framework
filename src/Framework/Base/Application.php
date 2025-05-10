@@ -36,6 +36,7 @@ class Application extends ServiceLocator
      * @var string the charset currently used for the application.
      */
     public string $charset = 'UTF-8';
+
     /**
      * @var string the language that is meant to be used for end users. It is recommended that you
      * use [IETF language tags](http://en.wikipedia.org/wiki/IETF_language_tag). For example, `en` stands

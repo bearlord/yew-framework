@@ -7,6 +7,8 @@
 
 namespace Yew\Framework\Base;
 
+use Yew\Framework\Exception\InvalidCallException;
+use Yew\Framework\Exception\UnknownPropertyException;
 use Yew\Yew;
 
 /**

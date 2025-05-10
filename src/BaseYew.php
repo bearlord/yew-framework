@@ -235,14 +235,14 @@ class BaseYew
      * The method will attempt to include the class file according to the following procedure:
      *
      * 1. Search in [[classMap]];
-     * 2. If the class is namespaced (e.g. `ESD\Yew\Framework\Base\Component`), it will attempt
+     * 2. If the class is namespaced (e.g. `Yew\Framework\Base\Component`), it will attempt
      *    to include the file associated with the corresponding path alias
      *    (e.g. `@yew/base/Component.php`);
      *
      * This autoloader allows loading classes that follow the [PSR-4 standard](http://www.php-fig.org/psr/psr-4/)
      * and have its top-level namespace or sub-namespaces defined as path aliases.
      *
-     * Example: When aliases `@yew` and `@yew/bootstrap` are defined, classes in the `ESD\Yew\Framework\Bootstrap\` namespace
+     * Example: When aliases `@yew` and `@yew/bootstrap` are defined, classes in the `Yew\Framework\Bootstrap\` namespace
      * will be loaded using the `@yew/bootstrap` alias which points to the directory where bootstrap extension
      * files are installed and all classes from other `yew` namespaces will be loaded from the yew framework directory.
      *
@@ -285,11 +285,11 @@ class BaseYew
      *
      * ```php
      * // create an object using a class name
-     * $object = Yew::createObject('ESD\Yew\Framework\Db\Connection');
+     * $object = Yew::createObject('Yew\Framework\Db\Connection');
      *
      * // create an object using a configuration array
      * $object = Yew::createObject([
-     *     'class' => 'ESD\Yew\Framework\Db\Connection',
+     *     'class' => 'Yew\Framework\Db\Connection',
      *     'dsn' => 'mysql:host=127.0.0.1;dbname=demo',
      *     'username' => 'root',
      *     'password' => '',

@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Widgets;
 
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Json;
 use Yew\Framework\Web\JsExpression;

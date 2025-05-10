@@ -259,7 +259,7 @@ class Connection extends Component implements ConnectionInterface
      * @var array List of available redis commands.
      * @see https://redis.io/commands
      */
-    public $redisCommands = [
+    public array $redisCommands = [
         'APPEND', // Append a value to a key
         'AUTH', // Authenticate to the server
         'BGREWRITEAOF', // Asynchronously rewrite the append-only file
@@ -473,7 +473,6 @@ class Connection extends Component implements ConnectionInterface
         'ZSCAN', // Incrementally iterate sorted sets elements and associated scores
     ];
 
-
     /**
      * Closes the connection when this component is being serialized.
      * @return array
@@ -514,8 +513,7 @@ class Connection extends Component implements ConnectionInterface
     public function __call(string $name, ?array $params = [])
     {
         $redisHandle= $this->redis();
-        $database  = Server::$instance->getConfigContext()->get('yii.components.cache.redis.database');
-        $redisHandle->select($database);
+        $redisHandle->select($this->database);
 
         $redisCommand = strtoupper(Inflector::camel2words($name, false));
         if (in_array($redisCommand, $this->redisCommands)) {
@@ -550,7 +548,6 @@ class Connection extends Component implements ConnectionInterface
      *
      * See [redis protocol description](https://redis.io/topics/protocol)
      * for details on the mentioned reply types.
-     * @throws Exception for commands that return [error reply](https://redis.io/topics/protocol#error-reply).
      */
     public function executeCommand(string $name, ?array $params = [])
     {
@@ -559,12 +556,12 @@ class Connection extends Component implements ConnectionInterface
 
     /**
      * Sends RAW command string to the server.
+     * @throws \Throwable
      */
     private function sendCommandInternal(string $command, ?array $params = [])
     {
         $redisHandle= $this->redis();
-        $database  = Server::$instance->getConfigContext()->get('yii.components.cache.redis.database');
-        $redisHandle->select($database);
+        $redisHandle->select($this->database);
 
         $redisCommand = strtoupper(Inflector::camel2words($command, false));
         if (in_array($redisCommand, $this->redisCommands)) {

@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Redis;
 
+use Yew\Framework\Db\Exception;
 use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
 
@@ -63,13 +64,14 @@ class Session extends \Yew\Framework\Web\Session
      * with a Redis [[Connection]] object.
      */
     public $redis = 'redis';
+
     /**
-     * @var string a string prefixed to every cache key so that it is unique. If not set,
+     * @var string|null a string prefixed to every cache key so that it is unique. If not set,
      * it will use a prefix generated from [[Application::id]]. You may set this property to be an empty string
      * if you don't want to use key prefix. It is recommended that you explicitly set this property to some
      * static value if the cached data needs to be shared among multiple applications.
      */
-    public $keyPrefix;
+    public ?string $keyPrefix = null;
 
 
     /**
@@ -83,7 +85,7 @@ class Session extends \Yew\Framework\Web\Session
             $this->redis = Yew::$app->get($this->redis);
         } elseif (is_array($this->redis)) {
             if (!isset($this->redis['class'])) {
-                $this->redis['class'] = Connection::className();
+                $this->redis['class'] = Connection::class;
             }
             $this->redis = Yew::createObject($this->redis);
         }
@@ -101,7 +103,7 @@ class Session extends \Yew\Framework\Web\Session
      * This method overrides the parent implementation and always returns true.
      * @return bool whether to use custom storage.
      */
-    public function getUseCustomStorage()
+    public function getUseCustomStorage(): bool
     {
         return true;
     }
@@ -111,8 +113,9 @@ class Session extends \Yew\Framework\Web\Session
      * Do not call this method directly.
      * @param string $id session ID
      * @return string the session data
+     * @throws Exception
      */
-    public function readSession($id)
+    public function readSession(string $id): string
     {
         $data = $this->redis->executeCommand('GET', [$this->calculateKey($id)]);
 
@@ -125,8 +128,9 @@ class Session extends \Yew\Framework\Web\Session
      * @param string $id session ID
      * @param string $data session data
      * @return bool whether session write is successful
+     * @throws Exception
      */
-    public function writeSession($id, $data)
+    public function writeSession(string $id, string $data): bool
     {
         return (bool) $this->redis->executeCommand('SET', [$this->calculateKey($id), $data, 'EX', $this->getTimeout()]);
     }
@@ -136,8 +140,9 @@ class Session extends \Yew\Framework\Web\Session
      * Do not call this method directly.
      * @param string $id session ID
      * @return bool whether session is destroyed successfully
+     * @throws Exception
      */
-    public function destroySession($id)
+    public function destroySession(string $id): bool
     {
         $this->redis->executeCommand('DEL', [$this->calculateKey($id)]);
         // @see https://github.com/yiisoft/yii2-redis/issues/82
@@ -149,7 +154,7 @@ class Session extends \Yew\Framework\Web\Session
      * @param string $id session variable name
      * @return string a safe cache key associated with the session variable name
      */
-    protected function calculateKey($id)
+    protected function calculateKey(string $id): string
     {
         return $this->keyPrefix . md5(json_encode([__CLASS__, $id]));
     }

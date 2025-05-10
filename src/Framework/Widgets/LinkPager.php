@@ -8,7 +8,7 @@
 namespace Yew\Framework\Widgets;
 
 use Yew\Yew;
-use Yew\Framework\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Base\Widget;
 use Yew\Framework\Data\Pagination;
 use Yew\Framework\Helpers\ArrayHelper;
