@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\AutoReload;
+namespace Yew\Plugins\AutoReload;
 
 use Yew\Core\Message\Message;
 use Yew\Core\Server\Process\Process;

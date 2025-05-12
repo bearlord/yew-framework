@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\AutoReload;
+namespace Yew\Plugins\AutoReload;
 
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Core\Server\Process\Process;
@@ -107,25 +107,31 @@ class InotifyReload
             $this->warn("Mac auto_reload may cause excessive CPU usage");
         }
         addTimerTick(1, function () {
-            global $last_mtime;
+            global $lastMtime;
             // recursive traversal directory
-            $dir_iterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
-            $iterator = new \RecursiveIteratorIterator($dir_iterator);
+            $dirIterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
+
+            $iterator = new \RecursiveIteratorIterator($dirIterator);
+
             foreach ($iterator as $file) {
                 //Only check php files
                 if (pathinfo($file, PATHINFO_EXTENSION) != 'php') {
                     continue;
                 }
-                if (!isset($last_mtime)) {
-                    $last_mtime = $file->getMTime();
+
+                if (!isset($lastMtime)) {
+                    $lastMtime = $file->getMTime();
                 }
+
                 //Check mtime
-                if ($last_mtime < $file->getMTime()) {
+                if ($lastMtime < $file->getMTime()) {
                     $this->deleteCache($file);
-                    $this->info("RELOAD $file update");
+                    $this->info("Reload $file update");
+
                     //reload
                     Server::$instance->reload();
-                    $last_mtime = $file->getMTime();
+
+                    $lastMtime = $file->getMTime();
                     break;
                 }
             }
@@ -141,8 +147,10 @@ class InotifyReload
     private function deleteCache($file)
     {
         $cacheDir = Server::$instance->getServerConfig()->getCacheDir() . "/aop";
+
         $rootDir = realpath(Server::$instance->getServerConfig()->getRootDir());
         $aopFile = str_replace($rootDir, $cacheDir, $file);
+
         if (is_file($aopFile)) {
             unlink($aopFile);
         }

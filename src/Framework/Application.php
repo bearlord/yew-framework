@@ -22,11 +22,15 @@ use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Aop\OrderAspect;
+use Yew\Plugins\AutoReload\AutoReloadPlugin;
 use Yew\Plugins\Console\ConsolePlugin;
+use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Plugins\Redis\RedisPlugin;
 use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\RouteConfig;
 use Yew\Plugins\Route\RoutePlugin;
+use Yew\Plugins\Topic\TopicPlugin;
+use Yew\Plugins\Uid\UidPlugin;
 use Yew\Plugins\Whoops\WhoopsPlugin;
 
 class Application extends Server
@@ -79,28 +83,6 @@ class Application extends Server
      */
     protected function addNormalPlugins()
     {
-//        $this->addPlugin(new ConsolePlugin());
-//        $this->addPlugin(new YiiPlugin());
-//        $routeConfig = new RouteConfig();
-//        $routeConfig->setErrorControllerName(GoController::class);
-//
-//        $this->addPlugin(new EasyRoutePlugin($routeConfig));
-//        //$this->addPlugin(new ScheduledPlugin());
-//        $this->addPlugin(new RedisPlugin());
-//        $this->addPlugin(new AutoreloadPlugin());
-//        $this->addPlugin(new AopPlugin());
-//        $this->addPlugin(new SaberPlugin());
-//        //$this->addPlugin(new ActuatorPlugin());
-//        $this->addPlugin(new WhoopsPlugin());
-//        $this->addPlugin(new SessionPlugin());
-//        $this->addPlugin(new CachePlugin());
-//        $this->addPlugin(new SecurityPlugin());
-//        $this->addPlugin(new PHPUnitPlugin());
-//        $this->addPlugin(new ProcessRPCPlugin());
-//        $this->addPlugin(new UidPlugin());
-//        $this->addPlugin(new TopicPlugin());
-//        $this->addPlugin(new BladePlugin());
-//
         $this->addPlugin(new YewPlugin());
         $this->addPlugin(new ConsolePlugin());
 
@@ -114,6 +96,14 @@ class Application extends Server
         $this->addPlugin(new RedisPlugin());
 
         $this->addPlugin(new WhoopsPlugin());
+
+        $this->addPlugin(new IpcPlugin());
+
+        $this->addPlugin(new UidPlugin());
+
+        $this->addPlugin(new TopicPlugin());
+
+        $this->addPlugin(new AutoReloadPlugin());
 
         //Add aop of Go namespace by default
         $aopConfig = new AopConfig(__DIR__);
