@@ -11,45 +11,45 @@ class CorsConfig
     /**
      * @var bool
      */
-    protected $enable = false;
+    protected bool $enable = false;
 
     /**
      * Represents the IP address and port number of the access server,
      * and can also be set to * to indicate that all domains can pass;
      * @var array
      */
-    protected $allowOrigins = ["*"];
+    protected array $allowOrigins = ["*"];
 
     /**
      * Represents a request method that allows cross-domain
      * @var array
      */
-    protected $allowMethods = ["*"];
+    protected array $allowMethods = ["*"];
 
     /**
      * Indicates that cross-domain requests are allowed to include content-type headers;
      * @var array
      */
-    protected $allowHeaders = ["*"];
+    protected array $allowHeaders = ["*"];
 
     /**
      * @var array exposed headers
      */
-    public $exposedHeaders = ["*"];
+    public array $exposedHeaders = ["*"];
 
     /**
      * It means that cross-domain Ajax can carry cookies.
      * At this time, the first setting cannot be *, you need to specify the domain name;
      * @var bool
      */
-    protected $allowCredentials = false;
+    protected bool $allowCredentials = false;
 
     /**
      * It means that within 3628800 seconds, no pre-inspection request needs to be sent again,
      * and the result can be cached, which is generally the default.
      * @var int
      */
-    protected $maxAge = 3628800;
+    protected int $maxAge = 3628800;
     
     /**
      * @return bool

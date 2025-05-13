@@ -13,7 +13,7 @@ class FilterManager
     /**
      * @var EveryFilterManager[]
      */
-    protected $managers = [];
+    protected array $managers = [];
 
     /**
      * FilterManager constructor.
@@ -51,6 +51,6 @@ class FilterManager
      */
     public function filter(string $type, ClientData $clientData, $data = null): int
     {
-        return $this->managers[$type]->filter($clientData, $data);
+        return $this->managers[$type]->filter($clientData);
     }
 }

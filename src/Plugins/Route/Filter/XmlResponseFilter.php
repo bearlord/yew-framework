@@ -6,7 +6,6 @@
 
 namespace Yew\Plugins\Route\Filter;
 
-use Yew\Core\Server\Beans\Http\HttpStream;
 use Yew\Plugins\Route\Annotation\ResponseBody;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Utils\ArrayToXml;
@@ -16,7 +15,7 @@ class XmlResponseFilter extends AbstractFilter
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return AbstractFilter::FILTER_ROUTE;
     }

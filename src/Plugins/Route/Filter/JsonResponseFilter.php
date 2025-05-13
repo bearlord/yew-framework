@@ -9,14 +9,13 @@ namespace Yew\Plugins\Route\Filter;
 use Yew\Core\Server\Beans\Http\HttpStream;
 use Yew\Plugins\Route\Annotation\ResponseBody;
 use Yew\Plugins\Pack\ClientData;
-use Yew\Utils\ArrayToXml;
 
 class JsonResponseFilter extends AbstractFilter
 {
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return AbstractFilter::FILTER_ROUTE;
     }
@@ -63,7 +62,7 @@ class JsonResponseFilter extends AbstractFilter
      * @param ClientData $clientData
      * @return bool
      */
-    public function isEnable(ClientData $clientData)
+    public function isEnable(ClientData $clientData): bool
     {
         return $this->isHttp($clientData);
     }

@@ -6,9 +6,7 @@
 
 namespace Yew\Plugins\Route\Filter;
 
-use Yew\Core\Server\Beans\Http\HttpStream;
 use Yew\Plugins\Route\Annotation\CrossOrigin;
-use Yew\Plugins\Route\Annotation\ResponseBody;
 use Yew\Plugins\Pack\ClientData;
 
 class CorsFilter extends AbstractFilter
@@ -16,7 +14,7 @@ class CorsFilter extends AbstractFilter
     /**
      * @var CorsConfig|null
      */
-    private $corsConfig;
+    private ?CorsConfig $corsConfig;
 
     /**
      * CorsFilter constructor.
@@ -102,7 +100,7 @@ class CorsFilter extends AbstractFilter
      * @param ClientData $clientData
      * @return bool
      */
-    public function isEnable(ClientData $clientData)
+    public function isEnable(ClientData $clientData): bool
     {
         return $this->isHttp($clientData);
     }
