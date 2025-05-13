@@ -15,7 +15,7 @@ use Doctrine\Common\Annotations\Annotation;
 class GetMapping extends RequestMapping
 {
     /**
-     * @var array
+     * @var array|null
      */
-    public $method = ["get"];
+    public array $method = ["get"];
 }

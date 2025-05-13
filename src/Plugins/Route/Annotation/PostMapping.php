@@ -14,5 +14,5 @@ use Doctrine\Common\Annotations\Annotation;
  */
 class PostMapping extends RequestMapping
 {
-    public $method = ["post"];
+    public array $method = ["post"];
 }

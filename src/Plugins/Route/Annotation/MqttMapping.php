@@ -12,5 +12,5 @@ namespace Yew\Plugins\Route\Annotation;
  */
 class MqttMapping extends RequestMapping
 {
-    public $method = ["mqtt"];
+    public array $method = ["mqtt"];
 }

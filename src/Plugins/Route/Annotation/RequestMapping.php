@@ -20,7 +20,7 @@ class RequestMapping extends Annotation
     public $value;
 
     /**
-     * @var array
+     * @var array|null
      */
-    public $method = [];
+    public array $method = [];
 }

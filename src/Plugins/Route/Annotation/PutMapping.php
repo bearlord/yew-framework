@@ -14,5 +14,5 @@ use Doctrine\Common\Annotations\Annotation;
  */
 class PutMapping extends RequestMapping
 {
-    public $method = ["put"];
+    public array $method = ["put"];
 }

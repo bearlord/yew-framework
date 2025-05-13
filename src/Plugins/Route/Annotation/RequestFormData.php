@@ -21,7 +21,7 @@ class RequestFormData extends Annotation
     /**
      * @var string|null
      */
-    public $param;
+    public ?string $param = null;
     /**
      * @var bool
      */

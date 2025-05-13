@@ -26,7 +26,6 @@ use Yew\Plugins\AutoReload\AutoReloadPlugin;
 use Yew\Plugins\Console\ConsolePlugin;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Plugins\Redis\RedisPlugin;
-use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\RouteConfig;
 use Yew\Plugins\Route\RoutePlugin;
 use Yew\Plugins\Topic\TopicPlugin;
@@ -56,6 +55,7 @@ class Application extends Server
      * @throws NotFoundException
      * @throws ReflectionException
      * @throws ConfigException
+     * @throws Exception
      */
     public function run(string $mainClass)
     {
@@ -150,6 +150,10 @@ class Application extends Server
         $this->debug('Manager process stop');
     }
 
+    /**
+     * @return void
+     * @throws Exception
+     */
     public function pluginInitialized()
     {
         $this->addAspects();

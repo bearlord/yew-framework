@@ -17,141 +17,141 @@ use ReflectionClass;
  */
 class Filter extends Annotation
 {
-    protected static $cache = [];
+    protected static array $cache = [];
 
     /**
      * Absolute value
      * @var bool
      */
-    public $abs = false;
+    public bool $abs = false;
 
     /**
      * Filter illegal characters and convert to int
      * @var bool
      */
-    public $integer = false;
+    public bool $integer = false;
 
     /**
      * Convert to bool
      * @var bool
      */
-    public $boolean = false;
+    public bool $boolean = false;
 
     /**
      * Filter illegal characters and retain data in float format
      * @var bool
      */
-    public $float = false;
+    public bool $float = false;
 
     /**
      * Filter illegal characters and convert to string
      * @var bool
      */
-    public $string = false;
+    public bool $string = false;
 
     /**
      * Remove leading and trailing whitespace characters, support for arrays.
      * @var bool
      */
-    public $trim = false;
+    public bool $trim = false;
 
     /**
      * Convert \n \r \n \r to <br/>
      * @var bool
      */
-    public $nl2br = false;
+    public bool $nl2br = false;
 
     /**
      * Convert string to lower case
      * @var bool
      */
-    public $lowercase = false;
+    public bool $lowercase = false;
 
     /**
      * String to uppercase
      * @var bool
      */
-    public $uppercase = false;
+    public bool $uppercase = false;
 
     /**
      * Convert string to snake style
      * @var bool
      */
-    public $snakeCase = false;
+    public bool $snakeCase = false;
 
     /**
      * Convert string to camel style
      * @var bool
      */
-    public $camelCase = false;
+    public bool $camelCase = false;
 
     /**
      * Convert string to time
      * @var bool
      */
-    public $strToTime = false;
+    public bool $strToTime = false;
 
     /**
      * URL filtering, removing all characters that do not match the URL
      * @var bool
      */
-    public $url = false;
+    public bool $url = false;
 
     /**
      * String to array 'tag0, tag1'-> ['tag0', 'tag1']
      * @var bool
      */
-    public $str2array = false;
+    public bool $str2array = false;
 
     /**
      * Remove duplicate values from an array (by array_unique ())
      * @var bool
      */
-    public $unique = false;
+    public bool $unique = false;
 
     /**
      * email filtering, remove all characters that do not match email
      * @var bool
      */
-    public $email = false;
+    public bool $email = false;
 
     /**
      * Removes characters not needed for URL encoding, similar to urlencode () function
      * @var bool
      */
-    public $encoded = false;
+    public bool $encoded = false;
 
     /**
      * Clear spaces
      * @var bool
      */
-    public $clearSpace = false;
+    public bool $clearSpace = false;
 
     /**
      * Clean up newlines
      * @var bool
      */
-    public $clearNewline = false;
+    public bool $clearNewline = false;
 
     /**
      * Equivalent to using strip_tags()
      * @var bool
      */
-    public $stripTags = false;
+    public bool $stripTags = false;
 
     /**
      * Equivalent to escaping data using htmlspecialchars()
      * @var bool
      */
-    public $escape = false;
+    public bool $escape = false;
 
     /**
      * Apply addslashes() to escape data
      * @var bool
      */
-    public $quotes = false;
+    public bool $quotes = false;
 
-    public function build($name)
+    public function build($name): ?array
     {
         $result = [$name];
         $filter = [];
@@ -175,7 +175,7 @@ class Filter extends Annotation
      * @return array
      * @throws \ReflectionException
      */
-    public static function filter($reflectionClass, $values)
+    public static function filter($reflectionClass, $values): array
     {
         $filterRole = self::buildRole($reflectionClass);
         if (!empty($filterRole)) {
@@ -191,8 +191,9 @@ class Filter extends Annotation
      * @param ReflectionClass|string $reflectionClass
      * @return array
      * @throws \ReflectionException
+     * @throws \Exception
      */
-    public static function buildRole($reflectionClass)
+    public static function buildRole($reflectionClass): array
     {
         if (is_string($reflectionClass)) {
             if (array_key_exists($reflectionClass, self::$cache)) {

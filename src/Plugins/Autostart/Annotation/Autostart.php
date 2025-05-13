@@ -18,15 +18,15 @@ class Autostart extends Annotation
     /**
      * @var string
      */
-    public $name;
+    public string $name;
 
     /**
      * @var int
      */
-    public $sort;
+    public int $sort;
 
     /**
      * @var int
      */
-    public $delay;
+    public int $delay;
 }

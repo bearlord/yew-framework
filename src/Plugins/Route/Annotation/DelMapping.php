@@ -15,7 +15,7 @@ use Doctrine\Common\Annotations\Annotation;
 class DelMapping extends RequestMapping
 {
     /**
-     * @var array
+     * @var array|null
      */
-    public $method = ["delete"];
+    public array $method = ["delete"];
 }

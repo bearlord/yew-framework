@@ -15,7 +15,7 @@ use Doctrine\Common\Annotations\Annotation;
 class AnyMapping extends RequestMapping
 {
     /**
-     * @var array
+     * @var array|null
      */
-    public $method = ["get","post","delete","put","options","head","trace","connect"];
+    public array $method = ["get","post","delete","put","options","head","trace","connect"];
 }

@@ -28,6 +28,7 @@
     "ext-posix": "*",
     "ezyang/htmlpurifier": "^4.10.0",
     "filp/whoops": "^2.3",
+    "inhere/php-validate": "^2.8",
     "illuminate/view": ">=5.8",
     "jakubledl/dissect": "~1.0",
     "monolog/monolog": "^1.24",
