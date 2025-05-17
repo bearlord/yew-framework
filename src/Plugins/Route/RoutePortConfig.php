@@ -15,12 +15,12 @@ class RoutePortConfig extends PortConfig
     /**
      * @var string
      */
-    protected $packTool = LenJsonPack::class;
+    protected string $packTool = LenJsonPack::class;
 
     /**
      * @var string
      */
-    protected $routeTool = AnnotationRoute::class;
+    protected string $routeTool = AnnotationRoute::class;
 
 
     /**

@@ -182,7 +182,6 @@ abstract class Request extends AbstractRequest
      * @param bool|null $regenerate whether to regenerate CSRF token. When this parameter is true, each time
      * this method is called, a new CSRF token will be generated and persisted (in session or cookie).
      * @return string the token used to perform CSRF validation.
-     * @throws \Yew\Base\Exception
      * @throws \Random\RandomException
      */
     public function getCsrfToken(?bool $regenerate = false): string

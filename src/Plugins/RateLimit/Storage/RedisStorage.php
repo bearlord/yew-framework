@@ -1,6 +1,6 @@
 <?php
 
-namespace Yew\Core\Plugins\RateLimit\Storage;
+namespace Yew\Plugins\RateLimit\Storage;
 
 class RedisStorage
 {

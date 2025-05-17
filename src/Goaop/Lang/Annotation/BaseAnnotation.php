@@ -20,7 +20,7 @@ abstract class BaseAnnotation
      *
      * @var string
      */
-    public $value;
+    public string $value;
 
     /**
      * Constructor
@@ -39,7 +39,7 @@ abstract class BaseAnnotation
      *
      * @param string $name Unknown property name
      */
-    public function __get($name)
+    public function __get(string $name)
     {
         throw new \BadMethodCallException(
             sprintf("Unknown property '%s' on annotation '%s'.", $name, get_class($this))
@@ -52,7 +52,7 @@ abstract class BaseAnnotation
      * @param string $name Unknown property name
      * @param mixed $value Property value
      */
-    public function __set($name, $value)
+    public function __set(string $name, $value)
     {
         throw new \BadMethodCallException(
             sprintf("Unknown property '%s' on annotation '%s'.", $name, get_class($this))

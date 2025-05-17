@@ -1,6 +1,6 @@
 <?php
 
-namespace Yew\Core\Plugins\RateLimit\Exception;
+namespace Yew\Plugins\RateLimit\Exception;
 
 class RateLimitException extends \RuntimeException
 {

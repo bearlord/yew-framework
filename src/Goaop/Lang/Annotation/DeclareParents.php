@@ -29,12 +29,12 @@ class DeclareParents extends BaseAnnotation
      *
      * @var string
      */
-    public $defaultImpl;
+    public string $defaultImpl;
 
     /**
      * Interface name to add
      *
      * @var string
      */
-    public $interface;
+    public string $interface;
 }

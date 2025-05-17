@@ -115,6 +115,9 @@ class RoutePlugin extends AbstractPlugin
             $RoutePortConfig->merge();
             $this->RoutePortConfigs[$RoutePortConfig->getPort()] = $RoutePortConfig;
         }
+
+        setContextValue("RoutePortConfigs",  $this->RoutePortConfigs);
+
         $this->routeConfig->merge();
         $aopConfig = DIGet(AopConfig::class);
         $this->routeAspect = new RouteAspect($this->RoutePortConfigs, $this->routeConfig);

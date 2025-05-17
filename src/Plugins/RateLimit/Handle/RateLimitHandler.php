@@ -1,6 +1,6 @@
 <?php
 
-namespace Yew\Core\Plugins\RateLimit\Handle;
+namespace Yew\Plugins\RateLimit\Handle;
 
 class RateLimitHandler
 {

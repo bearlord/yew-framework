@@ -20,5 +20,5 @@ class BaseInterceptor extends BaseAnnotation implements Interceptor
      *
      * @var integer
      */
-    public $order = 0;
+    public int $order = 0;
 }

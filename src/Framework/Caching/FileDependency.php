@@ -5,10 +5,10 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace Yew\Framework\Caching;
+namespace ESD\Yii\Caching;
 
-use Yew\Yew;
-use Yew\Framework\Exception\InvalidConfigException;
+use ESD\Yii\Yii;
+use ESD\Yii\Base\InvalidConfigException;
 
 /**
  * FileDependency represents a dependency based on a file's last modification time.
@@ -43,7 +43,7 @@ class FileDependency extends Dependency
             throw new InvalidConfigException('FileDependency::fileName must be set');
         }
 
-        $fileName = Yew::getAlias($this->fileName);
+        $fileName = Yii::getAlias($this->fileName);
         clearstatcache(false, $fileName);
         return @filemtime($fileName);
     }

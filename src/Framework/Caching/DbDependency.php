@@ -5,12 +5,12 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace Yew\Framework\Caching;
+namespace ESD\Yii\Caching;
 
-use Yew\Yew;
-use Yew\Framework\Exception\InvalidConfigException;
-use Yew\Framework\Db\Connection;
-use Yew\Framework\Di\Instance;
+use ESD\Yii\Yii;
+use ESD\Yii\Base\InvalidConfigException;
+use ESD\Yii\Db\Connection;
+use ESD\Yii\Di\Instance;
 
 /**
  * DbDependency represents a dependency based on the query result of a SQL statement.

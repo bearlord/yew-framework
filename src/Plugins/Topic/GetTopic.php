@@ -9,12 +9,12 @@ namespace Yew\Plugins\Topic;
 use DI\DependencyException;
 use DI\NotFoundException;
 use Yew\Core\Exception\Exception;
-use Yew\Plugins\Ipc\GetIPc;
+use Yew\Plugins\Ipc\GetIpc;
 use Yew\Plugins\Ipc\IpcException;
 
 trait GetTopic
 {
-    use GetIPc;
+    use GetIpc;
     
     /**
      * @var TopicConfig|null

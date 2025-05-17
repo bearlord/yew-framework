@@ -229,7 +229,7 @@ class AnnotationRoute implements IRoute
      * @inheritDoc
      * @return string
      */
-    public function getMethodName()
+    public function getMethodName(): ?string
     {
         if ($this->clientData == null) {
             return null;
@@ -241,7 +241,7 @@ class AnnotationRoute implements IRoute
      * @inheritDoc
      * @return string|null
      */
-    public function getPath()
+    public function getPath(): ?string
     {
         if ($this->clientData == null) {
             return null;
@@ -253,7 +253,7 @@ class AnnotationRoute implements IRoute
      * @inheritDoc
      * @return array|null
      */
-    public function getParams()
+    public function getParams(): ?array
     {
         if ($this->clientData == null) {
             return null;

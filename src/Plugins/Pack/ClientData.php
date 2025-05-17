@@ -16,25 +16,25 @@ class ClientData
     /**
      * @var string
      */
-    protected $controllerName;
+    protected string $controllerName;
 
     /**
      * @var string
      */
-    protected $requestMethod;
+    protected string $requestMethod;
     /**
      * @var string
      */
-    protected $methodName;
+    protected string $methodName;
 
     /**
      * @var ClientInfo
      */
-    protected $clientInfo;
+    protected ClientInfo $clientInfo;
     /**
      * @var Request
      */
-    protected $request;
+    protected Request $request;
 
     /**
      * @var Response
@@ -44,20 +44,20 @@ class ClientData
     /**
      * @var int
      */
-    protected $fd;
+    protected int $fd;
 
     /**
      * @var string
      */
-    protected $path;
+    protected string $path;
 
     /**
      * @var array
      */
-    protected $params;
+    protected array $params = [];
 
     /**
-     * @var array
+     * @var mixed
      */
     protected $data;
 
@@ -69,7 +69,7 @@ class ClientData
     /**
      * @var array Annotation
      */
-    protected $annotations = [];
+    protected array $annotations = [];
 
     /**
      * ClientData constructor.

@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace Yew\Framework\Caching;
+namespace ESD\Yii\Caching;
 
 /**
  * ExpressionDependency represents a dependency based on the result of a PHP expression.

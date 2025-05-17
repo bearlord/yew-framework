@@ -82,7 +82,7 @@ class RedisPlugin extends AbstractPlugin
 
         /**
          * @var string $key
-         * @var \Yew\Core\Pool\Config $config
+         * @var Config $config
          */
         foreach ($configs as $key => $config) {
             $pool = new RedisPool($config);
