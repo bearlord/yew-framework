@@ -521,7 +521,7 @@ class Controller extends \Yew\Framework\Base\Controller
     public function getActionHelpSummary($action): string
     {
         if ($action === null) {
-            return $this->ansiFormat(Yew::t('yii', 'Action not found.'), Console::FG_RED);
+            return $this->ansiFormat(Yew::t('yew', 'Action not found.'), Console::FG_RED);
         }
 
         return $this->parseDocCommentSummary($this->getActionMethodReflection($action));

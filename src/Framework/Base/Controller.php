@@ -75,7 +75,8 @@ class Controller extends Component implements ViewContextInterface
      */
     public string $moduleName;
 
-    public ?string $id = "";
+    
+    public ?string $id = null;
 
     /**
      * Controller constructor.
@@ -268,6 +269,8 @@ class Controller extends Component implements ViewContextInterface
 
         $actionMap = $this->actions();
 
+        var_dump($actionMap);
+
         if (isset($actionMap[$id])) {
             return Yew::createObject($actionMap[$id], [$id, $this]);
         }
@@ -355,7 +358,7 @@ class Controller extends Component implements ViewContextInterface
      * Returns the unique ID of the controller.
      * @return string the controller ID that is prefixed with the module ID (if any).
      */
-    public function getUniqueId(): string
+    public function getUniqueId(): ?string
     {
         return $this->id;
     }

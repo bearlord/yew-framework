@@ -92,7 +92,7 @@ class MigrateController extends BaseMigrateController
     /**
      * {@inheritdoc}
      */
-    public string $templateFile = '@yii/Views/migration.php';
+    public string $templateFile = '@yew/Views/migration.php';
 
     /**
      * @var array a set of template paths for generating migration code automatically.

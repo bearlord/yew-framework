@@ -1,6 +1,6 @@
 <?php
 /**
- * ESD framework
+ * Yew framework
  * @author bearlord <565364226@qq.com>
  */
 
@@ -81,6 +81,15 @@ class Application extends \Yew\Framework\Base\Application
      */
     public array $requestedParams;
 
+
+    public $bootstrap = ['generator'];
+
+    private $_modules = [
+        'generate' => ['class' => 'Yew\Framework\Generator\Generate'],
+    ];
+
+
+
     /**
      * Returns static class instance, which can be used to obtain meta information.
      * @param bool $refresh whether to re-create static instance even, if it is already cached.
@@ -108,6 +117,11 @@ class Application extends \Yew\Framework\Base\Application
                     $this->controllerMap[$id] = $command;
                 }
             }
+        }
+
+        // ensure we have the 'help' command so that we can list the available commands
+        if (!isset($this->controllerMap['help'])) {
+            $this->controllerMap['help'] = 'Yew\Framework\Console\Controllers\HelpController';
         }
     }
 
@@ -183,11 +197,15 @@ class Application extends \Yew\Framework\Base\Application
      */
     public function createController(string $route): ?array
     {
+        var_dump("1000");
+        var_dump($route);
         // double slashes or leading/ending slashes may cause substr problem
         $route = trim($route, '/');
         if (strpos($route, '//') !== false) {
-            return false;
+            return [];
         }
+
+        var_dump("1001");
 
         if (strpos($route, '/') !== false) {
             list($id, $route) = explode('/', $route, 2);
@@ -196,13 +214,27 @@ class Application extends \Yew\Framework\Base\Application
             $route = '';
         }
 
+        var_dump($id, $route);
+        var_dump($this->controllerMap);
+        var_dump("1002");
+
         // module and controller map take precedence
         if (isset($this->controllerMap[$id])) {
             $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
             return [$controller, $route];
         }
 
+
+
+        $module = $this->getModule($id);
+        var_dump($module);
+        if ($module !== null) {
+            return $module->createController($route);
+        }
+        var_dump("1004");
+
         $controller = $this->createControllerByID($id);
+        var_dump($controller);
         if ($controller === null && $route !== '') {
             $controller = $this->createControllerByID($id . '/' . $route);
             $route = '';
@@ -343,7 +375,7 @@ class Application extends \Yew\Framework\Base\Application
     {
         return array_merge(parent::coreComponents(), [
             'request' => ['class' => '\Yew\Framework\Console\Request'],
-            'response' => ['class' => '\Yew\Framework\Console\Response']
+            'response' => ['class' => '\Yew\Framework\Console\Response'],
         ]);
     }
 
@@ -354,8 +386,10 @@ class Application extends \Yew\Framework\Base\Application
     public function coreCommands(): array
     {
         return [
+            'help' => 'Yew\Framework\Console\Controllers\HelpController',
             'cache' => 'Yew\Framework\Console\Controllers\CacheController',
             'migrate' => 'Yew\Framework\Console\Controllers\MigrateController',
+//            'generate' => 'Yew\Framework\Generator\Console\GenerateController',
         ];
     }
 }

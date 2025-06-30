@@ -30,7 +30,7 @@ use Yew\Yew;
  * @property \Yew\Framework\Base\Security $security The security application component. This property is read-only.
  * @property \Yew\Framework\I18n\Formatter $formatter
  */
-class Application extends ServiceLocator
+class Application extends Module
 {
     /**
      * @var string the charset currently used for the application.
@@ -73,6 +73,28 @@ class Application extends ServiceLocator
     private static array $_instances = [];
 
     /**
+     * @var array list of components that should be run during the application [[bootstrap()|bootstrapping process]].
+     *
+     * Each component may be specified in one of the following formats:
+     *
+     * - an application component ID as specified via [[components]].
+     * - a module ID as specified via [[modules]].
+     * - a class name.
+     * - a configuration array.
+     * - a Closure
+     *
+     * During the bootstrapping process, each component will be instantiated. If the component class
+     * implements [[BootstrapInterface]], its [[BootstrapInterface::bootstrap()|bootstrap()]] method
+     * will be also be called.
+     */
+    public $bootstrap = [];
+
+    /**
+     * @var array list of loaded modules indexed by their class names.
+     */
+    public $loadedModules = [];
+
+    /**
      * @param array $config
      * @throws Exception
      * @throws InvalidConfigException
@@ -81,8 +103,58 @@ class Application extends ServiceLocator
     {
         Yew::$app = $this;
         $this->preInit();
+
+        var_dump($config);
         Component::__construct($config);
     }
+
+    public function init()
+    {
+        var_dump(__METHOD__);
+
+        $this->bootstrap();
+    }
+
+    /**
+     * Initializes extensions and executes bootstrap components.
+     * This method is called by [[init()]] after the application has been fully configured.
+     * If you override this method, make sure you also call the parent implementation.
+     */
+    protected function bootstrap()
+    {
+        foreach ($this->bootstrap as $mixed) {
+            $component = null;
+            if ($mixed instanceof \Closure) {
+                Yew::debug('Bootstrap with Closure', __METHOD__);
+                if (!$component = call_user_func($mixed, $this)) {
+                    continue;
+                }
+            } elseif (is_string($mixed)) {
+                var_dump($mixed);
+                var_dump($this->has($mixed));
+                var_dump($this->hasModule($mixed));
+                if ($this->has($mixed)) {
+                    $component = $this->get($mixed);
+                } elseif ($this->hasModule($mixed)) {
+                    $component = $this->getModule($mixed);
+                } elseif (strpos($mixed, '\\') === false) {
+                    throw new InvalidConfigException("Unknown bootstrapping component ID: $mixed");
+                }
+            }
+
+            if (!isset($component)) {
+                $component = Yew::createObject($mixed);
+            }
+
+            if ($component instanceof BootstrapInterface) {
+                Yii::debug('Bootstrap with ' . get_class($component) . '::bootstrap()', __METHOD__);
+                $component->bootstrap($this);
+            } else {
+                Yii::debug('Bootstrap with ' . get_class($component), __METHOD__);
+            }
+        }
+    }
+
 
     /**
      * Returns static class instance, which can be used to obtain meta information.
@@ -163,20 +235,6 @@ class Application extends ServiceLocator
         unset($newConfig);
     }
 
-    /**
-     * Returns the root directory of the module.
-     * It defaults to the directory containing the module class file.
-     * @return string the root directory of the module.
-     */
-    public function getBasePath(): string
-    {
-        if ($this->_basePath === null) {
-            $class = new \ReflectionClass($this);
-            $this->_basePath = dirname($class->getFileName());
-        }
-
-        return $this->_basePath;
-    }
 
     /**
      * Sets the root directory of the module.
@@ -572,82 +630,6 @@ class Application extends ServiceLocator
     public function setContextTimeZone(string $timeZone): void
     {
         setContextValue("timeZone", $timeZone);
-    }
-
-    /**
-     * @param string $route
-     * @return array
-     * @throws InvalidConfigException
-     */
-    public function createController(string $route): ?array
-    {
-        $route = "/" . trim($route, "/");
-        if (strpos($route, '/') !== false) {
-            list($id, $_route) = explode('/', $route, 2);
-        } else {
-            $id = $route;
-            $_route = '';
-        }
-
-        $method = $this->request->server('request_method');
-        $port = $this->request->server('server_port');
-        $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch($port . ":" . $method, $route);
-
-        switch ($routeInfo[0]) {
-            case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
-                $vars = $routeInfo[2];
-
-                $controllerName = $handler[0]->name;
-                $actionName = $handler[1]->name;
-                $controller = Yew::createObject([
-                    'class' => $controllerName
-                ], [$id, $this]);
-
-                return [$controller, $actionName];
-        }
-        return null;
-    }
-
-    /**
-     * Run route
-     *
-     * @param $route
-     * @return mixed
-     * @throws InvalidConfigException
-     */
-    public function runRoute($route)
-    {
-        $controller = $this->createController($route);
-        if (!empty($controller)) {
-            return call_user_func([$controller[0], $controller[1]]);
-        }
-        return null;
-    }
-
-    /**
-     * Runs a controller action specified by a route.
-     * This method parses the specified route and creates the corresponding child module(s), controller and action
-     * instances. It then calls [[Controller::runAction()]] to run the action with the given parameters.
-     * If the route is empty, the method will use [[defaultRoute]].
-     * @param string $route the route that specifies the action.
-     * @param array|null $params the parameters to be passed to the action
-     * @return mixed the result of the action.
-     * @throws InvalidConfigException
-     * @throws \ReflectionException
-     * @throws \Yew\Framework\Exception\Exception
-     * @throws InvalidRouteException
-     */
-    public function runAction(string $route, ?array $params = [])
-    {
-        $parts = $this->createController($route);
-        if (is_array($parts)) {
-            /* @var $controller Controller */
-            list($controller, $actionID) = $parts;
-            return $controller->runAction($actionID, $params);
-        }
-
-        return null;
     }
 
     /**
