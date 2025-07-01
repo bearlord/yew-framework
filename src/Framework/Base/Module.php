@@ -5,6 +5,7 @@ namespace Yew\Framework\Base;
 use Yew\Framework\Di\ServiceLocator;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidRouteException;
+use Yew\Framework\Helpers\VarDumper;
 use Yew\Nikic\FastRoute\Dispatcher;
 use Yew\Plugins\Route\RoutePlugin;
 use Yew\Yew;
@@ -87,8 +88,8 @@ class Module extends ServiceLocator
     /**
      * @var array child modules of this module
      */
-    private array $_modules = [
-        'generate' => ['class' => 'Yew\Framework\Generator\Module'],
+    protected array $_modules = [
+        'generator' => ['class' => 'Yew\Framework\Generator\Module'],
     ];
 
     /**
@@ -171,7 +172,6 @@ class Module extends ServiceLocator
      */
     public function createController(string $route): ?array
     {
-        var_dump($route);
         if ($route === '') {
             $route = $this->defaultRoute;
         }
@@ -183,16 +183,12 @@ class Module extends ServiceLocator
         }
 
 
-        //$route = "/" . trim($route, "/");
-
         if (strpos($route, '/') !== false) {
             list($id, $route) = explode('/', $route, 2);
         } else {
             $id = $route;
             $route = '';
         }
-
-        var_dump($this->controllerMap);
 
         // module and controller map take precedence
         if (isset($this->controllerMap[$id])) {
@@ -202,13 +198,15 @@ class Module extends ServiceLocator
 
         $module = $this->getModule($id);
 
-        var_dump($id, $module, $route);
-
         if ($module !== null) {
+            $module->bootstrap($this);
+            if (isset($this->controllerMap[$id])) {
+                $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
+                return [$controller, $route];
+            }
+
             return $module->createController($route);
         }
-
-        var_dump($route);
 
         return null;
 
@@ -256,11 +254,11 @@ class Module extends ServiceLocator
      * This method supports retrieving both child modules and grand child modules.
      * @param string $id module ID (case-sensitive). To retrieve grand child modules,
      * use ID path relative to this module (e.g. `admin/content`).
-     * @param bool $load whether to load the module if it is not yet loaded.
+     * @param bool|null $load whether to load the module if it is not yet loaded.
      * @return Module|null the module instance, `null` if the module does not exist.
      * @see hasModule()
      */
-    public function getModule($id, $load = true)
+    public function getModule(string $id, ?bool $load = true)
     {
         if (($pos = strpos($id, '/')) !== false) {
             // sub-module
@@ -277,7 +275,9 @@ class Module extends ServiceLocator
                 /* @var $module Module */
                 $module = Yew::createObject($this->_modules[$id], [$id, $this]);
                 $module::setInstance($module);
-                return $this->_modules[$id] = $module;
+                $this->_modules[$id] = $module;
+
+                return $module;
             }
         }
 

@@ -97,7 +97,7 @@ class Application extends \Yew\Framework\Base\Application
      * implements [[BootstrapInterface]], its [[BootstrapInterface::bootstrap()|bootstrap()]] method
      * will be also be called.
      */
-    public array $bootstrap = ['generate'];
+    public array $bootstrap = ['generator'];
 
 
 
@@ -209,6 +209,8 @@ class Application extends \Yew\Framework\Base\Application
      */
     public function createController(string $route): ?array
     {
+        $_route = $route;
+
         // double slashes or leading/ending slashes may cause substr problem
         $route = trim($route, '/');
         if (strpos($route, '//') !== false) {
@@ -232,7 +234,7 @@ class Application extends \Yew\Framework\Base\Application
         $module = $this->getModule($id);
 
         if ($module !== null) {
-            return $module->createController($route);
+            return $module->createController($_route);
         }
         
         $controller = $this->createControllerByID($id);

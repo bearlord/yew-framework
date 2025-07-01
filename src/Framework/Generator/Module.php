@@ -95,6 +95,13 @@ class Module extends \Yew\Framework\Base\Module
      */
     public function bootstrap($app)
     {
+        $app->controllerMap[$this->id] = [
+            'class' => 'Yew\Framework\Generator\Console\GenerateController',
+            'generators' => array_merge($this->coreGenerators(), $this->generators),
+            'module' => $this,
+        ];
+
+        return;
         if ($app instanceof \Yew\Framework\Console\Application) {
             $app->controllerMap[$this->id] = [
                 'class' => 'Yew\Framework\Generator\Console\GenerateController',
@@ -138,56 +145,4 @@ class Module extends \Yew\Framework\Base\Module
         ];
     }
 
-
-    /**
-     * Checks whether the child module of the specified ID exists.
-     * This method supports checking the existence of both child and grand child modules.
-     * @param string $id module ID. For grand child modules, use ID path relative to this module (e.g. `admin/content`).
-     * @return bool whether the named module exists. Both loaded and unloaded modules
-     * are considered.
-     */
-    public function hasModule($id)
-    {
-        if (($pos = strpos($id, '/')) !== false) {
-            // sub-module
-            $module = $this->getModule(substr($id, 0, $pos));
-
-            return $module === null ? false : $module->hasModule(substr($id, $pos + 1));
-        }
-
-        return isset($this->_modules[$id]);
-    }
-
-    /**
-     * Retrieves the child module of the specified ID.
-     * This method supports retrieving both child modules and grand child modules.
-     * @param string $id module ID (case-sensitive). To retrieve grand child modules,
-     * use ID path relative to this module (e.g. `admin/content`).
-     * @param bool $load whether to load the module if it is not yet loaded.
-     * @return Module|null the module instance, `null` if the module does not exist.
-     * @see hasModule()
-     */
-    public function getModule($id, $load = true)
-    {
-        if (($pos = strpos($id, '/')) !== false) {
-            // sub-module
-            $module = $this->getModule(substr($id, 0, $pos));
-
-            return $module === null ? null : $module->getModule(substr($id, $pos + 1), $load);
-        }
-
-        if (isset($this->_modules[$id])) {
-            if ($this->_modules[$id] instanceof self) {
-                return $this->_modules[$id];
-            } elseif ($load) {
-                Yew::debug("Loading module: $id", __METHOD__);
-                /* @var $module Module */
-                $module = Yew::createObject($this->_modules[$id], [$id, $this]);
-                $module::setInstance($module);
-                return $this->_modules[$id] = $module;
-            }
-        }
-
-        return null;
-    }
 }

@@ -74,7 +74,7 @@ class GenerateController extends Controller
     {
         parent::init();
         foreach ($this->generators as $id => $config) {
-            $this->generators[$id] = Yii::createObject($config);
+            $this->generators[$id] = Yew::createObject($config);
         }
     }
 

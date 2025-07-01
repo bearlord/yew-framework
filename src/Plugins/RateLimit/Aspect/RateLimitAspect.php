@@ -94,7 +94,6 @@ class RateLimitAspect extends OrderAspect
                     switch (true) {
                         case ($annotation instanceof RateLimit):
                             //todo
-                            var_dump($annotation);
 
                             $bucketKey = $annotation->key;
                             if (is_callable($bucketKey)) {
