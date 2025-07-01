@@ -187,7 +187,7 @@ class Application extends \Yew\Framework\Base\Application
                 $newConfig['components'][$id]['class'] = $component['class'];
             }
         }
-
+        
         $this->setComponents($newConfig['components']);
         unset($newConfig);
 

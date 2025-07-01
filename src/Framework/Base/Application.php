@@ -627,6 +627,83 @@ class Application extends Module
     }
 
     /**
+     * @param string $route
+     * @return array
+     * @throws InvalidConfigException
+     */
+    public function createController(string $route): ?array
+    {
+        $route = "/" . trim($route, "/");
+        if (strpos($route, '/') !== false) {
+            list($id, $_route) = explode('/', $route, 2);
+        } else {
+            $id = $route;
+            $_route = '';
+        }
+
+        $method = $this->request->server('request_method');
+        $port = $this->request->server('server_port');
+        $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch($port . ":" . $method, $route);
+
+        switch ($routeInfo[0]) {
+            case Dispatcher::FOUND:
+                $handler = $routeInfo[1];
+                $vars = $routeInfo[2];
+
+                $controllerName = $handler[0]->name;
+                $actionName = $handler[1]->name;
+                $controller = Yew::createObject([
+                    'class' => $controllerName
+                ], [$id, $this]);
+
+                return [$controller, $actionName];
+        }
+        return null;
+    }
+
+    /**
+     * Run route
+     *
+     * @param $route
+     * @return mixed
+     * @throws InvalidConfigException
+     */
+    public function runRoute($route)
+    {
+        $controller = $this->createController($route);
+        if (!empty($controller)) {
+            return call_user_func([$controller[0], $controller[1]]);
+        }
+        return null;
+    }
+
+    /**
+     * Runs a controller action specified by a route.
+     * This method parses the specified route and creates the corresponding child module(s), controller and action
+     * instances. It then calls [[Controller::runAction()]] to run the action with the given parameters.
+     * If the route is empty, the method will use [[defaultRoute]].
+     * @param string $route the route that specifies the action.
+     * @param array|null $params the parameters to be passed to the action
+     * @return mixed the result of the action.
+     * @throws InvalidConfigException
+     * @throws \ReflectionException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws InvalidRouteException
+     */
+    public function runAction(string $route, ?array $params = [])
+    {
+        $parts = $this->createController($route);
+        if (is_array($parts)) {
+            /* @var $controller Controller */
+            list($controller, $actionID) = $parts;
+            return $controller->runAction($actionID, $params);
+        }
+
+        return null;
+    }
+
+
+    /**
      * Returns the configuration of core application components.
      * @return array
      * @see set()

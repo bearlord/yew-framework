@@ -268,9 +268,7 @@ class Controller extends Component implements ViewContextInterface
         }
 
         $actionMap = $this->actions();
-
-        var_dump($actionMap);
-
+        
         if (isset($actionMap[$id])) {
             return Yew::createObject($actionMap[$id], [$id, $this]);
         }
