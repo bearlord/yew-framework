@@ -44,7 +44,7 @@ class Module extends \Yew\Framework\Base\Module
     /**
      * {@inheritdoc}
      */
-    public string $controllerNamespace = 'Yew\Framework\Generator\Console\Controllers';
+    public ?string $controllerNamespace = 'Yew\Framework\Generator\Console\Controllers';
     
 
     /**

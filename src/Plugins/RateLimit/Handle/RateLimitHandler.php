@@ -2,6 +2,8 @@
 
 namespace Yew\Plugins\RateLimit\Handle;
 
+use Yew\Yew;
+
 class RateLimitHandler
 {
 
@@ -16,12 +18,25 @@ class RateLimitHandler
 
         $storageClass = $config->get('rate_limit.storage.class', RedisStorage::class);
 
-        $storage = match (gettype($storageClass)) {
-            'string' => make($storageClass, ['key' => $key, 'timeout' => $timeout, 'options' => $config->get('rate_limit.storage.options', [])]),
-            'object' => $storageClass,
-            default => throw new InvalidArgumentException('Invalid configuration of rate limit storage.'),
-        };
-        if (! $storage instanceof StorageInterface) {
+        switch (gettype($storageClass)) {
+            case "string":
+                $storage = Yew::createObject($storageClass, [
+                    'key' => $key,
+                    'timeout' => $timeout,
+                    'options' => $config->get('rate_limit.storage.options', [])
+                ]);
+                break;
+
+            case "object":
+                $storage = $storageClass;
+                break;
+
+            default:
+                throw new InvalidArgumentException('Invalid configuration of rate limit storage.');
+        }
+
+
+        if (!$storage instanceof StorageInterface) {
             throw new InvalidArgumentException('The storage of rate limit must be an instance of ' . StorageInterface::class);
         }
 

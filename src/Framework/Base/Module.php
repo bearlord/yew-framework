@@ -87,7 +87,9 @@ class Module extends ServiceLocator
     /**
      * @var array child modules of this module
      */
-    private $_modules = [];
+    private array $_modules = [
+        'generate' => ['class' => 'Yew\Framework\Generator\Module'],
+    ];
 
     /**
      * Constructor.
@@ -111,7 +113,7 @@ class Module extends ServiceLocator
     public static function getInstance()
     {
         $class = get_called_class();
-        return isset(Yii::$app->loadedModules[$class]) ? Yii::$app->loadedModules[$class] : null;
+        return isset(Yew::$app->loadedModules[$class]) ? Yew::$app->loadedModules[$class] : null;
     }
 
     /**
@@ -122,9 +124,9 @@ class Module extends ServiceLocator
     public static function setInstance(?Module $instance)
     {
         if ($instance === null) {
-            unset(Yii::$app->loadedModules[get_called_class()]);
+            unset(Yew::$app->loadedModules[get_called_class()]);
         } else {
-            Yii::$app->loadedModules[get_class($instance)] = $instance;
+            Yew::$app->loadedModules[get_class($instance)] = $instance;
         }
     }
 
@@ -251,16 +253,12 @@ class Module extends ServiceLocator
      */
     public function getModule($id, $load = true)
     {
-        var_dump(__METHOD__ . "::"  . $id);
-
         if (($pos = strpos($id, '/')) !== false) {
             // sub-module
             $module = $this->getModule(substr($id, 0, $pos));
 
             return $module === null ? null : $module->getModule(substr($id, $pos + 1), $load);
         }
-
-        var_dump($this->_modules);
 
         if (isset($this->_modules[$id])) {
             if ($this->_modules[$id] instanceof self) {
@@ -378,14 +376,33 @@ class Module extends ServiceLocator
             return null;
         }
 
-        if (is_subclass_of($className, 'yii\base\Controller')) {
-            $controller = Yii::createObject($className, [$id, $this]);
+        if (is_subclass_of($className, 'Yew\Framework\Base\Controller')) {
+            $controller = Yew::createObject($className, [$id, $this]);
             return get_class($controller) === $className ? $controller : null;
         } elseif (YII_DEBUG) {
-            throw new InvalidConfigException('Controller class must extend from \\yii\\base\\Controller.');
+            throw new InvalidConfigException('Controller class must extend from \Yew\Framework\Base\Controller.');
         }
 
         return null;
+    }
+
+    /**
+     * Checks if class name or prefix is incorrect
+     *
+     * @param string $className
+     * @param string $prefix
+     * @return bool
+     */
+    private function isIncorrectClassNameOrPrefix($className, $prefix)
+    {
+        if (!preg_match('%^[a-z][a-z0-9\\-_]*$%', $className)) {
+            return true;
+        }
+        if ($prefix !== '' && !preg_match('%^[a-z0-9_/]+$%i', $prefix)) {
+            return true;
+        }
+
+        return false;
     }
 
 

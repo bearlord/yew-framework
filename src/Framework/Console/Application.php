@@ -82,11 +82,22 @@ class Application extends \Yew\Framework\Base\Application
     public array $requestedParams;
 
 
-    public $bootstrap = ['generator'];
-
-    private $_modules = [
-        'generate' => ['class' => 'Yew\Framework\Generator\Generate'],
-    ];
+    /**
+     * @var array list of components that should be run during the application [[bootstrap()|bootstrapping process]].
+     *
+     * Each component may be specified in one of the following formats:
+     *
+     * - an application component ID as specified via [[components]].
+     * - a module ID as specified via [[modules]].
+     * - a class name.
+     * - a configuration array.
+     * - a Closure
+     *
+     * During the bootstrapping process, each component will be instantiated. If the component class
+     * implements [[BootstrapInterface]], its [[BootstrapInterface::bootstrap()|bootstrap()]] method
+     * will be also be called.
+     */
+    public array $bootstrap = ['generate'];
 
 
 
@@ -111,6 +122,7 @@ class Application extends \Yew\Framework\Base\Application
     public function init()
     {
         parent::init();
+
         if ($this->enableCoreCommands) {
             foreach ($this->coreCommands() as $id => $command) {
                 if (!isset($this->controllerMap[$id])) {
@@ -197,15 +209,12 @@ class Application extends \Yew\Framework\Base\Application
      */
     public function createController(string $route): ?array
     {
-        var_dump("1000");
-        var_dump($route);
         // double slashes or leading/ending slashes may cause substr problem
         $route = trim($route, '/');
         if (strpos($route, '//') !== false) {
             return [];
         }
 
-        var_dump("1001");
 
         if (strpos($route, '/') !== false) {
             list($id, $route) = explode('/', $route, 2);
@@ -214,27 +223,20 @@ class Application extends \Yew\Framework\Base\Application
             $route = '';
         }
 
-        var_dump($id, $route);
-        var_dump($this->controllerMap);
-        var_dump("1002");
-
         // module and controller map take precedence
         if (isset($this->controllerMap[$id])) {
             $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
             return [$controller, $route];
         }
-
-
-
+        
         $module = $this->getModule($id);
-        var_dump($module);
+
         if ($module !== null) {
             return $module->createController($route);
         }
-        var_dump("1004");
-
+        
         $controller = $this->createControllerByID($id);
-        var_dump($controller);
+
         if ($controller === null && $route !== '') {
             $controller = $this->createControllerByID($id . '/' . $route);
             $route = '';
@@ -248,69 +250,6 @@ class Application extends \Yew\Framework\Base\Application
      */
     private string $appControllerNamespace = "App\Console";
 
-    /**
-     * Creates a controller based on the given controller ID.
-     *
-     * The controller ID is relative to this module. The controller class
-     * should be namespaced under [[controllerNamespace]].
-     *
-     * Note that this method does not check [[modules]] or [[controllerMap]].
-     *
-     * @param string $id the controller ID.
-     * @return Controller|null the newly created controller instance, or `null` if the controller ID is invalid.
-     * @throws InvalidConfigException if the controller class and its file name do not match.
-     * This exception is only thrown when in debug mode.
-     */
-    public function createControllerByID(string $id): ?Controller
-    {
-        $pos = strrpos($id, '/');
-        if ($pos === false) {
-            $prefix = '';
-            $className = $id;
-        } else {
-            $prefix = substr($id, 0, $pos + 1);
-            $className = substr($id, $pos + 1);
-        }
-
-        if ($this->isIncorrectClassNameOrPrefix($className, $prefix)) {
-            return null;
-        }
-
-        $className = preg_replace_callback('%-([a-z0-9_])%i', function ($matches) {
-                return ucfirst($matches[1]);
-            }, ucfirst($className)) . 'Controller';
-        $className = ltrim($this->appControllerNamespace . '\\' . str_replace('/', '\\', ucfirst($prefix)) . $className, '\\');
-
-        if (strpos($className, '-') !== false || !class_exists($className)) {
-            return null;
-        }
-
-        if (is_subclass_of($className, "Yew\\Framework\\Console\\Controller")) {
-            $controller = Yew::createObject($className);
-            return get_class($controller) === $className ? $controller : null;
-        } else {
-            throw new InvalidConfigException("Controller class must extend from \\Yew\Framework\\Console\\Controller.");
-        }
-    }
-
-    /**
-     * Checks if class name or prefix is incorrect
-     *
-     * @param string $className
-     * @param string $prefix
-     * @return bool
-     */
-    private function isIncorrectClassNameOrPrefix(string $className, string $prefix): bool
-    {
-        if (!preg_match('%^[a-z][a-z0-9\\-_]*$%', $className)) {
-            return true;
-        }
-        if ($prefix !== '' && !preg_match('%^[a-z0-9_/]+$%i', $prefix)) {
-            return true;
-        }
-
-        return false;
-    }
 
     /**
      * Run route

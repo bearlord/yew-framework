@@ -87,12 +87,12 @@ class Application extends Module
      * implements [[BootstrapInterface]], its [[BootstrapInterface::bootstrap()|bootstrap()]] method
      * will be also be called.
      */
-    public $bootstrap = [];
+    public array $bootstrap = [];
 
     /**
      * @var array list of loaded modules indexed by their class names.
      */
-    public $loadedModules = [];
+    public array $loadedModules = [];
 
     /**
      * @param array $config
@@ -104,14 +104,11 @@ class Application extends Module
         Yew::$app = $this;
         $this->preInit();
 
-        var_dump($config);
         Component::__construct($config);
     }
 
     public function init()
     {
-        var_dump(__METHOD__);
-
         $this->bootstrap();
     }
 
@@ -130,9 +127,6 @@ class Application extends Module
                     continue;
                 }
             } elseif (is_string($mixed)) {
-                var_dump($mixed);
-                var_dump($this->has($mixed));
-                var_dump($this->hasModule($mixed));
                 if ($this->has($mixed)) {
                     $component = $this->get($mixed);
                 } elseif ($this->hasModule($mixed)) {
@@ -147,10 +141,10 @@ class Application extends Module
             }
 
             if ($component instanceof BootstrapInterface) {
-                Yii::debug('Bootstrap with ' . get_class($component) . '::bootstrap()', __METHOD__);
+                Yew::debug('Bootstrap with ' . get_class($component) . '::bootstrap()', __METHOD__);
                 $component->bootstrap($this);
             } else {
-                Yii::debug('Bootstrap with ' . get_class($component), __METHOD__);
+                Yew::debug('Bootstrap with ' . get_class($component), __METHOD__);
             }
         }
     }
