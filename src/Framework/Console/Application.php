@@ -76,10 +76,11 @@ class Application extends \Yew\Framework\Base\Application
      * @var Action the requested Action. If null, it means the request cannot be resolved into an action.
      */
     public Action $requestedAction;
+
     /**
-     * @var array the parameters supplied to the requested action.
+     * @var array|null the parameters supplied to the requested action.
      */
-    public array $requestedParams;
+    public ?array $requestedParams = null;
 
 
     /**
@@ -232,7 +233,6 @@ class Application extends \Yew\Framework\Base\Application
         }
         
         $module = $this->getModule($id);
-
         if ($module !== null) {
             return $module->createController($_route);
         }
@@ -291,8 +291,17 @@ class Application extends \Yew\Framework\Base\Application
      * @throws \ReflectionException
      * @throws \Yew\Framework\Exception\Exception
      */
-    public function runAction(string $route, ?array $params = []): int
+    public function runAction(string $route, ?array $params = [])
     {
+        /*
+        try {
+            $res = parent::runAction($route, $params);
+            return is_object($res) ? $res : (int) $res;
+        } catch (InvalidRouteException $e) {
+            throw new UnknownCommandException($route, $this, 0, $e);
+        }
+        */
+
         try {
             $parts = $this->createController($route);
 

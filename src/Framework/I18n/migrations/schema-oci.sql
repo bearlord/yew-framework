@@ -1,5 +1,5 @@
 /**
- * Database schema required by \Yew\FrameworkI18n\DbMessageSource.
+ * Database schema required by \Yew\Framework\I18n\DbMessageSource.
  *
  * @author Dmitry Naumenko <d.naumenko.a@gmail.com>
  * @link http://www.yiiframework.com/

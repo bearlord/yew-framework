@@ -124,7 +124,7 @@ class Module extends \Yew\Framework\Base\Module
             if (is_object($config)) {
                 $this->generators[$id] = $config;
             } else {
-                $this->generators[$id] = Yii::createObject($config);
+                $this->generators[$id] = Yew::createObject($config);
             }
         }
         

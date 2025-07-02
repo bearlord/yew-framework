@@ -5,9 +5,9 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace ESD\Yii\Caching;
+namespace Yew\Framework\Caching;
 
-use ESD\Yii\Base\InvalidConfigException;
+use Yew\Framework\Exception\InvalidConfigException;
 
 /**
  * ApcCache provides APC caching in terms of an application component.

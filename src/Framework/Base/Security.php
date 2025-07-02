@@ -104,8 +104,8 @@ class Security extends Component
      * @param string $data the data to encrypt
      * @param string $password the password to use for encryption
      * @return string the encrypted data as byte string
-     * @throws \ESD\Yii\Base\Exception
-     * @throws \ESD\Yii\Base\InvalidConfigException|\Random\RandomException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws\Yew\Framework\Base\InvalidConfigException|\Random\RandomException
      * @see decryptByPassword()
      * @see encryptByKey()
      */
@@ -125,8 +125,8 @@ class Security extends Component
      * @param string $inputKey the input to use for encryption and authentication
      * @param null $info optional context and application specific information, see [[hkdf()]]
      * @return string the encrypted data as byte string
-     * @throws \ESD\Yii\Base\Exception
-     * @throws \ESD\Yii\Base\InvalidConfigException|\Random\RandomException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException|\Random\RandomException
      * @see decryptByKey()
      * @see encryptByPassword()
      */
@@ -140,8 +140,8 @@ class Security extends Component
      * @param string $data the encrypted data to decrypt
      * @param string $password the password to use for decryption
      * @return bool|string the decrypted data or false on authentication failure
-     * @throws \ESD\Yii\Base\Exception
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @see encryptByPassword()
      */
     public function decryptByPassword(string $data, string $password)
@@ -155,8 +155,8 @@ class Security extends Component
      * @param string $inputKey the input to use for encryption and authentication
      * @param null $info optional context and application specific information, see [[hkdf()]]
      * @return bool|string the decrypted data or false on authentication failure
-     * @throws \ESD\Yii\Base\Exception
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @see encryptByKey()
      */
     public function decryptByKey(string $data, string $inputKey, $info = null)
@@ -452,7 +452,7 @@ class Security extends Component
      * Note that output may not be ASCII.
      * @param int|null $length the number of bytes to generate
      * @return string the generated random bytes
-     * @throws \ESD\Yii\Base\Exception on failure.
+     * @throws \Yew\Framework\Exception\Exception on failure.
      * @throws \Random\RandomException
      * @see generateRandomString() if you need a string.
      */
@@ -555,7 +555,7 @@ class Security extends Component
      *
      * @param int|null $length the length of the key in characters
      * @return string the generated random key
-     * @throws \ESD\Yii\Base\Exception on failure.
+     * @throws \Yew\Framework\Exception\Exception on failure.
      * @throws \Random\RandomException
      */
     public function generateRandomString(?int $length = 32): string
@@ -669,7 +669,7 @@ class Security extends Component
      *
      * @param int|null $cost the cost parameter
      * @return string the random salt value.
-     * @throws \ESD\Yii\Base\Exception
+     * @throws \Yew\Framework\Exception\Exception
      * @throws \Random\RandomException
      */
     protected function generateSalt(?int $cost = 13): string
@@ -720,7 +720,7 @@ class Security extends Component
      * Used to mitigate BREACH attack by randomizing how token is outputted on each request.
      * @param string $token An unmasked token.
      * @return string A masked token.
-     * @throws \ESD\Yii\Base\Exception
+     * @throws \Yew\Framework\Exception\Exception
      * @throws \Random\RandomException
      * @since 2.0.12
      */

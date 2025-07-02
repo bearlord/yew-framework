@@ -79,7 +79,9 @@ class YewCmd extends Command
         Application::instance()->runAction($route, $prettyArguments);
 
         $io = new SymfonyStyle($input, $output);
-        $io->success(sprintf("Route %s execute success", $route));
+
+        //$io->success(sprintf("Route %s execute success", $route));
+
         return ConsolePlugin::SUCCESS_EXIT;
     }
 }

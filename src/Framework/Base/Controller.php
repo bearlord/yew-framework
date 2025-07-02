@@ -142,6 +142,16 @@ class Controller extends Component implements ViewContextInterface
 
         $modules = [];
         $runAction = true;
+        
+        // call beforeAction on modules
+        foreach ($this->getModules() as $module) {
+            if ($module->beforeAction($action)) {
+                array_unshift($modules, $module);
+            } else {
+                $runAction = false;
+                break;
+            }
+        }
 
         $result = null;
 
@@ -244,7 +254,7 @@ class Controller extends Component implements ViewContextInterface
         }
 
         if (!empty($missing)) {
-            throw new Exception(Yew::t('yii', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
+            throw new Exception(Yew::t('yew', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
         }
 
         return $args;
@@ -350,6 +360,24 @@ class Controller extends Component implements ViewContextInterface
         $event->result = $result;
         $this->trigger(self::EVENT_AFTER_ACTION, $event);
         return $event->result;
+    }
+
+    /**
+     * Returns all ancestor modules of this controller.
+     * The first module in the array is the outermost one (i.e., the application instance),
+     * while the last is the innermost one.
+     * @return Module[] all ancestor modules that this controller is located within.
+     */
+    public function getModules()
+    {
+        $modules = [$this->module];
+        $module = $this->module;
+        while ($module->module !== null) {
+            array_unshift($modules, $module->module);
+            $module = $module->module;
+        }
+
+        return $modules;
     }
 
     /**

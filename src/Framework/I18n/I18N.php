@@ -55,17 +55,17 @@ class I18N extends Component
     public function init()
     {
         parent::init();
-        if (!isset($this->translations['yii']) && !isset($this->translations['yii*'])) {
-            $this->translations['yii'] = [
-                'class' => 'Yew\FrameworkI18n\PhpMessageSource',
+        if (!isset($this->translations['yew']) && !isset($this->translations['yew*'])) {
+            $this->translations['yew'] = [
+                'class' => 'Yew\Framework\I18n\PhpMessageSource',
                 'sourceLanguage' => 'en-US',
-                'basePath' => '@yii/Messages',
+                'basePath' => '@yew/Messages',
             ];
         }
 
         if (!isset($this->translations['app']) && !isset($this->translations['app*'])) {
             $this->translations['app'] = [
-                'class' => 'Yew\FrameworkI18n\PhpMessageSource',
+                'class' => 'Yew\Framework\I18n\PhpMessageSource',
                 'sourceLanguage' => Yew::$app->sourceLanguage,
                 'basePath' => '@app/Messages',
             ];
@@ -73,7 +73,7 @@ class I18N extends Component
 
         if (!isset($this->translations['esd']) && !isset($this->translations['esd*'])) {
             $this->translations['esd'] = [
-                'class' => 'Yew\FrameworkI18n\PhpMessageSource',
+                'class' => 'Yew\Framework\I18n\PhpMessageSource',
                 'sourceLanguage' => 'en-US',
                 'basePath' => '@yii/Messages',
             ];

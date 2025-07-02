@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace ESD\Yii\Caching;
+namespace Yew\Framework\Caching;
 
 /**
  * ArrayCache provides caching for the current request only by storing the values in an array.

@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace ESD\Yii\Caching;
+namespace Yew\Framework\Caching;
 
 use ESD\Yii\Yii;
 use ESD\Yii\Base\InvalidConfigException;

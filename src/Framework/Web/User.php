@@ -457,7 +457,7 @@ class User extends Component
                 return Yew::$app->getResponse()->redirect($this->loginUrl);
             }
         }
-        throw new ForbiddenHttpException(Yew::t('yii', 'Login Required'));
+        throw new ForbiddenHttpException(Yew::t('yew', 'Login Required'));
     }
 
     /**

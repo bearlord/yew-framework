@@ -589,7 +589,7 @@ class BaseInflector
         }
         /*
         if ($twoWordsConnector === null) {
-            $twoWordsConnector = Yew::t('yii', ' and ');
+            $twoWordsConnector = Yew::t('yew', ' and ');
         }
         */
         if ($lastWordConnector === null) {

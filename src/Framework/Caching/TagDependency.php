@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace ESD\Yii\Caching;
+namespace Yew\Framework\Caching;
 
 /**
  * TagDependency associates a cached data item with one or multiple [[tags]].

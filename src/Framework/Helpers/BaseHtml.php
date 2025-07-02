@@ -1247,7 +1247,7 @@ class BaseHtml
      */
     public static function errorSummary($models, $options = [])
     {
-        $header = isset($options['header']) ? $options['header'] : '<p>' . Yew::t('yii', 'Please fix the following errors:') . '</p>';
+        $header = isset($options['header']) ? $options['header'] : '<p>' . Yew::t('yew', 'Please fix the following errors:') . '</p>';
         $footer = ArrayHelper::remove($options, 'footer', '');
         $encode = ArrayHelper::remove($options, 'encode', true);
         $showAllErrors = ArrayHelper::remove($options, 'showAllErrors', false);

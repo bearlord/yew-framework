@@ -136,7 +136,7 @@ class Breadcrumbs extends Widget
         $links = [];
         if ($this->homeLink === null) {
             $links[] = $this->renderItem([
-                'label' => Yew::t('yii', 'Home'),
+                'label' => Yew::t('yew', 'Home'),
                 'url' => '',
             ], $this->itemTemplate);
         } elseif ($this->homeLink !== false) {

@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace Yew\Framework\Generator\console;
+namespace Yew\Framework\Generator\Console;
 
 use Yew\Yew;
 use Yew\Framework\Base\InlineAction;

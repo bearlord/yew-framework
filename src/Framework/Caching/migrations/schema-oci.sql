@@ -1,5 +1,5 @@
 /**
- * Database schema required by \ESD\Yii\Caching\DbCache.
+ * Database schema required by \Yew\Framework\Caching\DbCache.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @author Misbahul D Munir <misbahuldmunir@gmail.com>

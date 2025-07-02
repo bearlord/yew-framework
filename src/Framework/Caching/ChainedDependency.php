@@ -5,7 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace ESD\Yii\Caching;
+namespace Yew\Framework\Caching;
 
 /**
  * ChainedDependency represents a dependency which is composed of a list of other dependencies.

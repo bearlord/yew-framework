@@ -208,25 +208,19 @@ class Module extends ServiceLocator
             return $module->createController($route);
         }
 
-        return null;
-
-        $method = $this->request->server('request_method');
-        $port = $this->request->server('server_port');
-        $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch($port . ":" . $method, $route);
-
-        switch ($routeInfo[0]) {
-            case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
-                $vars = $routeInfo[2];
-
-                $controllerName = $handler[0]->name;
-                $actionName = $handler[1]->name;
-                $controller = Yew::createObject([
-                    'class' => $controllerName
-                ], [$id, $this]);
-
-                return [$controller, $actionName];
+        if (($pos = strrpos($route, '/')) !== false) {
+            $id .= '/' . substr($route, 0, $pos);
+            $route = substr($route, $pos + 1);
         }
+
+        $controller = $this->createControllerByID($id);
+        if ($controller === null && $route !== '') {
+            $controller = $this->createControllerByID($id . '/' . $route);
+            $route = '';
+        }
+
+        return $controller === null ? false : [$controller, $route];
+
         return null;
     }
 

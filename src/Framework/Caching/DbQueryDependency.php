@@ -5,11 +5,11 @@
  * @license http://www.yiiframework.com/license/
  */
 
-namespace ESD\Yii\Caching;
+namespace Yew\Framework\Caching;
 
-use ESD\Yii\Base\InvalidConfigException;
-use ESD\Yii\Db\QueryInterface;
-use ESD\Yii\Di\Instance;
+use Yew\Framework\Exception\InvalidConfigException;
+use Yew\Framework\Db\QueryInterface;
+use Yew\Framework\Di\Instance;
 
 /**
  * DbQueryDependency represents a dependency based on the query result of an [[QueryInterface]] instance.
@@ -75,7 +75,7 @@ class DbQueryDependency extends Dependency
         }
 
         if (!$this->query instanceof QueryInterface) {
-            throw new InvalidConfigException('"' . get_class($this) . '::$query" should be an instance of "ESD\Yii\Db\QueryInterface".');
+            throw new InvalidConfigException('"' . get_class($this) . '::$query" should be an instance of "Yew\Framework\Db\QueryInterface".');
         }
 
         if (!empty($db->enableQueryCache)) {

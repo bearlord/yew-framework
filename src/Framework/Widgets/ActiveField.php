@@ -92,7 +92,7 @@ class ActiveField extends Component
      * - `tag`: the tag name of the container element. Defaults to `div`. Setting it to `false` will not render a container tag.
      *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      *
-     * @see \ESD\Yii\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+     * @see \Yew\Framework\Helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
      */
     public $hintOptions = ['class' => 'hint-block'];
     /**
@@ -226,7 +226,7 @@ class ActiveField extends Component
     /**
      * Renders the opening tag of the field container.
      * @return string the rendering result.
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     public function begin()
     {
@@ -304,7 +304,7 @@ class ActiveField extends Component
      * The following options are specially handled:
      *
      * - `tag`: this specifies the tag name. If not set, `div` will be used.
-     *   See also [[\ESD\Yii\Helpers\Html::tag()]].
+     *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      *
      * If you set a custom `id` for the error element, you may need to adjust the [[$selectors]] accordingly.
      * @see $errorOptions
@@ -334,7 +334,7 @@ class ActiveField extends Component
      * The following options are specially handled:
      *
      * - `tag`: this specifies the tag name. If not set, `div` will be used.
-     *   See also [[\ESD\Yii\Helpers\Html::tag()]].
+     *   See also [[\Yew\Framework\Helpers\Html::tag()]].
      *
      * @return $this the field object itself.
      */
@@ -415,7 +415,7 @@ class ActiveField extends Component
      *
      * Note that this method is provided for completeness. In most cases because you do not need
      * to validate a hidden input, you should not need to use this method. Instead, you should
-     * use [[\ESD\Yii\Helpers\Html::activeHiddenInput()]].
+     * use [[\Yew\Framework\Helpers\Html::activeHiddenInput()]].
      *
      * This method will generate the `name` and `value` tag attributes automatically for the model attribute
      * unless they are explicitly specified in `$options`.
@@ -636,7 +636,7 @@ class ActiveField extends Component
      * the labels will also be HTML-encoded.
      * @param array $options the tag options in terms of name-value pairs.
      *
-     * For the list of available options please refer to the `$options` parameter of [[\ESD\Yii\Helpers\Html::activeDropDownList()]].
+     * For the list of available options please refer to the `$options` parameter of [[\Yew\Framework\Helpers\Html::activeDropDownList()]].
      *
      * If you set a custom `id` for the input element, you may need to adjust the [[$selectors]] accordingly.
      *
@@ -664,13 +664,13 @@ class ActiveField extends Component
      * are the corresponding option labels. The array can also be nested (i.e. some array values are arrays too).
      * For each sub-array, an option group will be generated whose label is the key associated with the sub-array.
      * If you have a list of data models, you may convert them into the format described above using
-     * [[\ESD\Yii\Helpers\ArrayHelper::map()]].
+     * [[\Yew\Framework\Helpers\ArrayHelper::map()]].
      *
      * Note, the values and labels will be automatically HTML-encoded by this method, and the blank spaces in
      * the labels will also be HTML-encoded.
      * @param array $options the tag options in terms of name-value pairs.
      *
-     * For the list of available options please refer to the `$options` parameter of [[\ESD\Yii\Helpers\Html::activeListBox()]].
+     * For the list of available options please refer to the `$options` parameter of [[\Yew\Framework\Helpers\Html::activeListBox()]].
      *
      * If you set a custom `id` for the input element, you may need to adjust the [[$selectors]] accordingly.
      *
@@ -699,7 +699,7 @@ class ActiveField extends Component
      * @param array $items the data item used to generate the checkboxes.
      * The array values are the labels, while the array keys are the corresponding checkbox values.
      * @param array $options options (name => config) for the checkbox list.
-     * For the list of available options please refer to the `$options` parameter of [[\ESD\Yii\Helpers\Html::activeCheckboxList()]].
+     * For the list of available options please refer to the `$options` parameter of [[\Yew\Framework\Helpers\Html::activeCheckboxList()]].
      * @return $this the field object itself.
      */
     public function checkboxList($items, $options = [])
@@ -723,7 +723,7 @@ class ActiveField extends Component
      * @param array $items the data item used to generate the radio buttons.
      * The array values are the labels, while the array keys are the corresponding radio values.
      * @param array $options options (name => config) for the radio button list.
-     * For the list of available options please refer to the `$options` parameter of [[\ESD\Yii\Helpers\Html::activeRadioList()]].
+     * For the list of available options please refer to the `$options` parameter of [[\Yew\Framework\Helpers\Html::activeRadioList()]].
      * @return $this the field object itself.
      */
     public function radioList($items, $options = [])
@@ -771,7 +771,7 @@ class ActiveField extends Component
      */
     public function widget($class, $config = [])
     {
-        /* @var $class \ESD\Yii\Base\Widget */
+        /* @var $class \Yew\Framework\Base\Widget */
         $config['model'] = $this->model;
         $config['attribute'] = $this->attribute;
         $config['view'] = $this->form->getView();
@@ -816,7 +816,7 @@ class ActiveField extends Component
     /**
      * Returns the JS options for the field.
      * @return array the JS options.
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      */
     protected function getClientOptions()
     {
@@ -923,7 +923,7 @@ class ActiveField extends Component
     /**
      * Adds aria attributes to the input options.
      * @param $options array input options
-     * @throws \ESD\Yii\Base\InvalidConfigException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
      * @since 2.0.11
      */
     protected function addAriaAttributes(&$options)

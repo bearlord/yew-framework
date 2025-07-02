@@ -109,14 +109,14 @@ class Controller extends \Yew\Framework\Base\Controller
                     if (array_key_exists($name, $optionAliases)) {
                         $params[$optionAliases[$name]] = $value;
                     } else {
-                        $message = Yew::t('yii', 'Unknown alias: -{name}', ['name' => $name]);
+                        $message = Yew::t('yew', 'Unknown alias: -{name}', ['name' => $name]);
                         if (!empty($optionAliases)) {
                             $aliasesAvailable = [];
                             foreach ($optionAliases as $alias => $option) {
                                 $aliasesAvailable[] = '-' . $alias . ' (--' . $option . ')';
                             }
 
-                            $message .= '. ' . Yew::t('yii', 'Aliases available: {aliases}', [
+                            $message .= '. ' . Yew::t('yew', 'Aliases available: {aliases}', [
                                     'aliases' => implode(', ', $aliasesAvailable)
                                 ]);
                         }
@@ -152,9 +152,9 @@ class Controller extends \Yew\Framework\Base\Controller
                         unset($params[$kebabName]);
                     }
                 } elseif (!is_int($name)) {
-                    $message = Yew::t('yii', 'Unknown option: --{name}', ['name' => $name]);
+                    $message = Yew::t('yew', 'Unknown option: --{name}', ['name' => $name]);
                     if (!empty($options)) {
-                        $message .= '. ' . Yew::t('yii', 'Options available: {options}', ['options' => '--' . implode(', --', $options)]);
+                        $message .= '. ' . Yew::t('yew', 'Options available: {options}', ['options' => '--' . implode(', --', $options)]);
                     }
 
                     throw new Exception($message);
@@ -166,10 +166,12 @@ class Controller extends \Yew\Framework\Base\Controller
             return Yew::$app->runAction('help', [$route]);
         }
 
+        /*
         if (!empty($id)) {
             $id = sprintf("action%s", ucfirst($id));
         }
-
+        */
+        
         return parent::runAction($id, $params);
     }
 
@@ -249,7 +251,7 @@ class Controller extends \Yew\Framework\Base\Controller
         }
 
         if (!empty($missing)) {
-            throw new Exception(Yew::t('yii', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
+            throw new Exception(Yew::t('yew', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
         }
 
         return $args;
