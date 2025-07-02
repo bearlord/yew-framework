@@ -16,7 +16,7 @@ use Yew\Framework\Helpers\Console;
 class GenerateAction extends \Yew\Framework\Base\Action
 {
     /**
-     * @var \yii\gii\Generator
+     * @var \Yew\Framework\Generator\Generator
      */
     public $generator;
 

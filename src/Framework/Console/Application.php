@@ -56,6 +56,8 @@ class Application extends \Yew\Framework\Base\Application
      */
     public array $controllerMap = [];
 
+    public ?string $controllerNamespace = 'App\Commands';
+
     /**
      * @var string the default route of this application. Defaults to 'help',
      * meaning the `help` command.
@@ -236,7 +238,7 @@ class Application extends \Yew\Framework\Base\Application
         if ($module !== null) {
             return $module->createController($_route);
         }
-        
+
         $controller = $this->createControllerByID($id);
 
         if ($controller === null && $route !== '') {
@@ -293,15 +295,6 @@ class Application extends \Yew\Framework\Base\Application
      */
     public function runAction(string $route, ?array $params = [])
     {
-        /*
-        try {
-            $res = parent::runAction($route, $params);
-            return is_object($res) ? $res : (int) $res;
-        } catch (InvalidRouteException $e) {
-            throw new UnknownCommandException($route, $this, 0, $e);
-        }
-        */
-
         try {
             $parts = $this->createController($route);
 

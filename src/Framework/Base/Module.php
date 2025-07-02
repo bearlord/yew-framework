@@ -375,6 +375,7 @@ class Module extends ServiceLocator
                 return ucfirst($matches[1]);
             }, ucfirst($className)) . 'Controller';
         $className = ltrim($this->controllerNamespace . '\\' . str_replace('/', '\\', $prefix) . $className, '\\');
+
         if (strpos($className, '-') !== false || !class_exists($className)) {
             return null;
         }

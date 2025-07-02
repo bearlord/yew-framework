@@ -165,12 +165,6 @@ class Controller extends \Yew\Framework\Base\Controller
             $route = $this->getUniqueId() . '/' . $id;
             return Yew::$app->runAction('help', [$route]);
         }
-
-        /*
-        if (!empty($id)) {
-            $id = sprintf("action%s", ucfirst($id));
-        }
-        */
         
         return parent::runAction($id, $params);
     }
