@@ -15,8 +15,8 @@ use Yew\Framework\Db\Connection;
 use Yew\Framework\Db\Schema;
 use Yew\Framework\Db\TableSchema;
 use Yew\Framework\Generator\CodeFile;
-use Yew\Framework\Helper\Inflector;
-use Yew\Framework\Helper\StringHelper;
+use Yew\Framework\Helpers\Inflector;
+use Yew\Framework\Helpers\StringHelper;
 
 /**
  * This generator will generate one or multiple ActiveRecord classes for the specified database table.
@@ -30,7 +30,7 @@ class Generator extends \Yew\Framework\Generator\Generator
     const RELATIONS_ALL = 'all';
     const RELATIONS_ALL_INVERSE = 'all-inverse';
 
-    public $db = 'db';
+    public $db = 'default';
     public $ns = 'App\Models';
     public $tableName;
     public $modelClass;
@@ -189,7 +189,7 @@ class Generator extends \Yew\Framework\Generator\Generator
     /**
      * {@inheritdoc}
      */
-    public function stickyAttributes()
+    public function stickyAttributes(): array
     {
         return array_merge(parent::stickyAttributes(), ['ns', 'db', 'baseClass', 'generateRelations', 'generateLabelsFromComments', 'queryNs', 'queryBaseClass', 'useTablePrefix', 'generateQuery']);
     }
@@ -336,26 +336,26 @@ class Generator extends \Yew\Framework\Generator\Generator
      * @return array
      * @since 2.1.4
      */
-    public function generateRelationsClassHints($relations, $generateQuery): string
+    public function generateRelationsClassHints($relations, $generateQuery): array
     {
         $result = [];
         foreach ($relations as $name => $relation){
             // The queryNs options available if generateQuery is active
             if ($generateQuery) {
                 $queryClassRealName = '\\' . $this->queryNs . '\\' . $relation[1];
-                if (class_exists($queryClassRealName, true) && is_subclass_of($queryClassRealName, '\yii\db\BaseActiveRecord')) {
-                    /** @var \yii\db\ActiveQuery $activeQuery */
+                if (class_exists($queryClassRealName, true) && is_subclass_of($queryClassRealName, '\Yew\Framework\Db\BaseActiveRecord')) {
+                    /** @var \Yew\Framework\Db\ActiveQuery $activeQuery */
                     $activeQuery = $queryClassRealName::find();
                     $activeQueryClass = $activeQuery::className();
                     if (strpos($activeQueryClass, $this->ns) === 0){
                         $activeQueryClass = StringHelper::basename($activeQueryClass);
                     }
-                    $result[$name] = '\yii\db\ActiveQuery|' . $activeQueryClass;
+                    $result[$name] = '\Yew\Framework\Db\ActiveQuery|' . $activeQueryClass;
                 } else {
-                    $result[$name] = '\yii\db\ActiveQuery|' . (($this->ns === $this->queryNs) ? $relation[1]: '\\' . $this->queryNs . '\\' . $relation[1]) . 'Query';
+                    $result[$name] = '\Yew\Framework\Db\ActiveQuery|' . (($this->ns === $this->queryNs) ? $relation[1]: '\\' . $this->queryNs . '\\' . $relation[1]) . 'Query';
                 }
             } else {
-                $result[$name] = '\yii\db\ActiveQuery';
+                $result[$name] = '\Yew\Framework\Db\ActiveQuery';
             }
         }
         return $result;
@@ -802,9 +802,10 @@ class Generator extends \Yew\Framework\Generator\Generator
      */
     public function validateDb()
     {
-        if (!Yew::$app->has($this->db)) {
+
+        if (!Yew::$app->getDb($this->db)) {
             $this->addError('db', 'There is no application component named "db".');
-        } elseif (!Yew::$app->get($this->db) instanceof Connection) {
+        } elseif (!Yew::$app->getDb($this->db) instanceof Connection) {
             $this->addError('db', 'The "db" application component must be a DB connection instance.');
         }
     }
@@ -862,7 +863,7 @@ class Generator extends \Yew\Framework\Generator\Generator
     }
 
     protected ?array $tableNames = null;
-    protected ?array $className = null;
+    protected ?array $classNames = null;
 
     /**
      * @return array the table names that match the pattern specified by [[tableName]].
@@ -992,9 +993,9 @@ class Generator extends \Yew\Framework\Generator\Generator
     /**
      * @return Connection the DB connection as specified by [[db]].
      */
-    protected function getDbConnection(): Connection
+    protected function getDbConnection(): ?Connection
     {
-        return Yew::$app->get($this->db, false);
+        return Yew::$app->getDb($this->db);
     }
 
     /**

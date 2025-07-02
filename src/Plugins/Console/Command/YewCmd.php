@@ -68,6 +68,7 @@ class YewCmd extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $arguments = $input->getArguments();
+
         unset($arguments['command'], $arguments['route']);
 
         $argumentValues = array_values($arguments);

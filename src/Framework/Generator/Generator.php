@@ -62,7 +62,7 @@ abstract class Generator extends Model
     /**
      * @return string name of the code generator
      */
-    abstract public function getName();
+    abstract public function getName(): string;
     /**
      * Generates the code based on the current user input and the specified code template files.
      * This is the main method that child classes should implement.
@@ -70,7 +70,7 @@ abstract class Generator extends Model
      * on how to implement this method.
      * @return CodeFile[] a list of code files to be created.
      */
-    abstract public function generate();
+    abstract public function generate(): array;
 
     /**
      * {@inheritdoc}
@@ -104,7 +104,7 @@ abstract class Generator extends Model
      * @return array list of code template files that are required. They should be file paths
      * relative to [[templatePath]].
      */
-    public function requiredTemplates()
+    public function requiredTemplates(): array
     {
         return [];
     }
@@ -115,7 +115,7 @@ abstract class Generator extends Model
      * when the generator is restarted.
      * @return array list of sticky attributes
      */
-    public function stickyAttributes()
+    public function stickyAttributes(): array
     {
         return ['template', 'enableI18N', 'messageCategory'];
     }
@@ -126,7 +126,7 @@ abstract class Generator extends Model
      * Hint messages will be displayed to end users when they are filling the form for the generator.
      * @return array the list of hint messages
      */
-    public function hints()
+    public function hints(): array
     {
         return [
             'enableI18N' => 'This indicates whether the generator should generate strings using <code>Yew::t()</code> method.
@@ -141,7 +141,7 @@ abstract class Generator extends Model
      * Auto complete values can also be callable typed in order one want to make postponed data generation.
      * @return array the list of auto complete values
      */
-    public function autoCompleteData()
+    public function autoCompleteData(): array
     {
         return [];
     }
@@ -151,7 +151,7 @@ abstract class Generator extends Model
      * Child classes may override this method to customize the message.
      * @return string the message to be displayed when the newly generated code is saved successfully.
      */
-    public function successMessage()
+    public function successMessage(): string
     {
         return 'The code has been generated successfully.';
     }
@@ -162,7 +162,7 @@ abstract class Generator extends Model
      * that contains the generator class file.
      * @return string the view file for the input form of the generator.
      */
-    public function formView()
+    public function formView(): string
     {
         $class = new ReflectionClass($this);
 
@@ -175,7 +175,7 @@ abstract class Generator extends Model
      * directory containing the generator class file.
      * @return string the root path to the default code template files.
      */
-    public function defaultTemplate()
+    public function defaultTemplate(): string
     {
         $class = new ReflectionClass($this);
 
@@ -185,7 +185,7 @@ abstract class Generator extends Model
     /**
      * @return string the detailed description of the generator.
      */
-    public function getDescription()
+    public function getDescription(): string
     {
         return '';
     }
@@ -251,7 +251,7 @@ abstract class Generator extends Model
      * @return string the file path that stores the sticky attribute values.
      * @internal
      */
-    public function getStickyDataFile()
+    public function getStickyDataFile(): string
     {
         return Yew::$app->getRuntimePath() . '/gii-' . Yew::getVersion() . '/' . str_replace('\\', '-', get_class($this)) . '.json';
     }
@@ -264,7 +264,7 @@ abstract class Generator extends Model
      * generated while saving the code files.
      * @return bool whether files are successfully saved without any error.
      */
-    public function save($files, $answers, &$results)
+    public function save($files, $answers, &$results): bool
     {
         $lines = ['Generating code using template "' . $this->getTemplatePath() . '"...'];
         $hasError = false;
@@ -292,7 +292,7 @@ abstract class Generator extends Model
      * @return string the root path of the template files that are currently being used.
      * @throws InvalidConfigException if [[template]] is invalid
      */
-    public function getTemplatePath()
+    public function getTemplatePath(): string
     {
         if (isset($this->templates[$this->template])) {
             return $this->templates[$this->template];
@@ -309,7 +309,7 @@ abstract class Generator extends Model
      * @param array $params list of parameters to be passed to the template file.
      * @return string the generated code
      */
-    public function render($template, $params = [])
+    public function render($template, $params = []): string
     {
         $view = new View();
         $params['generator'] = $this;
@@ -398,7 +398,7 @@ abstract class Generator extends Model
      * @param string $value the attribute to be validated
      * @return bool whether the value is a reserved PHP keyword.
      */
-    public function isReservedKeyword($value)
+    public function isReservedKeyword($value): bool
     {
         static $keywords = [
             '__class__',
@@ -492,7 +492,7 @@ abstract class Generator extends Model
      * @param array $placeholders the placeholders to use by `Yew::t()`
      * @return string
      */
-    public function generateString($string = '', $placeholders = [])
+    public function generateString($string = '', $placeholders = []): string
     {
         $string = addslashes($string);
         if ($this->enableI18N) {

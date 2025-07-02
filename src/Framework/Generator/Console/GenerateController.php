@@ -18,7 +18,7 @@ use Yew\Framework\Console\Controller;
  * to generate an ActiveRecord model based on a DB table, you can run:
  *
  * ```
- * $ php server.php yew generate/model --tableName=city --modelClass=City
+ * $ php server.php yew generator/model --tableName=city --modelClass=City
  * ```
  *
  * @author Tobias Munk <schmunk@usrbin.de>
@@ -203,7 +203,11 @@ class GenerateController extends Controller
         return $options;
     }
 
-    protected function formatHint($hint)
+    /**
+     * @param string $hint
+     * @return string
+     */
+    protected function formatHint(string $hint)
     {
         $hint = preg_replace('%<code>(.*?)</code>%', '\1', $hint);
         $hint = preg_replace('/\s+/', ' ', $hint);

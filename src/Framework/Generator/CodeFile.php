@@ -81,7 +81,7 @@ class CodeFile extends BaseObject
      */
     public function save()
     {
-        $module = isset(Yii::$app->controller) ? Yii::$app->controller->module : null;
+        $module = isset(Yew::$app->controller) ? Yew::$app->controller->module : null;
         if ($this->operation === self::OP_CREATE) {
             $dir = dirname($this->path);
             if (!is_dir($dir)) {
@@ -115,8 +115,8 @@ class CodeFile extends BaseObject
      */
     public function getRelativePath()
     {
-        if (strpos($this->path, Yii::$app->basePath) === 0) {
-            return substr($this->path, strlen(Yii::$app->basePath) + 1);
+        if (strpos($this->path, Yew::$app->basePath) === 0) {
+            return substr($this->path, strlen(Yew::$app->basePath) + 1);
         }
 
         return $this->path;

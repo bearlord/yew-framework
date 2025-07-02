@@ -304,7 +304,7 @@ class Application extends \Yew\Framework\Base\Application
             /* @var $controller \Yew\Framework\Console\Controller */
             list($controller, $actionID) = $parts;
 
-            return $controller->runAction($actionID, $params);
+            return $controller->runAction($actionID, $this->formatParams($params));
         } catch (InvalidRouteException $e) {
             throw new UnknownCommandException($route, $this, 0, $e);
         }
@@ -331,8 +331,33 @@ class Application extends \Yew\Framework\Base\Application
         return [
             'help' => 'Yew\Framework\Console\Controllers\HelpController',
             'cache' => 'Yew\Framework\Console\Controllers\CacheController',
-            'migrate' => 'Yew\Framework\Console\Controllers\MigrateController',
-//            'generate' => 'Yew\Framework\Generator\Console\GenerateController',
+            'migrate' => 'Yew\Framework\Console\Controllers\MigrateController'
         ];
+    }
+
+    /**
+     * @param array|null $rawParams
+     * @return array|null
+     * @throws Exception
+     */
+    protected function formatParams(?array $rawParams = []): ?array
+    {
+        if (empty($rawParams)) {
+            return null;
+        }
+
+        $formatParams = [];
+        foreach ($rawParams as $param) {
+            if (preg_match('/^([\w-]+)(?:=(.*))?$/', $param, $matches)) {
+                $name = $matches[1];
+                if (is_numeric(substr($name, 0, 1))) {
+                    throw new Exception('Parameter "' . $name . '" is not valid');
+                }
+
+                $formatParams[$name] = isset($matches[2]) ? $matches[2] : true;
+            }
+        }
+
+        return $formatParams;
     }
 }
