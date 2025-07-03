@@ -56,6 +56,13 @@ class Application extends \Yew\Framework\Base\Application
      */
     public array $controllerMap = [];
 
+    /**
+     * @var string the namespace that controller classes are located in.
+     * This namespace will be used to load controller classes by prepending it to the controller class name.
+     * The default namespace is `app\controllers`.
+     *
+     * Please refer to the [guide about class autoloading](guide:concept-autoloading.md) for more details.
+     */
     public ?string $controllerNamespace = 'App\Commands';
 
     /**
@@ -110,7 +117,7 @@ class Application extends \Yew\Framework\Base\Application
      * @return static class instance.
      * @throws InvalidConfigException
      */
-    public static function instance(?bool $refresh = false): \Yew\Framework\Base\Application
+    public static function instance(?bool $refresh = false): \Yew\Framework\Console\Application
     {
         $className = get_called_class();
         if ($refresh || !isset(self::$_instances[$className])) {
@@ -248,11 +255,6 @@ class Application extends \Yew\Framework\Base\Application
 
         return $controller === null ? null : [$controller, $route];
     }
-
-    /**
-     * @var string
-     */
-    private string $appControllerNamespace = "App\Console";
 
 
     /**
