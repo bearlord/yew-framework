@@ -82,7 +82,7 @@ class Action extends Component
      * @return mixed the result of the action
      * @throws InvalidConfigException|\Yew\Framework\Exception\Exception|\ReflectionException if the action class does not have a run() method
      */
-    public function runWithParams(array $params)
+    public function runWithParams(?array $params = null)
     {
         if (!method_exists($this, 'run')) {
             throw new InvalidConfigException(get_class($this) . ' must define a "run()" method.');
