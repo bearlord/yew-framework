@@ -57,7 +57,7 @@ class BaseArrayHelper
      * @param bool $recursive whether to recursively converts properties which are objects into arrays.
      * @return array the array representation of the object
      */
-    public static function toArray($object, $properties = [], $recursive = true)
+    public static function toArray($object, array $properties = [], bool $recursive = true)
     {
         if (is_array($object)) {
             if ($recursive) {
@@ -115,7 +115,7 @@ class BaseArrayHelper
      * arrays via third argument, fourth argument etc.
      * @return array the merged array (the original arrays are not changed.)
      */
-    public static function merge($a, $b)
+    public static function merge(array $a, array $b)
     {
         $args = func_get_args();
         $res = array_shift($args);
@@ -181,7 +181,7 @@ class BaseArrayHelper
      * getting value from an object.
      * @return mixed the value of the element if found, default value otherwise
      */
-    public static function getValue($array, $key, $default = null)
+    public static function getValue(array $array, $key, $default = null)
     {
         if ($key instanceof \Closure) {
             return $key($array, $default);
@@ -276,7 +276,7 @@ class BaseArrayHelper
      * @param mixed $value the value to be written
      * @since 2.0.13
      */
-    public static function setValue(&$array, $path, $value)
+    public static function setValue(array &$array, $path, $value)
     {
         if ($path === null) {
             $array = $value;
@@ -318,7 +318,7 @@ class BaseArrayHelper
      * @param mixed $default the default value to be returned if the specified key does not exist
      * @return mixed|null the value of the element if found, default value otherwise
      */
-    public static function remove(&$array, $key, $default = null)
+    public static function remove(array &$array, string $key, $default = null)
     {
         if (is_array($array) && (isset($array[$key]) || array_key_exists($key, $array))) {
             $value = $array[$key];
@@ -348,7 +348,7 @@ class BaseArrayHelper
      * @return array the items that were removed from the array
      * @since 2.0.11
      */
-    public static function removeValue(&$array, $value)
+    public static function removeValue(&$array, string $value)
     {
         $result = [];
         if (is_array($array)) {
@@ -463,7 +463,7 @@ class BaseArrayHelper
      * to the result array without any key. This parameter is available since version 2.0.8.
      * @return array the indexed and/or grouped array
      */
-    public static function index($array, $key, $groups = [])
+    public static function index(array $array, $key, $groups = [])
     {
         $result = [];
         $groups = (array) $groups;
@@ -524,7 +524,7 @@ class BaseArrayHelper
      * will be re-indexed with integers.
      * @return array the list of column values
      */
-    public static function getColumn($array, $name, $keepKeys = true)
+    public static function getColumn(array $array, $name, bool $keepKeys = true)
     {
         $result = [];
         if ($keepKeys) {
@@ -581,7 +581,7 @@ class BaseArrayHelper
      * @param string|\Closure $group
      * @return array
      */
-    public static function map($array, $from, $to, $group = null)
+    public static function map(array $array, $from, $to, $group = null)
     {
         $result = [];
         foreach ($array as $element) {
@@ -606,7 +606,7 @@ class BaseArrayHelper
      * @param bool $caseSensitive whether the key comparison should be case-sensitive
      * @return bool whether the array contains the specified key
      */
-    public static function keyExists($key, $array, $caseSensitive = true)
+    public static function keyExists(string $key, $array, bool $caseSensitive = true)
     {
         if ($caseSensitive) {
             // Function `isset` checks key faster but skips `null`, `array_key_exists` handles this case
@@ -695,7 +695,7 @@ class BaseArrayHelper
      * @return array the encoded data
      * @see https://secure.php.net/manual/en/function.htmlspecialchars.php
      */
-    public static function htmlEncode($data, $valuesOnly = true, $charset = null)
+    public static function htmlEncode(array $data, bool $valuesOnly = true, ?string $charset = null)
     {
         if ($charset === null) {
             $charset = Yew::$app ? Yew::$app->charset : 'UTF-8';
@@ -728,7 +728,7 @@ class BaseArrayHelper
      * @return array the decoded data
      * @see https://secure.php.net/manual/en/function.htmlspecialchars-decode.php
      */
-    public static function htmlDecode($data, $valuesOnly = true)
+    public static function htmlDecode(array $data, bool $valuesOnly = true)
     {
         $d = [];
         foreach ($data as $key => $value) {
@@ -760,7 +760,7 @@ class BaseArrayHelper
      * the array to be treated as associative.
      * @return bool whether the array is associative
      */
-    public static function isAssociative($array, $allStrings = true)
+    public static function isAssociative(array $array, bool $allStrings = true)
     {
         if (!is_array($array) || empty($array)) {
             return false;
@@ -798,7 +798,7 @@ class BaseArrayHelper
      * in order for the array to be treated as indexed.
      * @return bool whether the array is indexed
      */
-    public static function isIndexed($array, $consecutive = false)
+    public static function isIndexed(array $array, bool $consecutive = false)
     {
         if (!is_array($array)) {
             return false;
@@ -834,7 +834,7 @@ class BaseArrayHelper
      * @see https://secure.php.net/manual/en/function.in-array.php
      * @since 2.0.7
      */
-    public static function isIn($needle, $haystack, $strict = false)
+    public static function isIn($needle, $haystack, bool $strict = false)
     {
         if ($haystack instanceof Traversable) {
             foreach ($haystack as $value) {
@@ -878,7 +878,7 @@ class BaseArrayHelper
      * @return bool `true` if `$needles` is a subset of `$haystack`, `false` otherwise.
      * @since 2.0.7
      */
-    public static function isSubset($needles, $haystack, $strict = false)
+    public static function isSubset($needles, $haystack, bool $strict = false)
     {
         if (is_array($needles) || $needles instanceof Traversable) {
             foreach ($needles as $needle) {
@@ -937,7 +937,7 @@ class BaseArrayHelper
      * @return array Filtered array
      * @since 2.0.9
      */
-    public static function filter($array, $filters)
+    public static function filter(array $array, array $filters)
     {
         $result = [];
         $excludeFilters = [];
@@ -987,5 +987,27 @@ class BaseArrayHelper
         }
 
         return $result;
+    }
+
+    /**
+     * @param array|object $data
+     * @param string $key
+     * @return bool
+     */
+    public static function issetNested($data, string $key): bool {
+        $keys = explode('.', $key);
+        $current = $data;
+
+        foreach ($keys as $segment) {
+            if (is_array($current) && array_key_exists($segment, $current)) {
+                $current = $current[$segment];
+            } elseif (is_object($current) && property_exists($current, $segment)) {
+                $current = $current->$segment;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
