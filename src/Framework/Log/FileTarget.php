@@ -90,7 +90,7 @@ class FileTarget extends Target
     {
         parent::init();
         if ($this->logFile === null) {
-            $this->logFile = Server::$instance->getServerConfig()->getLogDir() . '/app.log';
+            $this->logFile = ROOT_DIR . 'bin/logs/app.log';
         } else {
             $this->logFile = Yew::getAlias($this->logFile);
         }

@@ -54,7 +54,8 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
      */
     public function beforeServerStart(Context $context)
     {
-        $configs = Server::$instance->getConfigContext()->get("yew.db");
+        $configs = Server::$instance->getConfigContext()->get("db");
+
         if (empty($configs)) {
             return;
         }

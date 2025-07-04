@@ -10,6 +10,8 @@ use Yew\Core\Exception\Exception;
 use Yew\Coroutine\Server\Server;
 use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
+use Yew\Framework\Config\Config;
+use Yew\Framework\Config\ConfigFactory;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidRouteException;
@@ -63,11 +65,6 @@ class Application extends Module
     public string $cookieValidationKey = 'yew';
 
     /**
-     * @var string|null the root directory of the application.
-     */
-    private ?string $_basePath = null;
-
-    /**
      * @var Application[]
      */
     private static array $_instances = [];
@@ -95,18 +92,30 @@ class Application extends Module
     public array $loadedModules = [];
 
     /**
+     * @var Config|null
+     */
+    protected $config;
+
+    /**
      * @param array $config
      * @throws Exception
      * @throws InvalidConfigException
      */
-    public function __construct(array $config = [])
+    public function __construct()
     {
         Yew::$app = $this;
+
+        $this->config = ConfigFactory::build();
+
         $this->preInit();
 
-        Component::__construct($config);
+        //Component::__construct($this->config);
     }
 
+    /**
+     * @return void
+     * @throws InvalidConfigException
+     */
     public function init()
     {
         $this->bootstrap();
@@ -172,10 +181,11 @@ class Application extends Module
      */
     public function preInit()
     {
-        $config = Server::$instance->getConfigContext()->get('yew');
+        $config = ConfigFactory::build();
 
         //Set base path
-        $srcDir = Server::$instance->getServerConfig()->getSrcDir();
+        //$srcDir = Server::$instance->getServerConfig()->getSrcDir();
+        $srcDir = ROOT_DIR  . 'src';
         $this->setBasePath($srcDir);
 
         //Set vendor path
@@ -183,41 +193,37 @@ class Application extends Module
         $this->setVendorPath($vendorPath);
 
         //Set web path
-        if (Server::$instance->getServerConfig()->isEnableStaticHandler()) {
-            $documentRoot = Server::$instance->getServerConfig()->getDocumentRoot();
-            if (empty($documentRoot)) {
-                $documentRoot = realpath(dirname($srcDir) . '/web');
-            }
-            $this->setWebPath($documentRoot);
+        $documentRoot = $this->config->get('yew.server.documentRoot');
+        if (empty($documentRoot)) {
+            $documentRoot = realpath(dirname($srcDir) . '/web');
         }
-
-		// set "@runtime"
-        $this->getRuntimePath();
-
+        $this->setWebPath($documentRoot);
+        
         //Set language
-        if (!empty($config['language'])) {
-            $this->setLanguage($config['language']);
-            $this->setContextLanguage($config['language']);
+        $language = $this->config->get('yew.language');
+        if (!empty($language)) {
+            $this->setLanguage($language);
+            $this->setContextLanguage($language);
         }
 
-        if (!empty($config['timezone'])) {
-            $this->setTimeZone($config['timezone']);
-            $this->setContextTimeZone($config['timezone']);
+        $timezone = $config->get('yew.timezone');
+        if (!empty($timezone)) {
+            $this->setTimezone($timezone);
+            $this->setContextTimezone($timezone);
         }
 
         //Merge core components with custom components
-        $newConfig = $config;
-        unset($newConfig['db']);
+        $components = $this->config->get('yew.components');
 
         foreach ($this->coreComponents() as $id => $component) {
-            if (!isset($newConfig['components'][$id])) {
-                $newConfig['components'][$id] = $component;
-            } elseif (is_array($newConfig['components'][$id]) && !isset($newConfig['components'][$id]['class'])) {
-                $newConfig['components'][$id]['class'] = $component['class'];
+            if (!isset($components[$id])) {
+                $components[$id] = $component;
+            } elseif (is_array($components[$id]) && !isset($components[$id]['class'])) {
+                $components[$id]['class'] = $component['class'];
             }
         }
 
-        $this->setComponents($newConfig['components']);
+        $this->setComponents($components);
 
         //Instance log component, and crete object Yew\Framework\Log\Logger, set property as Logger::flushInterval, logger::traceLevel.
         //If Yew\Framework\Log\Logger is created, it can be stored in container. the next time to be created, it will return
@@ -226,25 +232,19 @@ class Application extends Module
         //but default value.
         $this->getLog();
 
-        unset($newConfig);
     }
 
-
     /**
-     * Sets the root directory of the module.
+     * Sets the root directory of the application and the @app alias.
      * This method can only be invoked at the beginning of the constructor.
-     * @param string $path the root directory of the module. This can be either a directory name or a [path alias](guide:concept-aliases).
+     * @param string $path the root directory of the application.
+     * @property string the root directory of the application.
      * @throws InvalidArgumentException if the directory does not exist.
      */
-    public function setBasePath(string $path)
+    public function setBasePath($path)
     {
-        $path = Yew::getAlias($path);
-        $p = strncmp($path, 'phar://', 7) === 0 ? $path : realpath($path);
-        if ($p !== false && is_dir($p)) {
-            $this->_basePath = $p;
-        } else {
-            throw new InvalidArgumentException("The directory does not exist: $path");
-        }
+        parent::setBasePath($path);
+
         Yew::setAlias('@app', $this->getBasePath());
         Yew::setAlias('@App', $this->getBasePath());
     }
@@ -330,7 +330,7 @@ class Application extends Module
             case "slave":
             case "master":
                 $_configKey = sprintf("yew.db.%s.%s", $name, $subName);
-                $_configs = Server::$instance->getConfigContext()->get($_configKey);
+                $_configs = $this->config->get($_configKey);
 
                 if (empty($_configs)) {
                     $poolKey = $name;
@@ -396,7 +396,7 @@ class Application extends Module
         }
 
         $_configKey = sprintf("yew.db.%s", $name);
-        $_config = Server::$instance->getConfigContext()->get($_configKey);
+        $_config = $this->config->get($_configKey);
         $db = Yew::createObject([
             'class' => Connection::class,
             'poolName' => $name,
@@ -439,7 +439,7 @@ class Application extends Module
      * Returns the request component.
      * @return \Yew\Core\Server\Beans\Request|null the request component.
      */
-    public function getRequest(): ?Request
+    public function getRequest()
     {
         return getDeepContextValueByClassName(Request::class);
     }
@@ -448,7 +448,7 @@ class Application extends Module
      * Returns the response component.
      * @return \Yew\Core\Server\Beans\Response|null the response component.
      */
-    public function getResponse(): ?Response
+    public function getResponse()
     {
         return getDeepContextValueByClassName(Response::class);
     }
@@ -576,9 +576,9 @@ class Application extends Module
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getContextLanguage(): string
+    public function getContextLanguage(): ?string
     {
         return getDeepContextValue("language");
     }
@@ -625,6 +625,15 @@ class Application extends Module
     {
         setContextValue("timeZone", $timeZone);
     }
+
+    /**
+     * @return Config|null
+     */
+    public function getConfig(): ?Config
+    {
+        return $this->config;
+    }
+
 
     /**
      * @param string $route

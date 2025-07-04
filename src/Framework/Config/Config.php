@@ -2,6 +2,7 @@
 
 namespace Yew\Framework\Config;
 
+use ArrayAccess;
 use Yew\Framework\Helpers\ArrayHelper;
 
 class Config implements ConfigInterface
@@ -9,14 +10,31 @@ class Config implements ConfigInterface
     /**
      * @var array
      */
-    protected array $config = [];
+    protected array $configuration = [];
 
     /**
      * @param array $config
      */
     public function __construct(array $config)
     {
-        $this->config = $config;
+        $this->configuration = $config;
+    }
+
+    /**
+     * @return array
+     */
+    public function getConfiguration(): array
+    {
+        return $this->configuration;
+    }
+
+    /**
+     * @param array $configuration
+     * @return void
+     */
+    public function setConfiguration(array $configuration): void
+    {
+        $this->configuration = $configuration;
     }
 
     /**
@@ -27,7 +45,7 @@ class Config implements ConfigInterface
      */
     public function get(string $key, $default = null)
     {
-        return ArrayHelper::getValue($this->config, $key, $default);
+        return ArrayHelper::getValue($this->configuration, $key, $default);
     }
 
     /**
@@ -36,7 +54,7 @@ class Config implements ConfigInterface
      */
     public function has(string $key): bool
     {
-        return ArrayHelper::issetNested($this->config, $key);
+        return ArrayHelper::issetNested($this->configuration, $key);
     }
 
     /**
@@ -44,10 +62,28 @@ class Config implements ConfigInterface
      * @param $value
      * @return void
      */
-    public function set(string $key, $value)
+    public function set(string $key, $value): void
     {
-        ArrayHelper::setValue($this->config, $key, $value);
+        ArrayHelper::setValue($this->configuration, $key, $value);
     }
 
+    /**
+     * @param array $values
+     * @return void
+     */
+    public function setMultiple(array $values): void
+    {
+        if (empty($values)) {
+            return;
+        }
 
+        foreach ($values as $key => $value) {
+            $this->set($key, $value);
+        }
+    }
+
+    public function addMultiple(array $values)
+    {
+        $this->configuration = array_replace_recursive($this->configuration, $values);
+    }
 }

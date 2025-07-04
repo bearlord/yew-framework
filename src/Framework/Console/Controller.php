@@ -125,7 +125,7 @@ class Controller extends \Yew\Framework\Base\Controller
                 }
                 unset($params['_aliases']);
             }
-
+            
             foreach ($params as $name => $value) {
                 // Allow camelCase options to be entered in kebab-case
                 if (!in_array($name, $options, true) && strpos($name, '-') !== false) {

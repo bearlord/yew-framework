@@ -40,7 +40,7 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->queryBaseClass, '\\
      * {@inheritdoc}
      * @return <?= $modelFullClassName ?>[]|array
      */
-    public function all($db = null)
+    public function all($db = null): array
     {
         return parent::all($db);
     }

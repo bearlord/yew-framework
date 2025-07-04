@@ -19,7 +19,7 @@ echo "<?php\n";
 
 namespace <?= $generator->ns ?>;
 
-use Yii;
+use Yew\Yew;
 
 /**
  * This is the model class for table "<?= $generator->generateTableName($tableName) ?>".
@@ -43,7 +43,7 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
     {
         return '<?= $generator->generateTableName($tableName) ?>';
     }
-<?php if ($generator->db !== 'db'): ?>
+<?php if ($generator->db !== 'default'): ?>
 
     /**
      * @return \Yew\Framework\Db\Connection the database connection used by this AR class.
@@ -55,7 +55,7 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
 <?php endif; ?>
 
     /**
-     * {@inheritdoc}
+     * @return array
      */
     public function rules(): array
     {
@@ -63,7 +63,7 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
     }
 
     /**
-     * {@inheritdoc}
+     * @return array
      */
     public function attributeLabels(): array
     {
@@ -91,10 +91,9 @@ class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . 
     echo "\n";
 ?>
     /**
-     * {@inheritdoc}
      * @return <?= $queryClassFullName ?> the active query used by this AR class.
      */
-    public static function find()
+    public static function find(): \Yew\Framework\Db\ActiveQuery
     {
         return new <?= $queryClassFullName ?>(get_called_class());
     }

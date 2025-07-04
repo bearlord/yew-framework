@@ -643,8 +643,6 @@ class Connection extends Component implements ConnectionInterface
         $token = 'Opening DB connection: ' . $this->dsn;
         $enableProfiling = $this->enableProfiling;
         try {
-            Server::$instance->getLog()->debug('Opening DB connection: ' . $this->dsn);
-
             Yew::info($token, __METHOD__);
             if ($enableProfiling) {
                 Yew::beginProfile($token, __METHOD__);
@@ -677,7 +675,6 @@ class Connection extends Component implements ConnectionInterface
         }
 
         if ($this->pdo !== null) {
-            Server::$instance->getLog()->info('Closing DB connection: ' . $this->dsn);
             Yew::info('Closing DB connection: ' . $this->dsn, __METHOD__);
 
             $this->pdo = null;

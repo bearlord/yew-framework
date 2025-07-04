@@ -7,6 +7,7 @@
 namespace Yew\Framework\Console;
 
 use Yew\Core\Server\Server;
+use Yew\Framework\Config\ConfigFactory;
 use Yew\Framework\Console\Exception\Exception;
 use Yew\Framework\Console\Exception\UnknownCommandException;
 use Yew\Framework\Exception\InvalidConfigException;
@@ -109,22 +110,21 @@ class Application extends \Yew\Framework\Base\Application
      */
     public array $bootstrap = ['generator'];
 
-
-
     /**
      * Returns static class instance, which can be used to obtain meta information.
      * @param bool $refresh whether to re-create static instance even, if it is already cached.
      * @return static class instance.
-     * @throws InvalidConfigException
      */
-    public static function instance(?bool $refresh = false): \Yew\Framework\Console\Application
+    public static function instance(?bool $refresh = false): self
     {
         $className = get_called_class();
         if ($refresh || !isset(self::$_instances[$className])) {
-            self::$_instances[$className] = Yew::createObject($className);
+            $instance = new self();
+            self::$_instances[$className] = $instance;
         }
         return self::$_instances[$className];
     }
+
 
     /**
      * Initialize the application.
@@ -154,52 +154,7 @@ class Application extends \Yew\Framework\Base\Application
      */
     public function preInit()
     {
-        $config = Server::$instance->getConfigContext()->get('yew');
-
-        //Set base path
-        $srcDir = Server::$instance->getServerConfig()->getSrcDir();
-        $this->setBasePath($srcDir);
-
-        //Set vendor path
-        $vendorPath =  realpath(dirname($srcDir) . '/vendor');
-        $this->setVendorPath($vendorPath);
-
-        //Set web path
-        if (Server::$instance->getServerConfig()->isEnableStaticHandler()) {
-            $documentRoot = Server::$instance->getServerConfig()->getDocumentRoot();
-            if (empty($documentRoot)) {
-                $documentRoot = realpath(dirname($srcDir) . '/web');
-            }
-            $this->setWebPath($documentRoot);
-        }
-
-        //Set language
-        if (!empty($config['language'])) {
-            $this->setLanguage($config['language']);
-            $this->setContextLanguage($config['language']);
-        }
-
-
-        if (!empty($config['timezone'])) {
-            $this->setTimeZone($config['timezone']);
-            $this->setContextTimeZone($config['timezone']);
-        }
-
-        //Merge core components with custom components
-        $newConfig = $config;
-        //unset($newConfig['db']);
-
-
-        foreach ($this->coreComponents() as $id => $component) {
-            if (!isset($newConfig['components'][$id])) {
-                $newConfig['components'][$id] = $component;
-            } elseif (is_array($newConfig['components'][$id]) && !isset($newConfig['components'][$id]['class'])) {
-                $newConfig['components'][$id]['class'] = $component['class'];
-            }
-        }
-        
-        $this->setComponents($newConfig['components']);
-        unset($newConfig);
+        parent::preInit();
 
         if ($this->enableCoreCommands) {
             foreach ($this->coreCommands() as $id => $command) {
@@ -208,9 +163,61 @@ class Application extends \Yew\Framework\Base\Application
                 }
             }
         }
-
-        $this->getLog();
     }
+
+    /**
+     * @return \Yew\Framework\Console\Request|null
+     * @throws InvalidConfigException
+     */
+    public function getRequest()
+    {
+        return $this->get('request');
+    }
+
+    /**
+     * @return \Yew\Framework\Console\Response|null
+     * @throws InvalidConfigException
+     */
+    public function getResponse()
+    {
+        return $this->get('response');
+    }
+
+    /**
+     * @return void
+     * @throws InvalidConfigException
+     */
+    public function run()
+    {
+        try {
+            $response = $this->handleRequest($this->getRequest());
+        } catch (\Exception $exception) {
+            throw $exception;
+            //return $exception->getCode();
+        }
+    }
+
+    /**
+     * Handles the specified request.
+     * @param Request $request the request to be handled
+     * @return Response the resulting response
+     */
+    public function handleRequest($request)
+    {
+        list($route, $params) = $request->resolve();
+
+        $this->requestedRoute = $route;
+        $result = $this->runAction($route, $params);
+        if ($result instanceof Response) {
+            return $result;
+        }
+
+        $response = $this->getResponse();
+        $response->exitStatus = $result;
+
+        return $response;
+    }
+
 
     /**
      * @param string $route
@@ -240,7 +247,7 @@ class Application extends \Yew\Framework\Base\Application
             $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
             return [$controller, $route];
         }
-        
+
         $module = $this->getModule($id);
         if ($module !== null) {
             return $module->createController($_route);
@@ -306,7 +313,7 @@ class Application extends \Yew\Framework\Base\Application
             /* @var $controller \Yew\Framework\Console\Controller */
             list($controller, $actionID) = $parts;
 
-            return $controller->runAction($actionID, $this->formatParams($params));
+            return $controller->runAction($actionID, $params);
         } catch (InvalidRouteException $e) {
             throw new UnknownCommandException($route, $this, 0, $e);
         }
@@ -335,31 +342,5 @@ class Application extends \Yew\Framework\Base\Application
             'cache' => 'Yew\Framework\Console\Controllers\CacheController',
             'migrate' => 'Yew\Framework\Console\Controllers\MigrateController'
         ];
-    }
-
-    /**
-     * @param array|null $rawParams
-     * @return array|null
-     * @throws Exception
-     */
-    protected function formatParams(?array $rawParams = []): ?array
-    {
-        if (empty($rawParams)) {
-            return null;
-        }
-
-        $formatParams = [];
-        foreach ($rawParams as $param) {
-            if (preg_match('/^([\w-]+)(?:=(.*))?$/', $param, $matches)) {
-                $name = $matches[1];
-                if (is_numeric(substr($name, 0, 1))) {
-                    throw new Exception('Parameter "' . $name . '" is not valid');
-                }
-
-                $formatParams[$name] = isset($matches[2]) ? $matches[2] : true;
-            }
-        }
-
-        return $formatParams;
     }
 }

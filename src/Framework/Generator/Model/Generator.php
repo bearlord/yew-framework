@@ -38,12 +38,12 @@ class Generator extends \Yew\Framework\Generator\Generator
     public $generateRelations = self::RELATIONS_ALL;
     public $generateRelationsFromCurrentSchema = true;
     public $generateLabelsFromComments = false;
-    public $useTablePrefix = false;
+    public $useTablePrefix = true;
     public $standardizeCapitals = false;
     public $singularize = false;
     public $useSchemaName = true;
     public $generateQuery = false;
-    public $queryNs = 'App\Model';
+    public $queryNs = 'App\Models';
     public $queryClass;
     public $queryBaseClass = 'Yew\Framework\Db\ActiveQuery';
 
@@ -236,6 +236,7 @@ class Generator extends \Yew\Framework\Generator\Generator
                 'relations' => $tableRelations,
                 'relationsClassHints' => $this->generateRelationsClassHints($tableRelations, $this->generateQuery),
             ];
+
             $files[] = new CodeFile(
                 Yew::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/' . $modelClassName . '.php',
                 $this->render('model.php', $params)
@@ -818,8 +819,10 @@ class Generator extends \Yew\Framework\Generator\Generator
     public function validateNamespace(string $attribute)
     {
         $value = $this->$attribute;
+
         $value = ltrim($value, '\\');
         $path = Yew::getAlias('@' . str_replace('\\', '/', $value), false);
+
         if ($path === false) {
             $this->addError($attribute, 'Namespace must be associated with an existing directory.');
         }
@@ -913,6 +916,7 @@ class Generator extends \Yew\Framework\Generator\Generator
         }
 
         $db = $this->getDbConnection();
+
         if (preg_match("/^{$db->tablePrefix}(.*?)$/", $tableName, $matches)) {
             $tableName = '{{%' . $matches[1] . '}}';
         } elseif (preg_match("/^(.*?){$db->tablePrefix}$/", $tableName, $matches)) {

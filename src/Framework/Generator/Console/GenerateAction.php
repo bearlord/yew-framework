@@ -52,6 +52,7 @@ class GenerateAction extends \Yew\Framework\Base\Action
     protected function generateCode()
     {
         $files = $this->generator->generate();
+
         $n = count($files);
         if ($n === 0) {
             echo "No code to be generated.\n";

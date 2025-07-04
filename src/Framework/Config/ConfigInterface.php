@@ -8,6 +8,10 @@ namespace Yew\Framework\Config;
 
 interface ConfigInterface
 {
+    public function getConfiguration(): array;
+
+    
+
     /**
      * @param string $key
      * @param $default

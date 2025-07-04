@@ -367,7 +367,8 @@ class BaseYew
      */
     public static function debug($message, string $category = 'application')
     {
-        $debug = Server::$instance->getConfigContext()->get('yew.debug');
+        //$debug = Server::$instance->getConfigContext()->get('yew.debug');
+        $debug = Yew::$app->config->get('yew.debug');
         if ($debug) {
             static::getLogger()->log($message, Logger::LEVEL_TRACE, $category);
         }
