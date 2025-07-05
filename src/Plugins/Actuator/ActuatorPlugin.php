@@ -45,13 +45,8 @@ class ActuatorPlugin extends AbstractPlugin
     }
 
     /**
-     *
      * @param PluginInterfaceManager $pluginInterfaceManager
-     * @return mixed|void
-     * @throws \DI\DependencyException
-     * @throws \DI\NotFoundException
-     * @throws \ESD\Core\Exception
-     * @throws \ReflectionException
+     * @return void
      */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
@@ -74,12 +69,9 @@ class ActuatorPlugin extends AbstractPlugin
     }
 
     /**
-     *
      * @param Context $context
-     * @return mixed|void
-     * @throws \DI\DependencyException
-     * @throws \DI\NotFoundException
-     * @throws \ESD\Core\Exception
+     * @return void
+     * @throws \Yew\Core\Exception\Exception
      */
     public function init(Context $context)
     {
@@ -100,9 +92,8 @@ class ActuatorPlugin extends AbstractPlugin
     }
 
     /**
-     *
      * @param Context $context
-     * @return mixed
+     * @return void
      * @throws \Exception
      */
     public function beforeServerStart(Context $context)
@@ -119,21 +110,18 @@ class ActuatorPlugin extends AbstractPlugin
         $table->column('num_3600', Table::TYPE_INT, 4);
         $table->column('num_86400', Table::TYPE_INT, 4);
         if (!$table->create()) {
-            throw new \Exception('memory not allow');
+            throw new \Exception('memory not allowed');
         }
 
         $this->table = $table;
 
         $this->setToDIContainer('RouteCountTable', $table);
-
-
         return;
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
-     * @return mixed
+     * @return void
      * @throws \Exception
      */
     public function beforeProcessStart(Context $context)
@@ -159,12 +147,10 @@ class ActuatorPlugin extends AbstractPlugin
     }
 
     /**
-     * Update count
-     *
-     * @param $column
-     * @throws \Exception
+     * @param string $column
+     * @return void
      */
-    public function updateCount($column)
+    public function updateCount(string $column)
     {
         foreach ($this->table as $key => $num) {
             $this->table->set($key, [$column => 0]);
