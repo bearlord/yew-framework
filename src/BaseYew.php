@@ -114,7 +114,7 @@ class BaseYew
 
         $pos = strpos($alias, '/');
         $root = $pos === false ? $alias : substr($alias, 0, $pos);
-        
+
         if (isset(static::$aliases[$root])) {
             if (is_string(static::$aliases[$root])) {
                 return $pos === false ? static::$aliases[$root] : static::$aliases[$root] . substr($alias, $pos);
@@ -367,8 +367,7 @@ class BaseYew
      */
     public static function debug($message, string $category = 'application')
     {
-        //$debug = Server::$instance->getConfigContext()->get('yew.debug');
-        $debug = Yew::$app->config->get('yew.debug');
+        $debug = Yew::$app->getConfig()->get('yew.debug');
         if ($debug) {
             static::getLogger()->log($message, Logger::LEVEL_TRACE, $category);
         }

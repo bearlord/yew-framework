@@ -8,7 +8,8 @@ namespace Yew\Framework\Exception;
 
 use Yew\Core\Plugins\Logger\GetLogger;
 
-class ResponseException extends \Exception{
+class ResponseException extends \Exception
+{
 
     use GetLogger;
 
@@ -21,7 +22,7 @@ class ResponseException extends \Exception{
      */
     function __construct($message = null, $code = 200, \Throwable $previous = null)
     {
-        if(is_null($message)){
+        if (is_null($message)) {
             $message = "The request failed. Please try again later";
         }
         $this->warn($message);

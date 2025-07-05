@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Service;
+
+use App\Service\JsonRpc\CalculatorService;
+use Yew\Plugins\JsonRpc\Annotation\ResponeJsonRpc;
+use Yew\Plugins\Route\Annotation\RestController;
+use Yew\Plugins\Route\Annotation\RequestMapping;
+use Yew\Plugins\Route\Annotation\PostMapping;
+use Yew\Plugins\Route\Annotation\RequestRawJson;
+use Yew\Plugins\JsonRpc\ServiceController;
+
+/**
+ * @RestController("calculator")
+ *
+ */
+class CalculatorServiceController extends ServiceController
+{
+    protected $serviceProvider = CalculatorService::class;
+
+    /**
+     * @PostMapping("index")
+     * @ResponeJsonRpc()
+     */
+    public function index()
+    {
+        return '';
+    }
+
+}

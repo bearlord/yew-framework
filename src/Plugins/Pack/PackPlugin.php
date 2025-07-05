@@ -15,6 +15,7 @@ use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Pack\Aspect\PackAspect;
+use Yew\Plugins\Pack\PackTool\IPack;
 
 class PackPlugin extends AbstractPlugin
 {
@@ -66,11 +67,13 @@ class PackPlugin extends AbstractPlugin
             $packConfig->setName($key);
             $packConfig->buildFromConfig($value);
             //Handling packtool
-            if($packConfig->getPackTool()!=null){
+            if ($packConfig->getPackTool() != null) {
+                /** @var IPack $class */
                 $class = $packConfig->getPackTool();
-                if(class_exists($class)){
-                    $class::changePortConfig($packConfig);
-                }else{
+                if (class_exists($class)) {
+                    //$class::changePortConfig($packConfig);
+                    call_user_func([$class, "changePortConfig"], $packConfig);
+                } else {
                     throw new Exception("$class pack class was not found");
                     exit(-1);
                 }

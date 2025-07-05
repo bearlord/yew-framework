@@ -1,8 +1,7 @@
 <?php
 /**
- * @link http://www.yiiframework.com/
- * @copyright Copyright (c) 2008 Yii Software LLC
- * @license http://www.yiiframework.com/license/
+ * Yew framework
+ * @author bearlord <565364226@qq.com>
  */
 
 namespace Yew\Framework\Exception;

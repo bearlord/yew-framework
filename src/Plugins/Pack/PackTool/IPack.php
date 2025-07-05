@@ -15,7 +15,7 @@ interface IPack
      * @param mixed $buffer
      * @return mixed
      */
-    public function encode($buffer);
+    public function encode($buffer): string;
 
     /**
      * @param mixed $buffer
@@ -29,7 +29,7 @@ interface IPack
      * @param string|null $topic
      * @return mixed
      */
-    public function pack($data, PortConfig $portConfig, ?string $topic = null);
+    public function pack($data, PortConfig $portConfig, ?string $topic = null): string;
 
     /**
      * @param int $fd
