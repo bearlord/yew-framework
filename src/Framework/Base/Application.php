@@ -184,13 +184,15 @@ class Application extends Module
         $config = ConfigFactory::build();
 
         //Set base path
-        //$srcDir = Server::$instance->getServerConfig()->getSrcDir();
         $srcDir = ROOT_DIR  . 'src';
         $this->setBasePath($srcDir);
 
         //Set vendor path
         $vendorPath = realpath(dirname($srcDir) . '/vendor');
         $this->setVendorPath($vendorPath);
+
+        $runtimePath = ROOT_DIR. '/runtime';
+        $this->setRuntimePath($runtimePath);
 
         //Set web path
         $documentRoot = $this->config->get('yew.server.documentRoot');
@@ -297,7 +299,7 @@ class Application extends Module
     public function getRuntimePath(): string
     {
         if ($this->_runtimePath === null) {
-            $this->setRuntimePath(realpath(dirname($this->getBasePath())) . DIRECTORY_SEPARATOR . 'bin/runtime');
+            $this->setRuntimePath(realpath(dirname($this->getBasePath())) . DIRECTORY_SEPARATOR . 'runtime');
         }
 
         return $this->_runtimePath;

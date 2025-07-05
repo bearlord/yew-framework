@@ -71,7 +71,7 @@ class AopPlugin extends AbstractPlugin
         //File operations must close the global RuntimeCoroutine
         enableRuntimeCoroutine(false);
 
-        $cacheDir = $this->aopConfig->getCacheDir() ?? Server::$instance->getServerConfig()->getBinDir() . DIRECTORY_SEPARATOR . "cache" . DIRECTORY_SEPARATOR . "aop";
+        $cacheDir = $this->aopConfig->getCacheDir() ?? Server::$instance->getServerConfig()->getRuntimeDir() . DIRECTORY_SEPARATOR . "cache" . DIRECTORY_SEPARATOR . "aop";
         if (!file_exists($cacheDir)) {
             mkdir($cacheDir, 0777, true);
         }

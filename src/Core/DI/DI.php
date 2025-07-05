@@ -33,19 +33,6 @@ class DI
     {
         $builder = new ContainerBuilder();
 
-        /*
-        $cacheProxiesDir = ROOT_DIR . '/bin/cache/proxies';
-         if (!file_exists($cacheProxiesDir)) {
-             mkdir($cacheProxiesDir, 0777, true);
-         }
-         $cacheDir = ROOT_DIR . "/bin/cache/di";
-         if (!file_exists($cacheDir)) {
-             mkdir($cacheDir, 0777, true);
-         }
-         $builder->enableCompilation($cacheDir);
-         $builder->writeProxiesToFile(true, $cacheProxiesDir);
-        */
-
         $builder->addDefinitions(self::$definitions);
         $builder->useAnnotations(true);
 

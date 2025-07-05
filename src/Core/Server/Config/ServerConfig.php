@@ -786,7 +786,7 @@ class ServerConfig extends BaseConfig
             $build['cpu_affinity_ignore'] = $this->getCpuAffinityIgnore();
         }
         if (empty($this->getLogFile())) {
-            $path = $this->rootDir . DIRECTORY_SEPARATOR . "bin" . DIRECTORY_SEPARATOR . "logs";
+            $path = $this->rootDir . DIRECTORY_SEPARATOR . "runtime" . DIRECTORY_SEPARATOR . "logs";
             if (!file_exists($path)) {
                 mkdir($path, 0777, true);
             }
@@ -817,7 +817,7 @@ class ServerConfig extends BaseConfig
         }
 
         if (empty($this->getPidFile())) {
-            $path = $this->rootDir . DIRECTORY_SEPARATOR . "bin";
+            $path = $this->rootDir . DIRECTORY_SEPARATOR . "runtime";
             if (!file_exists($path)) {
                 mkdir($path, 0777, true);
             }
@@ -949,6 +949,15 @@ class ServerConfig extends BaseConfig
     public function getBinDir(): string
     {
         return realpath($this->getRootDir()) . DIRECTORY_SEPARATOR . "bin";
+    }
+
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getRuntimeDir(): string
+    {
+        return realpath($this->getRootDir()) . DIRECTORY_SEPARATOR . "runtime";
     }
 
     /**

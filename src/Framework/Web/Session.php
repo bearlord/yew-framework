@@ -136,7 +136,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
         $this->setCookieParamsInternal();
 
-        $debug = Server::$instance->getServerConfig()->isDebug();
+        $debug = Yew::$app->getConfig()->get('yew.debug');
         $debug ? session_start() : @session_start();
 
         if ($this->getIsActive()) {
