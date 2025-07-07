@@ -4,14 +4,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actor;
+namespace Yew\Plugins\Actor;
 
-use ESD\Core\Context\Context;
-use ESD\Core\Plugin\AbstractPlugin;
-use ESD\Core\Plugin\PluginInterfaceManager;
-use ESD\Plugins\Actor\ActorCacheProcess;
-use ESD\Server\Coroutine\Server;
-use ESD\Plugins\ProcessRPC\ProcessRPCPlugin;
+use Yew\Core\Context\Context;
+use Yew\Core\Plugin\AbstractPlugin;
+use Yew\Core\Plugin\PluginInterfaceManager;
+use Yew\Plugins\Actor\ActorCacheProcess;
+use Yew\Coroutine\Server\Server;
+use Yew\Plugins\ProcessRPC\ProcessRPCPlugin;
 
 /**
  * Class ActorPlugin
@@ -23,18 +23,13 @@ class ActorPlugin extends AbstractPlugin
     /**
      * @var ActorConfig|null
      */
-    private $actorConfig;
+    private ?ActorConfig $actorConfig;
 
     /**
      * @var ActorManager
      */
-    protected $actorManager;
+    protected ActorManager $actorManager;
 
-    /**
-     * ActorPlugin constructor.
-     * @param ActorConfig|null $actorConfig
-     * @throws \ReflectionException
-     */
     public function __construct()
     {
         parent::__construct();
@@ -46,14 +41,13 @@ class ActorPlugin extends AbstractPlugin
         $actorConfig->setActorWorkerCount($config['actorWorkerCount']);
         $actorConfig->setActorMaxClassCount($config['actorMailboxCapacity']);
         $this->actorConfig = $actorConfig;
+
         $this->atAfter(ProcessRPCPlugin::class);
     }
 
     /**
-     * @inheritDoc
      * @param PluginInterfaceManager $pluginInterfaceManager
-     * @return mixed|void
-     * @throws \ESD\Core\Exception
+     * @return void
      */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
@@ -62,7 +56,6 @@ class ActorPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @return string
      */
     public function getName(): string
@@ -71,10 +64,8 @@ class ActorPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
-     * @throws \ESD\Core\Plugins\Config\ConfigException
-     * @throws \ReflectionException
+     * @return void
      */
     public function beforeServerStart(Context $context)
     {
@@ -83,16 +74,13 @@ class ActorPlugin extends AbstractPlugin
             Server::$instance->addProcess("actor-$i", ActorProcess::class, ActorConfig::GROUP_NAME);
         }
 
-        Server::$instance->addProcess(ActorCacheProcess::PROCESS_NAME, ActorCacheProcess::class, ActorCacheProcess::GROUP_NAME);
-
         $this->actorManager = ActorManager::getInstance();
-
         return;
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
+     * @return void
      */
     public function beforeProcessStart(Context $context)
     {
