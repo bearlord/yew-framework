@@ -12,12 +12,11 @@ use Yew\Plugins\Actor\Event\ActorCreateEvent;
 trait GetActorRpc
 {
     /**
-     * Call actor
      * @param string $actorName
      * @param bool $oneway
      * @param float $timeOut
      * @return ActorRPCProxy
-     * @throws ActorException
+     * @throws Exception\ActorException
      */
     public function callActor(string $actorName, bool $oneway = false, float $timeOut = 5): ActorRPCProxy
     {
@@ -25,10 +24,10 @@ trait GetActorRpc
     }
 
     /**
-     * Only the process that created the Actor can use this listener
      * @param string $actorName
      * @param float $timeOut
-     * @throws \ESD\Plugins\Actor\ActorException
+     * @return void
+     * @throws \Exception
      */
     public function waitActorCreate(string $actorName, float $timeOut = 5)
     {

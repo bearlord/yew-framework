@@ -26,19 +26,21 @@ class ActorProcess extends Process
     }
 
     /**
-     * @inheritDoc
-     * @return mixed|void
+     * @return void
      * @throws \Exception
      */
     public function onProcessStart()
     {
         $call = $this->eventDispatcher->listen(ActorCreateEvent::ActorCreateEvent);
         $call->call(function (ActorCreateEvent $event) {
-            $class = $event->getData()[0];
-            $name = $event->getData()[1];
-            $data = $event->getData()[2] ?? null;
-            $isCreated = $event->getData()[3] ?? false;
+            $_data = $event->getData();
+
+            $class = $_data[0];
+            $name = $_data[1];
+            $data = $_data[2] ?? null;
+            $isCreated = $_data[3] ?? false;
             $actor = new $class($name, $isCreated);
+
             if ($actor instanceof Actor) {
                 $actor->initData($data);
             } else {
