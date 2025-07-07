@@ -107,8 +107,8 @@ class IpcMessageProcessor extends MessageProcessor
             }
             return true;
         } else if ($message instanceof IpcResultMessage) {
-            $rpcResultData = $message->getProcessRPCResultData();
-            IpcManager::callChannel($rpcResultData->getToken(), $rpcResultData);
+            $ipcResultData = $message->getIpcResultData();
+            IpcManager::callChannel($ipcResultData->getToken(), $ipcResultData);
             return true;
         }
         return false;

@@ -30,7 +30,6 @@ class IpcCallData
     private bool $oneway;
 
     /**
-     * ProcessRPCCallData constructor.
      * @param string $className
      * @param string $name
      * @param array $arguments

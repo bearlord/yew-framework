@@ -26,7 +26,7 @@ class IpcResultMessage extends Message
     /**
      * @return IpcResultData
      */
-    public function getProcessRPCResultData(): IpcResultData
+    public function getIpcResultData(): IpcResultData
     {
         return $this->getData();
     }
