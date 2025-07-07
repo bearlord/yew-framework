@@ -7,12 +7,12 @@
 namespace Yew\Plugins\Actor;
 
 use Yew\Plugins\Actor\Exception\ActorException;
-use Yew\Plugins\ProcessRPC\ProcessRPCCallMessage;
-use Yew\Plugins\ProcessRPC\RPCProxy;
+use Yew\Plugins\Ipc\IpcProxy;
+use Yew\Plugins\Ipc\IpcCallMessage;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 
-class ActorIpcProxy extends RPCProxy
+class ActorIpcProxy extends IpcProxy
 {
     /**
      * @param string $actorName
@@ -36,7 +36,7 @@ class ActorIpcProxy extends RPCProxy
      */
     public function sendMessage(ActorMessage $message): bool
     {
-        $message = new ProcessRPCCallMessage($this->className, "sendMessage", [$message], true);
+        $message = new ProcessIpcCallMessage($this->className, "sendMessage", [$message], true);
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
 
         return true;
@@ -55,7 +55,7 @@ class ActorIpcProxy extends RPCProxy
             return false;
         }
 
-        $message = new ProcessRPCCallMessage($actorInfo->getClassName(), "sendMessage", [$message], true);
+        $message = new IpcCallMessage($actorInfo->getClassName(), "sendMessage", [$message], true);
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $actorInfo->getProcess());
 
         return true;

@@ -12,7 +12,7 @@ use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Actor\Multicast\MulticastConfig;
 use Yew\Plugins\Actor\Multicast\Channel as MulticastChannel;
-use Yew\Plugins\ProcessRPC\GetProcessRpc;
+use Yew\Plugins\Ipc\GetIpc;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 use Swoole\Timer;
@@ -21,7 +21,7 @@ abstract class Actor
 {
     use GetLogger;
 
-    use GetProcessRpc;
+    use GetIpc;
 
     /**
      * @var MulticastConfig
@@ -161,7 +161,7 @@ abstract class Actor
      * @param string $actorName
      * @param bool $oneway
      * @param float|null $timeOut
-     * @return \ESD\Plugins\Actor\ActorIpcProxy|false
+     * @return \Yew\Plugins\Actor\ActorIpcProxy|false
      */
     public static function getProxy(string $actorName, ?bool $oneway = false, ?float $timeOut = 5)
     {
@@ -179,8 +179,8 @@ abstract class Actor
      * @param null $data
      * @param bool $waitCreate
      * @param float|null $timeOut
-     * @return \ESD\Plugins\Actor\ActorIpcProxy|false|void
-     * @throws \ESD\Plugins\Actor\ActorException
+     * @return \Yew\Plugins\Actor\ActorIpcProxy|false|void
+     * @throws \Yew\Plugins\Actor\ActorException
      */
     public static function create(string $actionClass, string $actorName, $data = null, ?bool $waitCreate = true, ?float $timeOut = 5)
     {
@@ -321,19 +321,18 @@ abstract class Actor
 
 
     /**
-     * Subscribe
-     *
      * @param string $channel
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException|\ESD\Core\Exception
+     * @return void
+     * @throws \Yew\Plugins\Ipc\IpcException
      */
     public function subscribe(string $channel)
     {
         $actor = $this->getName();
 
-        /** @var \ESD\Plugins\Actor\Multicast\Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
+        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
+        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
 
-        $rpcProxy->subscribe($channel, $actor);
+        $ipcProxy->subscribe($channel, $actor);
     }
 
     /**
@@ -347,9 +346,9 @@ abstract class Actor
     {
         $actor = $this->getName();
 
-        /** @var \ESD\Plugins\Actor\Multicast\Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $rpcProxy->unsubscribe($channel, $actor);
+        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
+        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
+        $ipcProxy->unsubscribe($channel, $actor);
     }
 
     /**
@@ -362,20 +361,17 @@ abstract class Actor
     {
         $actor = $this->getName();
 
-        /** @var \ESD\Plugins\Actor\Multicast\Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $rpcProxy->unsubscribeAll($actor);
+        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
+        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
+        $ipcProxy->unsubscribeAll($actor);
     }
 
     /**
-     * Publish subscription
-     *
      * @param string $channel
      * @param string $message
      * @param array|null $excludeActorList
      * @return void
-     * @throws \ESD\Plugins\Actor\ActorException
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
+     * @throws \Yew\Plugins\Ipc\IpcException
      */
     public function publish(string $channel, string $message, ?array $excludeActorList = []): void
     {
@@ -385,18 +381,17 @@ abstract class Actor
             $excludeActorList = [$from];
         }
 
-        /** @var \ESD\Plugins\Actor\Multicast\Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
+        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
+        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
 
-        $rpcProxy->publish($channel, $message, $excludeActorList, $from);
+        $ipcProxy->publish($channel, $message, $excludeActorList, $from);
     }
-
+    
     /**
      * @param string $channel
      * @param string $message
      * @return void
-     * @throws \ESD\Plugins\Actor\ActorException
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
+     * @throws \Yew\Plugins\Ipc\IpcException
      */
     public function publishTo(string $channel, string $message): void
     {
@@ -404,17 +399,16 @@ abstract class Actor
 
         $excludeActorList = [$from];
 
-        /** @var \ESD\Plugins\Actor\Multicast\Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $rpcProxy->publish($channel, $message, $excludeActorList, $from);
+        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
+        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
+        $ipcProxy->publish($channel, $message, $excludeActorList, $from);
     }
 
     /**
      * @param string $channel
      * @param string $message
      * @return void
-     * @throws ActorException
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
+     * @throws \Yew\Plugins\Ipc\IpcException
      */
     public function publishIn(string $channel, string $message)
     {
@@ -422,8 +416,8 @@ abstract class Actor
 
         $excludeActorList = [];
 
-        /** @var \ESD\Plugins\Actor\Multicast\Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $rpcProxy->publish($channel, $message, $excludeActorList, $from);
+        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
+        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
+        $ipcProxy->publish($channel, $message, $excludeActorList, $from);
     }
 }

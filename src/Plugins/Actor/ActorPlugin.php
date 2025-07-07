@@ -12,12 +12,7 @@ use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\ActorCacheProcess;
 use Yew\Plugins\Ipc\IpcPlugin;
-use Yew\Plugins\ProcessRPC\ProcessRPCPlugin;
 
-/**
- * Class ActorPlugin
- * @package ESD\Plugins\Actor
- */
 class ActorPlugin extends AbstractPlugin
 {
 
@@ -43,7 +38,7 @@ class ActorPlugin extends AbstractPlugin
         $actorConfig->setActorMaxClassCount($config['actorMailboxCapacity']);
         $this->actorConfig = $actorConfig;
 
-        $this->atAfter(ProcessRPCPlugin::class);
+        $this->atAfter(IpcPlugin::class);
     }
 
     /**
