@@ -15,7 +15,7 @@ class IpcMessageProcessor extends MessageProcessor
 {
     use GetLogger;
     
-    const TYPE = "@processIpc";
+    const TYPE = "@ipc";
 
     /**
      * @var array
@@ -33,11 +33,10 @@ class IpcMessageProcessor extends MessageProcessor
     }
 
     /**
-     * @inheritDoc
-     * @inheritDoc
      * @param Message $message
-     * @return mixed
-     * @throws \Exception
+     * @return bool
+     * @throws \DI\DependencyException
+     * @throws \DI\NotFoundException
      */
     public function handler(Message $message): bool
     {
@@ -86,14 +85,17 @@ class IpcMessageProcessor extends MessageProcessor
             } else {
                 //The transaction id does not match and cache the message
                 $this->cacheMessages[$ipcCallData->getClassName()][] = $message;
+
                 return true;
             }
+
             if (!$ipcCallData->isOneway()) {
                 Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage(
                     new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
                     Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
                 );
             }
+            
             //Processing cache
             if (!isset($this->sessions[$ipcCallData->getClassName()])) {
                 $cacheMessages = $this->cacheMessages[$ipcCallData->getClassName()] ?? null;
@@ -105,12 +107,15 @@ class IpcMessageProcessor extends MessageProcessor
                     }
                 }
             }
+
             return true;
         } else if ($message instanceof IpcResultMessage) {
             $ipcResultData = $message->getIpcResultData();
             IpcManager::callChannel($ipcResultData->getToken(), $ipcResultData);
+
             return true;
         }
+
         return false;
     }
 }

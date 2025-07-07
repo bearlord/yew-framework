@@ -11,7 +11,6 @@ use Yew\Core\Message\Message;
 class IpcCallMessage extends Message
 {
     /**
-     * IpcCallMessage constructor.
      * @param string $className
      * @param string $name
      * @param array $arguments

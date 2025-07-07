@@ -16,7 +16,7 @@ class IpcPlugin extends AbstractPlugin
      */
     public function getName(): string
     {
-        return "processIpc";
+        return "ipc";
     }
 
     /**
@@ -37,6 +37,7 @@ class IpcPlugin extends AbstractPlugin
     {
         //Register event dispatch handler
         MessageProcessor::addMessageProcessor(new IpcMessageProcessor());
+        
         $this->ready();
     }
 }
