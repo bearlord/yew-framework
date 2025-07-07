@@ -12,7 +12,7 @@ use Yew\Plugins\ProcessRPC\RPCProxy;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 
-class ActorRPCProxy extends RPCProxy
+class ActorIpcProxy extends RPCProxy
 {
     /**
      * @param string $actorName

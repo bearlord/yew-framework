@@ -9,18 +9,24 @@ namespace Yew\Plugins\Actor;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
 
-trait GetActorRpc
+trait GetActorIpc
 {
     /**
      * @param string $actorName
      * @param bool $oneway
      * @param float $timeOut
-     * @return ActorRPCProxy
+     * @return ActorIpcProxy
      * @throws Exception\ActorException
      */
-    public function callActor(string $actorName, bool $oneway = false, float $timeOut = 5): ActorRPCProxy
+    /**
+     * @param string $actorName
+     * @param bool $oneway
+     * @param float $timeOut
+     * @return ActorIpcProxy
+     */
+    public function callActor(string $actorName, bool $oneway = false, float $timeOut = 5): ActorIpcProxy
     {
-        return new ActorRPCProxy($actorName, $oneway, $timeOut);
+        return new ActorIpcProxy($actorName, $oneway, $timeOut);
     }
 
     /**

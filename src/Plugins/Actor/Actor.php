@@ -161,12 +161,12 @@ abstract class Actor
      * @param string $actorName
      * @param bool $oneway
      * @param float|null $timeOut
-     * @return \ESD\Plugins\Actor\ActorRPCProxy|false
+     * @return \ESD\Plugins\Actor\ActorIpcProxy|false
      */
     public static function getProxy(string $actorName, ?bool $oneway = false, ?float $timeOut = 5)
     {
         try {
-            return new ActorRPCProxy($actorName, $oneway, $timeOut);
+            return new ActorIpcProxy($actorName, $oneway, $timeOut);
         } catch (ActorException $exception) {
             return false;
         }
@@ -179,13 +179,13 @@ abstract class Actor
      * @param null $data
      * @param bool $waitCreate
      * @param float|null $timeOut
-     * @return \ESD\Plugins\Actor\ActorRPCProxy|false|void
+     * @return \ESD\Plugins\Actor\ActorIpcProxy|false|void
      * @throws \ESD\Plugins\Actor\ActorException
      */
     public static function create(string $actionClass, string $actorName, $data = null, ?bool $waitCreate = true, ?float $timeOut = 5)
     {
         if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
-            return new ActorRPCProxy($actorName, false, $timeOut);
+            return new ActorIpcProxy($actorName, false, $timeOut);
         }
 
         $processes = Server::$instance->getProcessManager()->getProcessGroup(ActorConfig::GROUP_NAME);
@@ -206,7 +206,7 @@ abstract class Actor
                 return false;
             }
 
-            return new ActorRPCProxy($actorName, false, $timeOut);
+            return new ActorIpcProxy($actorName, false, $timeOut);
         }
     }
 
