@@ -24,10 +24,9 @@ class ActorRPCProxy extends RPCProxy
     {
         $actorInfo = ActorManager::getInstance()->getActorInfo($actorName);
         if ($actorInfo == null) {
-            throw new ActorException(Yii::t('esd', 'Actor {actor} not exist', [
-                'actor' => $actorName
-            ]));
+            return;
         }
+
         parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneway, $timeOut);
     }
 

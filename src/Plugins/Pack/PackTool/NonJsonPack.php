@@ -21,7 +21,7 @@ class NonJsonPack implements IPack
      * @param string|null $topic
      * @return string
      */
-    public function pack($data, PortConfig $portConfig, ?string $topic = null)
+    public function pack($data, PortConfig $portConfig, ?string $topic = null): string
     {
         try {
             $res = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -59,9 +59,9 @@ class NonJsonPack implements IPack
      * Packet encode
      * @param string $buffer
      */
-    public function encode($buffer)
+    public function encode($buffer): string
     {
-        return;
+        return "";
     }
 
     /**

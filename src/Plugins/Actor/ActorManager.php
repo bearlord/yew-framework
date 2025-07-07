@@ -20,7 +20,7 @@ class ActorManager
     /**
      * @var ActorManager
      */
-    protected $instance;
+    protected static $instance;
 
     /**
      * @var Table
@@ -184,7 +184,7 @@ class ActorManager
         if (empty($data)) {
             return false;
         }
-        
+
         return true;
     }
 }

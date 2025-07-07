@@ -9,8 +9,9 @@ namespace Yew\Plugins\Actor;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
-use Yew\Plugins\Actor\ActorCacheProcess;
 use Yew\Coroutine\Server\Server;
+use Yew\Plugins\Actor\ActorCacheProcess;
+use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Plugins\ProcessRPC\ProcessRPCPlugin;
 
 /**
@@ -52,7 +53,7 @@ class ActorPlugin extends AbstractPlugin
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
-        $pluginInterfaceManager->addPlugin(new ProcessRPCPlugin());
+        $pluginInterfaceManager->addPlugin(new IpcPlugin());
     }
 
     /**
