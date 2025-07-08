@@ -18,7 +18,7 @@ class ActuatorController
     {
         return json_encode([
             "status" => "UP",
-            "server" => "esd-server"
+            "server" => "yew-server"
         ], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
     }
 
@@ -48,7 +48,7 @@ class ActuatorController
     public function info(): string
     {
         $serverStats = Server::$instance->stats();
-        $output['server'] = 'esd-server';
+        $output['server'] = 'yew-server';
         $output['Start time']      = date('Y-m-d H:i:s', $serverStats->getStartTime());
         $output['Accept count']    = $serverStats->getAcceptCount();
         $output['Close count']     = $serverStats->getCloseCount();
