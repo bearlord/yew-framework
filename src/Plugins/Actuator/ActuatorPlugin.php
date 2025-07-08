@@ -13,8 +13,8 @@ use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Core\Server\Process\Process;
 use Yew\Coroutine\Server\Server;
-use ESD\Plugins\Actuator\Aspect\ActuatorAspect;
-use ESD\Plugins\Actuator\Aspect\CountAspect;
+use Yew\Plugins\Actuator\Aspect\ActuatorAspect;
+use Yew\Plugins\Actuator\Aspect\CountAspect;
 use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Route\RoutePlugin;
@@ -86,7 +86,7 @@ class ActuatorPlugin extends AbstractPlugin
             $r->addRoute("GET", "/actuator/info", "info");
         });
 
-        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/esd-framework/src/ESD/");
+        $aopConfig->addIncludePath($serverConfig->getVendorDir() . "/yew-framework/src/");
         $aopConfig->addAspect(new ActuatorAspect($actuatorController, $dispatcher));
         $aopConfig->addAspect(new CountAspect());
     }

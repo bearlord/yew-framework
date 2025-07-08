@@ -10,6 +10,7 @@ use DI\Annotation\Inject;
 use Yew\Core\Channel\Channel;
 use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Plugins\Actor\Log\LogFactory;
 use Yew\Plugins\Actor\Multicast\MulticastConfig;
 use Yew\Plugins\Actor\Multicast\Channel as MulticastChannel;
 use Yew\Plugins\Ipc\GetIpc;
@@ -61,6 +62,11 @@ abstract class Actor
     protected array $timerIds = [];
 
     /**
+     * @var Log\Logger
+     */
+    protected $logHandle;
+
+    /**
      * @param string|null $name
      * @param bool $isCreated
      * @throws \DI\DependencyException
@@ -83,6 +89,10 @@ abstract class Actor
                 $this->onHandleMessage($message);
             }
         });
+
+        $this->logHandle = LogFactory::create($name);
+
+        $this->tick(10 * 1000, [$this, 'saveContext']);
     }
 
     /**
@@ -280,9 +290,7 @@ abstract class Actor
             foreach ($this->timerIds as $timerId) {
                 $this->clearTimer($timerId);
             }
-            $this->debug(Yii::t("esd", "Actor {actor}'s all timer cleared", [
-                "actor" => $this->getName()
-            ]));
+            $this->debug(sprintf("Actor %s's all timer cleared", $this->getName()));
         }
         return true;
     }
@@ -293,16 +301,11 @@ abstract class Actor
      */
     public function saveContext(): void
     {
-        $class = get_class($this);
-        $name = $this->getName();
-        $data = $this->getData();
+        var_dump(__METHOD__);
 
-        //Dispatch ActorSaveEvent to actor-cache process, do not need reply
-        Server::$instance->getEventDispatcher()->dispatchProcessEvent(new ActorSaveEvent(
-            ActorSaveEvent::ActorSaveEvent,
-            [
-                $class, $name, $data,
-            ]), Server::$instance->getProcessManager()->getProcessFromName(ActorCacheProcess::PROCESS_NAME));
+        $this->logHandle->log($this->data);
+
+        return;
     }
 
 
@@ -339,7 +342,6 @@ abstract class Actor
      * Unsubscribe
      *
      * @param string $channel
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      * @throws \Exception
      */
     public function unsubscribe(string $channel)
@@ -354,7 +356,6 @@ abstract class Actor
     /**
      * Unsubscribe all
      * @return void
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      * @throws \Exception
      */
     public function unsubscribeAll(): void

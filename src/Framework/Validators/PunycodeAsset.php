@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Validators;
 
-use ESD\Yii\Web\AssetBundle;
+use Yew\Framework\Web\AssetBundle;
 
 /**
  * This asset bundle provides the javascript files needed for the [[EmailValidator]]s client validation.

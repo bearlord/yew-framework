@@ -11,7 +11,7 @@ use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Json;
-use ESD\Yii\Web\JsExpression;
+use Yew\Framework\Web\JsExpression;
 
 /**
  * RegularExpressionValidator validates that the attribute value matches the specified [[pattern]].

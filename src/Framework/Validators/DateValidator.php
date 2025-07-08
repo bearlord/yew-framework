@@ -76,13 +76,13 @@ class DateValidator extends Validator
      * Alternatively this can be a string prefixed with `php:` representing a format that can be recognized by the PHP Datetime class.
      * Please refer to <https://secure.php.net/manual/en/datetime.createfromformat.php> on supported formats.
      *
-     * If this property is not set, the default value will be obtained from `Yew::$app->formatter->dateFormat`, see [[\ESD\Yii\I18n\Formatter::dateFormat]] for details.
+     * If this property is not set, the default value will be obtained from `Yew::$app->formatter->dateFormat`, see [[\Yew\Framework\I18n\Formatter::dateFormat]] for details.
      * Since version 2.0.8 the default value will be determined from different formats of the formatter class,
      * dependent on the value of [[type]]:
      *
-     * - if type is [[TYPE_DATE]], the default value will be taken from [[\ESD\Yii\I18n\Formatter::dateFormat]],
-     * - if type is [[TYPE_DATETIME]], it will be taken from [[\ESD\Yii\I18n\Formatter::datetimeFormat]],
-     * - and if type is [[TYPE_TIME]], it will be [[\ESD\Yii\I18n\Formatter::timeFormat]].
+     * - if type is [[TYPE_DATE]], the default value will be taken from [[\Yew\Framework\I18n\Formatter::dateFormat]],
+     * - if type is [[TYPE_DATETIME]], it will be taken from [[\Yew\Framework\I18n\Formatter::datetimeFormat]],
+     * - and if type is [[TYPE_TIME]], it will be [[\Yew\Framework\I18n\Formatter::timeFormat]].
      *
      * Here are some example values:
      *
@@ -105,7 +105,7 @@ class DateValidator extends Validator
      * @var string the locale ID that is used to localize the date parsing.
      * This is only effective when the [PHP intl extension](https://secure.php.net/manual/en/book.intl.php) is installed.
      * If not set, the locale of the [[\Yew\Framework\Base\Application::formatter|formatter]] will be used.
-     * See also [[\ESD\Yii\I18n\Formatter::locale]].
+     * See also [[\Yew\Framework\I18n\Formatter::locale]].
      */
     public $locale;
     /**

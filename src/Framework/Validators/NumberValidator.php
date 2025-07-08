@@ -10,7 +10,7 @@ namespace Yew\Framework\Validators;
 use Yew\Yew;
 use Yew\Framework\Helpers\Json;
 use Yew\Framework\Helpers\StringHelper;
-use ESD\Yii\Web\JsExpression;
+use Yew\Framework\Web\JsExpression;
 
 /**
  * NumberValidator validates that the attribute value is a number.

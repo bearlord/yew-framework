@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actor;
+namespace Yew\Plugins\Actor;
 
 
 class ActorMessage

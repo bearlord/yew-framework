@@ -581,11 +581,11 @@ class Security extends Component
      *
      * ```php
      * // generates the hash (usually done during user registration or when the password is changed)
-     * $hash = \ESD\Yii\Yii::$app->getSecurity()->generatePasswordHash($password);
+     * $hash = \Yew\Framework\Yii::$app->getSecurity()->generatePasswordHash($password);
      * // ...save $hash in database...
      *
      * // during login, validate if the password entered is correct using $hash fetched from database
-     * if (\ESD\Yii\Yii::$app->getSecurity()->validatePassword($password, $hash)) {
+     * if (\Yew\Framework\Yii::$app->getSecurity()->validatePassword($password, $hash)) {
      *     // password is good
      * } else {
      *     // password is bad

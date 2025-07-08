@@ -11,9 +11,9 @@ use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Base\Model;
 
-use ESD\Yii\Db\ActiveQuery;
-use ESD\Yii\Db\ActiveRecord;
-use ESD\Yii\Db\QueryInterface;
+use Yew\Framework\Db\ActiveQuery;
+use Yew\Framework\Db\ActiveRecord;
+use Yew\Framework\Db\QueryInterface;
 
 /**
  * ExistValidator validates that the attribute value exists in a table.
@@ -71,9 +71,9 @@ class ExistValidator extends Validator
     public $targetRelation;
     /**
      * @var string|array|\Closure additional filter to be applied to the DB query used to check the existence of the attribute value.
-     * This can be a string or an array representing the additional query condition (refer to [[\ESD\Yii\Db\Query::where()]]
+     * This can be a string or an array representing the additional query condition (refer to [[\Yew\Framework\Db\Query::where()]]
      * on the format of query condition), or an anonymous function with the signature `function ($query)`, where `$query`
-     * is the [[\ESD\Yii\Db\Query|Query]] object that you can modify in the function.
+     * is the [[\Yew\Framework\Db\Query|Query]] object that you can modify in the function.
      */
     public $filter;
     /**
@@ -117,7 +117,7 @@ class ExistValidator extends Validator
 
     /**
      * Validates existence of the current attribute based on relation name
-     * @param \ESD\Yii\Db\ActiveRecord $model the data model to be validated
+     * @param \Yew\Framework\Db\ActiveRecord $model the data model to be validated
      * @param string $attribute the name of the attribute to be validated.
      */
     private function checkTargetRelationExistence($model, $attribute)
@@ -180,7 +180,7 @@ class ExistValidator extends Validator
 
     /**
      * Processes attributes' relations described in $targetAttribute parameter into conditions, compatible with
-     * [[\ESD\Yii\Db\Query::where()|Query::where()]] key-value format.
+     * [[\Yew\Framework\Db\Query::where()|Query::where()]] key-value format.
      *
      * @param $targetAttribute array|string $attribute the name of the ActiveRecord attribute that should be used to
      * validate the existence of the current attribute value. If not set, it will use the name
@@ -190,7 +190,7 @@ class ExistValidator extends Validator
      * If the key and the value are the same, you can just specify the value.
      * @param \Yew\Framework\Base\Model $model the data model to be validated
      * @param string $attribute the name of the attribute to be validated in the $model
-     * @return array conditions, compatible with [[\ESD\Yii\Db\Query::where()|Query::where()]] key-value format.
+     * @return array conditions, compatible with [[\Yew\Framework\Db\Query::where()|Query::where()]] key-value format.
      * @throws InvalidConfigException
      */
     private function prepareConditions($targetAttribute, $model, $attribute)
@@ -208,7 +208,7 @@ class ExistValidator extends Validator
         }
 
         $targetModelClass = $this->getTargetClass($model);
-        if (!is_subclass_of($targetModelClass, 'ESD\Yii\Db\ActiveRecord')) {
+        if (!is_subclass_of($targetModelClass, 'Yew\Framework\Db\ActiveRecord')) {
             return $conditions;
         }
 
@@ -294,11 +294,11 @@ class ExistValidator extends Validator
      * Creates a query instance with the given condition.
      * @param string $targetClass the target AR class
      * @param mixed $condition query condition
-     * @return \ESD\Yii\Db\ActiveQueryInterface the query instance
+     * @return \Yew\Framework\Db\ActiveQueryInterface the query instance
      */
     protected function createQuery($targetClass, $condition)
     {
-        /* @var $targetClass \ESD\Yii\Db\ActiveRecordInterface */
+        /* @var $targetClass \Yew\Framework\Db\ActiveRecordInterface */
         $query = $targetClass::find()->andWhere($condition);
         if ($this->filter instanceof \Closure) {
             call_user_func($this->filter, $query);

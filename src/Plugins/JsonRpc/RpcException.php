@@ -2,7 +2,7 @@
 
 namespace Yew\Plugins\JsonRpc;
 
-use ESD\Core\Exception;
+use Yew\Core\Exception;
 
 /**
  * Class RpcException

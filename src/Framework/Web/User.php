@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Web;
 
-use ESD\Core\Server\Beans\Http\Cookie;
+use Yew\Core\Server\Beans\Http\Cookie;
 use Yew\Core\Server\Beans\Request;
 use Yew\Plugins\Session\HttpSession;
 use Yew\Framework\Exception\InvalidValueException;

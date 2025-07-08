@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actor\Multicast;
+namespace Yew\Plugins\Actor\Multicast;
 
 use Ds\Set;
 use Yew\Core\Memory\CrossProcess\Table;
@@ -22,7 +22,7 @@ class Channel
     protected $subscribeArr = [];
 
     /**
-     * @var \ESD\Core\Channel\Channel
+     * @var \Yew\Core\Channel\Channel
      */
     protected $swooleChannel;
 
@@ -45,7 +45,7 @@ class Channel
         }
 
         $config = Server::$instance->getConfigContext()->get('actor');
-        $this->swooleChannel = DIGet(\ESD\Core\Channel\Channel::class, [$config['actorMulticastChannelCapacity']]);
+        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config['actorMulticastChannelCapacity']]);
 
         //Iterate to publish messages to the actor
         goWithContext(function () {
@@ -111,9 +111,7 @@ class Channel
             }
         }
 
-        $this->debug(Yii::t('esd', "Channel {channel} deleted", [
-            'channel' => $channel
-        ]));
+        $this->debug(sprintf("Channel %s deleted", $channel));
     }
 
     /**
@@ -171,7 +169,6 @@ class Channel
      * @param string $channel
      * @param string $actor
      * @return bool
-     * @throws \ESD\Core\Exception
      */
     public function subscribe(string $channel, string $actor): bool
     {
@@ -184,10 +181,7 @@ class Channel
             "actor" => $actor
         ]);
 
-        $this->debug(Yii::t('esd', "Actor {actor} subscribe channel {channel}", [
-            'actor' => $actor,
-            'channel' => $channel
-        ]));
+        $this->debug(sprintf("Actor %s subscribe channel %s", $actor, $channel));
 
         return true;
     }
@@ -215,10 +209,7 @@ class Channel
 
         $this->channelTable->del($channel . $actor);
 
-        $this->debug(Yii::t('esd', "Actor {actor} unsubscribe channel {channel}", [
-            'actor' => $actor,
-            'channel' => $channel
-        ]));
+        $this->debug(sprintf("Actor %s unsubscribe channel %s", $actor, $channel));
 
         return true;
     }

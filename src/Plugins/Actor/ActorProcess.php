@@ -6,7 +6,6 @@
 
 namespace Yew\Plugins\Actor;
 
-use ESD\Plugins\Actor\ActorCacheProcess;
 use Yew\Core\Message\Message;
 use Yew\Core\Server\Process\Process;
 use Yew\Coroutine\Server\Server;

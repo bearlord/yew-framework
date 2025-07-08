@@ -4,14 +4,10 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actor;
+namespace Yew\Plugins\Actor;
 
-use ESD\Core\Server\Process\Process;
+use Yew\Core\Server\Process\Process;
 
-/**
- * Class ActorInfo
- * @package ESD\Plugins\Actor
- */
 class ActorInfo
 {
     /**

@@ -6,7 +6,7 @@
 
 namespace Yew\Plugins\JsonRpc\Transporter;
 
-use ESD\LoadBalance\LoadBalancerInterface;
+use Yew\LoadBalance\LoadBalancerInterface;
 
 /**
  * Interface TransporterInterface

@@ -6,16 +6,16 @@
 
 namespace Yew\Plugins\JsonRpc\Client;
 
-use ESD\Core\DI\DI;
-use ESD\LoadBalance\LoadBalancerManager;
+use Yew\Core\DI\DI;
+use Yew\LoadBalance\LoadBalancerManager;
 use Yew\Plugins\JsonRpc\DataFormatter;
 use Yew\Plugins\JsonRpc\Protocol;
 use Yew\Plugins\JsonRpc\RequestException;
 use Yew\Plugins\JsonRpc\RpcException;
-use ESD\Rpc\Client\AbstractServiceClient;
-use ESD\Rpc\IdGenerator\IdGeneratorInterface;
-use ESD\Yii\Base\InvalidArgumentException;
-use ESD\Yii\Yii;
+use Yew\Rpc\Client\AbstractServiceClient;
+use Yew\Rpc\IdGenerator\IdGeneratorInterface;
+use Yew\Framework\Base\InvalidArgumentException;
+use Yew\Framework\Yii;
 use RuntimeException;
 
 
@@ -101,7 +101,7 @@ class ServiceClient extends AbstractServiceClient
         if (empty($this->idGenerator)) {
             $config = $this->getConfig();
 
-            $this->idGenerator = !empty($config['idGenerator']) ? $config['idGenerator'] : \ESD\Rpc\IdGenerator\UniqidIdGenerator::class;
+            $this->idGenerator = !empty($config['idGenerator']) ? $config['idGenerator'] : \Yew\Rpc\IdGenerator\UniqidIdGenerator::class;
         }
 
         return $this->idGenerator;

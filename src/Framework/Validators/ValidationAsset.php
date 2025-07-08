@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Validators;
 
-use ESD\Yii\Web\AssetBundle;
+use Yew\Framework\Web\AssetBundle;
 
 /**
  * This asset bundle provides the javascript files for client validation.
@@ -22,6 +22,6 @@ class ValidationAsset extends AssetBundle
         'yii.validation.js',
     ];
     public $depends = [
-        'ESD\Yii\Web\YiiAsset',
+        'Yew\Framework\Web\YiiAsset',
     ];
 }

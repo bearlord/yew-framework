@@ -19,7 +19,7 @@ use Yew\Plugins\JsonRpc\Transporter\JsonRpcTransporter;
 use Yew\Plugins\JsonRpc\Transporter\TransporterInterface;
 use Yew\Rpc\Client\AbstractServiceClient;
 
-class Client extends \ESD\Rpc\Client\Client
+class Client extends \Yew\Rpc\Client\Client
 {
     /**
      * @var string

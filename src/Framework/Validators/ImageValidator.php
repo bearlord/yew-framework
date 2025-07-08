@@ -8,7 +8,7 @@
 namespace Yew\Framework\Validators;
 
 use Yew\Yew;
-use ESD\Yii\Web\UploadedFile;
+use Yew\Framework\Web\UploadedFile;
 
 /**
  * ImageValidator verifies if an attribute is receiving a valid image.

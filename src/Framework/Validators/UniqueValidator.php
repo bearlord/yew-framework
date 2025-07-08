@@ -48,7 +48,7 @@ class UniqueValidator extends Validator
      */
     public $targetClass;
     /**
-     * @var string|array the name of the [[\ESD\Yii\Db\ActiveRecord|ActiveRecord]] attribute that should be used to
+     * @var string|array the name of the [[\Yew\Framework\Db\ActiveRecord|ActiveRecord]] attribute that should be used to
      * validate the uniqueness of the current attribute value. If not set, it will use the name
      * of the attribute currently being validated. You may use an array to validate the uniqueness
      * of multiple columns at the same time. The array values are the attributes that will be
@@ -57,9 +57,9 @@ class UniqueValidator extends Validator
     public $targetAttribute;
     /**
      * @var string|array|\Closure additional filter to be applied to the DB query used to check the uniqueness of the attribute value.
-     * This can be a string or an array representing the additional query condition (refer to [[\ESD\Yii\Db\Query::where()]]
+     * This can be a string or an array representing the additional query condition (refer to [[\Yew\Framework\Db\Query::where()]]
      * on the format of query condition), or an anonymous function with the signature `function ($query)`, where `$query`
-     * is the [[\ESD\Yii\Db\Query|Query]] object that you can modify in the function.
+     * is the [[\Yew\Framework\Db\Query|Query]] object that you can modify in the function.
      */
     public $filter;
     /**
@@ -171,7 +171,7 @@ class UniqueValidator extends Validator
      *
      * @param string $targetClass the name of the ActiveRecord class that should be used to validate the uniqueness
      * of the current attribute value.
-     * @param array $conditions conditions, compatible with [[\ESD\Yii\Db\Query::where()|Query::where()]] key-value format.
+     * @param array $conditions conditions, compatible with [[\Yew\Framework\Db\Query::where()|Query::where()]] key-value format.
      * @param Model $model the data model to be validated
      *
      * @return bool whether the model already exists
@@ -187,7 +187,7 @@ class UniqueValidator extends Validator
             $exists = $query->exists();
         } else {
             // if current $model is in the database already we can't use exists()
-            if ($query instanceof \ESD\Yii\Db\ActiveQuery) {
+            if ($query instanceof \Yew\Framework\Db\ActiveQuery) {
                 // only select primary key to optimize query
                 $columnsCondition = array_flip($targetClass::primaryKey());
                 $query->select(array_flip($this->applyTableAlias($query, $columnsCondition)));
@@ -221,7 +221,7 @@ class UniqueValidator extends Validator
      *
      * @param ActiveRecordInterface $targetClass the name of the ActiveRecord class that should be used to validate
      * the uniqueness of the current attribute value.
-     * @param array $conditions conditions, compatible with [[\ESD\Yii\Db\Query::where()|Query::where()]] key-value format
+     * @param array $conditions conditions, compatible with [[\Yew\Framework\Db\Query::where()|Query::where()]] key-value format
      *
      * @return ActiveQueryInterface|ActiveQuery
      */
@@ -240,9 +240,9 @@ class UniqueValidator extends Validator
 
     /**
      * Processes attributes' relations described in $targetAttribute parameter into conditions, compatible with
-     * [[\ESD\Yii\Db\Query::where()|Query::where()]] key-value format.
+     * [[\Yew\Framework\Db\Query::where()|Query::where()]] key-value format.
      *
-     * @param string|array $targetAttribute the name of the [[\ESD\Yii\Db\ActiveRecord|ActiveRecord]] attribute that
+     * @param string|array $targetAttribute the name of the [[\Yew\Framework\Db\ActiveRecord|ActiveRecord]] attribute that
      * should be used to validate the uniqueness of the current attribute value. You may use an array to validate
      * the uniqueness of multiple columns at the same time. The array values are the attributes that will be
      * used to validate the uniqueness, while the array keys are the attributes whose values are to be validated.
@@ -250,7 +250,7 @@ class UniqueValidator extends Validator
      * @param Model $model the data model to be validated
      * @param string $attribute the name of the attribute to be validated in the $model
      *
-     * @return array conditions, compatible with [[\ESD\Yii\Db\Query::where()|Query::where()]] key-value format.
+     * @return array conditions, compatible with [[\Yew\Framework\Db\Query::where()|Query::where()]] key-value format.
      */
     private function prepareConditions($targetAttribute, $model, $attribute)
     {
@@ -264,7 +264,7 @@ class UniqueValidator extends Validator
         }
 
         $targetModelClass = $this->getTargetClass($model);
-        if (!is_subclass_of($targetModelClass, 'ESD\Yii\Db\ActiveRecord')) {
+        if (!is_subclass_of($targetModelClass, 'Yew\Framework\Db\ActiveRecord')) {
             return $conditions;
         }
 

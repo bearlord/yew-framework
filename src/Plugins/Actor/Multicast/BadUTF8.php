@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actor\Multicast;
+namespace Yew\Plugins\Actor\Multicast;
 
 use Yew\Core\Exception\Exception;
 

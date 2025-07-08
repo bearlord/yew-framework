@@ -29,7 +29,7 @@ use Yew\Yew;
  * error code information. This property is read-only.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
- * @author bearlord <565364226@qq.com> modified for esd framework
+ * @author bearlord <565364226@qq.com>
  * @since 2.0
  */
 class UploadedFile extends BaseObject

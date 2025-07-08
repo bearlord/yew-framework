@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actuator\Aspect;
+namespace Yew\Plugins\Actuator\Aspect;
 
 use Yew\Core\DI\DI;
 use Yew\Core\Memory\CrossProcess\Table;

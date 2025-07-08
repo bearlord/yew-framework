@@ -71,7 +71,7 @@ use Yew\Yew;
  * }
  *
  * $container = new Container;
- * $container->set('ESD\Yew\Db\Connection', [
+ * $container->set('Yew\Framework\Db\Connection', [
  *     'dsn' => '...',
  * ]);
  * $container->set('app\models\UserFinderInterface', [
@@ -83,7 +83,7 @@ use Yew\Yew;
  *
  * // which is equivalent to:
  *
- * $db = new \ESD\Yew\Db\Connection(['dsn' => '...']);
+ * $db = new \Yew\Framework\Db\Connection(['dsn' => '...']);
  * $finder = new UserFinder($db);
  * $lister = new UserLister($finder);
  * ```
@@ -196,20 +196,20 @@ class Container extends Component
      *
      * ```php
      * // register a class name as is. This can be skipped.
-     * $container->set('ESD\Yew\Db\Connection');
+     * $container->set('Yew\Framework\Db\Connection');
      *
      * // register an interface
      * // When a class depends on the interface, the corresponding class
      * // will be instantiated as the dependent object
-     * $container->set('ESD\Yew\Mail\MailInterface', 'yii\swiftmailer\Mailer');
+     * $container->set('Yew\Framework\Mail\MailInterface', 'yii\swiftmailer\Mailer');
      *
      * // register an alias name. You can use $container->get('foo')
      * // to create an instance of Connection
-     * $container->set('foo', 'ESD\Yew\Db\Connection');
+     * $container->set('foo', 'Yew\Framework\Db\Connection');
      *
      * // register a class with configuration. The configuration
      * // will be applied when the class is instantiated by get()
-     * $container->set('ESD\Yew\Db\Connection', [
+     * $container->set('Yew\Framework\Db\Connection', [
      *     'dsn' => 'mysql:host=127.0.0.1;dbname=demo',
      *     'username' => 'root',
      *     'password' => '',
@@ -219,7 +219,7 @@ class Container extends Component
      * // register an alias name with class configuration
      * // In this case, a "class" element is required to specify the class
      * $container->set('db', [
-     *     'class' => 'ESD\Yew\Db\Connection',
+     *     'class' => 'Yew\Framework\Db\Connection',
      *     'dsn' => 'mysql:host=127.0.0.1;dbname=demo',
      *     'username' => 'root',
      *     'password' => '',
@@ -229,7 +229,7 @@ class Container extends Component
      * // register a PHP callable
      * // The callable will be executed when $container->get('db') is called
      * $container->set('db', function ($container, $params, $config) {
-     *     return new \ESD\Yew\Db\Connection($config);
+     *     return new \Yew\Framework\Db\Connection($config);
      * });
      * ```
      *
@@ -505,7 +505,7 @@ class Container extends Component
      * For example, the following callback may be invoked using the Container to resolve the formatter dependency:
      *
      * ```php
-     * $formatString = function($string, \ESD\Yew\I18n\Formatter $formatter) {
+     * $formatString = function($string, \Yew\Framework\I18n\Formatter $formatter) {
      *    // ...
      * }
      * Yew::$container->invoke($formatString, ['string' => 'Hello World!']);
@@ -614,8 +614,8 @@ class Container extends Component
      * Example:
      * ```php
      * $container->setDefinitions([
-     *     'ESD\Yew\Web\Request' => 'app\components\Request',
-     *     'ESD\Yew\Web\Response' => [
+     *     'Yew\Framework\Web\Request' => 'app\components\Request',
+     *     'Yew\Framework\Web\Response' => [
      *         'class' => 'app\components\Response',
      *         'format' => 'json'
      *     ],

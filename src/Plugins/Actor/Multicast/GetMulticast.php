@@ -4,14 +4,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actor\Multicast;
+namespace Yew\Plugins\Actor\Multicast;
 
-use ESD\Core\Plugins\Logger\GetLogger;
-use ESD\Plugins\ProcessRPC\GetProcessRpc;
+use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Plugins\Ipc\GetIpc;
 
 trait GetMulticast
 {
-    use GetProcessRpc;
+    use GetIpc;
     use GetLogger;
 
     /**
@@ -37,7 +37,6 @@ trait GetMulticast
      * @param string $channel
      * @param string $actor
      * @return bool
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      * @throws \Exception
      */
     public function actorHasChannel(string $channel, string $actor): bool
@@ -56,7 +55,6 @@ trait GetMulticast
      * Delete channel
      *
      * @param string $channel
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      * @throws \Exception
      */
     public function deleteChannel(string $channel)
@@ -71,7 +69,6 @@ trait GetMulticast
      *
      * @param string $channel
      * @param string $actor
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException|\ESD\Core\Exception
      * @throws \Exception
      */
     public function actorSubscribe(string $channel, string $actor)
@@ -91,7 +88,6 @@ trait GetMulticast
      *
      * @param string $channel
      * @param string $actor
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      * @throws \Exception
      */
     public function actorUnsubscribe(string $channel, string $actor)
@@ -109,7 +105,6 @@ trait GetMulticast
     /**
      * Unsubscribe all
      * @param string $actor
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      * @throws \Exception
      */
     public function actorUnsubscribeAll(string $actor)
@@ -130,8 +125,6 @@ trait GetMulticast
      * @param string $channel
      * @param string|null $message
      * @param array|null $excludeActorList
-     * @throws \ESD\Plugins\Actor\ActorException
-     * @throws \ESD\Plugins\ProcessRPC\ProcessRPCException
      */
     public function actorPublish(string $channel, ?string $message, ?array $excludeActorList = [])
     {

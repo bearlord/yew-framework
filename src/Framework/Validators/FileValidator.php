@@ -11,8 +11,8 @@ use Yew\Yew;
 use Yew\Framework\Helpers\FileHelper;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\Json;
-use ESD\Yii\Web\JsExpression;
-use ESD\Yii\Web\UploadedFile;
+use Yew\Framework\Web\JsExpression;
+use Yew\Framework\Web\UploadedFile;
 
 /**
  * FileValidator verifies if an attribute is receiving a valid uploaded file.
@@ -106,7 +106,7 @@ class FileValidator extends Validator
      * - {file}: the uploaded file name
      * - {limit}: the maximum size allowed (see [[getSizeLimit()]])
      * - {formattedLimit}: the maximum size formatted
-     *   with [[\ESD\Yii\I18n\Formatter::asShortSize()|Formatter::asShortSize()]]
+     *   with [[\Yew\Framework\I18n\Formatter::asShortSize()|Formatter::asShortSize()]]
      */
     public $tooBig;
     /**
@@ -117,7 +117,7 @@ class FileValidator extends Validator
      * - {file}: the uploaded file name
      * - {limit}: the value of [[minSize]]
      * - {formattedLimit}: the value of [[minSize]] formatted
-     *   with [[\ESD\Yii\I18n\Formatter::asShortSize()|Formatter::asShortSize()]
+     *   with [[\Yew\Framework\I18n\Formatter::asShortSize()|Formatter::asShortSize()]
      */
     public $tooSmall;
     /**

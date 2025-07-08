@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Psr\Tracing;
+namespace Yew\Psr\Tracing;
 
 interface TracingInterface
 {

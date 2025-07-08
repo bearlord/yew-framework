@@ -73,7 +73,6 @@ class MulticastPlugin extends AbstractPlugin
      * @inheritDoc
      * @param Context $context
      * @return mixed
-     * @throws \ESD\Core\Plugins\Config\ConfigException
      * @throws \ReflectionException
      */
     public function beforeServerStart(Context $context)

@@ -4,16 +4,16 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\Actuator\Aspect;
+namespace Yew\Plugins\Actuator\Aspect;
 
-use ESD\Core\Plugins\Logger\GetLogger;
-use ESD\Core\Server\Beans\Request;
-use ESD\Plugins\Actuator\ActuatorController;
-use ESD\Plugins\Aop\OrderAspect;
-use ESD\Plugins\EasyRoute\Aspect\RouteAspect;
-use ESD\Nikic\FastRoute\Dispatcher;
-use ESD\Goaop\Aop\Intercept\MethodInvocation;
-use ESD\Goaop\Lang\Annotation\Around;
+use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Core\Server\Beans\Request;
+use Yew\Plugins\Actuator\ActuatorController;
+use Yew\Plugins\Aop\OrderAspect;
+use Yew\Plugins\EasyRoute\Aspect\RouteAspect;
+use Yew\Nikic\FastRoute\Dispatcher;
+use Yew\Goaop\Aop\Intercept\MethodInvocation;
+use Yew\Goaop\Lang\Annotation\Around;
 
 class ActuatorAspect extends OrderAspect
 {
@@ -46,7 +46,7 @@ class ActuatorAspect extends OrderAspect
      *
      * @param MethodInvocation $invocation Invocation
      * @return mixed|null
-     * @Around("within(ESD\Core\Server\Port\IServerPort+) && execution(public **->onHttpRequest(*))")
+     * @Around("within(Yew\Core\Server\Port\IServerPort+) && execution(public **->onHttpRequest(*))")
      */
     protected function aroundRequest(MethodInvocation $invocation)
     {

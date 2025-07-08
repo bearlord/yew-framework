@@ -13,7 +13,7 @@ use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\Html;
 use Yew\Framework\Helpers\IpHelper;
 use Yew\Framework\Helpers\Json;
-use ESD\Yii\Web\JsExpression;
+use Yew\Framework\Web\JsExpression;
 
 /**
  * The validator checks if the attribute value is a valid IPv4/IPv6 address or subnet.

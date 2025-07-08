@@ -6,7 +6,7 @@
 
 namespace Yew\Rpc;
 
-use ESD\Core\Exception;
+use Yew\Core\Exception;
 
 class RpcException extends Exception
 {

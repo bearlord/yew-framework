@@ -7,8 +7,8 @@
 
 namespace Yew\Framework\Caching;
 
-use ESD\Yii\Yii;
-use ESD\Yii\Base\InvalidConfigException;
+use Yew\Yew;
+use Yew\Framework\Exception\InvalidConfigException;
 
 /**
  * FileDependency represents a dependency based on a file's last modification time.

@@ -6,14 +6,14 @@
 
 namespace Yew\Rpc\Client;
 
-use ESD\Core\Exception;
-use ESD\Core\Server\Server;
-use ESD\LoadBalance\Node;
-use ESD\Plugins\JsonRpc\Protocol;
+use Yew\Core\Exception;
+use Yew\Core\Server\Server;
+use Yew\LoadBalance\Node;
+use Yew\Plugins\JsonRpc\Protocol;
 use Yew\Rpc\RpcException;
-use ESD\Yii\Base\Component;
-use ESD\Yii\Helpers\ArrayHelper;
-use ESD\Yii\Yii;
+use Yew\Framework\Base\Component;
+use Yew\Framework\Helpers\ArrayHelper;
+use Yew\Framework\Yii;
 
 abstract class AbstractServiceClient extends Component
 {

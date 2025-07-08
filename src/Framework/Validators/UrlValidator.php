@@ -10,7 +10,7 @@ namespace Yew\Framework\Validators;
 use Yew\Yew;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\Json;
-use ESD\Yii\Web\JsExpression;
+use Yew\Framework\Web\JsExpression;
 
 /**
  * UrlValidator validates that the attribute value is a valid http or https URL.

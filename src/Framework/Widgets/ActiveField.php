@@ -388,7 +388,7 @@ class ActiveField extends Component
      * The following special options are recognized:
      *
      * - `maxlength`: int|bool, when `maxlength` is set `true` and the model attribute is validated
-     *   by a string validator, the `maxlength` option will take the value of [[\ESD\Yii\Validators\StringValidator::max]].
+     *   by a string validator, the `maxlength` option will take the value of [[\Yew\Framework\Validators\StringValidator::max]].
      *   This is available since version 2.0.3.
      *
      * Note that if you set a custom `id` for the input element, you may need to adjust the value of [[selectors]] accordingly.
@@ -831,7 +831,7 @@ class ActiveField extends Component
         if ($clientValidation) {
             $validators = [];
             foreach ($this->model->getActiveValidators($attribute) as $validator) {
-                /* @var $validator \ESD\Yii\Validators\Validator */
+                /* @var $validator \Yew\Framework\Validators\Validator */
                 $js = $validator->clientValidateAttribute($this->model, $attribute, $this->form->getView());
                 if ($validator->enableClientValidation && $js != '') {
                     if ($validator->whenClient !== null) {
