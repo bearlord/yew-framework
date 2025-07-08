@@ -105,8 +105,7 @@ class ConsolePlugin extends AbstractPlugin
         RestartCmd::class,
         StartCmd::class,
         StatusCmd::class,
-        StopCmd::class,
-        YewCmd::class
+        StopCmd::class
     ];
 
     /**

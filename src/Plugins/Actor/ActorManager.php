@@ -141,7 +141,7 @@ class ActorManager
         ]);
         DISet($className . ":" . $actorName, $actor);
 
-        $this->debug(sprintf("Actor %s created"), $actor->getName());
+        $this->debug(sprintf("Actor %s created", $actor->getName()));
     }
 
     /**

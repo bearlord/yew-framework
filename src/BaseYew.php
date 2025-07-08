@@ -57,7 +57,7 @@ class BaseYew
      * @see createObject()
      * @see Container
      */
-    public static Container $container;
+    public static ?Container $container = null;
 
     /**
      * replace Yew::$container into Yew::getContainer()
@@ -319,17 +319,29 @@ class BaseYew
     {
         if (is_string($type)) {
             return static::getContainer()->get($type, $params);
-        } elseif (is_array($type) && isset($type['class'])) {
+        }
+
+        if (is_callable($type, true)) {
+            return static::getContainer()->invoke($type, $params);
+        }
+
+        if (!is_array($type)) {
+            throw new InvalidConfigException('Unsupported configuration type: ' . gettype($type));
+        }
+
+        if (isset($type['__class'])) {
+            $class = $type['__class'];
+            unset($type['__class'], $type['class']);
+            return static::getContainer()->get($class, $params, $type);
+        }
+
+        if (isset($type['class'])) {
             $class = $type['class'];
             unset($type['class']);
             return static::getContainer()->get($class, $params, $type);
-        } elseif (is_callable($type, true)) {
-            return static::getContainer()->invoke($type, $params);
-        } elseif (is_array($type)) {
-            throw new InvalidConfigException('Object configuration must be an array containing a "class" element.');
         }
 
-        throw new InvalidConfigException('Unsupported configuration type: ' . gettype($type));
+        throw new InvalidConfigException('Object configuration must be an array containing a "class" or "__class" element.');
     }
 
     private static $_logger;

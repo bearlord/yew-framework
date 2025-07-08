@@ -11,6 +11,7 @@ use Yew\Core\Server\Server;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Helpers\ArrayHelper;
+use Yew\Framework\Helpers\Json;
 use Yew\Framework\Helpers\VarDumper;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Plugins\Console\Helper\StringHelper;
@@ -273,26 +274,12 @@ abstract class Target extends Component
      */
     public function formatMessage($message)
     {
-        list($text, $level, $category, $timestamp) = $message;
-        $level = Logger::getLevelName($level);
+        list($text, $timestamp) = $message;
         if (!is_string($text)) {
-            // exceptions may not be serializable if in the call stack somewhere is a Closure
-            if ($text instanceof \Throwable || $text instanceof \Exception) {
-                $text = (string) $text;
-            } else {
-                $text = VarDumper::export($text);
-            }
-        }
-        $traces = [];
-        if (isset($message[4])) {
-            foreach ($message[4] as $trace) {
-                $traces[] = "in {$trace['file']}:{$trace['line']}";
-            }
+            $text = Json::encode($text);
         }
 
-        $prefix = $this->getMessagePrefix($message);
-        return $this->getTime($timestamp) . " {$prefix}[$level][$category] $text"
-            . (empty($traces) ? '' : "\n    " . implode("\n    ", $traces));
+        return sprintf("[%s] %s\n", $this->getTime($timestamp), $text);
     }
 
     /**

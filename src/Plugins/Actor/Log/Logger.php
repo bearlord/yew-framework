@@ -23,7 +23,9 @@ class Logger
 
     public function log($message)
     {
-        $this->messages[] = $message;
+        $time = microtime(true);
+
+        $this->messages[] = [$message, $time];
 
         if ($this->flushInterval > 0 && count($this->messages) >= $this->flushInterval) {
             $this->flush();

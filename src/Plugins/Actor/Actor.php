@@ -10,6 +10,7 @@ use DI\Annotation\Inject;
 use Yew\Core\Channel\Channel;
 use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Plugins\Actor\Event\ActorCreateEvent;
 use Yew\Plugins\Actor\Log\LogFactory;
 use Yew\Plugins\Actor\Multicast\MulticastConfig;
 use Yew\Plugins\Actor\Multicast\Channel as MulticastChannel;
@@ -301,7 +302,7 @@ abstract class Actor
      */
     public function saveContext(): void
     {
-        var_dump(__METHOD__);
+        Server::$instance->getLog()->debug(__METHOD__);
 
         $this->logHandle->log($this->data);
 

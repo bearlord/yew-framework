@@ -94,7 +94,7 @@ class FileTarget extends Target
 
 
         if ($this->logFile === null) {
-            $this->logFile = Yew::$app->getRuntimePath() . '/logs/' . $this->logFileName . '.log';
+            $this->logFile = Yew::$app->getRuntimePath() . '/logs/actors/' . $this->logFileName . '.log';
         } else {
             $this->logFile = Yew::getAlias($this->logFile);
         }

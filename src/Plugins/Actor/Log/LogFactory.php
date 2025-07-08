@@ -10,13 +10,17 @@ class LogFactory
     {
         return Yew::createObject([
             "class" => Logger::class,
-            "dispatcher" => [
+            "flushInterval" => 1,
+            "dispatcher" => Yew::createObject([
                 "class" => Dispatcher::class,
                 "targets" => [
-                    "class" => FileTarget::class,
-                    "logFileName" => $name
+                    Yew::createObject([
+                        "class" => FileTarget::class,
+                        "logFileName" => $name,
+                        "exportInterval" => 2,
+                    ])
                 ]
-            ]
+            ])
         ]);
     }
 }

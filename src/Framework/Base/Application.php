@@ -12,6 +12,7 @@ use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
 use Yew\Framework\Config\Config;
 use Yew\Framework\Config\ConfigFactory;
+use Yew\Framework\Di\Container;
 use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidRouteException;
@@ -104,6 +105,8 @@ class Application extends Module
     public function __construct()
     {
         Yew::$app = $this;
+
+        Yew::$container = new Container();
 
         $this->config = ConfigFactory::build();
 
