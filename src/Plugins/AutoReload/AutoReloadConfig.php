@@ -8,6 +8,7 @@
 namespace Yew\Plugins\AutoReload;
 
 use Yew\Core\Plugins\Config\BaseConfig;
+use Yew\Coroutine\Server\Server;
 
 class AutoReloadConfig extends BaseConfig
 {
@@ -23,13 +24,13 @@ class AutoReloadConfig extends BaseConfig
      * @var string|null
      */
     protected ?string $monitorDir = null;
-
-    /**
-     * AutoReloadConfig constructor.
-     */
+    
     public function __construct()
     {
         parent::__construct(self::KEY);
+        
+        $enable = Server::$instance->getConfigContext()->get("yew.reload.enable", true);
+        $this->setEnable($enable);
     }
 
     /**
