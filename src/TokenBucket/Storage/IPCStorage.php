@@ -5,7 +5,7 @@ namespace Yew\TokenBucket\Storage;
 use malkusch\lock\mutex\Mutex;
 use malkusch\lock\mutex\SemaphoreMutex;
 use Yew\TokenBucket\Storage\scope\GlobalScope;
-use Yew\TokenBucket\util\DoublePacker;
+use Yew\TokenBucket\Util\DoublePacker;
 use SysvSharedMemory;
 use SysvSemaphore;
 

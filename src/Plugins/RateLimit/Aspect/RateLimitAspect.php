@@ -102,7 +102,7 @@ class RateLimitAspect extends OrderAspect
                             if (! $bucketKey) {
                                 $bucketKey = $clientData->getPath();
                             }
-
+                            
                             $bucket = $this->rateLimitHandler->build($bucketKey, $annotation->create, $annotation->capacity, $annotation->waitTimeout);
 
                             $maxTime = microtime(true) + $annotation->waitTimeout;

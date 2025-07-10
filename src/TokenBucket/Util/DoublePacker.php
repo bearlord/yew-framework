@@ -1,6 +1,6 @@
 <?php
 
-namespace Yew\TokenBucket\util;
+namespace Yew\TokenBucket\Util;
 
 use Yew\TokenBucket\Storage\StorageException;
 

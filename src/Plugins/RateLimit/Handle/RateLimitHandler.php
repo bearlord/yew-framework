@@ -2,6 +2,11 @@
 
 namespace Yew\Plugins\RateLimit\Handle;
 
+use Yew\Core\Server\Server;
+use Yew\Framework\Exception\InvalidArgumentException;
+use Yew\Plugins\RateLimit\Storage\StorageInterface;
+use Yew\TokenBucket\Rate;
+use Yew\TokenBucket\TokenBucket;
 use Yew\Yew;
 
 class RateLimitHandler
@@ -12,23 +17,19 @@ class RateLimitHandler
     /**
      * @throws StorageException
      */
-    public function build(string $key, int $limit, int $capacity, int $timeout): TokenBucket
+    public function build(string $key, int $limit, int $capacity, ?int $timeout = 1): TokenBucket
     {
-        $config = $this->container->get(ConfigInterface::class);
+        $storageConfig = Server::$instance->getConfigContext()->get('yew.rateLimit.storage');
 
-        $storageClass = $config->get('rate_limit.storage.class', RedisStorage::class);
 
-        switch (gettype($storageClass)) {
+        switch (gettype($storageConfig['class'])) {
             case "string":
-                $storage = Yew::createObject($storageClass, [
+                $storage = Yew::createObject([
+                    'class' => $storageConfig['class'],
                     'key' => $key,
                     'timeout' => $timeout,
-                    'options' => $config->get('rate_limit.storage.options', [])
+                    'options' => $storageConfig['options'] ?? null
                 ]);
-                break;
-
-            case "object":
-                $storage = $storageClass;
                 break;
 
             default:
@@ -40,8 +41,9 @@ class RateLimitHandler
             throw new InvalidArgumentException('The storage of rate limit must be an instance of ' . StorageInterface::class);
         }
 
-        $rate = make(Rate::class, ['tokens' => $limit, 'unit' => Rate::SECOND]);
-        $bucket = make(TokenBucket::class, ['capacity' => $capacity, 'rate' => $rate, 'storage' => $storage]);
+        $rate = new Rate($limit, Rate::SECOND);
+        $bucket = new TokenBucket($capacity, $rate, $storage);
+
         $bucket->bootstrap($capacity);
         return $bucket;
     }

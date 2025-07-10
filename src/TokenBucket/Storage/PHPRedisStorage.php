@@ -3,7 +3,7 @@
 namespace Yew\TokenBucket\Storage;
 
 use Yew\TokenBucket\Storage\scope\GlobalScope;
-use Yew\TokenBucket\util\DoublePacker;
+use Yew\TokenBucket\Util\DoublePacker;
 use Redis;
 use RedisException;
 use malkusch\lock\mutex\PHPRedisMutex;

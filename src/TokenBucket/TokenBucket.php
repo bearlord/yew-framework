@@ -5,7 +5,7 @@ namespace Yew\TokenBucket;
 use malkusch\lock\exception\MutexException;
 use Yew\TokenBucket\Storage\Storage;
 use Yew\TokenBucket\Storage\StorageException;
-use Yew\TokenBucket\util\TokenConverter;
+use Yew\TokenBucket\Util\TokenConverter;
 
 /**
  * Token Bucket algorithm.

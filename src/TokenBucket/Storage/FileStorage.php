@@ -4,7 +4,7 @@ namespace Yew\TokenBucket\Storage;
 
 use malkusch\lock\mutex\FlockMutex;
 use Yew\TokenBucket\Storage\scope\GlobalScope;
-use Yew\TokenBucket\util\DoublePacker;
+use Yew\TokenBucket\Util\DoublePacker;
 use malkusch\lock\mutex\Mutex;
 
 /**
