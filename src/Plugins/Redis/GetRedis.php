@@ -20,7 +20,7 @@ trait GetRedis
         $db = getContextValue("Redis:$name");
 
         //Default database number
-        $defaultDbNum = Server::$instance->getConfigContext()->get("redis.{$name}.database");
+        $defaultDbNum = Server::$instance->getConfigContext()->get("yew.redis.{$name}.database");
 
         if ($db == null) {
             /** @var RedisPools $redisPools */
@@ -44,7 +44,7 @@ trait GetRedis
             }
         }
 
-        if (empty($db)) {
+        if (!empty($db)) {
             //Be sure to select default database
             if ($db->getDbNum() != $defaultDbNum) {
                 $db->select($defaultDbNum);
