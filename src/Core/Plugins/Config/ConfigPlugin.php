@@ -81,6 +81,11 @@ class ConfigPlugin extends AbstractPlugin
      */
     public function beforeServerStart(Context $context)
     {
+        $baseFile = Server::$instance->getServerConfig()->getFrameworkDir() . '/Framework/Config/resources/base.yml';
+        if (is_file($baseFile)) {
+            $this->configContext->addDeepConfig(Yaml::parseFile($baseFile), self::ConfigDeep);
+        }
+
         $bootstrapFile = $this->configConfig->getConfigDir() . "/bootstrap.yml";
         if (is_file($bootstrapFile)) {
             $this->configContext->addDeepConfig(Yaml::parseFile($bootstrapFile), self::BootstrapDeep);

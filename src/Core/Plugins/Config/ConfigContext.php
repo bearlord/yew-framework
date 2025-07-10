@@ -17,6 +17,9 @@ class ConfigContext
      */
     protected array $contain = [];
 
+    /**
+     * @var array 
+     */
     protected array $cacheContain = [];
 
     /**

@@ -129,12 +129,7 @@ class Controller extends Component implements ViewContextInterface
      */
     public function runAction(string $id, ?array $params = [])
     {
-        if ($this->module instanceof \Yew\Framework\Console\Application){
-            $id = sprintf("action%s", ucfirst($id));
-            $action = $this->createAction($id);
-        } else {
-            $action = $this->createAction($id);
-        }
+        $action = $this->createAction($id);
 
         if ($action === null) {
             throw new InvalidRouteException('Unable to resolve the request: ' . $this->getUniqueId() . '/' . $id);
@@ -280,6 +275,10 @@ class Controller extends Component implements ViewContextInterface
     {
         if ($id === '') {
             $id = $this->defaultAction;
+        }
+
+        if ($this->module instanceof \Yew\Framework\Console\Application){
+            $id = sprintf("action%s", ucfirst($id));
         }
 
         $actionMap = $this->actions();

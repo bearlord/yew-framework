@@ -36,6 +36,8 @@ abstract class Server extends \Yew\Core\Server\Server
             $serverConfig = new ServerConfig();
         }
 
+        $serverConfig->setFrameworkDir(dirname(dirname(__DIR__)));
+
         if ($serverConfig->isDebug()) {
             //error_reporting(E_ALL &  ~E_WARNING);
             error_reporting(E_ALL);

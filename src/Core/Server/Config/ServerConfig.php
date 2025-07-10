@@ -23,6 +23,11 @@ class ServerConfig extends BaseConfig
     protected string $name = "yew";
 
     /**
+     * @var string framework directory
+     */
+    protected string $frameworkDir = "";
+
+    /**
      * Root directory
      * @var string
      */
@@ -909,6 +914,24 @@ class ServerConfig extends BaseConfig
     {
         $this->name = $name;
     }
+
+    /**
+     * @return string
+     */
+    public function getFrameworkDir(): string
+    {
+        return $this->frameworkDir;
+    }
+
+    /**
+     * @param string $frameworkDir
+     * @return void
+     */
+    public function setFrameworkDir(string $frameworkDir): void
+    {
+        $this->frameworkDir = $frameworkDir;
+    }
+
 
     /**
      * @return string

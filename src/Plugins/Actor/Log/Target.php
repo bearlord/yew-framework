@@ -279,7 +279,7 @@ abstract class Target extends Component
             $text = Json::encode($text);
         }
 
-        return sprintf("[%s] %s\n", $this->getTime($timestamp), $text);
+        return sprintf("[%s] %s", $this->getTime($timestamp), $text);
     }
 
     /**

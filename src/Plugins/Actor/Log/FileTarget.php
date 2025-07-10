@@ -44,9 +44,9 @@ class FileTarget extends Target
     public $enableRotation = true;
 
     /**
-     * @var int maximum log file size, in kilo-bytes. Defaults to 10240, meaning 10MB.
+     * @var int maximum log file size, in kilo-bytes. Defaults to 10240, meaning 1MB.
      */
-    public $maxFileSize = 10240; // in KB
+    public $maxFileSize = 1024; // in KB
 
     /**
      * @var int number of log files used for rotation. Defaults to 5.
@@ -90,8 +90,6 @@ class FileTarget extends Target
     public function init()
     {
         parent::init();
-
-
 
         if ($this->logFile === null) {
             $this->logFile = Yew::$app->getRuntimePath() . '/logs/actors/' . $this->logFileName . '.log';

@@ -14,6 +14,7 @@ use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidRouteException;
 use Yew\Framework\Base\Action;
 use Yew\Framework\Base\Controller;
+use Yew\Framework\Helpers\Console;
 use Yew\Yew;
 
 /**
@@ -305,18 +306,28 @@ class Application extends \Yew\Framework\Base\Application
     public function runAction(string $route, ?array $params = [])
     {
         try {
-            $parts = $this->createController($route);
-
-            if (!is_array($parts)) {
-                throw new Exception('Unable to resolve the request "' . $route . '".');
-            }
-            /* @var $controller \Yew\Framework\Console\Controller */
-            list($controller, $actionID) = $parts;
-
-            return $controller->runAction($actionID, $params);
+            $res = parent::runAction($route, $params);
+            return is_object($res) ? $res : (int) $res;
         } catch (InvalidRouteException $e) {
-            throw new UnknownCommandException($route, $this, 0, $e);
+            //throw new UnknownCommandException($route, $this, 0, $e);
+
+            //$_message = "Unknown command \"$route\".";
+            Console::stderr("Unknown command \"$route\"." . "\n");
         }
+
+//        try {
+//            $parts = $this->createController($route);
+//
+//            if (!is_array($parts)) {
+//                throw new Exception('Unable to resolve the request "' . $route . '".');
+//            }
+//            /* @var $controller \Yew\Framework\Console\Controller */
+//            list($controller, $actionID) = $parts;
+//
+//            return $controller->runAction($actionID, $params);
+//        } catch (InvalidRouteException $e) {
+//            throw new UnknownCommandException($route, $this, 0, $e);
+//        }
     }
 
     /**

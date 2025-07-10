@@ -82,6 +82,10 @@ class Config implements ConfigInterface
         }
     }
 
+    /**
+     * @param array $values
+     * @return void
+     */
     public function addMultiple(array $values)
     {
         $this->configuration = array_replace_recursive($this->configuration, $values);
