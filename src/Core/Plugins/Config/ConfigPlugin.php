@@ -37,31 +37,29 @@ class ConfigPlugin extends AbstractPlugin
     const ConfigServerApplicationActiveDeep = 4;
 
     /**
-     * @var ConfigConfig|null
+     * @var string
      */
-    protected ?ConfigConfig $configConfig;
+    protected string $configDir;
 
     /**
      * @var ConfigContext
      */
     protected $configContext;
-
+    
     /**
-     * @param ConfigConfig|null $configConfig
-     * @throws Exception
+     * @throws \Yew\Core\Exception\Exception
      */
-    public function __construct(?ConfigConfig $configConfig = null)
+    public function __construct()
     {
         parent::__construct();
-        if ($configConfig == null) {
-            if (defined("RES_DIR")) {
-                $path = RES_DIR;
-            } else {
-                $path = Server::$instance->getServerConfig()->getRootDir() . "/resources";
-            }
-            $configConfig = new ConfigConfig($path);
+
+        if (defined("RES_DIR")) {
+            $configDir = RES_DIR;
+        } else {
+            $configDir = Server::$instance->getServerConfig()->getRootDir() . "/resources";
         }
-        $this->configConfig = $configConfig;
+        $this->setConfigDir($configDir);
+
         $this->configContext = DIGet(ConfigContext::class);
         $this->atAfter(EventPlugin::class);
     }
@@ -86,19 +84,19 @@ class ConfigPlugin extends AbstractPlugin
             $this->configContext->addDeepConfig(Yaml::parseFile($baseFile), self::ConfigDeep);
         }
 
-        $bootstrapFile = $this->configConfig->getConfigDir() . "/bootstrap.yml";
+        $bootstrapFile = $this->getConfigDir() . "/bootstrap.yml";
         if (is_file($bootstrapFile)) {
             $this->configContext->addDeepConfig(Yaml::parseFile($bootstrapFile), self::BootstrapDeep);
         }
 
-        $applicationFile = $this->configConfig->getConfigDir() . "/application.yml";
+        $applicationFile = $this->getConfigDir() . "/application.yml";
         if (is_file($applicationFile)) {
             $this->configContext->addDeepConfig(Yaml::parseFile($applicationFile), self::ApplicationDeep);
         }
 
         $active = $this->configContext->get("yew.profiles.active");
         if (!empty($active)) {
-            $applicationActiveFile = $this->configConfig->getConfigDir() . "/application-$active.yml";
+            $applicationActiveFile = $this->getConfigDir() . "/application-$active.yml";
             if (is_file($applicationActiveFile)) {
                 $this->configContext->addDeepConfig(Yaml::parseFile($applicationActiveFile), self::ApplicationActiveDeep);
             }
@@ -121,5 +119,23 @@ class ConfigPlugin extends AbstractPlugin
     {
         return $this->configContext;
     }
+
+    /**
+     * @return string
+     */
+    public function getConfigDir(): string
+    {
+        return $this->configDir;
+    }
+
+    /**
+     * @param string $configDir
+     * @return void
+     */
+    public function setConfigDir(string $configDir): void
+    {
+        $this->configDir = $configDir;
+    }
+
 
 }
