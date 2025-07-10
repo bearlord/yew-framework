@@ -46,9 +46,7 @@ class ConfigPlugin extends AbstractPlugin
      */
     protected $configContext;
     
-    /**
-     * @throws \Yew\Core\Exception\Exception
-     */
+
     public function __construct()
     {
         parent::__construct();
@@ -65,7 +63,6 @@ class ConfigPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @return string
      */
     public function getName(): string
@@ -74,7 +71,6 @@ class ConfigPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
      */
     public function beforeServerStart(Context $context)
@@ -104,7 +100,6 @@ class ConfigPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
      * @param Context $context
      */
     public function beforeProcessStart(Context $context)
