@@ -1,0 +1,30 @@
+yew:
+  components:
+    log:
+      class: 'Yew\Framework\Log\Dispatcher'
+      traceLevel: 0
+      flushInterval: 1000
+      targets:
+        - class: 'Yew\Framework\Log\FileTarget'
+          maxFileSize: 10240
+          exportInterval: 1000
+          levels:
+            - error
+            - warning
+            - info
+            - trace
+            - profile
+
+    cache:
+      class: 'Yew\Framework\Redis\Cache'
+      redis:
+        database: 3
+
+    formatter:
+      sizeFormatBase: 1000
+
+  language: 'zh-CN'
+  timezone: 'Asia/Shanghai'
+  debug: true
+  reload:
+    enable: true

@@ -17,12 +17,15 @@ class ConfigFactory
             return null;
         }
 
+        $baseFile = __DIR__ . '/resources/base.yml';
+        $config = new Config(Yaml::parse(file_get_contents($baseFile)));
+
+
         $applicationFile = RES_DIR . '/application.yml';
         if (!file_exists($applicationFile)) {
             return null;
         }
-
-        $config = new Config(Yaml::parseFile($applicationFile));
+        $config->addMultiple(Yaml::parse(file_get_contents($applicationFile)));
 
         $active = $config->get('yew.profiles.active');
         if (!empty($active)) {
