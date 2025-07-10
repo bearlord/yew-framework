@@ -52,15 +52,12 @@ class RedisPlugin extends AbstractPlugin
             $config->merge();
         }
 
-        $configs = Server::$instance->getConfigContext()->get('redis', []);
+        $configs = Server::$instance->getConfigContext()->get('yew.redis', []);
+
         foreach ($configs as $key => $value) {
             $configObject = new Config($key);
             $this->configs->addConfig($configObject->buildFromConfig($value));
         }
-
-        $redisProxy = new RedisProxy();
-        $this->setToDIContainer(\Redis::class, $redisProxy);
-        $this->setToDIContainer(Redis::class, $redisProxy);
     }
 
     /**
