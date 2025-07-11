@@ -6,8 +6,8 @@ use Yew\TokenBucket\Storage\scope\GlobalScope;
 use Yew\TokenBucket\Util\DoublePacker;
 use Redis;
 use RedisException;
-use malkusch\lock\mutex\PHPRedisMutex;
-use malkusch\lock\mutex\Mutex;
+use malkusch\lock\Mutex\RedisMutex;
+use malkusch\lock\Mutex\Mutex;
 
 /**
  * Redis based storage which uses the phpredis extension.
@@ -25,7 +25,7 @@ final class PHPRedisStorage implements Storage, GlobalScope
     /**
      * The mutex.
      */
-    private PHPRedisMutex $mutex;
+    private RedisMutex $mutex;
 
     /**
      * Sets the connected Redis API.

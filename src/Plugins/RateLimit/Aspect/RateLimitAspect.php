@@ -4,7 +4,9 @@ namespace Yew\Plugins\RateLimit\Aspect;
 
 use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
+use Yew\Coroutine\Coroutine;
 use Yew\Coroutine\Server\Server;
+use Yew\Framework\Helpers\Json;
 use Yew\Goaop\Aop\Intercept\MethodInvocation;
 use Yew\Goaop\Lang\Annotation\After;
 use Yew\Goaop\Lang\Annotation\Around;
@@ -14,8 +16,10 @@ use Yew\Plugins\Aop\OrderAspect;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Plugins\Pack\GetBoostSend;
 use Yew\Plugins\RateLimit\Annotation\RateLimit;
+use Yew\Plugins\RateLimit\Exception\RateLimitException;
 use Yew\Plugins\RateLimit\Handle\RateLimitHandler;
 use Yew\Plugins\Route\RoutePlugin;
+use Yew\TokenBucket\Storage\StorageException;
 
 class RateLimitAspect extends OrderAspect
 {
@@ -25,7 +29,6 @@ class RateLimitAspect extends OrderAspect
      */
     private array $config;
 
-
     /**
      * @var RateLimitHandler
      */
@@ -34,34 +37,20 @@ class RateLimitAspect extends OrderAspect
 
     public function __construct()
     {
-        $this->config = $this->parseConfig();
-
         $this->rateLimitHandler = new RateLimitHandler();
 
     }
 
-
+    /**
+     * @return string
+     */
     public function getName(): string
     {
         return 'RateLimit';
     }
-
-
-    protected function parseConfig(): array
-    {
-        return [
-            'create' => 1,
-            'consume' => 1,
-            'capacity' => 2,
-            'limitCallback' => [],
-            'waitTimeout' => 1,
-        ];
-    }
-
-
-
+    
     /**
-     * before onHttpRequest
+     * Around onHttpRequest
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -81,7 +70,6 @@ class RateLimitAspect extends OrderAspect
 
         switch ($routeInfo[0]) {
             case Dispatcher::FOUND:
-
                 $handler = $routeInfo[1];
                 $clientData->setControllerName($handler[0]->name);
                 $clientData->setMethodName($handler[1]->name);
@@ -93,32 +81,52 @@ class RateLimitAspect extends OrderAspect
                 foreach ($annotations as $annotation) {
                     switch (true) {
                         case ($annotation instanceof RateLimit):
-                            //todo
-
                             $bucketKey = $annotation->key;
                             if (is_callable($bucketKey)) {
                                 $bucketKey = $bucketKey($proceedingJoinPoint);
                             }
-                            if (! $bucketKey) {
+                            if (!$bucketKey) {
                                 $bucketKey = $clientData->getPath();
                             }
-                            
+
                             $bucket = $this->rateLimitHandler->build($bucketKey, $annotation->create, $annotation->capacity, $annotation->waitTimeout);
 
                             $maxTime = microtime(true) + $annotation->waitTimeout;
                             $seconds = 0;
 
-                            break;
-                        default:
+                            while (true) {
+                                try {
+                                    if ($bucket->consume($annotation->consume, $seconds)) {
+                                        return $invocation->proceed();
+                                    }
+                                } catch (StorageException $exception) {
+                                    throw $exception;
+                                }
+
+                                if (microtime(true) + $seconds > $maxTime) {
+                                    break;
+                                }
+                                Coroutine::sleep(max($seconds, 0.001));
+                            }
+
+                            if (empty($annotation->limitCallback)
+                                || !is_array($annotation->limitCallback)
+                                || count($annotation->limitCallback) != 2 ) {
+                                throw new RateLimitException('Service Unavailable.', 503);
+                            }
+
+                            $callResult = call_user_func([$annotation->limitCallback[0], $annotation->limitCallback[1]], $seconds);
+
+                            $clientData = getContextValueByClassName(ClientData::class);
+
+                            $clientData->getResponse()->withHeader("Content-Type", "application/json");
+                            $clientData->getResponse()->withContent(Json::encode($callResult))->end();
+
                             break;
                     }
                 }
-
                 break;
         }
-
-        $invocation->proceed();
-        return;
     }
 
 

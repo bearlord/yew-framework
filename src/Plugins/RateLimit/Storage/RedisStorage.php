@@ -5,8 +5,11 @@ namespace Yew\Plugins\RateLimit\Storage;
 use Malkusch\Lock\Mutex\Mutex;
 use Malkusch\Lock\Mutex\RedisMutex;
 use Yew\Framework\Base\BaseObject;
+use Yew\Framework\Exception\InvalidArgumentException;
 use Yew\Plugins\Redis\GetRedis;
 use Yew\TokenBucket\Storage\Storage;
+use Yew\TokenBucket\Storage\StorageException;
+use Yew\TokenBucket\Util\DoublePacker;
 
 class RedisStorage extends BaseObject implements StorageInterface, Storage
 {
@@ -21,13 +24,16 @@ class RedisStorage extends BaseObject implements StorageInterface, Storage
      */
     private $key;
 
+    /**
+     * @var \Yew\Plugins\Redis\RedisConnection
+     */
     private $redis;
 
     private array $options;
 
     public function __construct(string $key = "", $timeout = 0, array $options = [])
     {
-        $this->redis = $this->redis();
+        $this->redis = $this->redis()->getDriver();
 
         $this->options = $options;
         $this->key = self::KEY_PREFIX . $key;

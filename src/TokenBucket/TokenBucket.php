@@ -114,7 +114,7 @@ final class TokenBucket
 
             $this->storage->getMutex()
                 ->check(function () {
-                    return ! $this->storage->isBootstrapped();
+                    return !$this->storage->isBootstrapped();
                 })
                 ->then(function () use ($tokens) {
                     $this->storage->bootstrap($this->tokenConverter->convertTokensToMicrotime($tokens));

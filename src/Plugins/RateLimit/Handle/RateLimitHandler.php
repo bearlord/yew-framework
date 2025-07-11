@@ -21,15 +21,9 @@ class RateLimitHandler
     {
         $storageConfig = Server::$instance->getConfigContext()->get('yew.rateLimit.storage');
 
-
         switch (gettype($storageConfig['class'])) {
             case "string":
-                $storage = Yew::createObject([
-                    'class' => $storageConfig['class'],
-                    'key' => $key,
-                    'timeout' => $timeout,
-                    'options' => $storageConfig['options'] ?? null
-                ]);
+                $storage = Yew::$container->get($storageConfig['class'], [$key, $timeout, $storageConfig['options'] ?? []]);
                 break;
 
             default:
@@ -41,8 +35,9 @@ class RateLimitHandler
             throw new InvalidArgumentException('The storage of rate limit must be an instance of ' . StorageInterface::class);
         }
 
-        $rate = new Rate($limit, Rate::SECOND);
-        $bucket = new TokenBucket($capacity, $rate, $storage);
+        $rate = Yew::$container->get(Rate::class, [$limit, Rate::SECOND]);
+
+        $bucket = Yew::$container->get(TokenBucket::class, [$capacity, $rate, $storage]);
 
         $bucket->bootstrap($capacity);
         return $bucket;

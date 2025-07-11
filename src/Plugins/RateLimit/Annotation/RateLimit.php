@@ -11,17 +11,38 @@ use Doctrine\Common\Annotations\Annotation;
 class RateLimit extends Annotation
 {
 
-    public ?int $create = null;
+    /**
+     * @var int Number of tokens generated per second
+     */
+    public int $create = 1;
 
-    public ?int $consume = null;
+    /**
+     * @var int Each request consumes the number of tokens
+     */
+    public int $consume = 1;
 
-    public ?int $capacity = null;
+    /**
+     * @var int Maximum capacity of the token bucket
+     */
+    public int $capacity = 2;
 
-    public $limitCallback = null;
+    /**
+     * @var array Callback method when rate limiting is triggered
+     */
+    public array $limitCallback = [];
 
-    public $key = null;
+    /**
+     * @var string The key for rate limiting
+     */
+    public string $key = "";
 
-    public ?int $waitTimeout = null;
+    /**
+     * @var int Queue timeout time
+     */
+    public int $waitTimeout = 1;
 
+    /**
+     * @var string|null IP
+     */
     public ?string $ip = null;
 }
