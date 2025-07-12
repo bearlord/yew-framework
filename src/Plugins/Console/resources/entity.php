@@ -3,12 +3,12 @@
  * This is the template for generating the model class of a specified table.
  */
 
-/* @var $this yii\web\View */
-/* @var $generator yii\gii\generators\model\Generator */
+/* @var $this Yew\Framework\Web\View */
+/* @var $generator Yew\Framework\Generator\Model\Generator */
 /* @var $tableName string full table name */
 /* @var $className string class name */
 /* @var $queryClassName string query class name */
-/* @var $tableSchema yii\db\TableSchema */
+/* @var $tableSchema Yew\Framework\Db\TableSchema */
 /* @var $labels string[] list of attribute labels (name => label) */
 /* @var $rules string[] list of validation rules */
 /* @var $relations array list of relations (name => relation declaration) */
@@ -18,7 +18,7 @@ echo "<?php\n";
 
 namespace <?= $generator->ns ?>;
 
-use Yii;
+use Yew\Yew;
 
 /**
 * This is the model class for table "<?= $generator->generateTableName($tableName) ?>".
@@ -45,7 +45,7 @@ return '<?= $generator->generateTableName($tableName) ?>';
 <?php if ($generator->db !== 'db'): ?>
 
     /**
-    * @return \yii\db\Connection the database connection used by this AR class.
+    * @return \Yew\Framework\Db\Connection the database connection used by this AR class.
     */
     public static function getDb()
     {
@@ -75,7 +75,7 @@ return [
 <?php foreach ($relations as $name => $relation): ?>
 
     /**
-    * @return \yii\db\ActiveQuery
+    * @return \Yew\Framework\Db\ActiveQuery
     */
     public function get<?= $name ?>()
     {
