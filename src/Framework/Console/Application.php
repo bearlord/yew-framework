@@ -83,6 +83,7 @@ class Application extends \Yew\Framework\Base\Application
      * @var string the requested route
      */
     public string $requestedRoute;
+    
     /**
      * @var Action the requested Action. If null, it means the request cannot be resolved into an action.
      */
@@ -156,6 +157,23 @@ class Application extends \Yew\Framework\Base\Application
     public function preInit()
     {
         parent::preInit();
+
+
+        $_bootstrap = $this->config->get('yew.bootstrap');
+        $_modules = $this->config->get('yew.modules');
+
+        if (!empty($_bootstrap) && is_array($_bootstrap)) {
+            $this->setBootstrap($_bootstrap);
+        }
+
+        if (!empty($_modules)) {
+            foreach ($_modules as $id => $value) {
+                if (!$this->hasModule($id) && !empty($value)) {
+                    $this->setModule($id, $value);
+                }
+            }
+        }
+
 
         if ($this->enableCoreCommands) {
             foreach ($this->coreCommands() as $id => $command) {
@@ -249,7 +267,25 @@ class Application extends \Yew\Framework\Base\Application
             return [$controller, $route];
         }
 
+        var_dump([
+            'step' => 7002,
+            'data' => [
+                $route,
+                $id,
+                array_keys($this->_modules)
+            ]
+        ]);
+
         $module = $this->getModule($id);
+        var_dump([
+            'step' => 7003,
+            'data' => [
+                $route,
+                $id,
+                array_keys($this->_modules)
+            ]
+        ]);
+
         if ($module !== null) {
             return $module->createController($_route);
         }
@@ -314,20 +350,6 @@ class Application extends \Yew\Framework\Base\Application
             //$_message = "Unknown command \"$route\".";
             Console::stderr("Unknown command \"$route\"." . "\n");
         }
-
-//        try {
-//            $parts = $this->createController($route);
-//
-//            if (!is_array($parts)) {
-//                throw new Exception('Unable to resolve the request "' . $route . '".');
-//            }
-//            /* @var $controller \Yew\Framework\Console\Controller */
-//            list($controller, $actionID) = $parts;
-//
-//            return $controller->runAction($actionID, $params);
-//        } catch (InvalidRouteException $e) {
-//            throw new UnknownCommandException($route, $this, 0, $e);
-//        }
     }
 
     /**

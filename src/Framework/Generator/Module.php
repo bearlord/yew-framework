@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Generator;
 
+use Yew\Framework\Base\BootstrapInterface;
 use Yew\Yew;
 use Yew\Framework\Helpers\Json;
 use Yew\Framework\Web\ForbiddenHttpException;
@@ -39,7 +40,7 @@ use Yew\Framework\Web\ForbiddenHttpException;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Module extends \Yew\Framework\Base\Module
+class Module extends \Yew\Framework\Base\Module implements BootstrapInterface
 {
     /**
      * {@inheritdoc}
@@ -95,13 +96,6 @@ class Module extends \Yew\Framework\Base\Module
      */
     public function bootstrap($app)
     {
-        $app->controllerMap[$this->id] = [
-            'class' => 'Yew\Framework\Generator\Console\GenerateController',
-            'generators' => array_merge($this->coreGenerators(), $this->generators),
-            'module' => $this,
-        ];
-
-        return;
         if ($app instanceof \Yew\Framework\Console\Application) {
             $app->controllerMap[$this->id] = [
                 'class' => 'Yew\Framework\Generator\Console\GenerateController',

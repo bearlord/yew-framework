@@ -112,7 +112,7 @@ class Application extends Module
 
         $this->preInit();
 
-        //Component::__construct($this->config);
+        Component::__construct([]);
     }
 
     /**
@@ -121,6 +121,7 @@ class Application extends Module
      */
     public function init()
     {
+        parent::init();
         $this->bootstrap();
     }
 
@@ -637,6 +638,15 @@ class Application extends Module
     public function getConfig(): ?Config
     {
         return $this->config;
+    }
+
+    /**
+     * @param array $bootstrap
+     * @return void
+     */
+    public function setBootstrap(array $bootstrap): void
+    {
+        $this->bootstrap = array_merge($this->bootstrap, $bootstrap);
     }
 
 
