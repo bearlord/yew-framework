@@ -6,6 +6,7 @@
 
 namespace Yew\Plugins\JsonRpc\Client;
 
+use RuntimeException;
 use Yew\Core\DI\DI;
 use Yew\LoadBalance\LoadBalancerManager;
 use Yew\Plugins\JsonRpc\DataFormatter;
@@ -15,9 +16,7 @@ use Yew\Plugins\JsonRpc\RpcException;
 use Yew\Rpc\Client\AbstractServiceClient;
 use Yew\Rpc\IdGenerator\IdGeneratorInterface;
 use Yew\Framework\Base\InvalidArgumentException;
-use Yew\Framework\Yii;
-use RuntimeException;
-
+use Yew\Yew;
 
 class ServiceClient extends AbstractServiceClient
 {
@@ -77,7 +76,7 @@ class ServiceClient extends AbstractServiceClient
     public function getClient()
     {
         if (empty($this->client)) {
-            $this->client = Yii::createObject(Client::class, [
+            $this->client = Yew::createObject(Client::class, [
                 $this->getConfig(),
                 $this->getProtocol()
             ]);
@@ -113,7 +112,7 @@ class ServiceClient extends AbstractServiceClient
      */
     public function getIdGeneratorObject(): IdGeneratorInterface
     {
-        return Yii::createObject($this->getIdGenerator());
+        return Yew::createObject($this->getIdGenerator());
     }
 
     /**
@@ -122,7 +121,7 @@ class ServiceClient extends AbstractServiceClient
      */
     protected function getDataFormatter()
     {
-        return Yii::createObject(DataFormatter::class);
+        return Yew::createObject(DataFormatter::class);
     }
 
     /**

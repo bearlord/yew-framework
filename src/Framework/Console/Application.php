@@ -267,24 +267,7 @@ class Application extends \Yew\Framework\Base\Application
             return [$controller, $route];
         }
 
-        var_dump([
-            'step' => 7002,
-            'data' => [
-                $route,
-                $id,
-                array_keys($this->_modules)
-            ]
-        ]);
-
         $module = $this->getModule($id);
-        var_dump([
-            'step' => 7003,
-            'data' => [
-                $route,
-                $id,
-                array_keys($this->_modules)
-            ]
-        ]);
 
         if ($module !== null) {
             return $module->createController($_route);

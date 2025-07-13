@@ -176,14 +176,6 @@ class Module extends ServiceLocator
      */
     public function createController(string $route): ?array
     {
-        var_dump([
-            'step' => 8001,
-            'data' => [
-                $route,
-                array_keys($this->_modules)
-            ]
-        ]);
-
         if ($route === '') {
             $route = $this->defaultRoute;
         }
@@ -202,49 +194,15 @@ class Module extends ServiceLocator
             $route = '';
         }
 
-        var_dump([
-            'step' => 8002,
-            'data' => [
-                $id,
-                $route,
-                array_keys($this->_modules)
-            ]
-        ]);
-
-        var_dump([
-            'step' => 8003,
-            'data' => [
-                $id,
-                $this->controllerMap
-            ]
-        ]);
-
         // module and controller map take precedence
         if (isset($this->controllerMap[$id])) {
             $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
             return [$controller, $route];
         }
-
-
+        
         $module = $this->getModule($id);
 
-        var_dump([
-            'step' => 8004,
-            'data' => [
-                $id,
-                get_class($this),
-                $module
-            ]
-        ]);
-
         if ($module !== null) {
-            var_dump([
-                'step' => 8005,
-                'data' => [
-                    get_class($module),
-                    get_class($this),
-                ]
-            ]);
             $module->bootstrap($this);
             if (isset($this->controllerMap[$id])) {
                 $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);

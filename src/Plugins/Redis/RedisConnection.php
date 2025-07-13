@@ -348,7 +348,6 @@ class RedisConnection
      */
     public function __call(string $name, ?array $params = [])
     {
-        var_dump($name, $params);
         try {
             return call_user_func_array([$this->driver, $name], $params);
         } catch (\Throwable $exception) {

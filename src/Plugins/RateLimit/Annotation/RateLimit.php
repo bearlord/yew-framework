@@ -34,7 +34,7 @@ class RateLimit extends Annotation
     /**
      * @var string|array The key for rate limiting
      */
-    public $key = "";
+    public $key;
 
     /**
      * @var int Queue timeout time
