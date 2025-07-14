@@ -47,7 +47,7 @@ class Controller extends Component implements ViewContextInterface
      * @var string the ID of the action that is used when the action ID is not specified
      * in the request. Defaults to 'index'.
      */
-    public string $defaultAction = 'actionIndex';
+    public string $defaultAction = 'index';
     /**
      * @var null|string|false the name of the layout to be applied to this controller's views.
      * This property mainly affects the behavior of [[render()]].

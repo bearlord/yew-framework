@@ -18,7 +18,7 @@ namespace Yew\Framework\Console;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Request
+class Request extends \Yew\Framework\Base\Request
 {
     private ?array $_params = null;
 
