@@ -2,7 +2,9 @@
 
 namespace Yew\Plugins\Actor\Log;
 
-class Dispatcher
+use Yew\Framework\Base\Component;
+
+class Dispatcher extends Component
 {
 
     /**

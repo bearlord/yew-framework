@@ -2,7 +2,9 @@
 
 namespace Yew\Plugins\Actor\Log;
 
-class Logger
+use Yew\Framework\Base\Component;
+
+class Logger extends Component
 {
 
     /**
