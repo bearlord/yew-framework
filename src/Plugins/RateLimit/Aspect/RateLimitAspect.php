@@ -125,6 +125,10 @@ class RateLimitAspect extends OrderAspect
                             $clientData->getResponse()->withContent(Json::encode($callResult))->end();
 
                             break;
+
+                        default:
+                            return $invocation->proceed();
+
                     }
                 }
                 break;
