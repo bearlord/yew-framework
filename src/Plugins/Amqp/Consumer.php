@@ -10,6 +10,7 @@ namespace Yew\Plugins\Amqp;
 
 use Yew\Core\Exception;
 use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Plugins\Amqp\Message\MessageInterface;
 use Yew\Server\Coroutine\Server;
 use Yew\Coroutine\Concurrent;
 use Yew\Plugins\Amqp\Builder\Builder;
@@ -19,6 +20,9 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
+/**
+ * Class consumer
+ */
 class Consumer extends Builder
 {
     use GetAmqp;
@@ -86,19 +90,18 @@ class Consumer extends Builder
             throw $exception;
         }
     }
-
+    
     /**
-
-     * @param ConsumerMessage $message
+     * @param MessageInterface $message
      * @param AMQPChannel|null $channel
      * @param bool $release
      * @return void
      * @throws \Exception
      */
-    public function declare(ConsumerMessage $message, ?AMQPChannel $channel = null, bool $release = false): void
+    public function declare(MessageInterface $message, ?AMQPChannel $channel = null, bool $release = false): void
     {
         if (!$message instanceof ConsumerMessage) {
-            throw new MessageException("Message must instanceof " . Message::class);
+            throw new MessageException("Message must instanceof " . ConsumerMessage::class);
         }
 
         try {

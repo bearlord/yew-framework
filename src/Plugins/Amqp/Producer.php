@@ -10,6 +10,8 @@ namespace Yew\Plugins\Amqp;
 
 use Yew\Core\Exception;
 use Yew\Plugins\Amqp\Builder\Builder;
+use Yew\Plugins\Amqp\Message\ConsumerMessage;
+use Yew\Plugins\Amqp\Message\MessageInterface;
 use Yew\Plugins\Amqp\Message\ProducerMessage;
 use Yew\Plugins\Amqp\Message\Type;
 use Yew\Plugins\AnnotationsScan\ScanClass;
@@ -18,17 +20,22 @@ use PhpAmqpLib\Message\AMQPMessage;
 class Producer extends Builder
 {
     use GetAmqp;
-
+    
     /**
-
-     * @param ProducerMessage $producerMessage
+     * @param MessageInterface $producerMessage
      * @param bool $confirm
      * @param int $timeout
      * @return bool
-     * @throws \Throwable
+     * @throws \AMQPChannelException
+     * @throws \AMQPConnectionException
+     * @throws \AMQPExchangeException
      */
-    public function produce(ProducerMessage $producerMessage, bool $confirm = false, int $timeout = 5): bool
+    public function produce(MessageInterface $producerMessage, bool $confirm = false, int $timeout = 5): bool
     {
+        if (!$message instanceof ProducerMessage) {
+            throw new MessageException("Message must instanceof " . ProducerMessage::class);
+        }
+
         return retry(1, function () use ($producerMessage, $confirm, $timeout) {
             return $this->produceMessage($producerMessage, $confirm, $timeout);
         });

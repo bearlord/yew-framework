@@ -178,6 +178,14 @@ class ConsumerMessage extends Message
     }
 
     /**
+     * @return string
+     */
+    public function serialize(): string
+    {
+        return json_encode($this->payload, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
      * @param string $data
      * @return mixed
      */

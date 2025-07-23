@@ -76,8 +76,20 @@ class ProducerMessage extends Message
         return $this->properties;
     }
 
+    /**
+     * @return string
+     */
     public function serialize(): string
     {
         return json_encode($this->payload, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * @param string $data
+     * @return mixed
+     */
+    public function unserialize(string $data)
+    {
+        return json_decode($data, true);
     }
 }

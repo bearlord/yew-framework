@@ -10,10 +10,6 @@ namespace Yew\Plugins\Amqp\Message;
 
 use Yew\Plugins\Amqp\Builder\ExchangeBuilder;
 
-/**
- * Class Message
- * @package Yew\Plugins\Amqp\Message
- */
 abstract class Message implements MessageInterface
 {
     const DELIVERY_MODE_NON_PERSISTENT = 1;
