@@ -229,11 +229,7 @@ class AmqpConnection
      */
     public function reconnect(): bool
     {
-        try {
-            $this->close();
-        } catch (\Exception $e) {
-            //todo
-        }
+        $this->close();
 
         $this->connection = $this->initConnection();
         Server::$instance->getLog()->debug(sprintf("fingerPrint: %s\n", $this->getFingerPrint()));
