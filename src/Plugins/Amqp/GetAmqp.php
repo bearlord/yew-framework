@@ -48,7 +48,7 @@ trait GetAmqp
             return $db;
         }
 
-        $_configKey = sprintf("amqp.%s", $name);
+        $_configKey = sprintf("yew.amqp.%s", $name);
         $_config = Server::$instance->getConfigContext()->get($_configKey);
         $configObject = new Config($name);
         $configObject->setValues($_config);

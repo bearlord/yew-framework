@@ -24,8 +24,7 @@ abstract class Config extends BaseConfig implements ConfigInterface
      * @return string
      */
     abstract protected function getKey(): string;
-
-
+    
     /**
      *
      * @param string $name

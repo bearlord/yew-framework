@@ -65,7 +65,7 @@ class PoolConnection extends CorePoolConnection
         }
 
         if (!$this->reconnect()) {
-            throw new ConnectionException('Connection reconnect failed.');
+            throw new ConnectionException('Redis connection reconnect failed.');
         }
 
         return $this;

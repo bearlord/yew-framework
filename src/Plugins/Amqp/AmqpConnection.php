@@ -106,11 +106,9 @@ class AmqpConnection
         $this->fingerPrint = $fingerPrint;
     }
 
-
     /**
-     * AmqpConnection constructor.
      * @param Config $config
-     * @throws Exception
+     * @throws AmqpException
      */
     public function __construct(Config $config)
     {
@@ -210,6 +208,9 @@ class AmqpConnection
         return true;
     }
 
+    /**
+     * @return bool
+     */
     public function close(): bool
     {
         try {
@@ -235,7 +236,7 @@ class AmqpConnection
 
     /**
      * Check
-     *
+
      * @return bool
      */
     public function check(): bool

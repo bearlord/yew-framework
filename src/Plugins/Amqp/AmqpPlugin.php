@@ -10,7 +10,7 @@ use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugins\Config\ConfigException;
 use Yew\Core\Plugins\Logger\GetLogger;
-use Yew\Server\Coroutine\Server;
+use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Amqp\AmqpPool;
 use Yew\Plugins\Amqp\AmqpPools;
 

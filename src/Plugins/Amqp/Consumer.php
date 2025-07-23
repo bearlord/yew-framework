@@ -19,9 +19,6 @@ use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
 
-/**
- * Class consumer
- */
 class Consumer extends Builder
 {
     use GetAmqp;

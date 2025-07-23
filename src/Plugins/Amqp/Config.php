@@ -8,19 +8,9 @@ namespace Yew\Plugins\Amqp;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 
-class Config extends BaseConfig
+class Config extends \Yew\Core\Pool\Config
 {
     const KEY = "amqp";
-
-    /**
-     * @var string
-     */
-    protected string $name;
-
-    /**
-     * @var int
-     */
-    protected int $poolMaxNumber = 2;
 
     /**
      * @var string
@@ -93,45 +83,14 @@ class Config extends BaseConfig
     protected int $heartBeat = 60;
 
     /**
-     * @param string $name
-     */
-    public function __construct(string $name)
-    {
-        parent::__construct(self::KEY, true, "name");
-        $this->setName($name);
-    }
-
-    /**
      * @return string
      */
-    public function getName(): string
+    protected function getKey(): string
     {
-        return $this->name;
+        return 'amqp';
     }
 
-    /**
-     * @param string $name
-     */
-    public function setName(string $name): void
-    {
-        $this->name = $name;
-    }
 
-    /**
-     * @return int
-     */
-    public function getPoolMaxNumber(): int
-    {
-        return $this->poolMaxNumber;
-    }
-
-    /**
-     * @param int $poolMaxNumber
-     */
-    public function setPoolMaxNumber(int $poolMaxNumber)
-    {
-        $this->poolMaxNumber = $poolMaxNumber;
-    }
 
     /**
      * @return string

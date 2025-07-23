@@ -12,7 +12,6 @@ use Yew\Core\Pool\Exception\ConnectionException;
 use Yew\Core\Pool\Pool;
 use Yew\Coroutine\Server\Server;
 
-
 class RedisPool extends Pool
 {
     /**

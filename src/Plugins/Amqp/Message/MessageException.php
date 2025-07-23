@@ -8,7 +8,7 @@
 
 namespace Yew\Plugins\Amqp\Message;
 
-use Yew\Core\Exception;
+use Yew\Core\Exception\Exception;
 
 class MessageException extends Exception
 {

@@ -20,7 +20,7 @@ use Yew\Plugins\AnnotationsScan\ScanClass;
 use Yew\Plugins\Scheduled\Beans\ScheduledTask;
 use Yew\Plugins\Scheduled\HelperScheduledProcess;
 use Yew\Plugins\Scheduled\ScheduledProcess;
-use Yew\Server\Coroutine\Server;
+use Yew\Coroutine\Server\Server;
 
 class AmqpConsumerPlugin extends AbstractPlugin
 {
