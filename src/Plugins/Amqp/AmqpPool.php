@@ -45,6 +45,19 @@ class AmqpPool extends Pool
         $db = getContextValue($contextKey);
 
         if ($db == null) {
+            /** @var PoolConnection $poolConnection */
+            $poolConnection = $this->get();
+            if (empty($poolConnection)) {
+                $errorMessage = "Connection pool {$contextKey} exhausted, Cannot establish new connection, please increase maxConnections";
+                Server::$instance->getLog()->error($errorMessage);
+                throw new \RuntimeException($errorMessage);
+            }
+
+            /** @var \Redis $db */
+            $db = $poolConnection->getDbConnection();
+
+
+            var_dump($this->pool);
             /** @var AbstractConnection $db */
             $db = $this->pool->pop();
 

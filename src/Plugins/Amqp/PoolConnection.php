@@ -8,7 +8,7 @@ use Yew\Core\Pool\Exception\ConnectionException;
 
 class PoolConnection  extends CorePoolConnection
 {
-    protected $connection = null;
+    protected ?AmqpConnection $connection = null;
 
     /**
      * @param AmqpPool $pool
@@ -18,29 +18,39 @@ class PoolConnection  extends CorePoolConnection
     {
         parent::__construct($pool, $config);
     }
-    
-    public function getConnection()
+
+    /**
+     * @return AmqpConnection|null
+     */
+    public function getConnection(): ?AmqpConnection
     {
         return $this->connection;
     }
 
     /**
-     * @param null $connection
+     * @param AmqpConnection|null $connection
+     * @return void
      */
-    public function setConnection($connection): void
+    public function setConnection(?AmqpConnection $connection): void
     {
         $this->connection = $connection;
     }
 
+    /**
+     * @return bool
+     */
     public function connect(): bool
     {
-        $connectionHandle = new Connection($config);
+        $connectionHandle = new AmqpConnection($this->config);
 
         $this->setConnection($connectionHandle);
         return true;
     }
 
-
+    /**
+     * @return $this
+     * @throws ConnectionException
+     */
     public function getActiveConnection()
     {
         if ($this->check()) {
@@ -54,14 +64,46 @@ class PoolConnection  extends CorePoolConnection
         return $this;
     }
 
+    /**
+     * @return bool
+     */
     public function reconnect(): bool
     {
-        // TODO: Implement reconnect() method.
+        $this->close();
+        $this->connect();
+        return true;
     }
 
+    /**
+     * @return bool
+     */
     public function close(): bool
     {
-        // TODO: Implement close() method.
+        if ($this->connection instanceof AmqpConnection) {
+            $this->connection->close();
+        }
+
+        unset($this->connection);
+
+        return true;
+    }
+
+    /**
+     * @return RedisConnection
+     * @throws ConnectionException
+     * @throws \RedisException
+     */
+    public function getDbConnection(): AmqpConnection
+    {
+        try {
+            $activeConnection = $this->getActiveConnection();
+            return $activeConnection->getConnection();
+        } catch (\Exception $exception) {
+            Server::$instance->getLog()->warning('Get connection failed, try again. ' . $exception);
+
+            $activeConnection = $this->getActiveConnection();
+            return $activeConnection->getConnection();
+        }
     }
 
 

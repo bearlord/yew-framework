@@ -8,7 +8,7 @@
 
 namespace Yew\Plugins\Amqp;
 
-use Yew\Server\Coroutine\Server;
+use Yew\Coroutine\Server\Server;
 use Yew\Coroutine\Coroutine;
 use Yew\Plugins\Amqp\Connection\AMQPSwooleConnection;
 use Yew\Plugins\Amqp\Connection\KeepaliveIO;
