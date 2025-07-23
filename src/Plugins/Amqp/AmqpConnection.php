@@ -51,6 +51,22 @@ class AmqpConnection
     protected $confirmChannel;
 
     /**
+     * @var bool Maintain connection status
+     */
+    protected $isConnected = false;
+
+    /**
+     * @param Config $config
+     * @throws AmqpException
+     */
+    public function __construct(Config $config)
+    {
+        $config->buildConfig();
+        $this->config = $config;
+        $this->connection = $this->initConnection();
+    }
+
+    /**
      * @return Config
      */
     public function getConfig(): Config
@@ -107,14 +123,23 @@ class AmqpConnection
     }
 
     /**
-     * @param Config $config
-     * @throws AmqpException
+     * Gets the connection status
+     *
+     * @return bool
      */
-    public function __construct(Config $config)
+    public function isConnected()
     {
-        $config->buildConfig();
-        $this->config = $config;
-        $this->connection = $this->initConnection();
+        return $this->isConnected;
+    }
+
+    /**
+     * Set the connection status
+     *
+     * @param bool $isConnected
+     */
+    protected function setIsConnected($isConnected)
+    {
+        $this->isConnected = (bool) $isConnected;
     }
 
     /**
@@ -151,6 +176,9 @@ class AmqpConnection
         );
 
         $connection->set_close_on_destruct(true);
+
+        $this->setIsConnected(true);
+
         return $connection;
     }
 
@@ -201,7 +229,11 @@ class AmqpConnection
      */
     public function reconnect(): bool
     {
-        $this->close();
+        try {
+            $this->close();
+        } catch (\Exception $e) {
+            //todo
+        }
 
         $this->connection = $this->initConnection();
         Server::$instance->getLog()->debug(sprintf("fingerPrint: %s\n", $this->getFingerPrint()));
@@ -213,13 +245,18 @@ class AmqpConnection
      */
     public function close(): bool
     {
+        if ($this->isConnected()){
+            return true;
+        }
+
         try {
             if ($connection = $this->connection) {
                 if ($connection->getIO() instanceof KeepaliveIO) {
                     $connection->getIO()->close();
                 }
-
                 $connection->close();
+
+                $this->setIsConnected(false);
             }
         } catch (AMQPRuntimeException $exception) {
             Server::$instance->getLog()->warning((string)$exception);
