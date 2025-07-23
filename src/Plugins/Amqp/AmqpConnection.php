@@ -222,9 +222,9 @@ class AmqpConnection
                 $connection->close();
             }
         } catch (AMQPRuntimeException $exception) {
-            Server::$instance->getLog()->warning((string) $exception);
+            Server::$instance->getLog()->warning((string)$exception);
         } catch (\Throwable $exception) {
-            Server::$instance->getLog()->error((string) $exception);
+            Server::$instance->getLog()->error((string)$exception);
         } finally {
             $this->connection = null;
         }
@@ -236,7 +236,6 @@ class AmqpConnection
 
     /**
      * Check
-
      * @return bool
      */
     public function check(): bool
@@ -269,9 +268,8 @@ class AmqpConnection
 
         return false;
     }
-    
-    /**
 
+    /**
      * @param $name
      * @param $arguments
      * @return mixed

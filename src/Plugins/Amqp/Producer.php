@@ -32,7 +32,7 @@ class Producer extends Builder
      */
     public function produce(MessageInterface $producerMessage, bool $confirm = false, int $timeout = 5): bool
     {
-        if (!$message instanceof ProducerMessage) {
+        if (!$producerMessage instanceof ProducerMessage) {
             throw new MessageException("Message must instanceof " . ProducerMessage::class);
         }
 

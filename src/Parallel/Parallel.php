@@ -21,7 +21,7 @@ class Parallel
     /**
      * @var null|Channel
      */
-    private ?Channel $concurrentChannel;
+    private ?Channel $concurrentChannel = null;
 
     /**
      * @param int $concurrent if $concurrent is equal to 0, that means unlimit

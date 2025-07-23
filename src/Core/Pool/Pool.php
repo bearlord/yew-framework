@@ -15,12 +15,12 @@ abstract class Pool implements PoolInterface
     /**
      * @var Channel
      */
-    protected Channel $pool;
+    protected ?Channel $pool = null;
 
     /**
      * @var Channel
      */
-    protected Channel $channel;
+    protected ?Channel $channel = null;
 
     /**
      * @var Config
@@ -40,7 +40,7 @@ abstract class Pool implements PoolInterface
     /**
      * @var FrequencyInterface
      */
-    protected FrequencyInterface $frequency;
+    protected ?FrequencyInterface $frequency = null;
 
     /**
      * @param Config $config

@@ -11,7 +11,7 @@ namespace Yew\Plugins\Amqp;
 use Yew\Core\Exception;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Amqp\Message\MessageInterface;
-use Yew\Server\Coroutine\Server;
+use Yew\Coroutine\Server\Server;
 use Yew\Coroutine\Concurrent;
 use Yew\Plugins\Amqp\Builder\Builder;
 use Yew\Plugins\Amqp\Message\ConsumerMessage;

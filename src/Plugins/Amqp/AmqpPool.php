@@ -56,16 +56,23 @@ class AmqpPool extends Pool
             /** @var \Redis $db */
             $db = $poolConnection->getDbConnection();
 
+            \Swoole\Coroutine::defer(function () use ($poolConnection, $contextKey) {
+                $db = getContextValue($contextKey);
 
-            var_dump($this->pool);
-            /** @var AbstractConnection $db */
-            $db = $this->pool->pop();
+                $poolConnection->setLastUseTime(microtime(true));
+                $poolConnection->setConnection($db);
 
-            \Swoole\Coroutine::defer(function () use ($db) {
-                $this->pool->push($db);
+                $this->release($poolConnection);
             });
             setContextValue($contextKey, $db);
         }
+
+        if (!$db instanceof \Yew\Plugins\Amqp\AmqpConnection) {
+            $errorMessage = "Connection pool {$contextKey} exhausted, Cannot establish new connection, please increase maxConnections";
+            Server::$instance->getLog()->error($errorMessage);
+            throw new \RuntimeException($errorMessage);
+        }
+
         return $db;
     }
 }
