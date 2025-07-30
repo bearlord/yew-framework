@@ -14,18 +14,18 @@ use Yew\Coroutine\Server\Server;
 class ClientData
 {
     /**
-     * @var string
+     * @var string|null
      */
-    protected string $controllerName;
+    protected ?string $controllerName = null;
 
     /**
-     * @var string
+     * @var string|null
      */
-    protected string $requestMethod;
+    protected ?string $requestMethod = null;
     /**
-     * @var string
+     * @var string|null
      */
-    protected string $methodName;
+    protected ?string $methodName = null;
 
     /**
      * @var ClientInfo
@@ -34,12 +34,12 @@ class ClientData
     /**
      * @var Request
      */
-    protected Request $request;
+    protected ?Request $request = null;
 
     /**
      * @var Response
      */
-    protected $response;
+    protected ?Response $response = null;
 
     /**
      * @var int
@@ -47,9 +47,9 @@ class ClientData
     protected int $fd;
 
     /**
-     * @var string
+     * @var string|null
      */
-    protected string $path;
+    protected ?string $path = null;
 
     /**
      * @var array
