@@ -7,8 +7,9 @@
 namespace Yew\Core\Plugins\Logger;
 
 use Yew\Core\Exception\Exception;
+use Yew\Core\Log\LoggerInterface;
 
-class Logger extends \Monolog\Logger
+class Logger extends \Monolog\Logger implements LoggerInterface
 {
     /**
      * @param $level

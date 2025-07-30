@@ -6,7 +6,7 @@
 
 namespace Yew\Core\Log;
 
-class Log implements LoggerInterface
+class Logger implements LoggerInterface
 {
 
     /**

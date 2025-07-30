@@ -22,7 +22,7 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\AbstractHandler;
 use Monolog\Handler\RotatingFileHandler;
 use Monolog\Handler\StreamHandler;
-use Psr\Log\LoggerInterface;
+use Yew\Core\Log\LoggerInterface;
 
 class LoggerPlugin extends AbstractPlugin
 {

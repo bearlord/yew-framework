@@ -11,6 +11,8 @@ use Iterator;
 use ReflectionException;
 use Throwable;
 use Yew\Core\Exception\ConfigException;
+use Yew\Core\Log\Logger;
+use Yew\Core\Node\BaseNode;
 use Yew\Core\Plugin\PluginInterfaceManager;
 use Psr\Log\LoggerInterface;
 use Yew\Core\Context\Context;
@@ -41,7 +43,7 @@ use Yew\Core\Server\Process\ProcessManager;
 use DI\Container;
 use Yew\Coroutine\Coroutine;
 
-abstract class Server
+abstract class Server extends BaseNode
 {
     /**
      * @var Server|null
@@ -103,10 +105,6 @@ abstract class Server
      */
     protected ?Context $context = null;
 
-    /**
-     * @var Container
-     */
-    protected Container $container;
 
 
     /**
@@ -119,22 +117,16 @@ abstract class Server
      */
     public function __construct(ServerConfig $serverConfig, string $defaultPortClass, string $defaultProcessClass)
     {
+        parent::__construct();
+
         self::$instance = $this;
 
         $this->serverConfig = $serverConfig;
 
-
-        //Get DI container
-        $this->container = DI::getInstance()->getContainer();
-
-        //Set the default Log
-        $this->container->set(LoggerInterface::class, new Log());
         $this->container->set(Server::class, $this);
         $this->container->set(ServerConfig::class, $this->serverConfig);
         $this->container->set(Response::class, new ResponseProxy());
         $this->container->set(Request::class, new RequestProxy());
-
-
 
         //Set time zone
         $this->setTimeZone($this->serverConfig);
@@ -843,13 +835,6 @@ abstract class Server
         return $this->serverConfig;
     }
 
-    /**
-     * @return LoggerInterface
-     */
-    public function getLog(): LoggerInterface
-    {
-        return DI::getInstance()->get(LoggerInterface::class);
-    }
 
     /**
      * @return ConfigContext
