@@ -7,7 +7,7 @@
 namespace Yew\Plugins\Actor\Multicast;
 
 use Yew\Core\Exception\Exception;
-use Psr\Log\LoggerInterface;
+use Yew\Core\Log\LoggerInterface;
 
 class Helper
 {

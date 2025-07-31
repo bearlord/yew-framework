@@ -84,7 +84,7 @@ class Topic
      */
     public function addSub(string $topic, string $uid)
     {
-        Utility::CheckTopicFilter($topic);
+        Utility::checkTopicFilter($topic);
 
         $this->addSubFormTable($topic, $uid);
         $this->topicTable->set($topic . $uid, ["topic" => $topic, "uid" => $uid]);

@@ -10,9 +10,9 @@ namespace Yew\Plugins\Amqp\Connection;
 
 use Yew\Core\Exception;
 use Yew\Server\Coroutine\Server;
+use Yew\Core\Log\LoggerInterface;
 use PhpAmqpLib\Exception\AMQPRuntimeException;
 use PhpAmqpLib\Wire\AMQPWriter;
-use Psr\Log\LoggerInterface;
 use Swoole\Coroutine\Channel;
 use Swoole\Coroutine\Client;
 use Swoole\Timer;

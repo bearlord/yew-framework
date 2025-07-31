@@ -8,8 +8,6 @@ use Yew\Core\DI\DI;
 use Yew\Core\Log\Log;
 use Yew\Core\Log\Logger;
 
-//use Psr\Log\LoggerInterface;
-
 class BaseNode
 {
 

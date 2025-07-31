@@ -4,12 +4,12 @@
  * @author bearlord <565364226@qq.com>
  */
 
-use Psr\Log\LoggerInterface;
 use Swoole\Coroutine;
 use Swoole\Timer;
 use Yew\Core\Context\Context;
 use Yew\Core\Context\ContextManager;
 use Yew\Core\DI\DI;
+use Yew\Core\Log\LoggerInterface;
 use Yew\Core\Runtime;
 use Yew\Parallel\Parallel;
 

@@ -8,6 +8,7 @@ namespace Yew\Plugins\Route\Controller;
 
 use DI\Annotation\Inject;
 use Yew\Core\Exception\ParamException;
+use Yew\Core\Log\LoggerInterface;
 use Yew\Core\Server\Beans\Request;
 use Yew\Core\Server\Beans\Response;
 use Yew\Plugins\Route\Annotation\ResponseBody;
@@ -17,8 +18,6 @@ use Yew\Plugins\Pack\ClientData;
 use Yew\Coroutine\Server\Server;
 use Yew\Framework\Base\Controller;
 use Yew\Framework\Exception\InvalidRouteException;
-use Psr\Log\LoggerInterface;
-
 
 abstract class RouteController extends Controller implements IController
 {

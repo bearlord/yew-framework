@@ -7,7 +7,7 @@
 namespace Yew\Plugins\Topic;
 
 use Yew\Core\Exception\Exception;
-use Psr\Log\LoggerInterface;
+use Yew\Core\Log\LoggerInterface;
 
 class Utility
 {
@@ -21,7 +21,7 @@ class Utility
      * @throws Exception
      * @throws \Exception
      */
-    static public function CheckTopicFilter(string $topicFilter)
+    static public function checkTopicFilter(string $topicFilter)
     {
         $max = DIGet(TopicConfig::class)->getTopicMaxLength();
         $length = strlen($topicFilter);
@@ -30,7 +30,7 @@ class Utility
             throw new Exception("Topic filter must be at 1~$max long");
         }
 
-        self::ValidateUTF8($topicFilter);
+        self::validateUTF8($topicFilter);
 
         if (false !== strpos($topicFilter, chr(0))) {
             throw new Exception('Null character is not allowed in topic');
@@ -75,7 +75,7 @@ class Utility
      * @return bool
      * @throws BadUTF8
      */
-    static public function ValidateUTF8(string $string): bool
+    static public function validateUTF8(string $string): bool
     {
         $pop_10s = 0;
 

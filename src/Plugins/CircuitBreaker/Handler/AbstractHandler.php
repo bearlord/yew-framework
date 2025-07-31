@@ -15,7 +15,7 @@ use Hyperf\CircuitBreaker\LoggerInterface;
 use Hyperf\Contract\StdoutLoggerInterface;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface as PsrLoggerInterface;
+use Yew\Core\Log\LoggerInterface as PsrLoggerInterface;
 use Throwable;
 
 use function Hyperf\Support\make;
@@ -24,7 +24,7 @@ abstract class AbstractHandler implements HandlerInterface
 {
     protected CircuitBreakerFactory $factory;
 
-    protected ?PsrLoggerInterface $logger = null;
+    protected ?LoggerInterface $logger = null;
 
     public function __construct(protected ContainerInterface $container)
     {

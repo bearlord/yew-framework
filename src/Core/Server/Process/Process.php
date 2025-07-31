@@ -10,11 +10,11 @@ use Yew\Core\Channel\Channel;
 use Yew\Core\Context\Context;
 use Yew\Core\Context\ContextBuilder;
 use Yew\Core\Context\ContextManager;
+use Yew\Core\Log\LoggerInterface;
 use Yew\Core\Message\Message;
 use Yew\Core\Message\MessageProcessor;
 use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Server\Server;
-use Psr\Log\LoggerInterface;
 
 abstract class Process
 {
