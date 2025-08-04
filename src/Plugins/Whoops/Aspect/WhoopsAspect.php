@@ -9,6 +9,8 @@ namespace Yew\Plugins\Whoops\Aspect;
 use Yew\Core\Server\Beans\Response;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\OrderAspect;
+use Yew\Plugins\CircuitBreaker\CircuitBreakerPlugin;
+use Yew\Plugins\CircuitBreaker\Exception\CircuitBreakerException;
 use Yew\Plugins\Whoops\WhoopsConfig;
 use Yew\Goaop\Aop\Intercept\MethodInvocation;
 use Yew\Goaop\Lang\Annotation\Around;
@@ -54,6 +56,12 @@ class WhoopsAspect extends OrderAspect
             setContextValue("lastException", $e);
         }
         $e = getContextValue("lastException");
+
+        if ($e instanceof CircuitBreakerException) {
+            $response->withContent($this->run->handleException($e));
+            return $result;
+        }
+
         if ($e != null && $this->whoopsConfig->isEnable() && Server::$instance->getServerConfig()->isDebug()) {
             $response->withContent($this->run->handleException($e));
         }

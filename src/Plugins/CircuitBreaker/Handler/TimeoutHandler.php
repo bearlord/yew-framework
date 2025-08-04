@@ -3,6 +3,7 @@
 namespace Yew\Plugins\CircuitBreaker\Handler;
 
 
+use Yew\Coroutine\Server\Server;
 use Yew\Goaop\Aop\Intercept\MethodInvocation;
 use Yew\Plugins\CircuitBreaker\Exception\TimeoutException;
 
@@ -26,9 +27,11 @@ class TimeoutHandler extends AbstractHandler
         $result = $invocation->proceed();
 
         $useTime = microtime(true) - $markStartTime;
-
+        
         if ($useTime > $timeout) {
-            throw new TimeoutException('timeout, use ' . $useTime . 's', $result);
+            if (Server::$instance->getServerConfig()->isDebug()) {
+                throw new TimeoutException('timeout, use ' . $useTime . 's', 80504, $result);
+            }
         }
 
         $msg = sprintf('%s success, use %ss.', $routeMethodName, $useTime);

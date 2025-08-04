@@ -19,6 +19,9 @@ use Whoops\Util\TemplateHelper;
 use Symfony\Component\VarDumper\Cloner\AbstractCloner;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Yew\Core\Server\Beans\Response;
+use Yew\Coroutine\Server\Server;
+use Yew\Framework\Helpers\Json;
+use Yew\Plugins\CircuitBreaker\Exception\CircuitBreakerException;
 
 class WhoopsHandler extends Handler
 {
@@ -259,11 +262,27 @@ class WhoopsHandler extends Handler
 
         $contentType = $response->getHeader("Content-Type")[0];
         if (strpos($contentType, "application/json") !== false) {
-            $jsonResponseHandle = new JsonResponseHandler();
-            $jsonResponseHandle->setRun($this->getRun());
-            $jsonResponseHandle->setException($this->getException());
-            $jsonResponseHandle->setInspector($this->getInspector());
-            $jsonResponseHandle->handle();
+            $_exception = $this->getException();
+
+            $_map = [
+                "code" => $_exception->getCode(),
+                "message" => $_exception->getMessage(),
+            ];
+            if ($_exception instanceof CircuitBreakerException) {
+                $_map["data"] = Json::decode($response->getBody()->getContents(), true);
+            }
+
+            if (Server::$instance->getServerConfig()->isDebug()) {
+                $_map["exception"] = [
+                    "type"    => get_class($_exception),
+                    "message" => $_exception->getMessage(),
+                    "code"    => $_exception->getCode(),
+                    "file"    => $_exception->getFile(),
+                    "line"    => $_exception->getLine(),
+                ];
+            }
+
+            echo Json::encode($_map);
             return Handler::QUIT;
         }
 
