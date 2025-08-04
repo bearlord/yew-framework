@@ -6,7 +6,6 @@ use DI\Container;
 use Yew\Core\Log\LoggerInterface;
 use Yew\Core\DI\DI;
 use Yew\Core\Log\Log;
-use Yew\Core\Log\Logger;
 
 class BaseNode
 {
@@ -21,11 +20,9 @@ class BaseNode
     {
         //Get DI container
         $this->container = DI::getInstance()->getContainer();
-
-
+        
         //Set the default Log
         $this->container->set(LoggerInterface::class, new Log());
-        $this->container->set(Logger::class, new Logger());
     }
 
 

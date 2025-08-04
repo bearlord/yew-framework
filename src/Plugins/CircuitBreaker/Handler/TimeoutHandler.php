@@ -26,6 +26,7 @@ class TimeoutHandler extends AbstractHandler
         $result = $invocation->proceed();
 
         $useTime = microtime(true) - $markStartTime;
+
         if ($useTime > $timeout) {
             throw new TimeoutException('timeout, use ' . $useTime . 's', $result);
         }

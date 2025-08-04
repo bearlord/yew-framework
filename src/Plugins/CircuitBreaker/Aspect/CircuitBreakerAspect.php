@@ -76,7 +76,7 @@ class CircuitBreakerAspect extends OrderAspect
 
                             $routeMethodName = sprintf("%s::%s", $handler[0]->name, $handler[1]->name);
 
-                            $annotationHandleInstance->handle($routeMethodName, $invocation, $annotation);
+                            return $annotationHandleInstance->handle($routeMethodName, $invocation, $annotation);
 
                             return $invocation->proceed();
 

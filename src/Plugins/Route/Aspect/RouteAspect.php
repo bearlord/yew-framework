@@ -135,7 +135,12 @@ class RouteAspect extends OrderAspect
                 return;
             }
 
-            $clientData->getResponse()->append($clientData->getResponseRaw());
+            $responseRaw = $clientData->getResponseRaw();
+            if (is_array($responseRaw) || is_object($responseRaw)) {
+                $responseRaw = json_encode($responseRaw, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+            }
+
+            $clientData->getResponse()->append($responseRaw);
 
             $this->filterManager->filter(AbstractFilter::FILTER_PRO, $clientData);
 

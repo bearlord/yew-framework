@@ -8,5 +8,5 @@ use Yew\Plugins\CircuitBreaker\Annotation\CircuitBreaker as Annotation;
 
 interface HandlerInterface
 {
-    public function handle($routeMethodName, MethodInvocation $invocation, Annotation $annotation);
+    public function handle(string $routeMethodName, MethodInvocation $invocation, Annotation $annotation);
 }

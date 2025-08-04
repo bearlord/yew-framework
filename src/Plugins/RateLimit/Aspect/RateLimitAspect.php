@@ -76,8 +76,7 @@ class RateLimitAspect extends OrderAspect
                 $methodReflection = $handler[1]->getReflectionMethod();
                 $annotations = RoutePlugin::$instance->getScanClass()->getMethodAndInterfaceAnnotations($methodReflection);
                 $clientData->setAnnotations($annotations);
-
-
+                
                 foreach ($annotations as $annotation) {
                     switch (true) {
                         case ($annotation instanceof RateLimit):

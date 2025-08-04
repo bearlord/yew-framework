@@ -108,6 +108,7 @@ class Controller extends RouteController
             $this->response->withStatus($status);
 
             $contentType = $this->request->getContentType();
+
             if (strpos($contentType, 'application/json') !== false) {
                 $content = json_encode([
                     'code' => $exception->getCode(),

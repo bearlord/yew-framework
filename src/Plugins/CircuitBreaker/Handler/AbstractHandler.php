@@ -150,7 +150,6 @@ abstract class AbstractHandler implements HandlerInterface
             $breaker->incrSuccessCounter();
             $this->switch($breaker, $annotation, true);
         } catch (Throwable $exception) {
-            return ;
             if (!$exception instanceof CircuitBreakerException) {
                 throw $exception;
             }

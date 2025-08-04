@@ -6,6 +6,7 @@
 
 namespace Yew\Plugins\Whoops\Handler;
 
+use Whoops\Handler\JsonResponseHandler;
 use Yew\Core\Server\Beans\Request;
 use InvalidArgumentException;
 use RuntimeException;
@@ -17,6 +18,7 @@ use Whoops\Util\Misc;
 use Whoops\Util\TemplateHelper;
 use Symfony\Component\VarDumper\Cloner\AbstractCloner;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
+use Yew\Core\Server\Beans\Response;
 
 class WhoopsHandler extends Handler
 {
@@ -251,6 +253,19 @@ class WhoopsHandler extends Handler
             return $table instanceof \Closure ? $table($inspector) : $table;
         }, $this->getDataTables());
         $vars["tables"] = array_merge($extraTables, $vars["tables"]);
+
+        /** @var Response $response */
+        $response = getContextValueByClassName(Response::class);
+
+        $contentType = $response->getHeader("Content-Type")[0];
+        if (strpos($contentType, "application/json") !== false) {
+            $jsonResponseHandle = new JsonResponseHandler();
+            $jsonResponseHandle->setRun($this->getRun());
+            $jsonResponseHandle->setException($this->getException());
+            $jsonResponseHandle->setInspector($this->getInspector());
+            $jsonResponseHandle->handle();
+            return Handler::QUIT;
+        }
 
         $plainTextHandler = new PlainTextHandler();
         $plainTextHandler->setRun($this->getRun());
