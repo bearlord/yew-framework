@@ -1,21 +1,12 @@
 <?php
 
-declare(strict_types=1);
-/**
- * This file is part of Hyperf.
- *
- * @link     https://www.hyperf.io
- * @document https://hyperf.wiki
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
- */
+namespace Yew\Plugins\CircuitBreaker\Handler;
 
-namespace Hyperf\CircuitBreaker\Handler;
-
-use Hyperf\CircuitBreaker\Annotation\CircuitBreaker;
-use Hyperf\Di\Aop\ProceedingJoinPoint;
+use Yew\Goaop\Aop\Intercept\MethodInvocation;
+use Yew\Plugins\CircuitBreaker\Annotation\CircuitBreaker;
+use Yew\Plugins\CircuitBreaker\Annotation\CircuitBreaker as Annotation;
 
 interface HandlerInterface
 {
-    public function handle(ProceedingJoinPoint $proceedingJoinPoint, CircuitBreaker $annotation);
+    public function handle($routeMethodName, MethodInvocation $invocation, Annotation $annotation);
 }

@@ -1,40 +1,37 @@
 <?php
 
-declare(strict_types=1);
-/**
- * This file is part of Hyperf.
- *
- * @link     https://www.hyperf.io
- * @document https://hyperf.wiki
- * @contact  group@hyperf.io
- * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
- */
+namespace Yew\Plugins\CircuitBreaker\Handler;
 
-namespace Hyperf\CircuitBreaker\Handler;
 
-use Hyperf\CircuitBreaker\Annotation\CircuitBreaker as Annotation;
-use Hyperf\CircuitBreaker\CircuitBreakerInterface;
-use Hyperf\CircuitBreaker\Exception\TimeoutException;
-use Hyperf\Di\Aop\ProceedingJoinPoint;
+use Yew\Goaop\Aop\Intercept\MethodInvocation;
+use Yew\Plugins\CircuitBreaker\Exception\TimeoutException;
 
 class TimeoutHandler extends AbstractHandler
 {
     public const DEFAULT_TIMEOUT = 5;
 
-    protected function process(ProceedingJoinPoint $proceedingJoinPoint, CircuitBreakerInterface $breaker, Annotation $annotation)
+    /**
+     * @param string $routeMethodName
+     * @param MethodInvocation $invocation
+     * @param $breaker
+     * @param $annotation
+     * @return mixed
+     */
+    protected function process(string $routeMethodName, MethodInvocation $invocation, $breaker, $annotation)
     {
         $timeout = $annotation->options['timeout'] ?? self::DEFAULT_TIMEOUT;
-        $time = microtime(true);
 
-        $result = $proceedingJoinPoint->process();
+        $markStartTime = microtime(true);
 
-        $use = microtime(true) - $time;
-        if ($use > $timeout) {
-            throw new TimeoutException('timeout, use ' . $use . 's', $result);
+        $result = $invocation->proceed();
+
+        $useTime = microtime(true) - $markStartTime;
+        if ($useTime > $timeout) {
+            throw new TimeoutException('timeout, use ' . $useTime . 's', $result);
         }
 
-        $msg = sprintf('%s::%s success, use %ss.', $proceedingJoinPoint->className, $proceedingJoinPoint->methodName, $use);
-        $this->logger?->debug($msg);
+        $msg = sprintf('%s success, use %ss.', $routeMethodName, $useTime);
+        $this->logger->debug($msg);
 
         return $result;
     }

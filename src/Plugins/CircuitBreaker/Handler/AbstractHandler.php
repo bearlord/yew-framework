@@ -1,24 +1,15 @@
 <?php
 
+namespace Yew\Plugins\CircuitBreaker\Handler;
 
-namespace Hyperf\CircuitBreaker\Handler;
-
-use Closure;
-use Hyperf\CircuitBreaker\Annotation\CircuitBreaker as Annotation;
-use Hyperf\CircuitBreaker\CircuitBreaker;
-use Hyperf\CircuitBreaker\CircuitBreakerFactory;
-use Hyperf\CircuitBreaker\CircuitBreakerInterface;
-use Hyperf\CircuitBreaker\Exception\BadFallbackException;
-use Hyperf\CircuitBreaker\Exception\CircuitBreakerException;
-use Hyperf\CircuitBreaker\FallbackInterface;
-use Hyperf\CircuitBreaker\LoggerInterface;
-use Hyperf\Contract\StdoutLoggerInterface;
-use Hyperf\Di\Aop\ProceedingJoinPoint;
-use Psr\Container\ContainerInterface;
-use Yew\Core\Log\LoggerInterface as PsrLoggerInterface;
-use Throwable;
-
-use function Hyperf\Support\make;
+use Yew\Core\Log\LoggerInterface;
+use Yew\Coroutine\Server\Server;
+use Yew\Goaop\Aop\Intercept\MethodInvocation;
+use Yew\Plugins\CircuitBreaker\CircuitBreaker;
+use Yew\Plugins\CircuitBreaker\CircuitBreakerFactory;
+use Yew\Plugins\CircuitBreaker\CircuitBreakerInterface;
+use Yew\Plugins\CircuitBreaker\Annotation\CircuitBreaker as Annotation;
+use Yew\Yew;
 
 abstract class AbstractHandler implements HandlerInterface
 {
@@ -26,66 +17,77 @@ abstract class AbstractHandler implements HandlerInterface
 
     protected ?LoggerInterface $logger = null;
 
-    public function __construct(protected ContainerInterface $container)
+    /**
+     * @throws \ReflectionException
+     * @throws \Yew\Framework\Di\NotInstantiableException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
+     */
+    public function __construct()
     {
-        $this->factory = $container->get(CircuitBreakerFactory::class);
-        $this->logger = match (true) {
-            $container->has(LoggerInterface::class) => $container->get(LoggerInterface::class),
-            $container->has(StdoutLoggerInterface::class) => $container->get(StdoutLoggerInterface::class),
-            default => null,
-        };
+        $this->factory = Yew::getContainer()->get(CircuitBreakerFactory::class);
+
+        $this->logger = Server::$instance->getLog();
     }
 
-    public function handle(ProceedingJoinPoint $proceedingJoinPoint, Annotation $annotation)
+    /**
+     * @param MethodInvocation $invocation
+     * @param Annotation $annotation
+     * @return mixed
+     * @throws \ReflectionException
+     * @throws \Yew\Framework\Di\NotInstantiableException
+     * @throws \Yew\Framework\Exception\InvalidConfigException
+     */
+    public function handle($routeMethodName, MethodInvocation $invocation, Annotation $annotation)
     {
-        $name = $this->getName($proceedingJoinPoint);
         /** @var CircuitBreakerInterface $breaker */
-        $breaker = $this->factory->get($name);
-        if (! $breaker instanceof CircuitBreakerInterface) {
-            $breaker = make(CircuitBreaker::class, ['name' => $name]);
-            $this->factory->set($name, $breaker);
+        $breaker = $this->factory->get($routeMethodName);
+        if (!$breaker instanceof CircuitBreakerInterface) {
+            $breaker = Yew::getContainer()->get(CircuitBreaker::class, [$routeMethodName]);
+            $this->factory->set($routeMethodName, $breaker);
         }
 
         $state = $breaker->state();
+
         if ($state->isOpen()) {
-            $this->switch($breaker, $annotation, false);
-            return $this->fallback($proceedingJoinPoint, $breaker, $annotation);
+            $this->switch($breaker, $invocation, false);
+            return $this->fallback($invocation, $breaker, $annotation);
         }
         if ($state->isHalfOpen()) {
-            return $this->attemptCall($proceedingJoinPoint, $breaker, $annotation);
+            return $this->attemptCall($routeMethodName, $invocation, $breaker, $annotation);
         }
 
-        return $this->call($proceedingJoinPoint, $breaker, $annotation);
+        return $this->call($routeMethodName, $invocation, $breaker, $annotation);
     }
 
-    protected function getName(ProceedingJoinPoint $proceedingJoinPoint): string
-    {
-        return sprintf('%s::%s', $proceedingJoinPoint->className, $proceedingJoinPoint->methodName);
-    }
-
+    /**
+     * @param CircuitBreakerInterface $breaker
+     * @param Annotation $annotation
+     * @param bool $status
+     * @return void
+     */
     protected function switch(CircuitBreakerInterface $breaker, Annotation $annotation, bool $status): void
     {
         $state = $breaker->state();
         if ($state->isClose()) {
-            $this->logger?->debug('The current state is closed.');
+            $this->logger->debug('The current state is closed.');
             if ($breaker->getDuration() >= $annotation->duration) {
                 $info = sprintf(
                     'The duration=%ss of closed state longer than the annotation duration=%ss and is reset to the closed state.',
                     $breaker->getDuration(),
                     $annotation->duration
                 );
-                $this->logger?->debug($info);
+                $this->logger->debug($info);
                 $breaker->close();
                 return;
             }
 
-            if (! $status && $breaker->getFailCounter() >= $annotation->failCounter) {
+            if (!$status && $breaker->getFailCounter() >= $annotation->failCounter) {
                 $info = sprintf(
                     'The failCounter=%s more than the annotation failCounter=%s and is reset to the open state.',
                     $breaker->getFailCounter(),
                     $annotation->failCounter
                 );
-                $this->logger?->debug($info);
+                $this->logger->debug($info);
                 $breaker->open();
                 return;
             }
@@ -94,14 +96,14 @@ abstract class AbstractHandler implements HandlerInterface
         }
 
         if ($state->isHalfOpen()) {
-            $this->logger?->debug('The current state is half opened.');
-            if (! $status && $breaker->getFailCounter() >= $annotation->failCounter) {
+            $this->logger->debug('The current state is half opened.');
+            if (!$status && $breaker->getFailCounter() >= $annotation->failCounter) {
                 $info = sprintf(
                     'The failCounter=%s more than the annotation failCounter=%s and is reset to the open state.',
                     $breaker->getFailCounter(),
                     $annotation->failCounter
                 );
-                $this->logger?->debug($info);
+                $this->logger->debug($info);
                 $breaker->open();
                 return;
             }
@@ -112,7 +114,7 @@ abstract class AbstractHandler implements HandlerInterface
                     $breaker->getSuccessCounter(),
                     $annotation->successCounter
                 );
-                $this->logger?->debug($info);
+                $this->logger->debug($info);
                 $breaker->close();
                 return;
             }
@@ -121,34 +123,41 @@ abstract class AbstractHandler implements HandlerInterface
         }
 
         if ($state->isOpen()) {
-            $this->logger?->debug('The current state is opened.');
+            $this->logger->debug('The current state is opened.');
             if ($breaker->getDuration() >= $annotation->duration) {
                 $info = sprintf(
                     'The duration=%ss of opened state longer than the annotation duration=%ss and is reset to the half opened state.',
                     $breaker->getDuration(),
                     $annotation->duration
                 );
-                $this->logger?->debug($info);
+                $this->logger->debug($info);
                 $breaker->halfOpen();
             }
         }
     }
 
-    protected function call(ProceedingJoinPoint $proceedingJoinPoint, CircuitBreakerInterface $breaker, Annotation $annotation)
+    /**
+     * @param ProceedingJoinPoint $invocation
+     * @param CircuitBreakerInterface $breaker
+     * @param Annotation $annotation
+     * @return mixed
+     */
+    protected function call(string $routeMethodName, $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
         try {
-            $result = $this->process($proceedingJoinPoint, $breaker, $annotation);
+            $result = $this->process($routeMethodName, $invocation, $breaker, $annotation);
 
             $breaker->incrSuccessCounter();
             $this->switch($breaker, $annotation, true);
         } catch (Throwable $exception) {
-            if (! $exception instanceof CircuitBreakerException) {
+            return ;
+            if (!$exception instanceof CircuitBreakerException) {
                 throw $exception;
             }
 
             $result = $exception->getResult();
-            $msg = sprintf('%s::%s %s.', $proceedingJoinPoint->className, $proceedingJoinPoint->methodName, $exception->getMessage());
-            $this->logger?->debug($msg);
+            $msg = sprintf('%s %s.', $routeMethodName, $exception->getMessage());
+            $this->logger->debug($msg);
 
             $breaker->incrFailCounter();
             $this->switch($breaker, $annotation, false);
@@ -157,40 +166,40 @@ abstract class AbstractHandler implements HandlerInterface
         return $result;
     }
 
-    protected function attemptCall(ProceedingJoinPoint $proceedingJoinPoint, CircuitBreakerInterface $breaker, Annotation $annotation)
+    protected function attemptCall(string $routeMethodName, $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
         if ($breaker->attempt()) {
-            return $this->call($proceedingJoinPoint, $breaker, $annotation);
+            return $this->call($routeMethodName, $invocation, $breaker, $annotation);
         }
 
-        return $this->fallback($proceedingJoinPoint, $breaker, $annotation);
+        return $this->fallback($invocation, $breaker, $annotation);
     }
 
-    protected function fallback(ProceedingJoinPoint $proceedingJoinPoint, CircuitBreakerInterface $breaker, Annotation $annotation)
+    protected function fallback(MethodInvocation $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
         if ($annotation->fallback instanceof Closure) {
-            return ($annotation->fallback)($proceedingJoinPoint);
+            return ($annotation->fallback)($invocation);
         }
-        [$class, $method] = $this->prepareHandler($annotation->fallback, $proceedingJoinPoint);
+        [$class, $method] = $this->prepareHandler($annotation->fallback, $invocation);
 
         $instance = $this->container->get($class);
         if ($instance instanceof FallbackInterface) {
-            return $instance->fallback($proceedingJoinPoint);
+            return $instance->fallback($invocation);
         }
 
-        $arguments = $proceedingJoinPoint->getArguments();
+        $arguments = $invocation->getArguments();
 
         return $instance->{$method}(...$arguments);
     }
 
-    abstract protected function process(ProceedingJoinPoint $proceedingJoinPoint, CircuitBreakerInterface $breaker, Annotation $annotation);
+    abstract protected function process(string $routeMethodName, MethodInvocation $invocation, $breaker, $annotation);
 
-    protected function prepareHandler(array|string $fallback, ProceedingJoinPoint $proceedingJoinPoint): array
+    protected function prepareHandler($fallback, ProceedingJoinPoint $invocation): array
     {
         if (is_string($fallback)) {
             $fallback = explode('::', $fallback);
-            if (! isset($fallback[1]) && method_exists($proceedingJoinPoint->className, $fallback[0])) {
-                return [$proceedingJoinPoint->className, $fallback[0]];
+            if (!isset($fallback[1]) && method_exists($invocation->className, $fallback[0])) {
+                return [$invocation->className, $fallback[0]];
             }
             $fallback[1] ??= 'fallback';
         }
