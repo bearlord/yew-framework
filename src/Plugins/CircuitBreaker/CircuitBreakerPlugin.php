@@ -44,13 +44,19 @@ class CircuitBreakerPlugin  extends AbstractPlugin
         $aopConfig->addAspect($circuitBreakerAspect);
     }
 
-
-
+    /**
+     * @param Context $context
+     * @return void
+     */
     public function beforeServerStart(Context $context)
     {
         // TODO: Implement beforeServerStart() method.
     }
 
+    /**
+     * @param Context $context
+     * @return void
+     */
     public function beforeProcessStart(Context $context)
     {
         $this->ready();

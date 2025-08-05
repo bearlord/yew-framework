@@ -4,15 +4,20 @@ namespace Yew\Plugins\CircuitBreaker\Handler;
 
 use Yew\Core\Log\LoggerInterface;
 use Yew\Coroutine\Server\Server;
+use Yew\Framework\Di\Container;
 use Yew\Goaop\Aop\Intercept\MethodInvocation;
 use Yew\Plugins\CircuitBreaker\CircuitBreaker;
 use Yew\Plugins\CircuitBreaker\CircuitBreakerFactory;
 use Yew\Plugins\CircuitBreaker\CircuitBreakerInterface;
 use Yew\Plugins\CircuitBreaker\Annotation\CircuitBreaker as Annotation;
+use Yew\Plugins\CircuitBreaker\Exception\BadFallbackException;
+use Yew\Plugins\CircuitBreaker\Exception\CircuitBreakerException;
 use Yew\Yew;
 
 abstract class AbstractHandler implements HandlerInterface
 {
+    public ?Container $container = null;
+
     protected CircuitBreakerFactory $factory;
 
     protected ?LoggerInterface $logger = null;
@@ -24,6 +29,8 @@ abstract class AbstractHandler implements HandlerInterface
      */
     public function __construct()
     {
+        $this->container = Yew::getContainer();
+
         $this->factory = Yew::getContainer()->get(CircuitBreakerFactory::class);
 
         $this->logger = Server::$instance->getLog();
@@ -42,16 +49,17 @@ abstract class AbstractHandler implements HandlerInterface
         /** @var CircuitBreakerInterface $breaker */
         $breaker = $this->factory->get($routeMethodName);
         if (!$breaker instanceof CircuitBreakerInterface) {
-            $breaker = Yew::getContainer()->get(CircuitBreaker::class, [$routeMethodName]);
+            $breaker = $this->container->get(CircuitBreaker::class, [$routeMethodName]);
             $this->factory->set($routeMethodName, $breaker);
         }
 
         $state = $breaker->state();
 
         if ($state->isOpen()) {
-            $this->switch($breaker, $invocation, false);
+            $this->switch($breaker, $annotation, false);
             return $this->fallback($invocation, $breaker, $annotation);
         }
+
         if ($state->isHalfOpen()) {
             return $this->attemptCall($routeMethodName, $invocation, $breaker, $annotation);
         }
@@ -68,6 +76,7 @@ abstract class AbstractHandler implements HandlerInterface
     protected function switch(CircuitBreakerInterface $breaker, Annotation $annotation, bool $status): void
     {
         $state = $breaker->state();
+
         if ($state->isClose()) {
             $this->logger->debug('The current state is closed.');
             if ($breaker->getDuration() >= $annotation->duration) {
@@ -137,19 +146,20 @@ abstract class AbstractHandler implements HandlerInterface
     }
 
     /**
-     * @param ProceedingJoinPoint $invocation
+     * @param string $routeMethodName
+     * @param MethodInvocation $invocation
      * @param CircuitBreakerInterface $breaker
      * @param Annotation $annotation
      * @return mixed
      */
-    protected function call(string $routeMethodName, $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
+    protected function call(string $routeMethodName, MethodInvocation $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
         try {
             $result = $this->process($routeMethodName, $invocation, $breaker, $annotation);
 
             $breaker->incrSuccessCounter();
             $this->switch($breaker, $annotation, true);
-        } catch (Throwable $exception) {
+        } catch (\Exception $exception) {
             if (!$exception instanceof CircuitBreakerException) {
                 throw $exception;
             }
@@ -165,7 +175,14 @@ abstract class AbstractHandler implements HandlerInterface
         return $result;
     }
 
-    protected function attemptCall(string $routeMethodName, $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
+    /**
+     * @param string $routeMethodName
+     * @param MethodInvocation $invocation
+     * @param CircuitBreakerInterface $breaker
+     * @param Annotation $annotation
+     * @return mixed
+     */
+    protected function attemptCall(string $routeMethodName, MethodInvocation $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
         if ($breaker->attempt()) {
             return $this->call($routeMethodName, $invocation, $breaker, $annotation);
@@ -174,36 +191,41 @@ abstract class AbstractHandler implements HandlerInterface
         return $this->fallback($invocation, $breaker, $annotation);
     }
 
+    /**
+     * @param MethodInvocation $invocation
+     * @param CircuitBreakerInterface $breaker
+     * @param Annotation $annotation
+     * @return mixed
+     */
     protected function fallback(MethodInvocation $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
-        if ($annotation->fallback instanceof Closure) {
-            return ($annotation->fallback)($invocation);
-        }
-        [$class, $method] = $this->prepareHandler($annotation->fallback, $invocation);
+        [$class, $method] = $this->prepareHandler($annotation->fallback);
 
         $instance = $this->container->get($class);
-        if ($instance instanceof FallbackInterface) {
+        if ($instance instanceof FallbackInterfac) {
             return $instance->fallback($invocation);
         }
 
-        $arguments = $invocation->getArguments();
-
-        return $instance->{$method}(...$arguments);
+        return $instance->{$method}();
     }
 
-    abstract protected function process(string $routeMethodName, MethodInvocation $invocation, $breaker, $annotation);
+    abstract protected function process(string $routeMethodName, MethodInvocation $invocation, CircuitBreakerInterface $breaker, Annotation $annotation);
 
-    protected function prepareHandler($fallback, ProceedingJoinPoint $invocation): array
+    /**
+     * @param $fallback
+     * @return array
+     */
+    protected function prepareHandler($fallback): array
     {
         if (is_string($fallback)) {
             $fallback = explode('::', $fallback);
-            if (!isset($fallback[1]) && method_exists($invocation->className, $fallback[0])) {
-                return [$invocation->className, $fallback[0]];
-            }
-            $fallback[1] ??= 'fallback';
         }
 
-        if (is_array($fallback) && count($fallback) === 2) {
+        if (is_array($fallback)
+            && count($fallback) === 2
+            && class_exists($fallback[0])
+            && method_exists($fallback[0], $fallback[1])
+        ) {
             return $fallback;
         }
 

@@ -76,57 +76,16 @@ class CircuitBreakerAspect extends OrderAspect
 
                             $routeMethodName = sprintf("%s::%s", $handler[0]->name, $handler[1]->name);
 
-                            return $annotationHandleInstance->handle($routeMethodName, $invocation, $annotation);
 
-                            return $invocation->proceed();
+                            $handleResult = $annotationHandleInstance->handle($routeMethodName, $invocation, $annotation);
 
+                            if (!empty($handleResult)) {
+                                $clientData = getContextValueByClassName(ClientData::class);
 
-
-
-
-
-                            $bucketKey = $annotation->key;
-
-                            if (is_array($bucketKey) && count($bucketKey) == 2) {
-                                $bucketKey = call_user_func([$bucketKey[0], $bucketKey[1]], $invocation);
+                                $clientData->getResponse()->withHeader("Content-Type", "application/json");
+                                $clientData->getResponse()->withContent(Json::encode($handleResult))->end();
                             }
-
-                            if (!$bucketKey) {
-                                $bucketKey = $clientData->getPath();
-                            }
-
-                            $bucket = $this->rateLimitHandler->build($bucketKey, $annotation->create, $annotation->capacity, $annotation->waitTimeout);
-
-                            $maxTime = microtime(true) + $annotation->waitTimeout;
-                            $seconds = 0;
-
-                            while (true) {
-                                try {
-                                    if ($bucket->consume($annotation->consume, $seconds)) {
-                                        return $invocation->proceed();
-                                    }
-                                } catch (StorageException $exception) {
-                                    throw $exception;
-                                }
-
-                                if (microtime(true) + $seconds > $maxTime) {
-                                    break;
-                                }
-                                Coroutine::sleep(max($seconds, 0.001));
-                            }
-
-                            if (empty($annotation->limitCallback)
-                                || !is_array($annotation->limitCallback)
-                                || count($annotation->limitCallback) != 2 ) {
-                                throw new RateLimitException('Service Unavailable.', 503);
-                            }
-
-                            $callResult = call_user_func([$annotation->limitCallback[0], $annotation->limitCallback[1]], $seconds);
-
-                            $clientData = getContextValueByClassName(ClientData::class);
-
-                            $clientData->getResponse()->withHeader("Content-Type", "application/json");
-                            $clientData->getResponse()->withContent(Json::encode($callResult))->end();
+                            return $handleResult;
 
                             break;
 
