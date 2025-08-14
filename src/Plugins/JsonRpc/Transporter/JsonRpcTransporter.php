@@ -21,10 +21,6 @@ use Yew\Framework\Yii;
 use Swoole\Coroutine\Client as SwooleClient;
 use RuntimeException;
 
-/**
- * Class JsonRpcTransporter
- * @package Yew\Plugins\JsonRpc\Transporter
- */
 class JsonRpcTransporter extends Component implements TransporterInterface
 {
     public $config = [];

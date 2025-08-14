@@ -8,10 +8,6 @@ namespace Yew\Plugins\JsonRpc\Transporter;
 
 use Yew\LoadBalance\LoadBalancerInterface;
 
-/**
- * Interface TransporterInterface
- * @package Yew\Plugins\JsonRpc\Transporter
- */
 interface TransporterInterface
 {
     public function send(string $data);

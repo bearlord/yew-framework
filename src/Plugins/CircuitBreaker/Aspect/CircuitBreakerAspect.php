@@ -90,7 +90,7 @@ class CircuitBreakerAspect extends OrderAspect
                             break;
 
                         default:
-                            //return $invocation->proceed();
+                            return $invocation->proceed();
 
                     }
                 }

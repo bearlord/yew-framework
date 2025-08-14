@@ -12,10 +12,6 @@ use Yew\Plugins\JsonRpc\Packer\JsonPacker;
 use Yew\Plugins\JsonRpc\Transporter\JsonRpcHttpTransporter;
 use Yew\Plugins\JsonRpc\Transporter\JsonRpcTransporter;
 
-/**
- * Class Protocol
- * @package Yew\Plugins\JsonRpc
- */
 class Protocol
 {
     const PROTOCOL_JSON_RPC = 'jsonrpc';

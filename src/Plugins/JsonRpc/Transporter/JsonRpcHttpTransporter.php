@@ -23,11 +23,8 @@ use Yew\Framework\HttpClient\CurlTransport;
 use Yew\Framework\Yii;
 use Swlib\Saber;
 use Swoole\Coroutine\Channel;
+use Yew\Yew;
 
-/**
- * Class JsonRpcHttpTransporter
- * @package Yew\Plugins\JsonRpc\Transporter
- */
 class JsonRpcHttpTransporter extends Component implements TransporterInterface
 {
 
@@ -123,7 +120,7 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
     public function createLoadBalancer(array $nodes)
     {
         /** @var LoadBalancerManager $loadBalanceManager */
-        $loadBalanceManager = Yii::createObject(LoadBalancerManager::class);
+        $loadBalanceManager = Yew::createObject(LoadBalancerManager::class);
         $loadBalance = $loadBalanceManager->getInstance($this->serviceName, $this->loadBalancerAlgorithm)->setNodes($nodes);
 
         return $loadBalance;

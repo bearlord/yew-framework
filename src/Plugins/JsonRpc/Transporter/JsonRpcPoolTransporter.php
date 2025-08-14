@@ -6,10 +6,6 @@
 
 namespace Yew\Plugins\JsonRpc\Transporter;
 
-/**
- * Class JsonRpcPoolTransporter
- * @package Yew\Plugins\JsonRpc\Transporter
- */
 class JsonRpcPoolTransporter implements TransporterInterface
 {
 
