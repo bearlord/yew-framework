@@ -58,8 +58,8 @@ class InotifyReload
         $this->inotifyFd = inotify_init();
         stream_set_blocking($this->inotifyFd, 0);
 
-        $dir_iterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
-        $iterator = new \RecursiveIteratorIterator($dir_iterator);
+        $dirIterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
+        $iterator = new \RecursiveIteratorIterator($dirIterator);
         foreach ($iterator as $file) {
             if (pathinfo($file, PATHINFO_EXTENSION) != 'php') {
                 continue;
@@ -69,10 +69,10 @@ class InotifyReload
             $monitorFiles[$wd] = $file;
         }
 
-        swoole_event_add($this->inotifyFd, function ($inotify_fd) {
+        swoole_event_add($this->inotifyFd, function ($inotifyFd) {
             global $monitorFiles;
 
-            $events = inotify_read($inotify_fd);
+            $events = inotify_read($inotifyFd);
             if ($events) {
                 foreach ($events as $ev) {
                     if (!array_key_exists($ev['wd'], $monitorFiles)) {
@@ -86,7 +86,7 @@ class InotifyReload
 
                     unset($monitorFiles[$ev['wd']]);
                     if (is_file($file)) {
-                        $wd = inotify_add_watch($inotify_fd, $file, IN_MODIFY);
+                        $wd = inotify_add_watch($inotifyFd, $file, IN_MODIFY);
                         $monitorFiles[$wd] = $file;
                     }
                 }

@@ -14,6 +14,7 @@ use Yew\Plugins\AutoReload\AutoReloadConfig;
 class AutoReloadPlugin extends AbstractPlugin
 {
     const PROCESS_NAME = "helper";
+
     const PROCESS_GROUP_NAME = "HelperGroup";
 
     /**
