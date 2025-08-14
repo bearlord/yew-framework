@@ -6,7 +6,17 @@
 
 namespace Yew\Plugins\MQTT\Auth;
 
-interface MqttAuth
+class MqttAuth implements MqttAuthInterfa
 {
-    public function auth(int $fd, string $username, string $password): array;
+
+    /**
+     * @param int $fd
+     * @param string $username
+     * @param string $password
+     * @return array
+     */
+    public function auth(int $fd, string $username, string $password): array
+    {
+        return ["true", $fd];
+    }
 }
