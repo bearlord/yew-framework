@@ -23,7 +23,7 @@ abstract class Connection implements ConnectionInterface
     protected PoolInterface $pool;
 
     /**
-     * @var Config
+     * @var ConfigInterface
      */
     protected ConfigInterface $config;
 
@@ -55,18 +55,18 @@ abstract class Connection implements ConnectionInterface
     }
 
     /**
-     * @return Config
+     * @return ConfigInterface
      */
-    public function getConfig(): Config
+    public function getConfig(): ConfigInterface
     {
         return $this->config;
     }
 
     /**
-     * @param Config $config
+     * @param ConfigInterface $config
      * @return void
      */
-    public function setConfig(Config $config): void
+    public function setConfig(ConfigInterface $config): void
     {
         $this->config = $config;
     }

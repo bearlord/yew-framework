@@ -133,12 +133,12 @@ class RedisConnection
 
         return $redis;
     }
-
+    
     /**
      * @param string|null $name
-     * @return string
+     * @return int|null
      */
-    protected function formatOptionName(?string $name = null): string
+    protected function formatOptionName(?string $name = null): ?int
     {
         if (empty($name)) {
             return "";

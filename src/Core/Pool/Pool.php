@@ -51,7 +51,7 @@ abstract class Pool implements PoolInterface
     {
         $this->config = $config;
 
-        $this->initOption($config->toConfigArray());
+        $this->initOption($config->getOptions());
 
         $this->generateChannel();
     }

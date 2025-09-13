@@ -1570,7 +1570,7 @@ class QueryBuilder extends BaseObject
      * @throws NotSupportedException
      * @throws \Throwable
      */
-    public function buildOrderByAndLimit(string $sql, array $orderBy, ?int $limit = null, ?int $offset = null): string
+    public function buildOrderByAndLimit(string $sql, ?array $orderBy = null, ?int $limit = null, ?int $offset = null): string
     {
         $orderBy = $this->buildOrderBy($orderBy);
         if ($orderBy !== '') {
