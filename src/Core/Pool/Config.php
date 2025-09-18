@@ -16,11 +16,6 @@ abstract class Config extends BaseConfig implements ConfigInterface
     protected string $name = "default";
 
     /**
-     * @var int
-     */
-    protected int $poolMaxNumber = 5;
-
-    /**
      * @var array
      */
     protected array $options = [];
@@ -54,22 +49,6 @@ abstract class Config extends BaseConfig implements ConfigInterface
     public function setName(string $name): void
     {
         $this->name = $name;
-    }
-
-    /**
-     * @return int
-     */
-    public function getPoolMaxNumber(): int
-    {
-        return $this->poolMaxNumber;
-    }
-
-    /**
-     * @param int $poolMaxNumber
-     */
-    public function setPoolMaxNumber(int $poolMaxNumber): void
-    {
-        $this->poolMaxNumber = $poolMaxNumber;
     }
 
 

@@ -153,9 +153,9 @@ class Config extends \Yew\Core\Pool\Config
     }
 
     /**
-     * @return string
+     * @return int
      */
-    public function getSchemaCacheDuration(): string
+    public function getSchemaCacheDuration(): int
     {
         return $this->schemaCacheDuration;
     }
@@ -199,10 +199,10 @@ class Config extends \Yew\Core\Pool\Config
             'password' => $this->getPassword(),
             'tablePrefix' => $this->getTablePrefix(),
             'charset' => $this->getCharset(),
-            'poolMaxNumber' => $this->getPoolMaxNumber(),
             'enableSchemaCache' => $this->getEnableSchemaCache(),
             'schemaCacheDuration' => $this->getSchemaCacheDuration(),
-            'schemaCache' => $this->getSchemaCache()
+            'schemaCache' => $this->getSchemaCache(),
+            'options' => $this->getOptions()
         ];
     }
 

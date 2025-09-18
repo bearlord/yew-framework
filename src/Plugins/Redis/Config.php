@@ -13,22 +13,12 @@ class Config extends \Yew\Core\Pool\Config
     /**
      * @var string
      */
-    protected string $name = "";
-
-    /**
-     * @var string
-     */
     protected string $host = "localhost";
 
     /**
      * @var int
      */
     protected int $port = 6379;
-
-    /**
-     * @var mixed
-     */
-    protected $auth = null;
 
     /**
      * @var string
@@ -39,6 +29,11 @@ class Config extends \Yew\Core\Pool\Config
      * @var int
      */
     protected int $database = 0;
+    
+    /**
+     * @var mixed
+     */
+    protected $auth = null;
 
     /**
      * @var float
@@ -128,18 +123,18 @@ class Config extends \Yew\Core\Pool\Config
         }
 
         return [
-            "name" => $this->name,
-            "host" => $this->host,
-            "port" => $this->port,
-            "auth" => $this->auth,
-            "database" => $this->database,
-            "timeout" => $this->timeout,
-            "reserved" => $this->reserved,
-            "retryInterval" => $this->retryInterval,
-            "readTimeout" => $this->readTimeout,
-            "cluster" => $this->cluster,
-            "sentinel" => $this->sentinel,
-            "options" => $this->options
+            "name" => $this->getName(),
+            "host" => $this->getHost(),
+            "port" => $this->getPort(),
+            "auth" => $this->getAuth(),
+            "database" => $this->getDatabase(),
+            "timeout" => $this->getTimeout(),
+            "reserved" => $this->getReserved(),
+            "retryInterval" => $this->getRetryInterval(),
+            "readTimeout" => $this->getReadTimeout(),
+            "cluster" => $this->getCluster(),
+            "sentinel" => $this->getSentinel(),
+            "options" => $this->getOptions()
         ];
     }
 
@@ -173,16 +168,6 @@ class Config extends \Yew\Core\Pool\Config
     public function setDatabase(int $database): void
     {
         $this->database = $database;
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name): void
-    {
-        $this->name = $name;
     }
 
     /**

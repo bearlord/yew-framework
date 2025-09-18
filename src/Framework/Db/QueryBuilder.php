@@ -1610,11 +1610,11 @@ class QueryBuilder extends BaseObject
     }
 
     /**
-     * @param int $limit
-     * @param int $offset
+     * @param int|ExpressionInterface $limit
+     * @param int|ExpressionInterface $offset
      * @return string the LIMIT and OFFSET clauses
      */
-    public function buildLimit(int $limit, int $offset): string
+    public function buildLimit($limit, $offset): string
     {
         $sql = '';
         if ($this->hasLimit($limit)) {

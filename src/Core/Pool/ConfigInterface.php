@@ -8,7 +8,8 @@ interface ConfigInterface
 
     public function setName(string $name): void;
 
-    public function getPoolMaxNumber(): int;
+    public function getOptions(): array;
 
-    public function setPoolMaxNumber(int $poolMaxNumber): void;
+    public function setOptions(array $options): void;
+
 }
