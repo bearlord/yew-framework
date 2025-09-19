@@ -17,7 +17,7 @@ class PackTool extends Common
     {
         $len = strlen($str);
 
-        return PackTool . phppack('n', $len) . $str;
+        return pack('n', $len) . $str;
     }
 
     /**
@@ -27,7 +27,7 @@ class PackTool extends Common
      */
     public static function stringPair(string $key, string $value): string
     {
-        return PackTool . phpstatic::string($key) . static::string($value);
+        return static::string($key) . static::string($value);
     }
 
     /**
@@ -78,14 +78,23 @@ class PackTool extends Common
             $type |= 1;
         }
 
-        return PackTool . phpchr($type) . static::packRemainingLength($bodyLength);
+        return chr($type) . static::packRemainingLength($bodyLength);
+    }
+
+    /**
+     * @param string $body
+     * @return string
+     */
+    public static function genProperties(string $body): string
+    {
+        return static::packRemainingLength(strlen($body)) . $body;
     }
 
     /**
      * @param int $bodyLength
      * @return string
      */
-    private static function packRemainingLength(int $bodyLength): string
+    protected static function packRemainingLength(int $bodyLength): string
     {
         $string = '';
         do {

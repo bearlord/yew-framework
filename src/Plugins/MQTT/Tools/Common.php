@@ -7,6 +7,13 @@
 
 namespace Yew\Plugins\MQTT\Tools;
 
+/**
+ * @method static string hexDump(string $encode)
+ * @method static string hexDumpAscii(string $encode)
+ * @method static string printableText(string $encode)
+ * @method static string hexStream(string $encode)
+ * @method static string ascii(string $encode)
+ */
 abstract class Common
 {
     /**
@@ -26,5 +33,15 @@ abstract class Common
             printf("%4d: %08b : 0x%02x : %d : %s\n", $i, $ascii, $ascii, $ascii, $chr);
         }
         echo "\033[0m";
+    }
+
+    /**
+     * @param $method
+     * @param $arguments
+     * @return mixed
+     */
+    public static function __callStatic($method, $arguments)
+    {
+        return (new Debug())->setEncode(...$arguments)->{$method}();
     }
 }

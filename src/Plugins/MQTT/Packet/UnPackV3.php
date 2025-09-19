@@ -33,6 +33,7 @@ class UnPackV3
             $willTopic = UnPackTool::string($remaining);
             $willMessage = UnPackTool::string($remaining);
         }
+
         $userName = $password = '';
         if ($userNameFlag) {
             $userName = UnPackTool::string($remaining);
@@ -40,17 +41,18 @@ class UnPackV3
         if ($passwordFlag) {
             $password = UnPackTool::string($remaining);
         }
+
         $package = [
             'type' => Types::CONNECT,
             'protocol_name' => $protocolName,
             'protocol_level' => $protocolLevel,
             'clean_session' => $cleanSession,
-            'will' => [],
             'user_name' => $userName,
             'password' => $password,
             'keep_alive' => $keepAlive,
             'client_id' => $clientId,
         ];
+
         if ($willFlag) {
             $package['will'] = [
                 'qos' => $willQos,
@@ -58,9 +60,7 @@ class UnPackV3
                 'topic' => $willTopic,
                 'message' => $willMessage,
             ];
-        } else {
-            unset($package['will']);
-        }
+        } 
 
         return $package;
     }

@@ -36,6 +36,8 @@ class UnPackV5
             $properties = UnPackProperty::connect($propertiesTotalLength, $remaining);
         }
         $clientId = UnPackTool::string($remaining);
+
+        $willProperties = [];
         if ($willFlag) {
             $willPropertiesTotalLength = UnPackTool::byte($remaining);
             if ($willPropertiesTotalLength) {
@@ -44,6 +46,7 @@ class UnPackV5
             $willTopic = UnPackTool::string($remaining);
             $willMessage = UnPackTool::string($remaining);
         }
+
         $userName = $password = '';
         if ($userNameFlag) {
             $userName = UnPackTool::string($remaining);
@@ -51,6 +54,7 @@ class UnPackV5
         if ($passwordFlag) {
             $password = UnPackTool::string($remaining);
         }
+
         $package = [
             'type' => Types::CONNECT,
             'protocol_name' => $protocolName,
@@ -61,6 +65,7 @@ class UnPackV5
             'user_name' => $userName,
             'password' => $password,
             'keep_alive' => $keepAlive,
+            'client_id' => $clientId,
         ];
 
         if ($propertiesTotalLength) {
@@ -68,8 +73,6 @@ class UnPackV5
         } else {
             unset($package['properties']);
         }
-
-        $package['client_id'] = $clientId;
 
         if ($willFlag) {
             if ($willPropertiesTotalLength) {
