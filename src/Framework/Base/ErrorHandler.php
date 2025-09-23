@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Base;
 
+use Swoole\ExitException;
 use Yew\Core\Server\Server;
 use Yew\Framework\Console\Exception\Exception;
 use Yew\Framework\Exception\ErrorException;
@@ -31,6 +32,12 @@ use Yew\Framework\Web\HttpException;
 abstract class ErrorHandler extends Component
 {
     /**
+     * @event Event an event that is triggered when the handler is called by shutdown function via [[handleFatalError()]].
+     * @since 2.0.46
+     */
+    const EVENT_SHUTDOWN = 'shutdown';
+
+    /**
      * @var bool whether to discard any existing page output before error display. Defaults to true.
      */
     public bool $discardExistingOutput = true;
@@ -46,7 +53,7 @@ abstract class ErrorHandler extends Component
     /**
      * @var \Exception|null the exception that is being handled currently.
      */
-    public ?\Exception $exception;
+    public $exception;
 
     /**
      * @var bool if true - `handleException()` will finish script with `ExitCode::OK`.
@@ -58,7 +65,7 @@ abstract class ErrorHandler extends Component
     /**
      * @var string Used to reserve memory for fatal error handler.
      */
-    private string $_memoryReserve;
+    private ?string $_memoryReserve;
 
     /**
      * @var \Exception from HHVM error that stores backtrace
@@ -71,11 +78,13 @@ abstract class ErrorHandler extends Component
     private bool $_registered = false;
 
 
+    protected bool $isDebug = true;
+
     public function init()
     {
-        $debug = Server::$instance->getConfigContext()->get('yew.debug');
+        $this->isDebug = Yew::$app->getConfig()->get('yew.debug');
 
-        $this->silentExitOnException = $this->silentExitOnException !== null ? $this->silentExitOnException : $debug;
+        $this->silentExitOnException = $this->silentExitOnException !== null ? $this->silentExitOnException : $this->isDebug;
         parent::init();
     }
 
@@ -120,8 +129,12 @@ abstract class ErrorHandler extends Component
      * @param \Exception $exception the exception that is not caught
      * @throws \Exception
      */
-    public function handleException(\Exception $exception)
+    public function handleException($exception)
     {
+        var_dump([
+            'mark' => 'handleException',
+        ]);
+
         if ($exception instanceof ExitException) {
             return;
         }
@@ -165,16 +178,14 @@ abstract class ErrorHandler extends Component
      * @throws \Exception
      * @since 2.0.11
      */
-    protected function handleFallbackExceptionMessage($exception, \Exception $previousException)
+    protected function handleFallbackExceptionMessage($exception, $previousException)
     {
         $msg = "An Error occurred while handling another error:\n";
-        $msg .= (string) $exception;
+        $msg .= (string)$exception;
         $msg .= "\nPrevious exception:\n";
-        $msg .= (string) $previousException;
+        $msg .= (string)$previousException;
 
-        $debug = Server::$instance->getConfigContext()->get('yew.debug');
-
-        if ($debug) {
+        if ($this->isDebug) {
             if (PHP_SAPI === 'cli') {
                 echo $msg . "\n";
             } else {
@@ -203,25 +214,18 @@ abstract class ErrorHandler extends Component
      */
     public function handleError(int $code, string $message, string $file, int $line): bool
     {
+        var_dump([
+            error_reporting(),
+            $code,
+            error_reporting() & $code
+        ]);
         if (error_reporting() & $code) {
             // load ErrorException manually here because autoloading them will not work
             // when error occurs while autoloading a class
             if (!class_exists('Yew\Framework\Exception\ErrorException', false)) {
-                require_once dir(__DIR__) . 'Exception/ErrorException.php';
+                require_once dirname(__DIR__) . '/Exception/ErrorException.php';
             }
             $exception = new ErrorException($message, $code, $code, $file, $line);
-
-            if (PHP_VERSION_ID < 70400) {
-                // prior to PHP 7.4 we can't throw exceptions inside of __toString() - it will result a fatal error
-                $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-                array_shift($trace);
-                foreach ($trace as $frame) {
-                    if ($frame['function'] === '__toString') {
-                        $this->handleException($exception);
-                        return false;
-                    }
-                }
-            }
 
             throw $exception;
         }
@@ -234,34 +238,59 @@ abstract class ErrorHandler extends Component
      */
     public function handleFatalError()
     {
-        unset($this->_memoryReserve);
+        $this->_memoryReserve = null;
+
+        if (!empty($this->_workingDirectory)) {
+            // fix working directory for some Web servers e.g. Apache
+            chdir($this->_workingDirectory);
+            // flush memory
+            $this->_workingDirectory = null;
+        }
+
+        $error = error_get_last();
+        if ($error === null) {
+            return;
+        }
 
         // load ErrorException manually here because autoloading them will not work
         // when error occurs while autoloading a class
         if (!class_exists('Yew\Framework\Exception\ErrorException', false)) {
-            require_once dir(__DIR__) . 'Exception/ErrorException.php';
+            require_once dirname(__DIR__) . '/Exception/ErrorException.php';
         }
 
-        $error = error_get_last();
-
-        if (ErrorException::isFatalError($error)) {
-            if (!empty($this->_hhvmException)) {
-                $exception = $this->_hhvmException;
-            } else {
-                $exception = new ErrorException($error['message'], $error['type'], $error['type'], $error['file'], $error['line']);
-            }
-            $this->exception = $exception;
-
-            $this->logException($exception);
-
-            if ($this->discardExistingOutput) {
-                $this->clearOutput();
-            }
-            $this->renderException($exception);
-
-            // need to explicitly flush logs because exit() next will terminate the app immediately
-            Yew::getLogger()->flush(true);
+        if (!ErrorException::isFatalError($error)) {
+            return;
         }
+
+        $this->exception = new ErrorException(
+            $error['message'],
+            $error['type'],
+            $error['type'],
+            $error['file'],
+            $error['line']
+        );
+
+        unset($error);
+
+        $this->logException($this->exception);
+
+        if ($this->discardExistingOutput) {
+            $this->clearOutput();
+        }
+        $this->renderException($this->exception);
+
+        // need to explicitly flush logs because exit() next will terminate the app immediately
+        Yew::getLogger()->flush(true);
+        if (defined('HHVM_VERSION')) {
+            flush();
+        }
+
+        $this->trigger(static::EVENT_SHUTDOWN);
+
+        // ensure it is called after user-defined shutdown functions
+        register_shutdown_function(function () {
+            exit(1);
+        });
     }
 
     /**
@@ -275,7 +304,7 @@ abstract class ErrorHandler extends Component
      * @param \Exception $exception the exception to be logged
      * @since 2.0.3 this method is now public.
      */
-    public function logException(\Exception $exception)
+    public function logException($exception)
     {
         $category = get_class($exception);
         if ($exception instanceof HttpException) {
@@ -306,9 +335,9 @@ abstract class ErrorHandler extends Component
      * to PHP errors because exceptions cannot be thrown inside of them.
      * @param \Exception $exception the exception to convert to a PHP error.
      */
-    public static function convertExceptionToError(\Exception $exception)
+    public function convertExceptionToError(\Exception $exception)
     {
-        trigger_error(static::convertExceptionToString($exception), E_USER_ERROR);
+        trigger_error($this->convertExceptionToString($exception), E_USER_ERROR);
     }
 
     /**
@@ -316,16 +345,14 @@ abstract class ErrorHandler extends Component
      * @param \Exception|\Error $exception the exception being converted
      * @return string the string representation of the exception.
      */
-    public static function convertExceptionToString($exception): string
+    public function convertExceptionToString($exception): string
     {
         if ($exception instanceof UserException) {
             return "{$exception->getName()}: {$exception->getMessage()}";
         }
 
-        $debug = Server::$instance->getConfigContext()->get('yew.debug');
-
-        if ($debug) {
-            return static::convertExceptionToVerboseString($exception);
+        if ($this->isDebug) {
+            return $this->convertExceptionToVerboseString($exception);
         }
 
         return 'An internal server error occurred.';
@@ -338,7 +365,7 @@ abstract class ErrorHandler extends Component
      *
      * @since 2.0.14
      */
-    public static function convertExceptionToVerboseString($exception): string
+    public function convertExceptionToVerboseString($exception): string
     {
         if ($exception instanceof Exception) {
             $message = "Exception ({$exception->getName()})";
