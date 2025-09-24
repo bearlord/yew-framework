@@ -153,7 +153,7 @@ class Module extends ServiceLocator
         }
 
 
-        return $this->module ? ltrim($this->module->getUniqueId() . '/' . $this->id, '/') : $this->id;
+        //return $this->module ? ltrim($this->module->getUniqueId() . '/' . $this->id, '/') : $this->id;
     }
 
     /**
@@ -186,6 +186,18 @@ class Module extends ServiceLocator
         } else {
             throw new InvalidArgumentException("The directory does not exist: $path");
         }
+    }
+
+    /**
+     * Returns the directory that contains the controller classes according to [[controllerNamespace]].
+     * Note that in order for this method to return a value, you must define
+     * an alias for the root namespace of [[controllerNamespace]].
+     * @return string the directory that contains the controller classes.
+     * @throws InvalidArgumentException if there is no alias defined for the root namespace of [[controllerNamespace]].
+     */
+    public function getControllerPath()
+    {
+        return Yew::getAlias('@' . str_replace('\\', '/', $this->controllerNamespace));
     }
 
 
