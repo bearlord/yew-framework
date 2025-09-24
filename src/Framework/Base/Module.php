@@ -137,6 +137,26 @@ class Module extends ServiceLocator
     }
 
     /**
+     * Returns an ID that uniquely identifies this module among all modules within the current application.
+     * Note that if the module is an application, an empty string will be returned.
+     * @return string the unique ID of the module.
+     */
+    public function getUniqueId()
+    {
+        if ($this->module) {
+            var_dump([
+                'class' => get_called_class(),
+
+                'module' => get_class($this->module),
+                'getUniqueId' => $this->module->getUniqueId(),
+            ]);
+        }
+
+
+        return $this->module ? ltrim($this->module->getUniqueId() . '/' . $this->id, '/') : $this->id;
+    }
+
+    /**
      * Returns the root directory of the module.
      * It defaults to the directory containing the module class file.
      * @return string the root directory of the module.
@@ -203,7 +223,7 @@ class Module extends ServiceLocator
         $module = $this->getModule($id);
 
         if ($module !== null) {
-            $module->bootstrap($this);
+            //$module->bootstrap($this);
             if (isset($this->controllerMap[$id])) {
                 $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
                 return [$controller, $route];
@@ -305,6 +325,63 @@ class Module extends ServiceLocator
         }
     }
 
+    /**
+     * Returns the sub-modules in this module.
+     * @param bool $loadedOnly whether to return the loaded sub-modules only. If this is set `false`,
+     * then all sub-modules registered in this module will be returned, whether they are loaded or not.
+     * Loaded modules will be returned as objects, while unloaded modules as configuration arrays.
+     * @return array the modules (indexed by their IDs).
+     */
+    public function getModules($loadedOnly = false)
+    {
+        if ($loadedOnly) {
+            $modules = [];
+            foreach ($this->_modules as $module) {
+                if ($module instanceof self) {
+                    $modules[] = $module;
+                }
+            }
+
+            return $modules;
+        }
+
+        return $this->_modules;
+    }
+
+    /**
+     * Registers sub-modules in the current module.
+     *
+     * Each sub-module should be specified as a name-value pair, where
+     * name refers to the ID of the module and value the module or a configuration
+     * array that can be used to create the module. In the latter case, [[Yii::createObject()]]
+     * will be used to create the module.
+     *
+     * If a new sub-module has the same ID as an existing one, the existing one will be overwritten silently.
+     *
+     * The following is an example for registering two sub-modules:
+     *
+     * ```php
+     * [
+     *     'comment' => [
+     *         'class' => 'app\modules\comment\CommentModule',
+     *         'db' => 'db',
+     *     ],
+     *     'booking' => ['class' => 'app\modules\booking\BookingModule'],
+     * ]
+     * ```
+     *
+     * @param array $modules modules (id => module configuration or instances).
+     */
+    public function setModules($modules)
+    {
+        foreach ($modules as $id => $module) {
+            $this->_modules[$id] = $module;
+            if ($module instanceof self) {
+                $module->module = $this;
+            }
+        }
+    }
+
 
     /**
      * Run route
@@ -341,7 +418,15 @@ class Module extends ServiceLocator
         if (is_array($parts)) {
             /* @var $controller Controller */
             list($controller, $actionID) = $parts;
-            return $controller->runAction($actionID, $params);
+
+            $oldController = Yew::$app->controller;
+            Yew::$app->controller = $controller;
+
+            $result = $controller->runAction($actionID, $params);
+            if ($result !== null) {
+                Yew::$app->controller = $oldController;
+                return $result;
+            }
         }
 
         return null;
