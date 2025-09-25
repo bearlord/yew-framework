@@ -12,7 +12,7 @@ use Yew\Framework\Base\InlineAction;
 use Yew\Framework\Console\Controller;
 
 /**
- * This is the command line version of Gii - a code generator.
+ * This is the command line version of Generator - a code generator.
  *
  * You can use this command to generate models, controllers, etc. For example,
  * to generate an ActiveRecord model based on a DB table, you can run:
@@ -145,6 +145,9 @@ class GenerateController extends Controller
      */
     public function getActionHelpSummary($action): string
     {
+        if (empty($action)) {
+            return "";
+        }
         if ($action instanceof InlineAction) {
             return parent::getActionHelpSummary($action);
         }
