@@ -56,6 +56,11 @@ class Application extends Module
     public string $sourceLanguage = 'en-US';
 
     /**
+     * @var Controller the currently active controller instance
+     */
+    public $controller;
+
+    /**
      * @var string Default time zone
      */
     public string $timeZone = 'Asia/Shanghai';
@@ -162,7 +167,6 @@ class Application extends Module
         }
     }
 
-
     /**
      * Returns static class instance, which can be used to obtain meta information.
      * @param bool $refresh whether to re-create static instance even, if it is already cached.
@@ -237,7 +241,17 @@ class Application extends Module
         //If don't this, Yew\Framework\Log\Logger would not be created, 'flushInterval' and 'traceLevel' would not be set customize value
         //but default value.
         $this->getLog();
+    }
 
+
+    /**
+     * Returns an ID that uniquely identifies this module among all modules within the current application.
+     * Since this is an application instance, it will always return an empty string.
+     * @return string the unique ID of the module.
+     */
+    public function getUniqueId()
+    {
+        return '';
     }
 
     /**
@@ -281,6 +295,9 @@ class Application extends Module
         Yew::setAlias('@vendor', $this->_vendorPath);
         Yew::setAlias('@bower', $this->_vendorPath . DIRECTORY_SEPARATOR . 'bower-asset');
         Yew::setAlias('@npm', $this->_vendorPath . DIRECTORY_SEPARATOR . 'npm-asset');
+
+        Yew::setAlias('@yew', $this->_vendorPath . DIRECTORY_SEPARATOR . 'bearlord/yew-framework/src');
+        Yew::setAlias('@Yew', $this->_vendorPath . DIRECTORY_SEPARATOR . 'bearlord/yew-framework/src');
     }
 
     /**
@@ -714,7 +731,7 @@ class Application extends Module
      * @throws \Yew\Framework\Exception\Exception
      * @throws InvalidRouteException
      */
-    public function runAction(string $route, ?array $params = [])
+    public function runActionBackup(string $route, ?array $params = [])
     {
         $parts = $this->createController($route);
         if (is_array($parts)) {
@@ -723,7 +740,9 @@ class Application extends Module
             return $controller->runAction($actionID, $params);
         }
 
-        return null;
+
+        //$id = $this->getUniqueId();
+        //throw new InvalidRouteException('Unable to resolve the request "' . ($id === '' ? $route : $id . '/' . $route) . '".');
     }
 
 
