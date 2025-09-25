@@ -65,16 +65,7 @@ class HelpController extends Controller
                 $this->getCommandHelp($controller);
             }
         } else {
-            try {
-                $this->getDefaultHelp();
-            } catch (\Exception $e) {
-                var_dump([
-                    $e->getMessage(),
-                    $e->getFile(),
-                    $e->getLine(),
-                    $e->getTraceAsString()
-                ]);
-            }
+            $this->getDefaultHelp();
         }
     }
 
@@ -221,7 +212,8 @@ class HelpController extends Controller
         foreach ($class->getMethods() as $method) {
             $name = $method->getName();
             if ($name !== 'actions' && $method->isPublic() && !$method->isStatic() && strncmp($name, 'action', 6) === 0) {
-                $actions[] = $this->camel2id(substr($name, 6));
+                //$actions[] = $this->camel2id(substr($name, 6));
+                $actions[] = lcfirst(substr($name, 6));
             }
         }
         sort($actions);
@@ -332,17 +324,7 @@ class HelpController extends Controller
             }
         }
 
-        var_dump([
-            'step' => 9007,
-            'app' => get_class(Yew::$app),
-        ]);
-
         foreach ($commands as $command => $description) {
-            var_dump([
-                'step' => 9006,
-                'command' => $command,
-                'app' => get_class(Yew::$app),
-            ]);
             $result = Yew::$app->createController($command);
             if (empty($result)) {
                 continue;
