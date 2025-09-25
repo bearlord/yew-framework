@@ -1,22 +1,19 @@
 <?php
 
-declare(strict_types=1);
+<?php
 /**
- * This file is part of Simps.
- *
- * @link     https://github.com/simps/mqtt
- * @contact  Lu Fei <lufei@simps.io>
- *
- * For the full copyright and license information,
- * please view the LICENSE file that was distributed with this source code.
+ * Yew framework
+ * @author Lu Fei <lufei@simps.io>
+ * @author bearlord <565364226@qq.com>
  */
-namespace Simps\MQTT;
 
-use Simps\MQTT\Config\ClientConfig;
-use Simps\MQTT\Exception\ConnectException;
-use Simps\MQTT\Exception\ProtocolException;
-use Simps\MQTT\Hex\ReasonCode;
-use Simps\MQTT\Tools\Common;
+namespace Yew\Plugins\MQTT;
+
+use Yew\Plugins\MQTT\Config\ClientConfig;
+use Yew\Plugins\MQTT\Exception\ConnectException;
+use Yew\Plugins\MQTT\Exception\ProtocolException;
+use Yew\Plugins\MQTT\Hex\ReasonCode;
+use Yew\Plugins\MQTT\Tools\Common;
 use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client as WebSocketClient;
 

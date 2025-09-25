@@ -682,6 +682,10 @@ class Application extends Module
             $_route = '';
         }
 
+        if (empty($this->request)) {
+            return  null;
+        }
+
         $method = $this->request->server('request_method');
         $port = $this->request->server('server_port');
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch($port . ":" . $method, $route);

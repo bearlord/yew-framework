@@ -131,10 +131,6 @@ abstract class ErrorHandler extends Component
      */
     public function handleException($exception)
     {
-        var_dump([
-            'mark' => 'handleException',
-        ]);
-
         if ($exception instanceof ExitException) {
             return;
         }
@@ -214,11 +210,6 @@ abstract class ErrorHandler extends Component
      */
     public function handleError(int $code, string $message, string $file, int $line): bool
     {
-        var_dump([
-            error_reporting(),
-            $code,
-            error_reporting() & $code
-        ]);
         if (error_reporting() & $code) {
             // load ErrorException manually here because autoloading them will not work
             // when error occurs while autoloading a class

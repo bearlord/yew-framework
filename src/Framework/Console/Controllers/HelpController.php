@@ -7,6 +7,7 @@
 
 namespace Yew\Framework\Console\Controllers;
 
+use Yew\Core\Server\Version;
 use Yew\Yew;
 use Yew\Framework\Base\Application;
 use Yew\Framework\Console\Controller;
@@ -64,7 +65,16 @@ class HelpController extends Controller
                 $this->getCommandHelp($controller);
             }
         } else {
-            $this->getDefaultHelp();
+            try {
+                $this->getDefaultHelp();
+            } catch (\Exception $e) {
+                var_dump([
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine(),
+                    $e->getTraceAsString()
+                ]);
+            }
         }
     }
 
@@ -295,6 +305,9 @@ class HelpController extends Controller
      */
     protected function getDefaultHelp()
     {
+        error_reporting(E_ALL);
+        ini_set('display_errors', "On");
+
         $commands = $this->getCommandDescriptions();
         $this->stdout($this->getDefaultHelpHeader());
         if (empty($commands)) {
@@ -318,8 +331,23 @@ class HelpController extends Controller
                 $maxLength = max($maxLength, strlen($string));
             }
         }
+
+        var_dump([
+            'step' => 9007,
+            'app' => get_class(Yew::$app),
+        ]);
+
         foreach ($commands as $command => $description) {
+            var_dump([
+                'step' => 9006,
+                'command' => $command,
+                'app' => get_class(Yew::$app),
+            ]);
             $result = Yew::$app->createController($command);
+            if (empty($result)) {
+                continue;
+            }
+
             list($controller, $actionID) = $result;
             $actions = $this->getActions($controller);
             $this->stdout('- ' . $this->ansiFormat($command, Console::FG_YELLOW));
@@ -536,7 +564,9 @@ class HelpController extends Controller
      */
     protected function getScriptName()
     {
-        return basename(Yew::$app->request->scriptFile);
+        if (!empty(Yew::$app->request->scriptFile)) {
+            return basename(Yew::$app->request->scriptFile);
+        }
     }
 
     /**
@@ -546,7 +576,7 @@ class HelpController extends Controller
      */
     protected function getDefaultHelpHeader()
     {
-        return "\nThis is Yii version " . \Yew::getVersion() . ".\n";
+        return "\nThis is Yew version " . Version::getVersion() . ".\n";
     }
 
     /**

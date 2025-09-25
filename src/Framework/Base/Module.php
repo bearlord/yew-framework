@@ -143,17 +143,7 @@ class Module extends ServiceLocator
      */
     public function getUniqueId()
     {
-        if ($this->module) {
-            var_dump([
-                'class' => get_called_class(),
-
-                'module' => get_class($this->module),
-                'getUniqueId' => $this->module->getUniqueId(),
-            ]);
-        }
-
-
-        //return $this->module ? ltrim($this->module->getUniqueId() . '/' . $this->id, '/') : $this->id;
+        return $this->module ? ltrim($this->module->getUniqueId() . '/' . $this->id, '/') : $this->id;
     }
 
     /**

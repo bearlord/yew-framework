@@ -60,9 +60,10 @@
       "Yew\\": "src"
     },
     "files": [
-      "src/Yew/Core/Common.php",
-      "src/Yew/Goaop/ParserReflection/bootstrap.php",
-      "src/Yew/Nikic/FastRoute/bootstrap.php"
+      "src/Core/Common.php",
+      "src/Goaop/ParserReflection/bootstrap.php",
+      "src/Nikic/FastRoute/bootstrap.php",
+      "src/Plugins/MQTT/constants.php"
     ]
   }
 }

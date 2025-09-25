@@ -7,13 +7,16 @@
 namespace Yew\Framework\Console;
 
 use Yew\Core\Server\Server;
+use Yew\Framework\Base\Action;
+use Yew\Framework\Base\Component;
+use Yew\Framework\Base\ErrorHandler;
 use Yew\Framework\Config\ConfigFactory;
+use Yew\Framework\Console\Controller;
 use Yew\Framework\Console\Exception\Exception;
 use Yew\Framework\Console\Exception\UnknownCommandException;
+use Yew\Framework\Di\Container;
 use Yew\Framework\Exception\InvalidConfigException;
 use Yew\Framework\Exception\InvalidRouteException;
-use Yew\Framework\Base\Action;
-use Yew\Framework\Base\Controller;
 use Yew\Framework\Helpers\Console;
 use Yew\Yew;
 
@@ -94,6 +97,11 @@ class Application extends \Yew\Framework\Base\Application
      */
     public ?array $requestedParams = null;
 
+    /**
+     * @var Controller the currently active controller instance
+     */
+    public $controller;
+
 
     /**
      * @var array list of components that should be run during the application [[bootstrap()|bootstrapping process]].
@@ -110,7 +118,26 @@ class Application extends \Yew\Framework\Base\Application
      * implements [[BootstrapInterface]], its [[BootstrapInterface::bootstrap()|bootstrap()]] method
      * will be also be called.
      */
-    public array $bootstrap = ['generator'];
+    public array $bootstrap = [];
+
+
+    /**
+     * @param array $config
+     * @throws \Yew\Core\Exception\Exception
+     * @throws InvalidConfigException
+     */
+    public function __construct()
+    {
+        Yew::$app = $this;
+
+        Yew::$container = new Container();
+
+        $this->config = ConfigFactory::build();
+
+        $this->preInit();
+
+        Component::__construct([]);
+    }
 
     /**
      * Returns static class instance, which can be used to obtain meta information.
@@ -182,6 +209,8 @@ class Application extends \Yew\Framework\Base\Application
                 }
             }
         }
+
+        $this->getErrorHandler()->register();
     }
 
     /**
@@ -203,6 +232,15 @@ class Application extends \Yew\Framework\Base\Application
     }
 
     /**
+     * Returns the error handler component.
+     * @return ErrorHandler the error handler application component.
+     */
+    public function getErrorHandler(): ErrorHandler
+    {
+        return $this->get('errorHandler');
+    }
+
+    /**
      * @return void
      * @throws InvalidConfigException
      */
@@ -211,8 +249,8 @@ class Application extends \Yew\Framework\Base\Application
         try {
             $response = $this->handleRequest($this->getRequest());
         } catch (\Exception $exception) {
-            throw $exception;
-            //return $exception->getCode();
+            //throw $exception;
+            return $exception->getCode();
         }
     }
 
@@ -328,10 +366,10 @@ class Application extends \Yew\Framework\Base\Application
             $res = parent::runAction($route, $params);
             return is_object($res) ? $res : (int) $res;
         } catch (InvalidRouteException $e) {
-            //throw new UnknownCommandException($route, $this, 0, $e);
-
-            //$_message = "Unknown command \"$route\".";
             Console::stderr("Unknown command \"$route\"." . "\n");
+            //$_message = "Unknown command \"$route\".";
+
+            throw new UnknownCommandException($route, $this, $e->getCode(), $e);
         }
     }
 
@@ -344,6 +382,7 @@ class Application extends \Yew\Framework\Base\Application
         return array_merge(parent::coreComponents(), [
             'request' => ['class' => '\Yew\Framework\Console\Request'],
             'response' => ['class' => '\Yew\Framework\Console\Response'],
+            'errorHandler' => ['class' => '\Yew\Framework\Console\ErrorHandler'],
         ]);
     }
 
@@ -355,7 +394,7 @@ class Application extends \Yew\Framework\Base\Application
     {
         return [
             'help' => 'Yew\Framework\Console\Controllers\HelpController',
-            'cache' => 'Yew\Framework\Console\Controllers\CacheController',
+            //'cache' => 'Yew\Framework\Console\Controllers\CacheController',
             'migrate' => 'Yew\Framework\Console\Controllers\MigrateController'
         ];
     }

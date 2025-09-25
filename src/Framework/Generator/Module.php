@@ -45,7 +45,7 @@ class Module extends \Yew\Framework\Base\Module implements BootstrapInterface
     /**
      * {@inheritdoc}
      */
-    public ?string $controllerNamespace = 'Yew\Framework\Generator\Console\Controllers';
+    public ?string $controllerNamespace = 'Yew\Framework\Generator\Console';
     
 
     /**
@@ -75,8 +75,7 @@ class Module extends \Yew\Framework\Base\Module implements BootstrapInterface
      */
     public int $newDirMode = 0777;
 
-
-
+    
     /**
      * Sets the currently requested instance of this module class.
      * @param Module|null $instance the currently requested instance of this module class.
