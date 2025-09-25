@@ -237,6 +237,11 @@ class HelpController extends Controller
             if (($child = $module->getModule($id)) === null) {
                 continue;
             }
+
+            if (get_class($module) === get_class($child)) {
+                continue;
+            }
+
             foreach ($this->getModuleCommands($child) as $command) {
                 $commands[] = $command;
             }
@@ -246,6 +251,7 @@ class HelpController extends Controller
         if (is_dir($controllerPath)) {
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($controllerPath, \RecursiveDirectoryIterator::KEY_AS_PATHNAME));
             $iterator = new \RegexIterator($iterator, '/.*Controller\.php$/', \RecursiveRegexIterator::GET_MATCH);
+
             foreach ($iterator as $matches) {
                 $file = $matches[0];
                 $relativePath = str_replace($controllerPath, '', $file);
@@ -278,7 +284,7 @@ class HelpController extends Controller
     {
         if (class_exists($controllerClass)) {
             $class = new \ReflectionClass($controllerClass);
-            return !$class->isAbstract() && $class->isSubclassOf('yii\console\Controller');
+            return !$class->isAbstract() && $class->isSubclassOf('Yew\Framework\Console\Controller');
         }
 
         return false;
