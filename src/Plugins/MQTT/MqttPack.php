@@ -36,7 +36,6 @@ use Yew\Plugins\Redis\GetRedis;
 use Yew\Plugins\Topic\GetTopic;
 use Yew\Plugins\Uid\GetUid;
 use Yew\Yew;
-use function DI\get;
 
 class MqttPack extends AbstractPack
 {
@@ -242,7 +241,7 @@ class MqttPack extends AbstractPack
         switch ($type) {
             case Types::CONNECT:
                 //协议版本
-                $protocolLevel = UnPackTool::getProtocolLevel($data);
+                $protocolLevel = UnPackTool::getLevel($data);
                 //解包数据
                 $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
                 //客户端标识

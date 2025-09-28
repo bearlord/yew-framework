@@ -7,8 +7,7 @@
 namespace Yew\Plugins\MQTT;
 
 use Yew\Core\Plugins\Config\BaseConfig;
-use Yew\Plugins\MQTT\Auth\EasyMqttAuth;
-use Yew\Plugins\MQTT\Handler\NonHandler;
+use Yew\Plugins\MQTT\Auth\MqttAuth;
 
 class MqttPluginConfig extends BaseConfig
 {
@@ -30,7 +29,7 @@ class MqttPluginConfig extends BaseConfig
      * Connection authentication class
      * @var string
      */
-    protected $mqttAuthClass = EasyMqttAuth::class;
+    protected $mqttAuthClass = MqttAuth::class;
 
     /**
      * When useRoute is set to true, it will no longer have the function of mqtt, and the topic field will be treated as the route path
@@ -43,12 +42,6 @@ class MqttPluginConfig extends BaseConfig
      * @var string
      */
     protected $serverTopic = '$SERVER_RPC';
-
-    /**
-     * Only valid when useRoute is set to true, the unpacking class of the message
-     * @var string
-     */
-    protected $messageHandleClass = NonHandler::class;
 
     /**
      * MqttPluginConfig constructor.
@@ -136,21 +129,5 @@ class MqttPluginConfig extends BaseConfig
     public function setServerQos(int $serverQos): void
     {
         $this->serverQos = $serverQos;
-    }
-
-    /**
-     * @return string
-     */
-    public function getMessageHandleClass(): string
-    {
-        return $this->messageHandleClass;
-    }
-
-    /**
-     * @param string $messageHandleClass
-     */
-    public function setMessageHandleClass(string $messageHandleClass): void
-    {
-        $this->messageHandleClass = $messageHandleClass;
     }
 }

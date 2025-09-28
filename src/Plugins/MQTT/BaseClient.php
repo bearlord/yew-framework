@@ -1,6 +1,4 @@
 <?php
-
-<?php
 /**
  * Yew framework
  * @author Lu Fei <lufei@simps.io>

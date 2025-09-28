@@ -15,7 +15,7 @@ class PingResp extends AbstractMessage
 {
     /**
      * @param bool $isArray
-     * @return array|mixed|string
+     * @return array|string
      * @throws \Throwable
      */
     public function getContents(bool $isArray = false)
