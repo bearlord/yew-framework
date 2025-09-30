@@ -152,7 +152,7 @@ class QueryBuilder extends \Yew\Framework\Db\QueryBuilder
     /**
      * {@inheritdoc}
      */
-    public function buildLimit(int $limit, int $offset): string
+    public function buildLimit($limit, $offset): string
     {
         $sql = '';
         // limit is not optional in CUBRID
