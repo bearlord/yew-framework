@@ -22,7 +22,6 @@ class m250930_081922_create_mqtt_retained_message_table extends Migration
             'updated_at' => $this->dateTime(6)->null()->comment('updated at'),
         ]);
 
-        $this->createIndex('client_id', '{{%mqtt_retained_message}}', 'client_id');
         $this->createIndex('topic', '{{%mqtt_retained_message}}', 'topic');
     }
 
