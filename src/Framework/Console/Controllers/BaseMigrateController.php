@@ -58,7 +58,7 @@ abstract class BaseMigrateController extends Controller
      *
      * @see $migrationNamespaces
      */
-    public $migrationPath = ['@app/migrations'];
+    public $migrationPath = ['@app/Migrations'];
     /**
      * @var array list of namespaces containing the migration classes.
      *
@@ -168,6 +168,7 @@ abstract class BaseMigrateController extends Controller
     public function actionUp(?int $limit = 0): int
     {
         $migrations = $this->getNewMigrations();
+
         if (empty($migrations)) {
             $this->stdout("No new migrations found. Your system is up-to-date.\n", Console::FG_GREEN);
 
