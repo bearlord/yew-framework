@@ -6,6 +6,7 @@
 
 namespace Yew\Core\Server;
 
+use Carbon\Carbon;
 use Exception;
 use Iterator;
 use ReflectionException;
@@ -55,6 +56,12 @@ abstract class Server extends BaseNode
      * @var bool
      */
     public static bool $isStart = false;
+
+     /**
+     * Server start time
+     * @var string|null
+     */
+    public static ?string $serverStartTime = null;
 
     /**
      * server configuration
@@ -328,6 +335,11 @@ abstract class Server extends BaseNode
     public function _onStart()
     {
         Server::$isStart = true;
+        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+
+        $startTimeFile = ROOT_DIR. '/runtime/start_time';
+        file_put_contents($startTimeFile, Server::$serverStartTime);
+
         //Send Application Starting Event
         $this->getEventDispatcher()->dispatchEvent(new ApplicationEvent(ApplicationEvent::ApplicationStartingEvent, $this));
         $this->processManager->getMasterProcess()->onProcessStart();
@@ -395,6 +407,8 @@ abstract class Server extends BaseNode
     public function _onManagerStart()
     {
         Server::$isStart = true;
+        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+
         $this->processManager->getManagerProcess()->onProcessStart();
         try {
             $this->onManagerStart();
@@ -427,6 +441,8 @@ abstract class Server extends BaseNode
     public function _onWorkerStart($server, int $workerId)
     {
         Server::$isStart = true;
+        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+
         $process = $this->processManager->getProcessFromId($workerId);
         $process->_onProcessStart();
     }

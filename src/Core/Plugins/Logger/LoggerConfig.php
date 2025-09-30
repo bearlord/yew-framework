@@ -27,7 +27,7 @@ class LoggerConfig extends BaseConfig
     /**
      * @var string|null
      */
-    protected ?string $dateFormat = "Y-m-d H:i:s";
+    protected ?string $dateFormat = "Y-m-d H:i:s.u";
     /**
      * @var bool
      */
