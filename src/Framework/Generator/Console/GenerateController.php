@@ -12,7 +12,7 @@ use Yew\Framework\Base\InlineAction;
 use Yew\Framework\Console\Controller;
 
 /**
- * This is the command line version of Generator - a code generator.
+ * This is the command line version of Code Generator.
  *
  * You can use this command to generate models, controllers, etc. For example,
  * to generate an ActiveRecord model based on a DB table, you can run:
