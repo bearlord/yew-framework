@@ -543,7 +543,7 @@ class MigrateController extends BaseMigrateController
      * @return string
      * @since 2.0.8
      */
-    protected function generateTableName(string $tableName): string
+    protected function generateTableName(?string $tableName = null): string
     {
         if (!$this->useTablePrefix) {
             return $tableName;
