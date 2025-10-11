@@ -7,7 +7,7 @@
 
 namespace Yew\Plugins\MQTT\Client;
 
-use Yew\Plugins\MQTT\Config\ClientConfig;
+use Yew\Plugins\MQTT\Client\Config\ClientConfig;
 use Yew\Plugins\MQTT\Exception\ConnectException;
 use Yew\Plugins\MQTT\Exception\ProtocolException;
 use Yew\Plugins\MQTT\Hex\ReasonCode;
@@ -48,7 +48,7 @@ class Client extends BaseClient
     /**
      * @return void
      */
-    private function reConnect()
+    protected function reConnect(): void
     {
         $result = false;
         $maxAttempts = $this->getConfig()->getMaxAttempts();
