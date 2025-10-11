@@ -6,14 +6,16 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT;
+namespace Yew\Plugins\MQTT\Client;
 
-use Yew\Plugins\MQTT\Config\ClientConfig;
+use Yew\Plugins\MQTT\Client\Config\ClientConfig;
 use Yew\Plugins\MQTT\Exception\ProtocolException;
 use Swoole\Coroutine\Http\Client;
 use Swoole\Http\Status;
 use Swoole\WebSocket\CloseFrame;
 use Swoole\WebSocket\Frame;
+use Yew\Plugins\MQTT\Protocol\ProtocolV3;
+use Yew\Plugins\MQTT\Protocol\ProtocolV5;
 
 class WebSocketClient extends BaseClient
 {
@@ -78,7 +80,7 @@ class WebSocketClient extends BaseClient
      */
     public function send(array $data, bool $response = true)
     {
-        $package = $this->getConfig()->isMQTT5() ? Protocol\V5::pack($data) : Protocol\V3::pack($data);
+        $package = $this->getConfig()->isMQTT5() ? ProtocolV5::pack($data) : ProtocolV3::pack($data);
 
         $this->getClient()->push($package, WEBSOCKET_OPCODE_BINARY);
 
@@ -90,7 +92,7 @@ class WebSocketClient extends BaseClient
     }
 
     /**
-     * @return true
+     * @return array|bool
      */
     public function recv()
     {
@@ -103,7 +105,7 @@ class WebSocketClient extends BaseClient
         } elseif (is_string($response) && strlen($response) !== 0) {
             $this->handleVerbose($response);
 
-            return $this->getConfig()->isMQTT5() ? Protocol\V5::unpack($response) : Protocol\V3::unpack($response);
+            return $this->getConfig()->isMQTT5() ? ProtocolV5::unpack($response) : ProtocolV3::unpack($response);
         }
 
         return true;

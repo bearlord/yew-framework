@@ -8,9 +8,6 @@
 namespace Yew\Plugins\MQTT\Client;
 
 use Yew\Plugins\MQTT\Client\Config\ClientConfig;
-use Yew\Plugins\MQTT\Exception\ConnectException;
-use Yew\Plugins\MQTT\Exception\ProtocolException;
-use Yew\Plugins\MQTT\Hex\ReasonCode;
 use Yew\Plugins\MQTT\Protocol\ProtocolV3;
 use Yew\Plugins\MQTT\Protocol\ProtocolV5;
 
