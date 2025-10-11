@@ -5,7 +5,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT;
+namespace Yew\Plugins\MQTT\Client;
 
 use Yew\Plugins\MQTT\Config\ClientConfig;
 use Yew\Plugins\MQTT\Exception\ConnectException;
@@ -193,7 +193,7 @@ abstract class BaseClient
         return ++$this->messageId > 65535 ? $this->messageId = 1 : $this->messageId;
     }
 
-    public static function genClientID(string $prefix = 'Simps_'): string
+    public static function genClientID(string $prefix = 'yew_'): string
     {
         return uniqid($prefix);
     }
