@@ -1,23 +1,19 @@
 <?php
 /**
- * ESD framework
+ * Yew framework
  * @author Lu Fei <lufei@simps.io>
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Plugins\MQTT;
+namespace Yew\Plugins\MQTT;
 
-use ESD\Plugins\MQTT\Config\ClientConfig;
-use ESD\Plugins\MQTT\Exception\ConnectException;
-use ESD\Plugins\MQTT\Exception\ProtocolException;
-use ESD\Plugins\MQTT\Hex\ReasonCode;
-use ESD\Plugins\MQTT\Protocol\ProtocolV3;
-use ESD\Plugins\MQTT\Protocol\ProtocolV5;
+use Yew\Plugins\MQTT\Config\ClientConfig;
+use Yew\Plugins\MQTT\Exception\ConnectException;
+use Yew\Plugins\MQTT\Exception\ProtocolException;
+use Yew\Plugins\MQTT\Hex\ReasonCode;
+use Yew\Plugins\MQTT\Protocol\ProtocolV3;
+use Yew\Plugins\MQTT\Protocol\ProtocolV5;
 
-/**
- * Class Client
- * @package ESD\Plugins\MQTT;
- */
 class Client
 {
     /** @var \Swoole\Coroutine\Client|\Swoole\Client */

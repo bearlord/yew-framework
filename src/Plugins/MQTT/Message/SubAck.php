@@ -11,10 +11,6 @@ use Yew\Plugins\MQTT\Protocol\Types;
 use Yew\Plugins\MQTT\Protocol\ProtocolV3;
 use Yew\Plugins\MQTT\Protocol\ProtocolV5;
 
-/**
- * Class SubAck
- * @package Yew\Plugins\MQTT\Message
- */
 class SubAck extends AbstractMessage
 {
     /**

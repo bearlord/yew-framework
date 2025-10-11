@@ -12,10 +12,6 @@ use Yew\Plugins\MQTT\Protocol\Types;
 use Yew\Plugins\MQTT\Protocol\ProtocolV3;
 use Yew\Plugins\MQTT\Protocol\ProtocolV5;
 
-/**
- * Class AbstractMessage
- * @package Yew\Plugins\MQTT\Message
- */
 class Publish extends AbstractMessage
 {
     /**
