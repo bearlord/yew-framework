@@ -27,28 +27,28 @@ abstract class BaseClient
     private $client;
 
     /** @var int */
-    private $messageId = 0;
+    private int $messageId = 0;
 
     /** @var array */
-    private $connectData = [];
+    private array $connectData = [];
 
     /** @var string */
-    private $host;
+    private string $host;
 
     /** @var int */
-    private $port;
+    private int $port;
 
     /** @var ClientConfig */
-    private $config;
+    private ClientConfig $config;
 
     /** @var int */
-    private $clientType;
+    private int $clientType;
 
     /** @var string */
-    private $path = '/mqtt';
+    private string $path = '/mqtt';
 
     /** @var bool */
-    private $ssl = false;
+    private bool $ssl = false;
 
     /**
      * @return $this
