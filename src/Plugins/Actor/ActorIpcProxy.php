@@ -10,7 +10,6 @@ use Yew\Plugins\Actor\Exception\ActorException;
 use Yew\Plugins\Ipc\IpcProxy;
 use Yew\Plugins\Ipc\IpcCallMessage;
 use Yew\Coroutine\Server\Server;
-use Yew\Yew;
 
 class ActorIpcProxy extends IpcProxy
 {

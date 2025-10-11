@@ -10,12 +10,12 @@ class Logger extends Component
     /**
      * @var array
      */
-    public $messages = [];
+    public array $messages = [];
 
     /**
      * @var int 
      */
-    public $flushInterval = 1;
+    public int $flushInterval = 1;
 
     /**
      * @var Dispatcher the message dispatcher

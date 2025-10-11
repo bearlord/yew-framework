@@ -25,15 +25,15 @@ use Yew\Framework\Helpers\FileHelper;
 class FileTarget extends Target
 {
     /**
-     * @var string log file path or [path alias](guide:concept-aliases). If not set, it will use the "@runtime/logs/app.log" file.
+     * @var string|null log file path or [path alias](guide:concept-aliases). If not set, it will use the "@runtime/logs/app.log" file.
      * The directory containing the log files will be automatically created if not existing.
      */
-    public $logFile;
+    public ?string $logFile = null;
 
     /**
      * @var string log file name
      */
-    public $logFileName;
+    public string $logFileName = "";
 
     /**
      * @var bool whether log files should be rotated when they reach a certain [[maxFileSize|maximum size]].
@@ -41,24 +41,24 @@ class FileTarget extends Target
      * an external tools for log rotation on your server.
      * @since 2.0.3
      */
-    public $enableRotation = true;
+    public bool $enableRotation = true;
 
     /**
      * @var int maximum log file size, in kilo-bytes. Defaults to 10240, meaning 1MB.
      */
-    public $maxFileSize = 1024; // in KB
+    public int $maxFileSize = 1024; // in KB
 
     /**
      * @var int number of log files used for rotation. Defaults to 5.
      */
-    public $maxLogFiles = 5;
+    public int $maxLogFiles = 5;
 
     /**
-     * @var int the permission to be set for newly created log files.
+     * @var int|null the permission to be set for newly created log files.
      * This value will be used by PHP chmod() function. No umask will be applied.
      * If not set, the permission will be determined by the current environment.
      */
-    public $fileMode;
+    public ?int $fileMode = null;
 
     /**
      * @var int the permission to be set for newly created directories.
@@ -66,7 +66,7 @@ class FileTarget extends Target
      * Defaults to 0775, meaning the directory is read-writable by owner and group,
      * but read-only for other users.
      */
-    public $dirMode = 0775;
+    public int $dirMode = 0775;
 
     /**
      * @var bool Whether to rotate log files by copy and truncate in contrast to rotation by
@@ -80,7 +80,7 @@ class FileTarget extends Target
      * the PHP documentation. By setting rotateByCopy to `true` you can work
      * around this problem.
      */
-    public $rotateByCopy = true;
+    public bool $rotateByCopy = true;
 
 
     /**

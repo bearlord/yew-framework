@@ -10,10 +10,8 @@ class Dispatcher extends Component
     /**
      * @var array
      */
-    public $targets = [];
-
-    private $_logger;
-
+    public array $targets = [];
+    
     /**
      * @param $messages
      * @param $final

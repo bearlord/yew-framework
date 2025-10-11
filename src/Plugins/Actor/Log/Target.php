@@ -6,16 +6,8 @@
 
 namespace Yew\Plugins\Actor\Log;
 
-use Yew\Core\Server\Beans\Request;
-use Yew\Core\Server\Server;
 use Yew\Framework\Base\Component;
-use Yew\Framework\Exception\InvalidConfigException;
-use Yew\Framework\Helpers\ArrayHelper;
 use Yew\Framework\Helpers\Json;
-use Yew\Framework\Helpers\VarDumper;
-use Yew\Plugins\Pack\ClientData;
-use Yew\Plugins\Console\Helper\StringHelper;
-use Yew\Yew;
 
 /**
  * Target is the base class for all log target classes.
@@ -119,14 +111,7 @@ abstract class Target extends Component
      * The callable value is available since version 2.0.13.
      *
      * A callable may be used to determine whether the log target should be enabled in a dynamic way.
-     * For example, to only enable a log if the current user is logged in you can configure the target
-     * as follows:
      *
-     * ```php
-     * 'enabled' => function() {
-     *     return !Yew::$app->user->isGuest;
-     * }
-     * ```
      */
     public function setEnabled($value)
     {
