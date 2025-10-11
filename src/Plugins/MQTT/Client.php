@@ -334,7 +334,7 @@ class Client
      * @param string $prefix
      * @return string
      */
-    public static function genClientID(string $prefix = 'Simps_'): string
+    public static function genClientID(string $prefix = 'yew_'): string
     {
         return uniqid($prefix);
     }
