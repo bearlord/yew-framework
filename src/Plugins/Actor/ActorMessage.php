@@ -77,7 +77,7 @@ class ActorMessage
     /**
      * @return int
      */
-    public function getMsgId(): ?int
+    public function getMsgId(): ?string
     {
         return $this->msgId;
     }
