@@ -12,6 +12,7 @@ use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
 use Yew\Plugins\Actor\Log\LogFactory;
+use Yew\Plugins\Actor\Log\Logger;
 use Yew\Plugins\Actor\Multicast\MulticastConfig;
 use Yew\Plugins\Actor\Multicast\Channel as MulticastChannel;
 use Yew\Plugins\Ipc\GetIpc;
@@ -63,16 +64,16 @@ abstract class Actor
     protected array $timerIds = [];
 
     /**
-     * @var Log\Logger
+     * @var Logger
      */
-    protected $logHandle;
+    protected Logger $logHandle;
 
     /**
      * @param string|null $name
      * @param bool $isCreated
      * @throws \DI\DependencyException
      */
-    final public function __construct(?string $name = '', bool $isCreated = false)
+    final public function __construct(?string $name = "", bool $isCreated = false)
     {
         $this->name = $name;
 
@@ -93,7 +94,8 @@ abstract class Actor
 
         $this->logHandle = LogFactory::create($name);
 
-        $this->tick(10 * 1000, [$this, 'saveContext']);
+        $saveContextTime = Server::$instance->getConfigContext()->get('actor.saveContextTime', 10);
+        $this->tick($saveContextTime * 1000, [$this, 'saveContext']);
     }
 
     /**
