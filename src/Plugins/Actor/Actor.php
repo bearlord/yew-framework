@@ -69,6 +69,11 @@ abstract class Actor
     protected Logger $logHandle;
 
     /**
+     * @var int boot state 0,1,2
+     */
+    protected int $bootState = 0;
+
+    /**
      * @param string|null $name
      * @param bool $isCreated
      * @throws \DI\DependencyException
@@ -92,7 +97,10 @@ abstract class Actor
             }
         });
 
+        $this->recovery();
+
         $this->logHandle = LogFactory::create($name);
+
 
         $saveContextTime = Server::$instance->getConfigContext()->get('actor.saveContextTime', 10);
         $this->tick($saveContextTime * 1000, [$this, 'saveContext']);
@@ -112,6 +120,23 @@ abstract class Actor
     public function setData($data): void
     {
         $this->data = $data;
+    }
+
+    /**
+     * @return int
+     */
+    public function getState(): int
+    {
+        return $this->state;
+    }
+
+    /**
+     * @param int $state
+     * @return void
+     */
+    public function setState(int $state): void
+    {
+        $this->state = $state;
     }
 
     /**
@@ -168,6 +193,16 @@ abstract class Actor
         $this->clearAllTimer();
         ActorManager::getInstance()->removeActor($this);
     }
+
+    /**
+     * Recovery
+     * @return void
+     */
+    public function recovery()
+    {
+        $this->setState(2);
+    }
+
 
     /**
      * Get proxy
