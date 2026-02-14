@@ -283,6 +283,10 @@ class Application extends \Yew\Framework\Base\Application
      */
     public function createController(string $route): ?array
     {
+	    if ($route === '') {
+		    $route = $this->defaultRoute;
+	    }
+
         $_route = $route;
 
         // double slashes or leading/ending slashes may cause substr problem
