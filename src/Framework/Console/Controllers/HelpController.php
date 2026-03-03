@@ -244,6 +244,10 @@ class HelpController extends Controller
                 continue;
             }
 
+			if ($child instanceof \Yew\Framework\Base\Module) {
+				continue;
+			}
+
             foreach ($this->getModuleCommands($child) as $command) {
                 $commands[] = $command;
             }
