@@ -134,6 +134,8 @@ class Application extends \Yew\Framework\Base\Application
 
         $this->config = ConfigFactory::build();
 
+	    $this->registerErrorHandler();
+
         $this->preInit();
 
         Component::__construct([]);
@@ -185,7 +187,6 @@ class Application extends \Yew\Framework\Base\Application
     {
         parent::preInit();
 
-
         $_bootstrap = $this->config->get('yew.bootstrap');
         $_modules = $this->config->get('yew.modules');
 
@@ -209,9 +210,19 @@ class Application extends \Yew\Framework\Base\Application
                 }
             }
         }
-
-        $this->getErrorHandler()->register();
     }
+
+	/**
+	 * @return void
+	 * @throws InvalidConfigException
+	 */
+	protected function registerErrorHandler()
+	{
+		$coreComponents = $this->coreComponents();
+
+		$this->set('errorHandler', $coreComponents['errorHandler']);
+		$this->getErrorHandler()->register();
+	}
 
     /**
      * @return \Yew\Framework\Console\Request|null
@@ -249,8 +260,7 @@ class Application extends \Yew\Framework\Base\Application
         try {
             $response = $this->handleRequest($this->getRequest());
         } catch (\Exception $exception) {
-            //throw $exception;
-            return $exception->getCode();
+            throw $exception;
         }
     }
 
@@ -289,6 +299,7 @@ class Application extends \Yew\Framework\Base\Application
 
         $_route = $route;
 
+
         // double slashes or leading/ending slashes may cause substr problem
         $route = trim($route, '/');
         if (strpos($route, '//') !== false) {
@@ -306,6 +317,7 @@ class Application extends \Yew\Framework\Base\Application
         // module and controller map take precedence
         if (isset($this->controllerMap[$id])) {
             $controller = Yew::createObject($this->controllerMap[$id], [$id, $this]);
+
             return [$controller, $route];
         }
 
@@ -370,9 +382,6 @@ class Application extends \Yew\Framework\Base\Application
             $res = parent::runAction($route, $params);
             return is_object($res) ? $res : (int) $res;
         } catch (InvalidRouteException $e) {
-            Console::stderr("Unknown command \"$route\"." . "\n");
-            //$_message = "Unknown command \"$route\".";
-
             throw new UnknownCommandException($route, $this, $e->getCode(), $e);
         }
     }

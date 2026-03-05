@@ -9,6 +9,7 @@
 namespace Yew\Framework\Console;
 
 
+use Yew\Coroutine\Server\Server;
 use Yew\Framework\Base\Action;
 use Yew\Framework\Base\InlineAction;
 use Yew\Framework\Console\Exception\Exception;
@@ -36,11 +37,19 @@ class ErrorHandler extends \Yew\Framework\Base\ErrorHandler
      */
     protected function renderException($exception)
     {
+	    $debug = Yew::$app->getConfig()->get('yew.debug');
+
         $previous = $exception->getPrevious();
-        if ($exception instanceof UnknownCommandException) {
+		if ($exception instanceof UnknownCommandException) {
             // display message and suggest alternatives in case of unknown command
-            $message = $this->formatMessage($exception->getName() . ': ') . $exception->command;
-            $alternatives = $exception->getSuggestedAlternatives();
+			if (empty($exception->command)) {
+				$message = "";
+			} else {
+				$message = $this->formatMessage($exception->getName() . ': ') . $exception->command;
+			}
+
+			$alternatives = $exception->getSuggestedAlternatives();
+
             if (count($alternatives) === 1) {
                 $message .= "\n\nDid you mean \"" . reset($alternatives) . '"?';
             } elseif (count($alternatives) > 1) {
@@ -74,15 +83,6 @@ class ErrorHandler extends \Yew\Framework\Base\ErrorHandler
             Console::stderr($message . "\n");
         } else {
             echo $message . "\n";
-        }
-        if ($this->isDebug && $previous !== null) {
-            $causedBy = $this->formatMessage('Caused by: ', [Console::BOLD]);
-            if (PHP_SAPI === 'cli') {
-                Console::stderr($causedBy);
-            } else {
-                echo $causedBy;
-            }
-            $this->renderException($previous);
         }
     }
 
