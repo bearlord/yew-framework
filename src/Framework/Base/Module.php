@@ -434,9 +434,6 @@ class Module extends ServiceLocator
 		
 	    $id = $this->getUniqueId();
 	    throw new InvalidRouteException('Unable to resolve the request "' . ($id === '' ? $route : $id . '/' . $route) . '".');
-
-
-	    return null;
     }
 
     /**
