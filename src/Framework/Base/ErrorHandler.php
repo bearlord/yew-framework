@@ -103,7 +103,7 @@ abstract class ErrorHandler extends Component
             if ($this->memoryReserveSize > 0) {
                 $this->_memoryReserve = str_repeat('x', $this->memoryReserveSize);
             }
-            register_shutdown_function([$this, 'handleFatalError']);
+
             $this->_registered = true;
         }
     }
@@ -115,7 +115,8 @@ abstract class ErrorHandler extends Component
     public function unregister()
     {
         if ($this->_registered) {
-            restore_error_handler();
+            //restore_error_handler();
+
             restore_exception_handler();
             $this->_registered = false;
         }
@@ -148,10 +149,14 @@ abstract class ErrorHandler extends Component
 
         try {
             $this->logException($exception);
+
             if ($this->discardExistingOutput) {
                 $this->clearOutput();
             }
+
             $this->renderException($exception);
+
+
             if (!$this->silentExitOnException) {
                 Yew::getLogger()->flush(true);
                 return;

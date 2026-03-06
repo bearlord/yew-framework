@@ -425,13 +425,18 @@ class Module extends ServiceLocator
             Yew::$app->controller = $controller;
 
             $result = $controller->runAction($actionID, $params);
-            if ($result !== null) {
-                Yew::$app->controller = $oldController;
-                return $result;
-            }
-        }
 
-        return null;
+            if ($oldController !== null) {
+                Yew::$app->controller = $oldController;
+            }
+	        return $result;
+        }
+		
+	    $id = $this->getUniqueId();
+	    throw new InvalidRouteException('Unable to resolve the request "' . ($id === '' ? $route : $id . '/' . $route) . '".');
+
+
+	    return null;
     }
 
     /**
