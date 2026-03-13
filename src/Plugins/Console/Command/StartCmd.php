@@ -54,7 +54,9 @@ class StartCmd extends Command
         $io = new SymfonyStyle($input, $output);
         $serverConfig = Server::$instance->getServerConfig();
         $serverName = $serverConfig->getName();
-        $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
+
+        $masterPid = @exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
+		
         if (!empty($masterPid)) {
             $io->warning("server $serverName is running");
             return ConsolePlugin::SUCCESS_EXIT;
