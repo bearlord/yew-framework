@@ -301,7 +301,7 @@ class HelpController extends Controller
      */
     protected function getDefaultHelp()
     {
-        error_reporting(E_ALL);
+        error_reporting(E_ALL & ~E_DEPRECATED);
         ini_set('display_errors', "On");
 
         $commands = $this->getCommandDescriptions();

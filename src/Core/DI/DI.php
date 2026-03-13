@@ -34,7 +34,6 @@ class DI
         $builder = new ContainerBuilder();
 
         $builder->addDefinitions(self::$definitions);
-        $builder->useAnnotations(true);
 
         try {
             $this->container = $builder->build();

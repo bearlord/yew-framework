@@ -73,8 +73,8 @@ class ReflectionEngine
             'startFilePos',
             'endFilePos'
         ]]);
-
-        self::$parser = (new ParserFactory)->create(ParserFactory::PREFER_PHP7, self::$lexer, );
+		
+        self::$parser = (new ParserFactory)->createForNewestSupportedVersion();
 
         self::$traverser = $traverser = new NodeTraverser();
         $traverser->addVisitor(new NameResolver());
