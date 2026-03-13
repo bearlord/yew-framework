@@ -175,6 +175,8 @@ class AnnotationsScanPlugin extends AbstractPlugin
                     $annotations = $this->cacheReader->getClassAnnotations($reflectionClass);
                     foreach ($annotations as $annotation) {
                         $annotationClass = get_class($annotation);
+
+						/*
                         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                             $_message = sprintf("@%s in %s",
                                 StringHelper::basename($annotationClass),
@@ -182,10 +184,13 @@ class AnnotationsScanPlugin extends AbstractPlugin
                             );
                             $this->debug($_message);
                         }
+						*/
 
                         $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
                         $annotationClass = get_parent_class($annotation);
+
                         if ($annotationClass != Annotation::class) {
+							/*
                             if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                 $_message = sprintf("@%s in %s",
                                     StringHelper::basename($annotationClass),
@@ -193,6 +198,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 );
                                 $this->debug($_message);
                             }
+							*/
 
                             $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
                         }
@@ -204,6 +210,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                         $annotations = $this->cacheReader->getClassAnnotations($reflectionInterface);
                         foreach ($annotations as $annotation) {
                             $annotationClass = get_class($annotation);
+							/*
                             if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                 $_message = sprintf("@%s in %s",
                                     StringHelper::basename($annotationClass),
@@ -211,10 +218,12 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 );
                                 $this->debug($_message);
                             }
+							*/
 
                             $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
                             $annotationClass = get_parent_class($annotation);
                             if ($annotationClass != Annotation::class) {
+								/*
                                 if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                     $_message = sprintf("@%s in %s",
                                         StringHelper::basename($annotationClass),
@@ -222,6 +231,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                     );
                                     $this->debug($_message);
                                 }
+								*/
                                 $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
                             }
                         }
@@ -241,6 +251,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 $annotations = $this->cacheReader->getMethodAnnotations($reflectionInterfaceMethod);
                                 foreach ($annotations as $annotation) {
                                     $annotationClass = get_class($annotation);
+									/*
                                     if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                         $_message = sprintf("%s in %s::%s",
                                             StringHelper::basename($annotationClass),
@@ -249,9 +260,11 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                         );
                                         $this->debug($_message);
                                     }
+									*/
                                     $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                                     $annotationClass = get_parent_class($annotation);
                                     if ($annotationClass != Annotation::class) {
+										/*
                                         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                             $_message = sprintf("%s in %s::%s",
                                                 StringHelper::basename($annotationClass),
@@ -260,6 +273,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                             );
                                             $this->debug($_message);
                                         }
+										*/
                                         $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                                     }
                                 }
@@ -269,6 +283,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                         $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
                         foreach ($annotations as $annotation) {
                             $annotationClass = get_class($annotation);
+							/*
                             if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                 $_message = sprintf("%s in %s::%s",
                                     StringHelper::basename($annotationClass),
@@ -277,10 +292,12 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 );
                                 $this->debug($_message);
                             }
+							*/
 
                             $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                             $annotationClass = get_parent_class($annotation);
                             if ($annotationClass != Annotation::class) {
+								/*
                                 if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                     $_message = sprintf("%s in %s::%s",
                                         StringHelper::basename($annotationClass),
@@ -289,6 +306,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                     );
                                     $this->debug($_message);
                                 }
+								*/
                                 $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                             }
                         }
