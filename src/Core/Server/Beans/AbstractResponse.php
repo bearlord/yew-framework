@@ -126,7 +126,7 @@ abstract class AbstractResponse implements \Psr\Http\Message\ResponseInterface
      * @return $this
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
-    public function withStatus(int $code, ?string $reasonPhrase = ''): self
+    public function withStatus(int $code, string $reasonPhrase = ''): self
     {
         $this->statusCode = $code;
         return $this;
