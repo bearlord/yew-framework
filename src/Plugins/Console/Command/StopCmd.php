@@ -53,6 +53,7 @@ class StopCmd extends Command
         $serverConfig = Server::$instance->getServerConfig();
 
         $serverName = $serverConfig->getName();
+
         $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
         if (empty($masterPid)) {
             $io->warning("server $serverName not run");

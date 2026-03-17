@@ -20,111 +20,122 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class StatusCmd extends Command
 {
-    /**
-     * @var Context
-     */
-    private $context;
+	/**
+	 * @var Context
+	 */
+	private $context;
 
-    protected $config;
+	protected $config;
 
-    /**
-     * StartCmd constructor.
-     * @param Context $context
-     */
-    public function __construct(Context $context)
-    {
-        parent::__construct();
-        $this->context = $context;
-        $this->config = Server::$instance->getConfigContext();
-    }
+	/**
+	 * StartCmd constructor.
+	 * @param Context $context
+	 */
+	public function __construct(Context $context)
+	{
+		parent::__construct();
+		$this->context = $context;
+		$this->config = Server::$instance->getConfigContext();
+	}
 
-    /**
-     * @inheritDoc
-     */
-    protected function configure()
-    {
-        $this->setName('status')->setDescription("Server Status");
-    }
+	/**
+	 * @inheritDoc
+	 */
+	protected function configure()
+	{
+		$this->setName('status')->setDescription("Server Status");
+	}
 
-    /**
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     * @return int
-     * @throws \ReflectionException
-     * @throws \Yew\Core\Exception\ConfigException
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $io = new SymfonyStyle($input, $output);
+	/**
+	 * @param InputInterface $input
+	 * @param OutputInterface $output
+	 * @return int
+	 * @throws \ReflectionException
+	 * @throws \Yew\Core\Exception\ConfigException
+	 */
+	protected function execute(InputInterface $input, OutputInterface $output)
+	{
+		$io = new SymfonyStyle($input, $output);
 
-        $server_name = $this->config->get('yew.server.name') ?? 'Yew';
+		$server_name = $this->config->get('yew.server.name') ?? 'Yew';
 
-        $masterPid = @exec("ps -ef | grep $server_name-master | grep -v 'grep ' | awk '{print $2}'");
+		$masterPid = @exec("ps -ef | grep $server_name-master | grep -v 'grep ' | awk '{print $2}'");
 
-        $io->title('WELCOME TO Yew-FRAMEWORK!');
-        $io->table(
-            [
-                "System",
-                "PHP Version",
-                "Swoole Version",
-                "Yew Version",
-                "Worker Num",
-            ],
-            [
-                [
-                    PHP_OS,
-                    PHP_VERSION,
-                    SWOOLE_VERSION,
-                    Version::getVersion(),
-                    $this->config->get('yew.server.workerNum', 0),
-                ]
-            ]
-        );
-        $io->section('Port Information');
+		$io->title('WELCOME TO Yew-FRAMEWORK!');
+		$io->table(
+			[
+				"System",
+				"PHP Version",
+				"Swoole Version",
+				"Yew Version",
+				"Worker Num",
+			],
+			[
+				[
+					PHP_OS,
+					PHP_VERSION,
+					SWOOLE_VERSION,
+					Version::getVersion(),
+					$this->config->get('yew.server.workerNum', 0),
+				]
+			]
+		);
+		$io->section('Port Information');
 
-        foreach (Server::$instance->getPortManager()->getPortConfigs() as $key => $portConfig) {
-            $protocol = "http";
-            $ssl = "";
-            if ($portConfig->isOpenHttpProtocol()) {
-                $protocol = "http";
-                $ssl = "false";
-                if ($portConfig->isEnableSsl()) {
-                    $protocol = "https";
-                    $ssl = "true";
-                }
-            } elseif ($portConfig->isOpenWebsocketProtocol()) {
-                $protocol = "ws";
-                $ssl = "false";
-                if ($portConfig->isEnableSsl()) {
-                    $protocol = "wss";
-                    $ssl = "true";
-                }
-            } elseif ($portConfig->isOpenMqttProtocol()) {
-                $protocol = "mqtt";
-            } elseif ($portConfig->getSockType() == PortConfig::SWOOLE_SOCK_TCP || $portConfig->getSockType() == PortConfig::SWOOLE_SOCK_TCP6) {
-                $protocol = "tcp";
-            }
+		$protocol =  "";
+		$ssl = "-";
+		foreach (Server::$instance->getPortManager()->getPortConfigs() as $key => $portConfig) {
+			switch ($portConfig->getSockType()) {
+				case PortConfig::SWOOLE_SOCK_TCP:
+				case PortConfig::SWOOLE_SOCK_TCP6:
+					if ($portConfig->isOpenHttpProtocol()) {
+						$protocol = "http";
+						if ($portConfig->isEnableSsl()) {
+							$protocol = "https";
+							$ssl = "yes";
+						}
+					} elseif ($portConfig->isOpenWebsocketProtocol()) {
+						$protocol = "ws";
+						if ($portConfig->isEnableSsl()) {
+							$protocol = "wss";
+							$ssl = "yes";
+						}
+					} elseif ($portConfig->isOpenMqttProtocol()) {
+						$protocol = "mqtt";
+						$ssl = "-";
+					} else {
+						$protocol = "tcp";
+						$ssl = "-";
+					}
 
-            $show[] = [
-                $protocol,
-                $key,
-                $portConfig->getHost(),
-                $portConfig->getPort(),
-                $ssl
-            ];
+					break;
 
-        }
+				case PortConfig::SWOOLE_SOCK_UDP:
+				case PortConfig::SWOOLE_SOCK_UDP6:
+					$protocol = "udp";
+					break;
+			}
 
-        $io->table(
-            ['TYPE', 'NAME', 'HOST', 'PORT', 'SSL'],
-            $show
-        );
-        if (!empty($masterPid)) {
-            $io->note("$server_name server already running");
-        } else {
-            $io->note("$server_name server not run");
-        }
+			$show[] = [
+				$protocol,
+				$key,
+				$portConfig->getHost(),
+				$portConfig->getPort(),
+				$ssl
+			];
 
-        return Command::SUCCESS;
-    }
+		}
+
+		$io->table(
+			['TYPE', 'NAME', 'HOST', 'PORT', 'SSL'],
+			$show
+		);
+		if (!empty($masterPid)) {
+			$io->note("$server_name server already running");
+		} else {
+			$io->note("$server_name server not run");
+		}
+
+		return Command::SUCCESS;
+	}
 }
