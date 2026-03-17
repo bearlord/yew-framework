@@ -314,7 +314,8 @@ abstract class Server extends BaseNode
 
         //Configuration process
         $this->processManager->createProcess();
-        $this->configureReady();
+
+        //$this->configureReady();
     }
 
     /**
