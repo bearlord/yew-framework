@@ -6,7 +6,7 @@
 
 namespace Yew\Framework\Helpers;
 
-use Yew\Framework\Yii;
+use Yew\Yew;
 use Yew\Framework\Base\Exception;
 use Yew\Framework\Base\ErrorException;
 use Yew\Framework\Base\InvalidArgumentException;

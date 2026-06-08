@@ -8,7 +8,7 @@ namespace Yew\Framework\Helpers;
 
 use ArrayAccess;
 use Traversable;
-use Yew\Framework\Yii;
+use Yew\Yew;
 use Yew\Framework\Base\Arrayable;
 use Yew\Framework\Base\InvalidArgumentException;
 

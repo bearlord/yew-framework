@@ -20,7 +20,7 @@ use Yew\Framework\Helpers\Json;
 use Yew\Framework\HttpClient\Client;
 use Yew\Framework\HttpClient\CurlFormatter;
 use Yew\Framework\HttpClient\CurlTransport;
-use Yew\Framework\Yii;
+use Yew\Yew;
 use Swlib\Saber;
 use Swoole\Coroutine\Channel;
 use Yew\Yew;

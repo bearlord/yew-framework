@@ -63,7 +63,7 @@ class Service extends Component
         }
 
         if (!empty($missing)) {
-            throw new Exception(Yii::t('yii', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
+            throw new Exception(Yew::t('yii', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
         }
 
         return $args;

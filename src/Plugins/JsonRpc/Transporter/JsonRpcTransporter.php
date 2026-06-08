@@ -17,7 +17,7 @@ use Yew\LoadBalance\LoadBalancerInterface;
 use Yew\LoadBalance\Node;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Base\InvalidArgumentException;
-use Yew\Framework\Yii;
+use Yew\Yew;
 use Swoole\Coroutine\Client as SwooleClient;
 use RuntimeException;
 
@@ -217,7 +217,7 @@ class JsonRpcTransporter extends Component implements TransporterInterface
     public function createLoadBalancer(array $nodes)
     {
         /** @var LoadBalancerManager $loadBalanceManager */
-        $loadBalanceManager = Yii::createObject(LoadBalancerManager::class);
+        $loadBalanceManager = Yew::createObject(LoadBalancerManager::class);
         $loadBalance = $loadBalanceManager->getInstance($this->serviceName, $this->loadBalancerAlgorithm)->setNodes($nodes);
 
         return $loadBalance;
