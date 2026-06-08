@@ -28,7 +28,7 @@ class Helper
         self::ValidateUTF8($filter);
 
         if (false !== strpos($filter, chr(0))) {
-            throw new Exception('Null character is not allowed in channel');
+            throw new Exception("Null character is not allowed in channel");
         }
 
         $length = strlen($filter);
@@ -37,29 +37,29 @@ class Helper
          The multi-level wildcard character MUST be specified either on its own or following a channel level separator.
          In either case it MUST be the last character specified in the Topic Filter [MQTT-4.7.1-2].
          */
-        if (($p = strpos($filter, '#')) !== false) {
+        if (($p = strpos($filter, "#")) !== false) {
             if ($p != $length - 1) {
-                throw new Exception('"#" MUST be the last char in channel filter');
-            } else if ($length > 1 && $filter[$length - 2] != '/') {
-                throw new Exception('"#" MUST occupy an entire level of the filter');
+                throw new Exception(""#" MUST be the last char in channel filter");
+            } else if ($length > 1 && $filter[$length - 2] != "/") {
+                throw new Exception(""#" MUST occupy an entire level of the filter");
             }
         }
 
-        $levels = explode('/', $filter);
+        $levels = explode("/", $filter);
         foreach ($levels as $l) {
-            if ($l == '') {
+            if ($l == "") {
                 continue;
-            } else if (strpos($l, '+') !== false && isset($l[1])) {
+            } else if (strpos($l, "+") !== false && isset($l[1])) {
                 /*
                  The single-level wildcard can be used at any level in the Topic Filter, including first and last levels.
                  Where it is used it MUST occupy an entire level of the filter [MQTT-4.7.1-3].
                  */
-                throw new Exception('"+" MUST occupy an entire level of the filter');
+                throw new Exception(""+" MUST occupy an entire level of the filter");
             }
         }
 
-        if ($filter[0] == '#') {
-            DIGet(LoggerInterface::class)->debug('If you want to subscribe channel begin with $, please subscribe both "#" and "$SOMETOPIC/#"');
+        if ($filter[0] == "#") {
+            DIGet(LoggerInterface::class)->debug("If you want to subscribe channel begin with $, please subscribe both "#" and "$SOMETOPIC/#"");
         }
     }
 
@@ -81,7 +81,7 @@ class Helper
             if ($pop_10s) {
                 # Check if following chars in multibytes are not 10xxxxxx
                 if (($c & 0xC0) != 0x80) {
-                    throw new BadUTF8('Following characters must be 10xxxxxx');
+                    throw new BadUTF8("Following characters must be 10xxxxxx");
                 } else {
                     $unicode_char <<= 6;
                     $unicode_char |= $c & 0x3F;
@@ -133,7 +133,7 @@ class Helper
                 $unicode_char = 0;
                 $unicode_char |= $c & 0x1F;
             } else {
-                throw new BadUTF8('Bad leading characters');
+                throw new BadUTF8("Bad leading characters");
             }
 
             if ($unicode_char >= 0xD800 && $unicode_char <= 0xDFFF) {
@@ -146,12 +146,12 @@ class Helper
                 it MUST close the Network Connection [MQTT-1.5.3-1].
 
                  */
-                throw new BadUTF8('U+D800 ~ U+DFFF CAN NOT be used in UTF-8');
+                throw new BadUTF8("U+D800 ~ U+DFFF CAN NOT be used in UTF-8");
             }
         }
 
         if ($pop_10s) {
-            throw new BadUTF8('Missing UTF-8 following characters');
+            throw new BadUTF8("Missing UTF-8 following characters");
         }
 
         return true;

@@ -129,9 +129,9 @@ class ActorManager
         if (empty($actorClassNameId)) {
             $id = $this->actorIdClassNameTable->count();
             $this->actorIdClassNameTable->set($id, ["className" => $className]);
-            $this->actorClassNameIdTable->set($className, ['id' => $id]);
+            $this->actorClassNameIdTable->set($className, ["id" => $id]);
         } else {
-            $id = $actorClassNameId['id'];
+            $id = $actorClassNameId["id"];
         }
 
         $this->actorTable->set($actorName, [

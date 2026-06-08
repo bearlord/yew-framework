@@ -106,16 +106,16 @@ class ActuatorPlugin extends AbstractPlugin
          * 8byte(int64)：不会溢出
          */
         $table = new Table(1024);
-        $table->column('num_60', Table::TYPE_INT, 4);
-        $table->column('num_3600', Table::TYPE_INT, 4);
-        $table->column('num_86400', Table::TYPE_INT, 4);
+        $table->column("num_60", Table::TYPE_INT, 4);
+        $table->column("num_3600", Table::TYPE_INT, 4);
+        $table->column("num_86400", Table::TYPE_INT, 4);
         if (!$table->create()) {
-            throw new \Exception('memory not allowed');
+            throw new \Exception("memory not allowed");
         }
 
         $this->table = $table;
 
-        $this->setToDIContainer('RouteCountTable', $table);
+        $this->setToDIContainer("RouteCountTable", $table);
         return;
     }
 
@@ -132,15 +132,15 @@ class ActuatorPlugin extends AbstractPlugin
         }
 
         addTimerTick(60 * 1000, function () {
-            $this->updateCount('num_60');
+            $this->updateCount("num_60");
         });
 
         addTimerTick(3600 * 1000, function () {
-            $this->updateCount('num_3600');
+            $this->updateCount("num_3600");
         });
 
         addTimerTick(86400 * 1000, function () {
-            $this->updateCount('num_86400');
+            $this->updateCount("num_86400");
         });
 
         $this->ready();
@@ -154,7 +154,7 @@ class ActuatorPlugin extends AbstractPlugin
     {
         foreach ($this->table as $key => $num) {
             $this->table->set($key, [$column => 0]);
-            $this->debug(sprintf("%s %s:%s -> 0", 'Update count', $key, $column));
+            $this->debug(sprintf("%s %s:%s -> 0", "Update count", $key, $column));
         }
     }
 }

@@ -25,11 +25,11 @@ abstract class RouteController extends Controller implements IController
      * @event ActionEvent an event raised right before executing a controller action.
      * You may set [[ActionEvent::isValid]] to be false to cancel the action execution.
      */
-    const EVENT_BEFORE_ACTION = 'beforeAction';
+    const EVENT_BEFORE_ACTION = "beforeAction";
     /**
      * @event ActionEvent an event raised right after executing a controller action.
      */
-    const EVENT_AFTER_ACTION = 'afterAction';
+    const EVENT_AFTER_ACTION = "afterAction";
 
     /**
      * @Inject()
@@ -66,14 +66,14 @@ abstract class RouteController extends Controller implements IController
     public function handle(?string $controllerName = null, ?string $methodName = null, ?array $params = null)
     {
         if (!is_callable([$this, $methodName]) || $methodName == null) {
-            $callMethodName = 'defaultMethod';
+            $callMethodName = "defaultMethod";
         } else {
             $callMethodName = $methodName;
         }
         try {
             $action = $this->createAction($callMethodName);
             if ($action === null) {
-                throw new InvalidRouteException('Unable to create Action: ' . $controllerName . '::' . $methodName);
+                throw new InvalidRouteException("Unable to create Action: " . $controllerName . "::" . $methodName);
             }
 
             $result = null;
@@ -138,16 +138,16 @@ abstract class RouteController extends Controller implements IController
             $this->response->withHeader("Content-Type", "text/html;charset=UTF-8");
 
             if ($exception instanceof RouteException) {
-                $msg = '404 Not found / ' . $exception->getMessage();
+                $msg = "404 Not found / " . $exception->getMessage();
             } elseif ($exception instanceof ParamException) {
                 $this->response->withStatus(400);
-                $msg = '400 Bad request / ' . $exception->getMessage();
+                $msg = "400 Bad request / " . $exception->getMessage();
             } else if ($exception instanceof MethodNotAllowedException) {
                 $this->response->withStatus(405);
-                $msg = '405 method not allowed';
+                $msg = "405 method not allowed";
             } else {
                 $this->response->withStatus(500);
-                $msg = '500 internal server error';
+                $msg = "500 internal server error";
             }
             return $msg;
         } else {
@@ -167,10 +167,10 @@ abstract class RouteController extends Controller implements IController
      * ```
      *
      * @param string|null $anchor the anchor that should be appended to the redirection URL.
-     * Defaults to empty. Make sure the anchor starts with '#' if you want to specify it.
+     * Defaults to empty. Make sure the anchor starts with "#" if you want to specify it.
      * @return Response the response object itself
      */
-    public function refresh(?string $anchor = ''): Response
+    public function refresh(?string $anchor = ""): Response
     {
         return $this->response->redirect($this->request->getUri() . $anchor);
     }

@@ -87,7 +87,7 @@ class Config extends \Yew\Core\Pool\Config
      */
     protected function getKey(): string
     {
-        return 'amqp';
+        return "amqp";
     }
 
 

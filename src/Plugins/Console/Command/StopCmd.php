@@ -37,8 +37,8 @@ class StopCmd extends Command
      */
     protected function configure()
     {
-        $this->setName('stop')->setDescription("Stop(Kill) server");
-        $this->addOption('kill', "k", InputOption::VALUE_NONE, 'Kill server?');
+        $this->setName("stop")->setDescription("Stop(Kill) server");
+        $this->addOption("kill", "k", InputOption::VALUE_NONE, "Kill server?");
     }
 
     /**
@@ -53,14 +53,13 @@ class StopCmd extends Command
         $serverConfig = Server::$instance->getServerConfig();
 
         $serverName = $serverConfig->getName();
-
-        $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
+	    $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
         if (empty($masterPid)) {
             $io->warning("server $serverName not run");
             return ConsolePlugin::SUCCESS_EXIT;
         }
 
-        if ($input->getOption('kill')) {
+        if ($input->getOption("kill")) {
             //kill -9
             exec("ps -ef|grep $serverName|grep -v grep|cut -c 9-15|xargs kill -9");
             return ConsolePlugin::SUCCESS_EXIT;

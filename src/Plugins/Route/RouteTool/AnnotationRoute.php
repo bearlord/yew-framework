@@ -72,12 +72,12 @@ class AnnotationRoute implements IRoute
                 }
 
                 $contentType = $this->clientData->getRequest()->getContentType();
-                if (strpos($contentType, 'application/json') !== false) {
+                if (strpos($contentType, "application/json") !== false) {
                     $this->clientData->getResponse()->withHeader("Content-Type", $contentType);
                     $exceptionJson = Json::encode([
-                        'code' => 400,
-                        'data' => [],
-                        'message' => $message
+                        "code" => 400,
+                        "data" => [],
+                        "message" => $message
                     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT);
                     $this->clientData->getResponse()->withContent($exceptionJson)->end();
                 }
@@ -148,8 +148,8 @@ class AnnotationRoute implements IRoute
                                 break;
                             }
                             if (!$json = json_decode($request->getBody()->getContents(), true)) {
-                                $this->warning('RequestRawJson error, raw:' . $request->getBody()->getContents());
-                                throw new RouteException('RawJson Format error');
+                                $this->warning("RequestRawJson error, raw:" . $request->getBody()->getContents());
+                                throw new RouteException("RawJson Format error");
                             }
                             if (!empty($annotation->value)) {
                                 $params[$annotation->value] = $json;
@@ -171,9 +171,9 @@ class AnnotationRoute implements IRoute
                                 break;
                             }
                             $raw = $request->getBody()->getContents();
-                            if (!$xml = simplexml_load_string($raw, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
-                                $this->warning('RequestRawXml error, raw:' . $request->getBody()->getContents());
-                                throw new RouteException('RawXml Format error');
+                            if (!$xml = simplexml_load_string($raw, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
+                                $this->warning("RequestRawXml error, raw:" . $request->getBody()->getContents());
+                                throw new RouteException("RawXml Format error");
                             }
                             $params[$annotation->value] = json_decode(json_encode($xml), true);
                             break;
@@ -200,7 +200,7 @@ class AnnotationRoute implements IRoute
                                 $realParams[$parameter->getPosition()] = null;
                             }
                         } else {
-                            $realParams[$parameter->getPosition()] = $params[$parameter->name] ?? '';
+                            $realParams[$parameter->getPosition()] = $params[$parameter->name] ?? "";
                         }
                     }
                 }

@@ -92,7 +92,7 @@ class ServiceController extends Controller
             ];
         }
 
-        if (empty($parseData['method']) || empty($parseData['params']) || empty($parseData['id'])) {
+        if (empty($parseData["method"]) || empty($parseData["params"]) || empty($parseData["id"])) {
             return [
                 "jsonrpc" => "2.0",
                 "error" => [
@@ -104,11 +104,11 @@ class ServiceController extends Controller
         }
 
         //Method
-        $callMethodName = $parseData['method'];
+        $callMethodName = $parseData["method"];
         //params
-        $realParams = $parseData['params'];
+        $realParams = $parseData["params"];
         //id
-        $id = $parseData['id'];
+        $id = $parseData["id"];
 
         $action = $this->createAction($callMethodName);
 
@@ -158,22 +158,22 @@ class ServiceController extends Controller
      * where `xyz` is the action ID. If found, an [[InlineAction]] representing that
      * method will be created and returned.
      * @param string $id the action ID.
-     * @return Action|null the newly created action instance. Null if the ID doesn't resolve into any action.
+     * @return Action|null the newly created action instance. Null if the ID doesn"t resolve into any action.
      */
     public function createAction(string $id)
     {
-        if (strpos($id, '/') === false) {
+        if (strpos($id, "/") === false) {
             return null;
         }
 
-        list ($serviceName, $methodName) = explode('/', $id);
+        list ($serviceName, $methodName) = explode("/", $id);
         $serviceProvider = !empty($this->serviceProvider[$serviceName]) ? $this->serviceProvider[$serviceName] : null;
         if (empty($serviceProvider)) {
             return null;
         }
 
         $serviceProviderInstance = Yew::createObject($serviceProvider);
-        if (preg_match('/^(?:[a-zA-Z0-9_]+-)*[a-zA-Z0-9_]+$/', $methodName)) {
+        if (preg_match("/^(?:[a-zA-Z0-9_]+-)*[a-zA-Z0-9_]+$/", $methodName)) {
             if (method_exists($serviceProviderInstance, $methodName)) {
                 $method = new \ReflectionMethod($serviceProviderInstance, $methodName);
                 if (!$method->isPrivate() && $method->getName() === $methodName) {

@@ -47,7 +47,7 @@ class UnPackV5
             $willMessage = UnPackTool::string($remaining);
         }
 
-        $userName = $password = '';
+        $userName = $password = "";
         if ($userNameFlag) {
             $userName = UnPackTool::string($remaining);
         }
@@ -56,36 +56,36 @@ class UnPackV5
         }
 
         $package = [
-            'type' => Types::CONNECT,
-            'protocol_name' => $protocolName,
-            'protocol_level' => $protocolLevel,
-            'clean_session' => $cleanSession,
-            'properties' => [],
-            'will' => [],
-            'user_name' => $userName,
-            'password' => $password,
-            'keep_alive' => $keepAlive,
-            'client_id' => $clientId,
+            "type" => Types::CONNECT,
+            "protocol_name" => $protocolName,
+            "protocol_level" => $protocolLevel,
+            "clean_session" => $cleanSession,
+            "properties" => [],
+            "will" => [],
+            "user_name" => $userName,
+            "password" => $password,
+            "keep_alive" => $keepAlive,
+            "client_id" => $clientId,
         ];
 
         if ($propertiesTotalLength) {
-            $package['properties'] = $properties;
+            $package["properties"] = $properties;
         } else {
-            unset($package['properties']);
+            unset($package["properties"]);
         }
 
         if ($willFlag) {
             if ($willPropertiesTotalLength) {
-                $package['will']['properties'] = $willProperties;
+                $package["will"]["properties"] = $willProperties;
             }
-            $package['will'] += [
-                'qos' => $willQos,
-                'retain' => $willRetain,
-                'topic' => $willTopic,
-                'message' => $willMessage,
+            $package["will"] += [
+                "qos" => $willQos,
+                "retain" => $willRetain,
+                "topic" => $willTopic,
+                "message" => $willMessage,
             ];
         } else {
-            unset($package['will']);
+            unset($package["will"]);
         }
 
         return $package;
@@ -102,14 +102,14 @@ class UnPackV5
         $remaining = substr($remaining, 2);
 
         $package = [
-            'type' => Types::CONNACK,
-            'session_present' => $sessionPresent,
-            'code' => $code,
+            "type" => Types::CONNACK,
+            "session_present" => $sessionPresent,
+            "code" => $code,
         ];
 
         $propertiesTotalLength = UnPackTool::byte($remaining);
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::connAck($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::connAck($propertiesTotalLength, $remaining);
         }
 
         return $package;
@@ -127,23 +127,23 @@ class UnPackV5
         $topic = UnPackTool::string($remaining);
 
         $package = [
-            'type' => Types::PUBLISH,
-            'dup' => $dup,
-            'qos' => $qos,
-            'retain' => $retain,
-            'topic' => $topic,
+            "type" => Types::PUBLISH,
+            "dup" => $dup,
+            "qos" => $qos,
+            "retain" => $retain,
+            "topic" => $topic,
         ];
 
         if ($qos) {
-            $package['message_id'] = UnPackTool::shortInt($remaining);
+            $package["message_id"] = UnPackTool::shortInt($remaining);
         }
 
         $propertiesTotalLength = UnPackTool::byte($remaining);
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::publish($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::publish($propertiesTotalLength, $remaining);
         }
 
-        $package['message'] = $remaining;
+        $package["message"] = $remaining;
 
         return $package;
     }
@@ -157,28 +157,28 @@ class UnPackV5
         $messageId = UnPackTool::shortInt($remaining);
 
         $package = [
-            'type' => Types::SUBSCRIBE,
-            'message_id' => $messageId,
+            "type" => Types::SUBSCRIBE,
+            "message_id" => $messageId,
         ];
 
         $propertiesTotalLength = UnPackTool::byte($remaining);
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::subscribe($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::subscribe($propertiesTotalLength, $remaining);
         }
 
         $topics = [];
         while ($remaining) {
             $topic = UnPackTool::string($remaining);
             $topics[$topic] = [
-                'qos' => ord($remaining[0]) & 0x3,
-                'no_local' => (bool) (ord($remaining[0]) >> 2 & 0x1),
-                'retain_as_published' => (bool) (ord($remaining[0]) >> 3 & 0x1),
-                'retain_handling' => ord($remaining[0]) >> 4,
+                "qos" => ord($remaining[0]) & 0x3,
+                "no_local" => (bool) (ord($remaining[0]) >> 2 & 0x1),
+                "retain_as_published" => (bool) (ord($remaining[0]) >> 3 & 0x1),
+                "retain_handling" => ord($remaining[0]) >> 4,
             ];
             $remaining = substr($remaining, 1);
         }
 
-        $package['topics'] = $topics;
+        $package["topics"] = $topics;
 
         return $package;
     }
@@ -192,17 +192,17 @@ class UnPackV5
         $messageId = UnPackTool::shortInt($remaining);
 
         $package = [
-            'type' => Types::SUBACK,
-            'message_id' => $messageId,
+            "type" => Types::SUBACK,
+            "message_id" => $messageId,
         ];
 
         $propertiesTotalLength = UnPackTool::byte($remaining);
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::pubAndSub($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::pubAndSub($propertiesTotalLength, $remaining);
         }
 
-        $codes = unpack('C*', $remaining);
-        $package['codes'] = array_values($codes);
+        $codes = unpack("C*", $remaining);
+        $package["codes"] = array_values($codes);
 
         return $package;
     }
@@ -216,13 +216,13 @@ class UnPackV5
         $messageId = UnPackTool::shortInt($remaining);
 
         $package = [
-            'type' => Types::UNSUBSCRIBE,
-            'message_id' => $messageId,
+            "type" => Types::UNSUBSCRIBE,
+            "message_id" => $messageId,
         ];
 
         $propertiesTotalLength = UnPackTool::byte($remaining);
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::unSubscribe($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::unSubscribe($propertiesTotalLength, $remaining);
         }
         $topics = [];
         while ($remaining) {
@@ -230,7 +230,7 @@ class UnPackV5
             $topics[] = $topic;
         }
 
-        $package['topics'] = $topics;
+        $package["topics"] = $topics;
 
         return $package;
     }
@@ -244,17 +244,17 @@ class UnPackV5
         $messageId = UnPackTool::shortInt($remaining);
 
         $package = [
-            'type' => Types::UNSUBACK,
-            'message_id' => $messageId,
+            "type" => Types::UNSUBACK,
+            "message_id" => $messageId,
         ];
 
         $propertiesTotalLength = UnPackTool::byte($remaining);
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::pubAndSub($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::pubAndSub($propertiesTotalLength, $remaining);
         }
 
-        $codes = unpack('C*', $remaining);
-        $package['codes'] = array_values($codes);
+        $codes = unpack("C*", $remaining);
+        $package["codes"] = array_values($codes);
 
         return $package;
     }
@@ -271,8 +271,8 @@ class UnPackV5
             $code = ReasonCode::NORMAL_DISCONNECTION;
         }
         $package = [
-            'type' => Types::DISCONNECT,
-            'code' => $code,
+            "type" => Types::DISCONNECT,
+            "code" => $code,
         ];
 
         $propertiesTotalLength = 0;
@@ -281,7 +281,7 @@ class UnPackV5
         }
 
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::disconnect($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::disconnect($propertiesTotalLength, $remaining);
         }
 
         return $package;
@@ -303,9 +303,9 @@ class UnPackV5
         }
 
         $package = [
-            'type' => $type,
-            'message_id' => $messageId,
-            'code' => $code,
+            "type" => $type,
+            "message_id" => $messageId,
+            "code" => $code,
         ];
 
         $propertiesTotalLength = 0;
@@ -314,7 +314,7 @@ class UnPackV5
         }
 
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::pubAndSub($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::pubAndSub($propertiesTotalLength, $remaining);
         }
 
         return $package;
@@ -332,8 +332,8 @@ class UnPackV5
             $code = ReasonCode::SUCCESS;
         }
         $package = [
-            'type' => Types::AUTH,
-            'code' => $code,
+            "type" => Types::AUTH,
+            "code" => $code,
         ];
 
         $propertiesTotalLength = 0;
@@ -342,7 +342,7 @@ class UnPackV5
         }
 
         if ($propertiesTotalLength) {
-            $package['properties'] = UnPackProperty::auth($propertiesTotalLength, $remaining);
+            $package["properties"] = UnPackProperty::auth($propertiesTotalLength, $remaining);
         }
 
         return $package;

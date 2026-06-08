@@ -89,9 +89,9 @@ class AutostartPlugin extends AbstractPlugin
                     }
 
                     $taskList[$autostart->sort] = [
-                        'class' => $reflectionClass->getName(),
-                        'method' => $reflectionMethod->getName(),
-                        'delay' => $autostart->delay
+                        "class" => $reflectionClass->getName(),
+                        "method" => $reflectionMethod->getName(),
+                        "delay" => $autostart->delay
                     ];
                 }
             }
@@ -99,8 +99,8 @@ class AutostartPlugin extends AbstractPlugin
             if (!empty($taskList)) {
                 ksort($taskList);
                 foreach ($taskList as $key => $value) {
-                    Timer::after($value['delay'] * 1000, function () use ($value) {
-                        call_user_func([new $value['class'], $value['method']]);
+                    Timer::after($value["delay"] * 1000, function () use ($value) {
+                        call_user_func([new $value["class"], $value["method"]]);
                     });
                 }
             }

@@ -30,7 +30,7 @@ class WebSocketClient extends BaseClient
         string $host,
         int $port,
         ClientConfig $config,
-        string $path = '/mqtt',
+        string $path = "/mqtt",
         bool $ssl = false
     ) {
         $this->setHost($host)
@@ -99,7 +99,7 @@ class WebSocketClient extends BaseClient
         $response = $this->getResponse();
         if ($response === false && $this->getClient()->errCode === 0) {
             $this->reConnect();
-            $this->connect($this->getConnectData('clean_session') ?? true, $this->getConnectData('will') ?? []);
+            $this->connect($this->getConnectData("clean_session") ?? true, $this->getConnectData("will") ?? []);
         } elseif ($response === false && $this->getClient()->errCode !== SOCKET_ETIMEDOUT) {
             $this->handleException();
         } elseif (is_string($response) && strlen($response) !== 0) {
@@ -124,7 +124,7 @@ class WebSocketClient extends BaseClient
             // If any other type of data frame is received the recipient MUST close the Network Connection.
             if ($response->opcode !== WEBSOCKET_OPCODE_BINARY) {
                 $this->getClient()->close();
-                throw new ProtocolException('MQTT Control Packets MUST be sent in WebSocket binary data frames.');
+                throw new ProtocolException("MQTT Control Packets MUST be sent in WebSocket binary data frames.");
             }
 
             return $response->data;

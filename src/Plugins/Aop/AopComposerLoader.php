@@ -30,19 +30,19 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
         $this->original = $original;
 
         $prefixes = $original->getPrefixes();
-        $excludePaths = $options['excludePaths'];
+        $excludePaths = $options["excludePaths"];
 
         if (!empty($prefixes)) {
-            // Let's exclude core dependencies from that list
-            if (isset($prefixes['Dissect'])) {
-                $excludePaths[] = $prefixes['Dissect'][0];
+            // Let"s exclude core dependencies from that list
+            if (isset($prefixes["Dissect"])) {
+                $excludePaths[] = $prefixes["Dissect"][0];
             }
-            if (isset($prefixes['Doctrine\\Common\\Annotations\\'])) {
-                $excludePaths[] = substr($prefixes['Doctrine\\Common\\Annotations\\'][0], 0, -16);
+            if (isset($prefixes["Doctrine\\Common\\Annotations\\"])) {
+                $excludePaths[] = substr($prefixes["Doctrine\\Common\\Annotations\\"][0], 0, -16);
             }
         }
 
-        $fileEnumerator = new Enumerator($options['appDir'], $options['includePaths'], $excludePaths);
+        $fileEnumerator = new Enumerator($options["appDir"], $options["includePaths"], $excludePaths);
         $this->fileEnumerator = $fileEnumerator;
     }
 
@@ -51,7 +51,7 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
      */
     public function getIncludePath(): ?array
     {
-        return $this->options['includePaths'];
+        return $this->options["includePaths"];
     }
 
     /**
@@ -135,9 +135,9 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             return;
         }
 
-        if (strpos($file, 'php://') === 0) {
+        if (strpos($file, "php://") === 0) {
             if (strpos($class, "Yew\\Nikic") !== false) {
-                if (preg_match('/resource=(.+)$/', $file, $matches)) {
+                if (preg_match("/resource=(.+)$/", $file, $matches)) {
                     $file = PathResolver::realpath($matches[1]);
                 }
             }

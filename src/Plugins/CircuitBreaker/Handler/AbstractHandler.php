@@ -78,10 +78,10 @@ abstract class AbstractHandler implements HandlerInterface
         $state = $breaker->state();
 
         if ($state->isClose()) {
-            $this->logger->debug('The current state is closed.');
+            $this->logger->debug("The current state is closed.");
             if ($breaker->getDuration() >= $annotation->duration) {
                 $info = sprintf(
-                    'The duration=%ss of closed state longer than the annotation duration=%ss and is reset to the closed state.',
+                    "The duration=%ss of closed state longer than the annotation duration=%ss and is reset to the closed state.",
                     $breaker->getDuration(),
                     $annotation->duration
                 );
@@ -92,7 +92,7 @@ abstract class AbstractHandler implements HandlerInterface
 
             if (!$status && $breaker->getFailCounter() >= $annotation->failCounter) {
                 $info = sprintf(
-                    'The failCounter=%s more than the annotation failCounter=%s and is reset to the open state.',
+                    "The failCounter=%s more than the annotation failCounter=%s and is reset to the open state.",
                     $breaker->getFailCounter(),
                     $annotation->failCounter
                 );
@@ -105,10 +105,10 @@ abstract class AbstractHandler implements HandlerInterface
         }
 
         if ($state->isHalfOpen()) {
-            $this->logger->debug('The current state is half opened.');
+            $this->logger->debug("The current state is half opened.");
             if (!$status && $breaker->getFailCounter() >= $annotation->failCounter) {
                 $info = sprintf(
-                    'The failCounter=%s more than the annotation failCounter=%s and is reset to the open state.',
+                    "The failCounter=%s more than the annotation failCounter=%s and is reset to the open state.",
                     $breaker->getFailCounter(),
                     $annotation->failCounter
                 );
@@ -119,7 +119,7 @@ abstract class AbstractHandler implements HandlerInterface
 
             if ($status && $breaker->getSuccessCounter() >= $annotation->successCounter) {
                 $info = sprintf(
-                    'The successCounter=%s more than the annotation successCounter=%s and is reset to the closed state.',
+                    "The successCounter=%s more than the annotation successCounter=%s and is reset to the closed state.",
                     $breaker->getSuccessCounter(),
                     $annotation->successCounter
                 );
@@ -132,10 +132,10 @@ abstract class AbstractHandler implements HandlerInterface
         }
 
         if ($state->isOpen()) {
-            $this->logger->debug('The current state is opened.');
+            $this->logger->debug("The current state is opened.");
             if ($breaker->getDuration() >= $annotation->duration) {
                 $info = sprintf(
-                    'The duration=%ss of opened state longer than the annotation duration=%ss and is reset to the half opened state.',
+                    "The duration=%ss of opened state longer than the annotation duration=%ss and is reset to the half opened state.",
                     $breaker->getDuration(),
                     $annotation->duration
                 );
@@ -165,7 +165,7 @@ abstract class AbstractHandler implements HandlerInterface
             }
 
             $result = $exception->getResult();
-            $msg = sprintf('%s %s.', $routeMethodName, $exception->getMessage());
+            $msg = sprintf("%s %s.", $routeMethodName, $exception->getMessage());
             $this->logger->debug($msg);
 
             $breaker->incrFailCounter();
@@ -218,7 +218,7 @@ abstract class AbstractHandler implements HandlerInterface
     protected function prepareHandler($fallback): array
     {
         if (is_string($fallback)) {
-            $fallback = explode('::', $fallback);
+            $fallback = explode("::", $fallback);
         }
 
         if (is_array($fallback)
@@ -229,6 +229,6 @@ abstract class AbstractHandler implements HandlerInterface
             return $fallback;
         }
 
-        throw new BadFallbackException('The fallback is invalid.');
+        throw new BadFallbackException("The fallback is invalid.");
     }
 }

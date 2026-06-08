@@ -18,22 +18,22 @@ class SessionConfig extends BaseConfig
     /**
      * Usage cookie
      */
-    const USAGE_COOKIE = 'cookie';
+    const USAGE_COOKIE = "cookie";
 
     /**
      * Usage head
      */
-    const USEAGE_HEADER = 'header';
+    const USEAGE_HEADER = "header";
 
     /**
      * Usage token
      */
-    const USAGE_TOKEN = 'token';
+    const USAGE_TOKEN = "token";
 
     /**
      * Header identify to identify session
      */
-    const HEADER_IDENTIFY = 'SESSIONID';
+    const HEADER_IDENTIFY = "SESSIONID";
 
     /**
      * @var string
@@ -44,7 +44,7 @@ class SessionConfig extends BaseConfig
      * Redis name
      * @var string
      */
-    protected $redisName = 'default';
+    protected $redisName = "default";
 
     /**
      * @var int
@@ -59,17 +59,17 @@ class SessionConfig extends BaseConfig
     /**
      * @var string
      */
-    protected $domain = '';
+    protected $domain = "";
 
     /**
      * @var string
      */
-    protected $path = '/';
+    protected $path = "/";
 
     /**
      * @var string
      */
-    protected $sessionName = 'SESSIONID';
+    protected $sessionName = "SESSIONID";
 
     /**
      * @var int

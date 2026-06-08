@@ -27,7 +27,7 @@ class ClientConfig extends AbstractConfig
      * @var array
      */
     protected $headers = [
-        'Sec-Websocket-Protocol' => 'mqtt',
+        "Sec-Websocket-Protocol" => "mqtt",
     ];
 
     /**

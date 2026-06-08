@@ -45,19 +45,19 @@ class Tokenizer
                 $getting_class = true;
             }
 
-            //While we're grabbing the namespace name...
+            //While we"re grabbing the namespace name...
             if ($getting_namespace === true) {
                 //If the token is a string or the namespace separator...
                 if (is_array($token) && in_array($token[0], [T_STRING, T_NS_SEPARATOR])) {
                     //Append the token's value to the name of the namespace
                     $namespace .= $token[1];
-                } else if ($token === ';') {
-                    //If the token is the semicolon, then we're done with the namespace declaration
+                } else if ($token === ";") {
+                    //If the token is the semicolon, then we"re done with the namespace declaration
                     $getting_namespace = false;
                 }
             }
 
-            //While we're grabbing the class name...
+            //While we"re grabbing the class name...
             if ($getting_class === true) {
                 //If the token is a string, it's the name of the class
                 if (is_array($token) && $token[0] == T_STRING) {
@@ -72,7 +72,7 @@ class Tokenizer
             return null;
         }
         //Build the fully-qualified class name and return it
-        return $namespace ? $namespace . '\\' . $class : $class;
+        return $namespace ? $namespace . "\\" . $class : $class;
     }
 
     /**
@@ -103,20 +103,20 @@ class Tokenizer
                 $getting_class = true;
             }
 
-            //While we're grabbing the namespace name...
+            //While we"re grabbing the namespace name...
             if ($getting_namespace === true) {
                 //If the token is a string or the namespace separator...
 
                 if (is_array($token) && in_array($token[0], [T_STRING, T_NAME_QUALIFIED])) {
                     //Append the token's value to the name of the namespace
                     $namespace .= $token[1];
-                } else if ($token === ';') {
-                    //If the token is the semicolon, then we're done with the namespace declaration
+                } else if ($token === ";") {
+                    //If the token is the semicolon, then we"re done with the namespace declaration
                     $getting_namespace = false;
                 }
             }
 
-            //While we're grabbing the class name...
+            //While we"re grabbing the class name...
             if ($getting_class === true) {
                 //If the token is a string, it's the name of the class
                 if (is_array($token) && $token[0] == T_STRING) {
@@ -132,6 +132,6 @@ class Tokenizer
         }
 
         //Build the fully-qualified class name and return it
-        return $namespace ? $namespace . '\\' . $class : $class;
+        return $namespace ? $namespace . "\\" . $class : $class;
     }
 }

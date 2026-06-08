@@ -37,11 +37,11 @@ class InotifyReload
     public function prepareInit(AutoReloadConfig $autoReloadConfig)
     {
         if ($autoReloadConfig->isEnable()) {
-            $this->info('Hot reload is enabled');
+            $this->info("Hot reload is enabled");
 
             $this->monitorDirectory = realpath($autoReloadConfig->getMonitorDir());
-            if (!extension_loaded('inotify')) {
-                addTimerAfter(1000, [$this, 'unUseInotify']);
+            if (!extension_loaded("inotify")) {
+                addTimerAfter(1000, [$this, "unUseInotify"]);
             } else {
                 $this->useInotify();
             }
@@ -61,7 +61,7 @@ class InotifyReload
         $dirIterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
         $iterator = new \RecursiveIteratorIterator($dirIterator);
         foreach ($iterator as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) != 'php') {
+            if (pathinfo($file, PATHINFO_EXTENSION) != "php") {
                 continue;
             }
 
@@ -75,16 +75,16 @@ class InotifyReload
             $events = inotify_read($inotifyFd);
             if ($events) {
                 foreach ($events as $ev) {
-                    if (!array_key_exists($ev['wd'], $monitorFiles)) {
+                    if (!array_key_exists($ev["wd"], $monitorFiles)) {
                         continue;
                     }
 
-                    $file = $monitorFiles[$ev['wd']];
+                    $file = $monitorFiles[$ev["wd"]];
                     $this->deleteCache($file);
 
                     $this->info("RELOAD $file update");
 
-                    unset($monitorFiles[$ev['wd']]);
+                    unset($monitorFiles[$ev["wd"]]);
                     if (is_file($file)) {
                         $wd = inotify_add_watch($inotifyFd, $file, IN_MODIFY);
                         $monitorFiles[$wd] = $file;
@@ -115,7 +115,7 @@ class InotifyReload
 
             foreach ($iterator as $file) {
                 //Only check php files
-                if (pathinfo($file, PATHINFO_EXTENSION) != 'php') {
+                if (pathinfo($file, PATHINFO_EXTENSION) != "php") {
                     continue;
                 }
 

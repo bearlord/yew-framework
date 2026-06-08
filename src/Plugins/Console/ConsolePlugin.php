@@ -135,7 +135,7 @@ class ConsolePlugin extends AbstractPlugin
         $finder = new Finder();
         $finder->files()
             ->in($directory)
-            ->name('*Command.php')
+            ->name("*Command.php")
             ->ignoreDotFiles(true);
 
         $files = [];

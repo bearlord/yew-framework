@@ -17,7 +17,7 @@ class PackTool extends Common
     {
         $len = strlen($str);
 
-        return pack('n', $len) . $str;
+        return pack("n", $len) . $str;
     }
 
     /**
@@ -36,7 +36,7 @@ class PackTool extends Common
      */
     public static function longInt(int $int): string
     {
-        return pack('N', $int);
+        return pack("N", $int);
     }
 
     /**
@@ -45,7 +45,7 @@ class PackTool extends Common
      */
     public static function shortInt(int $int): string
     {
-        return pack('n', $int);
+        return pack("n", $int);
     }
 
     /**
@@ -96,7 +96,7 @@ class PackTool extends Common
      */
     protected static function packRemainingLength(int $bodyLength): string
     {
-        $string = '';
+        $string = "";
         do {
             $digit = $bodyLength % 128;
             $bodyLength = $bodyLength >> 7;

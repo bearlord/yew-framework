@@ -25,22 +25,22 @@ class ServiceClient extends AbstractServiceClient
     /**
      * @var string The service name of the target service.
      */
-    public $serviceName = '';
+    public $serviceName = "";
 
     /**
      * @var string The protocol of the target service
      */
-    public $protocol = '';
+    public $protocol = "";
 
     /**
      * @var string
      */
-    public $loadBanlance = 'random';
+    public $loadBanlance = "random";
 
     /**
      * @var string;
      */
-    public $idGenerator = 'Yew\Rpc\IdGenerator\UniqidIdGenerator';
+    public $idGenerator = "Yew\Rpc\IdGenerator\UniqidIdGenerator";
 
     /**
      * @var Client
@@ -100,7 +100,7 @@ class ServiceClient extends AbstractServiceClient
         if (empty($this->idGenerator)) {
             $config = $this->getConfig();
 
-            $this->idGenerator = !empty($config['idGenerator']) ? $config['idGenerator'] : \Yew\Rpc\IdGenerator\UniqidIdGenerator::class;
+            $this->idGenerator = !empty($config["idGenerator"]) ? $config["idGenerator"] : \Yew\Rpc\IdGenerator\UniqidIdGenerator::class;
         }
 
         return $this->idGenerator;
@@ -131,7 +131,7 @@ class ServiceClient extends AbstractServiceClient
     protected function generateRpcPath(string $methodName): string
     {
         if (!$this->serviceName) {
-            throw new InvalidArgumentException('Parameter $serviceName missing.');
+            throw new InvalidArgumentException("Parameter $serviceName missing.");
         }
 
         return sprintf("%s/%s", $this->serviceName, $methodName);
@@ -163,16 +163,16 @@ class ServiceClient extends AbstractServiceClient
 
         $response = $this->getClient()->send($this->generateData($method, $params, $id));
         if (!is_array($response)) {
-            throw new RequestException('Invalid response.');
+            throw new RequestException("Invalid response.");
         }
 
         $response = $this->checkRequestIdAndTryAgain($response, $id);
 
-        if (array_key_exists('result', $response)) {
-            return $response['result'];
+        if (array_key_exists("result", $response)) {
+            return $response["result"];
         }
-        if (array_key_exists('error', $response)) {
-            return $response['error'];
+        if (array_key_exists("error", $response)) {
+            return $response["error"];
         }
     }
 
@@ -189,15 +189,15 @@ class ServiceClient extends AbstractServiceClient
             return $response;
         }
 
-        if (isset($response['id']) && $response['id'] === $id) {
+        if (isset($response["id"]) && $response["id"] === $id) {
             return $response;
         }
 
         if ($again <= 0) {
             throw new RequestException(sprintf(
-                'Invalid response. Request id[%s] is not equal to response id[%s].',
+                "Invalid response. Request id[%s] is not equal to response id[%s].",
                 $id,
-                $response['id'] ?? null
+                $response["id"] ?? null
             ));
         }
 

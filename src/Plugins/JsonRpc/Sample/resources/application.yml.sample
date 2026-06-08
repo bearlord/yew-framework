@@ -5,5 +5,5 @@ yew:
       port: 8086
       openHttpProtocol: true
       sockType: 1
-      packTool: 'App\Plugins\Pack\PackTool\JsonRpcPack'
+      packTool: "App\Plugins\Pack\PackTool\JsonRpcPack"
       autoSendReturnValue: true

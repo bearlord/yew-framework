@@ -13,7 +13,7 @@ use Yew\Plugins\JsonRpc\Protocol;
 use Yew\Rpc\RpcException;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Helpers\ArrayHelper;
-use Yew\Framework\Yii;
+use Yew\Yew;
 
 abstract class AbstractServiceClient extends Component
 {

@@ -42,7 +42,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @return string
      */
     public function getType(): string
@@ -51,7 +50,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @param string $type
      */
     public function setType(string $type): void
@@ -60,7 +58,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @return bool
      */
     public function isOnce(): bool
@@ -69,7 +66,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @param bool $once
      */
     public function setOnce(bool $once): void
@@ -78,7 +74,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @return EventDispatcher
      */
     public function getEventDispatcher(): EventDispatcher
@@ -87,7 +82,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @param callable $callback
      * @return mixed|void
      */
@@ -106,7 +100,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @param int|null $timeout
      * @return mixed
      */
@@ -116,7 +109,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @return mixed|void
      */
     public function destroy()
@@ -125,7 +117,6 @@ class EventCallImpl extends ChannelImpl implements EventCall
     }
 
     /**
-     * @inheritDoc
      * @param $data
      * @return void
      */

@@ -49,12 +49,12 @@ class IpcMessageProcessor extends MessageProcessor
             $errorMessage = null;
 
             $lockSessionId = $this->sessions[$ipcCallData->getClassName()] ?? null;
-            $sessionId = $ipcCallData->getArguments()['sessionId'] ?? null;
+            $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
             $args = $ipcCallData->getArguments();
 
             if ($lockSessionId === $sessionId) {
                 if ($sessionId != null) {
-                    unset($args['sessionId']);
+                    unset($args["sessionId"]);
                 }
 
                 $_name = $ipcCallData->getName();

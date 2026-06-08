@@ -27,7 +27,7 @@ class WhoopsHandler extends Handler
 {
     /**
      * Search paths to be scanned for resources, in the reverse
-     * order they're declared.
+     * order they"re declared.
      *
      * @var array
      */
@@ -78,13 +78,13 @@ class WhoopsHandler extends Handler
      * @var array[]
      */
     private array $blacklist = [
-        '_GET' => [],
-        '_POST' => [],
-        '_FILES' => [],
-        '_COOKIE' => [],
-        '_SESSION' => [],
-        '_SERVER' => [],
-        '_ENV' => [],
+        "_GET" => [],
+        "_POST" => [],
+        "_FILES" => [],
+        "_COOKIE" => [],
+        "_SESSION" => [],
+        "_SERVER" => [],
+        "_ENV" => [],
     ];
 
     /**
@@ -126,10 +126,10 @@ class WhoopsHandler extends Handler
      */
     public function __construct()
     {
-        if (ini_get('xdebug.file_link_format') || extension_loaded('xdebug')) {
-            // Register editor using xdebug's file_link_format option.
-            $this->editors['xdebug'] = function ($file, $line) {
-                return str_replace(['%f', '%l'], [$file, $line], ini_get('xdebug.file_link_format'));
+        if (ini_get("xdebug.file_link_format") || extension_loaded("xdebug")) {
+            // Register editor using xdebug"s file_link_format option.
+            $this->editors["xdebug"] = function ($file, $line) {
+                return str_replace(["%f", "%l"], [$file, $line], ini_get("xdebug.file_link_format"));
             };
         }
 
@@ -137,14 +137,14 @@ class WhoopsHandler extends Handler
         $this->searchPaths[] = __DIR__ . "/../Resources";
 
         // blacklist php provided auth based values
-        $this->blacklist('_SERVER', 'PHP_AUTH_PW');
+        $this->blacklist("_SERVER", "PHP_AUTH_PW");
 
         $this->templateHelper = new TemplateHelper();
 
         if (class_exists("Symfony\\Component\\VarDumper\\Cloner\\VarCloner")) {
             $thisr = new VarCloner();
             // Only dump object internals if a custom caster exists.
-            $thisr->addCasters(['*' => function ($obj, $a, $stub, $isNested, $filter = 0) {
+            $thisr->addCasters(["*" => function ($obj, $a, $stub, $isNested, $filter = 0) {
                 $class = $stub->class;
                 $classes = [$class => $class] + class_parents($class) + class_implements($class);
 
@@ -228,17 +228,17 @@ class WhoopsHandler extends Handler
             "handler" => $this,
             "handlers" => $this->getRun()->getHandlers(),
 
-            "active_frames_tab" => count($frames) && $frames->offsetGet(0)->isApplication() ? 'application' : 'all',
+            "active_frames_tab" => count($frames) && $frames->offsetGet(0)->isApplication() ? "application" : "all",
             "has_frames_tabs" => $this->getApplicationPaths(),
 
             "tables" => [
-                "GET Data" => $this->masked($request->getQueryParams() ?? [], '_GET'),
-                "POST Data" => $this->masked($request->getParsedBody() ?? [], '_POST'),
-                "Files" => $this->masked($request->getFiles() ?? [], '_FILES'),
-                "Cookies" => $this->masked($request->getCookieParams() ?? [], '_COOKIE'),
-                "Session" => $this->masked([], '_SESSION'),
-                "Server/Request Data" => $this->masked($request->getServers() ?? [], '_SERVER'),
-                "Environment Variables" => $this->masked($_ENV, '_ENV'),
+                "GET Data" => $this->masked($request->getQueryParams() ?? [], "_GET"),
+                "POST Data" => $this->masked($request->getParsedBody() ?? [], "_POST"),
+                "Files" => $this->masked($request->getFiles() ?? [], "_FILES"),
+                "Cookies" => $this->masked($request->getCookieParams() ?? [], "_COOKIE"),
+                "Session" => $this->masked([], "_SESSION"),
+                "Server/Request Data" => $this->masked($request->getServers() ?? [], "_SERVER"),
+                "Environment Variables" => $this->masked($_ENV, "_ENV"),
             ],
         ];
 
@@ -331,7 +331,7 @@ class WhoopsHandler extends Handler
 
         $code = $exception->getCode();
         if ($exception instanceof \ErrorException) {
-            // ErrorExceptions wrap the php-error types within the 'severity' property
+            // ErrorExceptions wrap the php-error types within the "severity" property
             $code = Misc::translateErrorCode($exception->getSeverity());
         }
 
@@ -343,7 +343,7 @@ class WhoopsHandler extends Handler
      */
     public function contentType(): string
     {
-        return 'text/html';
+        return "text/html";
     }
 
     /**
@@ -371,7 +371,7 @@ class WhoopsHandler extends Handler
     public function addDataTableCallback(string   $label, callable $callback)
     {
         if (!is_callable($callback)) {
-            throw new InvalidArgumentException('Expecting callback argument to be callable');
+            throw new InvalidArgumentException("Expecting callback argument to be callable");
         }
 
         $this->extraTables[$label] = function (\Whoops\Exception\Inspector $inspector = null) use ($callback) {
@@ -381,7 +381,7 @@ class WhoopsHandler extends Handler
                 // Only return the result if it can be iterated over by foreach().
                 return is_array($result) || $result instanceof \Traversable ? $result : [];
             } catch (\Exception $e) {
-                // Don't allow failure to break the rendering of the original exception.
+                // Don"t allow failure to break the rendering of the original exception.
                 return [];
             }
         };
@@ -389,7 +389,7 @@ class WhoopsHandler extends Handler
 
     /**
      * Returns all the extra data tables registered with this handler.
-     * Optionally accepts a 'label' parameter, to only return the data
+     * Optionally accepts a "label" parameter, to only return the data
      * table under that label.
      * @param string|null $label
      * @return array[]|callable
@@ -424,14 +424,14 @@ class WhoopsHandler extends Handler
      * Adds an editor resolver, identified by a string
      * name, and that may be a string path, or a callable
      * resolver. If the callable returns a string, it will
-     * be set as the file reference's href attribute.
+     * be set as the file reference"s href attribute.
      *
      * @param string $identifier
      * @param string $resolver
      *@example
-     *  $run->addEditor('macvim', "mvim://open?url=file://%file&line=%line")
+     *  $run->addEditor("macvim", "mvim://open?url=file://%file&line=%line")
      * @example
-     *   $run->addEditor('remove-it', function($file, $line) {
+     *   $run->addEditor("remove-it", function($file, $line) {
      *       unlink($file);
      *       return "http://stackoverflow.com";
      *   });
@@ -450,7 +450,7 @@ class WhoopsHandler extends Handler
      * @example
      *   $run->setEditor(function($file, $line) { return "file:///{$file}"; });
      * @example
-     *   $run->setEditor('sublime');
+     *   $run->setEditor("sublime");
      *
      * @throws InvalidArgumentException If invalid argument identifier provided
      * @param  string|callable $editor
@@ -488,16 +488,16 @@ class WhoopsHandler extends Handler
 
         // Check that the editor is a string, and replace the
         // %line and %file placeholders:
-        if (!isset($editor['url']) || !is_string($editor['url'])) {
+        if (!isset($editor["url"]) || !is_string($editor["url"])) {
             throw new UnexpectedValueException(
                 __METHOD__ . " should always resolve to a string or a valid editor array; got something else instead."
             );
         }
 
-        $editor['url'] = str_replace("%line", rawurlencode($line), $editor['url']);
-        $editor['url'] = str_replace("%file", rawurlencode($filePath), $editor['url']);
+        $editor["url"] = str_replace("%line", rawurlencode($line), $editor["url"]);
+        $editor["url"] = str_replace("%file", rawurlencode($filePath), $editor["url"]);
 
-        return $editor['url'];
+        return $editor["url"];
     }
 
     /**
@@ -515,12 +515,12 @@ class WhoopsHandler extends Handler
         $editor = $this->getEditor($filePath, $line);
 
         // Check that the ajax is a bool
-        if (!isset($editor['ajax']) || !is_bool($editor['ajax'])) {
+        if (!isset($editor["ajax"]) || !is_bool($editor["ajax"])) {
             throw new UnexpectedValueException(
                 __METHOD__ . " should always resolve to a bool; got something else instead."
             );
         }
-        return $editor['ajax'];
+        return $editor["ajax"];
     }
 
     /**
@@ -540,8 +540,8 @@ class WhoopsHandler extends Handler
 
         if (is_string($this->editor) && isset($this->editors[$this->editor]) && !is_callable($this->editors[$this->editor])) {
             return [
-                'ajax' => false,
-                'url' => $this->editors[$this->editor],
+                "ajax" => false,
+                "url" => $this->editors[$this->editor],
             ];
         }
 
@@ -554,14 +554,14 @@ class WhoopsHandler extends Handler
 
             if (is_string($callback)) {
                 return [
-                    'ajax' => false,
-                    'url' => $callback,
+                    "ajax" => false,
+                    "url" => $callback,
                 ];
             }
 
             return [
-                'ajax' => $callback['ajax'] ?? false,
-                'url' => $callback['url'] ?? $callback,
+                "ajax" => $callback["ajax"] ?? false,
+                "url" => $callback["url"] ?? $callback,
             ];
         }
 
@@ -598,7 +598,7 @@ class WhoopsHandler extends Handler
     {
         if (!is_dir($path)) {
             throw new InvalidArgumentException(
-                "'$path' is not a valid directory"
+                "‘$path’ is not a valid directory"
             );
         }
 
@@ -645,7 +645,7 @@ class WhoopsHandler extends Handler
         }
 
         // Search through available search paths, until we find the
-        // resource we're after:
+        // resource we"re after:
         foreach ($this->searchPaths as $path) {
             $fullPath = $path . "/$resource";
 
@@ -658,7 +658,7 @@ class WhoopsHandler extends Handler
 
         // If we got this far, nothing was found.
         throw new RuntimeException(
-            "Could not find resource '$resource' in any resource paths."
+            "Could not find resource ‘$resource’ in any resource paths."
             . "(searched: " . join(", ", $this->searchPaths) . ")"
         );
     }
@@ -720,7 +720,7 @@ class WhoopsHandler extends Handler
     /**
      * blacklist a sensitive value within one of the superglobal arrays.
      *
-     * @param $superGlobalName string the name of the superglobal array, e.g. '_GET'
+     * @param $superGlobalName string the name of the superglobal array, e.g. "_GET"
      * @param $key string the key within the superglobal
      */
     public function blacklist(string $superGlobalName, string $key)
@@ -730,12 +730,12 @@ class WhoopsHandler extends Handler
 
     /**
      * Checks all values within the given superGlobal array.
-     * Blacklisted values will be replaced by a equal length string cointaining only '*' characters.
+     * Blacklisted values will be replaced by a equal length string cointaining only "*" characters.
      *
-     * We intentionally dont rely on $GLOBALS as it depends on 'auto_globals_jit' php.ini setting.
+     * We intentionally dont rely on $GLOBALS as it depends on "auto_globals_jit" php.ini setting.
      *
      * @param $superGlobal array One of the superglobal arrays
-     * @param $superGlobalName string the name of the superglobal array, e.g. '_GET'
+     * @param $superGlobalName string the name of the superglobal array, e.g. "_GET"
      * @return array $values without sensitive data
      */
     private function masked(array $superGlobal, string $superGlobalName): array
@@ -745,7 +745,7 @@ class WhoopsHandler extends Handler
         $values = $superGlobal;
         foreach ($blacklisted as $key) {
             if (isset($superGlobal[$key])) {
-                $values[$key] = str_repeat('*', strlen($superGlobal[$key]));
+                $values[$key] = str_repeat("*", strlen($superGlobal[$key]));
             }
         }
         return $values;

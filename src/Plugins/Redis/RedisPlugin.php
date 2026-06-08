@@ -47,12 +47,12 @@ class RedisPlugin extends AbstractPlugin
      */
     public function beforeServerStart(Context $context)
     {
-        ini_set('default_socket_timeout', '-1');
+        ini_set("default_socket_timeout", "-1");
         foreach ($this->configs->getConfigs() as $config) {
             $config->merge();
         }
 
-        $configs = Server::$instance->getConfigContext()->get('yew.redis', []);
+        $configs = Server::$instance->getConfigContext()->get("yew.redis", []);
 
         foreach ($configs as $key => $value) {
             $configObject = new Config($key);
@@ -68,12 +68,12 @@ class RedisPlugin extends AbstractPlugin
      */
     public function beforeProcessStart(Context $context)
     {
-        ini_set('default_socket_timeout', '-1');
+        ini_set("default_socket_timeout", "-1");
         $pools = new RedisPools();
 
         $configs = $this->configs->getConfigs();
         if (empty($configs)) {
-            $this->warn('Redis configuration not found');
+            $this->warn("Redis configuration not found");
             return;
         }
 

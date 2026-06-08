@@ -15,8 +15,8 @@ use Yew\Framework\Helpers\FileHelper;
  *
  * The log file is specified via [[logFile]]. If the size of the log file exceeds
  * [[maxFileSize]] (in kilo-bytes), a rotation will be performed, which renames
- * the current log file by suffixing the file name with '.1'. All existing log
- * files are moved backwards by one place, i.e., '.2' to '.3', '.1' to '.2', and so on.
+ * the current log file by suffixing the file name with ".1". All existing log
+ * files are moved backwards by one place, i.e., ".2" to ".3", ".1" to ".2", and so on.
  * The property [[maxLogFiles]] specifies how many history files to keep.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -92,7 +92,7 @@ class FileTarget extends Target
         parent::init();
 
         if ($this->logFile === null) {
-            $this->logFile = Yew::$app->getRuntimePath() . '/logs/actors/' . $this->logFileName . '.log';
+            $this->logFile = Yew::$app->getRuntimePath() . "/logs/actors/" . $this->logFileName . ".log";
         } else {
             $this->logFile = Yew::getAlias($this->logFile);
         }
@@ -112,13 +112,13 @@ class FileTarget extends Target
      */
     public function export()
     {
-        if (strpos($this->logFile, '://') === false || strncmp($this->logFile, 'file://', 7) === 0) {
+        if (strpos($this->logFile, "://") === false || strncmp($this->logFile, "file://", 7) === 0) {
             $logPath = dirname($this->logFile);
             FileHelper::createDirectory($logPath, $this->dirMode, true);
         }
 
-        $text = implode("\n", array_map([$this, 'formatMessage'], $this->messages)) . "\n";
-        if (($fp = @fopen($this->logFile, 'a')) === false) {
+        $text = implode("\n", array_map([$this, "formatMessage"], $this->messages)) . "\n";
+        if (($fp = @fopen($this->logFile, "a")) === false) {
             throw new InvalidConfigException("Unable to append to log file: {$this->logFile}");
         }
         @flock($fp, LOCK_EX);
@@ -134,7 +134,7 @@ class FileTarget extends Target
             $writeResult = @file_put_contents($this->logFile, $text, FILE_APPEND | LOCK_EX);
             if ($writeResult === false) {
                 $error = error_get_last();
-                throw new LogRuntimeException("Unable to export log through file ({$this->logFile})!: {$error['message']}");
+                throw new LogRuntimeException("Unable to export log through file ({$this->logFile})!: {$error["message"]}");
             }
             $textSize = strlen($text);
             if ($writeResult < $textSize) {
@@ -144,7 +144,7 @@ class FileTarget extends Target
             $writeResult = @fwrite($fp, $text);
             if ($writeResult === false) {
                 $error = error_get_last();
-                throw new LogRuntimeException("Unable to export log through file ({$this->logFile})!: {$error['message']}");
+                throw new LogRuntimeException("Unable to export log through file ({$this->logFile})!: {$error["message"]}");
             }
             $textSize = strlen($text);
             if ($writeResult < $textSize) {
@@ -166,14 +166,14 @@ class FileTarget extends Target
         $file = $this->logFile;
         for ($i = $this->maxLogFiles; $i >= 0; --$i) {
             // $i == 0 is the original log file
-            $rotateFile = $file . ($i === 0 ? '' : '.' . $i);
+            $rotateFile = $file . ($i === 0 ? "" : "." . $i);
             if (is_file($rotateFile)) {
                 // suppress errors because it's possible multiple processes enter into this section
                 if ($i === $this->maxLogFiles) {
                     @unlink($rotateFile);
                     continue;
                 }
-                $newFile = $this->logFile . '.' . ($i + 1);
+                $newFile = $this->logFile . "." . ($i + 1);
                 $this->rotateByCopy ? $this->rotateByCopy($rotateFile, $newFile) : $this->rotateByRename($rotateFile, $newFile);
                 if ($i === 0) {
                     $this->clearLogFile($rotateFile);
@@ -188,7 +188,7 @@ class FileTarget extends Target
      */
     private function clearLogFile($rotateFile)
     {
-        if ($filePointer = @fopen($rotateFile, 'a')) {
+        if ($filePointer = @fopen($rotateFile, "a")) {
             @ftruncate($filePointer, 0);
             @fclose($filePointer);
         }

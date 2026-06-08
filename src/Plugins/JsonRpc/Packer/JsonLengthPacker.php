@@ -24,8 +24,8 @@ class JsonLengthPacker extends Component implements PackerInterface
      * @var array
      */
     protected array $defaultOptions = [
-        'package_length_type' => 'N',
-        'package_body_offset' => 4,
+        "package_length_type" => "N",
+        "package_body_offset" => 4,
     ];
 
     /**
@@ -34,10 +34,10 @@ class JsonLengthPacker extends Component implements PackerInterface
      */
     public function __construct(array $options = [])
     {
-        $options = array_merge($this->defaultOptions, $options['settings'] ?? []);
+        $options = array_merge($this->defaultOptions, $options["settings"] ?? []);
 
-        $this->type = $options['package_length_type'];
-        $this->length = $options['package_body_offset'];
+        $this->type = $options["package_length_type"];
+        $this->length = $options["package_body_offset"];
     }
 
     /**

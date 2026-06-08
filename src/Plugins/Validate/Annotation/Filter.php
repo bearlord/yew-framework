@@ -98,7 +98,7 @@ class Filter extends Annotation
     public bool $url = false;
 
     /**
-     * String to array 'tag0, tag1'-> ['tag0', 'tag1']
+     * String to array "tag0, tag1"-> ["tag0", "tag1"]
      * @var bool
      */
     public bool $str2array = false;

@@ -37,8 +37,8 @@ class ReloadCmd extends Command
      */
     protected function configure()
     {
-        $this->setName('reload')->setDescription("Reload server");
-        $this->addOption('clearCache', "c", InputOption::VALUE_NONE, 'Who do you want to clear cache?');
+        $this->setName("reload")->setDescription("Reload server");
+        $this->addOption("clearCache", "c", InputOption::VALUE_NONE, "Who do you want to clear cache?");
     }
 
     /**
@@ -55,14 +55,14 @@ class ReloadCmd extends Command
         $serverConfig = Server::$instance->getServerConfig();
         $serverName = $serverConfig->getName();
 
-        $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
-        $managerPid = exec("ps -ef | grep $serverName-manager | grep -v 'grep ' | awk '{print $2}'");
+	    $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
+	    $managerPid = exec("ps -ef | grep $serverName-manager | grep -v 'grep ' | awk '{print $2}'");
         if (empty($masterPid)) {
             $io->warning(sprintf("Server %s not run", $serverName));
             return ConsolePlugin::SUCCESS_EXIT;
         }
 
-        if ($input->getOption('clearCache')) {
+        if ($input->getOption("clearCache")) {
             $io->note("Clear cache file");
 
             $serverConfig = Server::$instance->getServerConfig();

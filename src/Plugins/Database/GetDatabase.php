@@ -96,15 +96,15 @@ trait GetDatabase
         $_configKey = sprintf("db.%s", $name);
         $_config = Server::$instance->getConfigContext()->get($_configKey);
         $db = new Connection([
-            'poolName' => $name,
-            'dsn' => $_config['dsn'],
-            'username' => $_config['username'],
-            'password' => $_config['password'],
-            'charset' => $_config['charset'] ?? 'utf8',
-            'tablePrefix' => $_config['tablePrefix'],
-            'enableSchemaCache' => $_config['enableSchemaCache'],
-            'schemaCacheDuration' => $_config['schemaCacheDuration'],
-            'schemaCache' => $_config['schemaCache'],
+            "poolName" => $name,
+            "dsn" => $_config["dsn"],
+            "username" => $_config["username"],
+            "password" => $_config["password"],
+            "charset" => $_config["charset"] ?? "utf8",
+            "tablePrefix" => $_config["tablePrefix"],
+            "enableSchemaCache" => $_config["enableSchemaCache"],
+            "schemaCacheDuration" => $_config["schemaCacheDuration"],
+            "schemaCache" => $_config["schemaCache"],
         ]);
         $db->open();
         setContextValue($contextKey, $db);

@@ -89,10 +89,10 @@ class RedisConnection
      */
     public function open()
     {
-        $auth = $this->config['auth'];
-        $database = $this->config['database'];
-        $clusterConfig = $this->config['cluster']['enable'] ?? false;
-        $sentinelConfig = $this->config['sentinel']['enable'] ?? false;
+        $auth = $this->config["auth"];
+        $database = $this->config["database"];
+        $clusterConfig = $this->config["cluster"]["enable"] ?? false;
+        $sentinelConfig = $this->config["sentinel"]["enable"] ?? false;
 
         switch (true) {
             case !empty($clusterConfig):
@@ -112,7 +112,7 @@ class RedisConnection
 
         $this->setDriver($redis);
 
-        $options = $this->config['options'] ?? [];
+        $options = $this->config["options"] ?? [];
         foreach ($options as $name => $value) {
             if (!empty($name)) {
                 $optionName = $this->formatOptionName($name);
@@ -122,7 +122,7 @@ class RedisConnection
             }
         }
 
-        if ($redis instanceof Redis && isset($auth) && $auth !== '') {
+        if ($redis instanceof Redis && isset($auth) && $auth !== "") {
             $redis->auth($auth);
         }
 
@@ -166,7 +166,7 @@ class RedisConnection
                 break;
 
             case "keepalive":
-                $optionName = defined(Redis::class . '::OPT_SLAVE_FAILOVER') ? Redis::OPT_SLAVE_FAILOVER : 5;
+                $optionName = defined(Redis::class . "::OPT_SLAVE_FAILOVER") ? Redis::OPT_SLAVE_FAILOVER : 5;
                 break;
 
             case "compression":
@@ -194,7 +194,7 @@ class RedisConnection
      */
     public function close(): void
     {
-        Server::$instance->getLog()->debug('Closing Redis connection: ' . $this->config['name'] . "." . $this->getDriverType());
+        Server::$instance->getLog()->debug("Closing Redis connection: " . $this->config["name"] . "." . $this->getDriverType());
         $this->driver->close();
     }
 
@@ -206,23 +206,23 @@ class RedisConnection
     {
         try {
             $parameters = [];
-            $parameters[] = $this->config['cluster']['name'] ?? null;
-            $parameters[] = $this->config['cluster']['seeds'] ?? [];
-            $parameters[] = $this->config['timeout'] ?? 0.0;
-            $parameters[] = $this->config['cluster']['readTimeout'] ?? 0.0;
-            $parameters[] = $this->config['cluster']['persistent'] ?? false;
-            if (isset($this->config['auth'])) {
-                $parameters[] = $this->config['auth'];
+            $parameters[] = $this->config["cluster"]["name"] ?? null;
+            $parameters[] = $this->config["cluster"]["seeds"] ?? [];
+            $parameters[] = $this->config["timeout"] ?? 0.0;
+            $parameters[] = $this->config["cluster"]["readTimeout"] ?? 0.0;
+            $parameters[] = $this->config["cluster"]["persistent"] ?? false;
+            if (isset($this->config["auth"])) {
+                $parameters[] = $this->config["auth"];
             }
-            if (!empty($this->config['cluster']['context'])) {
-                $parameters[] = $this->config['cluster']['context'];
+            if (!empty($this->config["cluster"]["context"])) {
+                $parameters[] = $this->config["cluster"]["context"];
             }
 
-            Server::$instance->getLog()->debug('Opening RedisCluster connection');
+            Server::$instance->getLog()->debug("Opening RedisCluster connection");
 
             $redis = new RedisCluster(...$parameters);
         } catch (\Throwable $e) {
-            throw new ConnectionException('Connection reconnect failed ' . $e->getMessage());
+            throw new ConnectionException("Connection reconnect failed " . $e->getMessage());
         }
 
         return $redis;
@@ -234,13 +234,13 @@ class RedisConnection
     protected function createRedisSentinel(): Redis
     {
         try {
-            $nodes = $this->config['sentinel']['nodes'] ?? [];
-            $timeout = $this->config['timeout'] ?? 0;
-            $persistent = $this->config['sentinel']['persistent'] ?? null;
-            $retryInterval = $this->config['retryInterval'] ?? 0;
-            $readTimeout = $this->config['sentinel']['readTimeout'] ?? 0;
-            $masterName = $this->config['sentinel']['masterName'] ?? '';
-            $auth = $this->config['sentinel']['auth'] ?? null;
+            $nodes = $this->config["sentinel"]["nodes"] ?? [];
+            $timeout = $this->config["timeout"] ?? 0;
+            $persistent = $this->config["sentinel"]["persistent"] ?? null;
+            $retryInterval = $this->config["retryInterval"] ?? 0;
+            $readTimeout = $this->config["sentinel"]["readTimeout"] ?? 0;
+            $masterName = $this->config["sentinel"]["masterName"] ?? "";
+            $auth = $this->config["sentinel"]["auth"] ?? null;
 
             shuffle($nodes);
 
@@ -249,24 +249,24 @@ class RedisConnection
             foreach ($nodes as $node) {
                 try {
                     $resolved = parse_url($node);
-                    if (!isset($resolved['host'], $resolved['port'])) {
-                        Server::$instance->getLog()->error(sprintf('The redis sentinel node [%s] is invalid.', $node));
+                    if (!isset($resolved["host"], $resolved["port"])) {
+                        Server::$instance->getLog()->error(sprintf("The redis sentinel node [%s] is invalid.", $node));
                         continue;
                     }
                     $options = [
-                        'host' => $resolved['host'],
-                        'port' => (int)$resolved['port'],
-                        'connectTimeout' => $timeout,
-                        'persistent' => $persistent,
-                        'retryInterval' => $retryInterval,
-                        'readTimeout' => $readTimeout,
+                        "host" => $resolved["host"],
+                        "port" => (int)$resolved["port"],
+                        "connectTimeout" => $timeout,
+                        "persistent" => $persistent,
+                        "retryInterval" => $retryInterval,
+                        "readTimeout" => $readTimeout,
                     ];
 
                     if ($auth) {
-                        $options['auth'] = $auth;
+                        $options["auth"] = $auth;
                     }
 
-                    Server::$instance->getLog()->debug('Opening RedisSentinel connection: ' . $resolved['name'] . '.' . $this->getDriverType());
+                    Server::$instance->getLog()->debug("Opening RedisSentinel connection: " . $resolved["name"] . "." . $this->getDriverType());
 
                     $sentinel = (new RedisSentinelFactory())->create($options);
                     $masterInfo = $sentinel->getMasterAddrByName($masterName);
@@ -275,24 +275,24 @@ class RedisConnection
                         break;
                     }
                 } catch (\Throwable $exception) {
-                    Server::$instance->getLog()->error('Redis sentinel connection failed, caused by ' . $exception->getMessage());
+                    Server::$instance->getLog()->error("Redis sentinel connection failed, caused by " . $exception->getMessage());
                     continue;
                 }
             }
 
             if ($host === null && $port === null) {
-                throw new InvalidRedisConnectionException('Connect sentinel redis server failed.');
+                throw new InvalidRedisConnectionException("Connect sentinel redis server failed.");
             }
 
             $redis = $this->createRedis([
-                'host' => $host,
-                'port' => $port,
-                'timeout' => $timeout,
-                'retryinterval' => $retryInterval,
-                'readtimeout' => $readTimeout,
+                "host" => $host,
+                "port" => $port,
+                "timeout" => $timeout,
+                "retryinterval" => $retryInterval,
+                "readtimeout" => $readTimeout,
             ]);
         } catch (\Throwable $e) {
-            throw new ConnectionException('Connection reconnect failed ' . $e->getMessage());
+            throw new ConnectionException("Connection reconnect failed " . $e->getMessage());
         }
 
         return $redis;
@@ -306,7 +306,7 @@ class RedisConnection
      */
     protected function createRedis(array $config): Redis
     {
-        Server::$instance->getLog()->debug('Opening Redis connection: ' . $this->config['name'] . "." . $this->getDriverType());
+        Server::$instance->getLog()->debug("Opening Redis connection: " . $this->config["name"] . "." . $this->getDriverType());
 
         return $this->innerConnect($config);
     }
@@ -320,21 +320,21 @@ class RedisConnection
     protected function innerConnect(array $config): Redis
     {
         $parameters = [
-            $config['host'] ?? '',
-            (int)($config['port'] ?? 6379),
-            $config['timeout'] ?? 0.0,
-            $config['reserved'] ?? null,
-            $config['retryinterval'] ?? 0,
-            $config['readtimeout'] ?? 0.0,
+            $config["host"] ?? "",
+            (int)($config["port"] ?? 6379),
+            $config["timeout"] ?? 0.0,
+            $config["reserved"] ?? null,
+            $config["retryinterval"] ?? 0,
+            $config["readtimeout"] ?? 0.0,
         ];
 
-        if (!empty($config['context'])) {
-            $parameters[] = $config['context'];
+        if (!empty($config["context"])) {
+            $parameters[] = $config["context"];
         }
 
         $redis = new Redis();
         if (!$redis->connect(...$parameters)) {
-            throw new ConnectionException('Connection reconnect failed.');
+            throw new ConnectionException("Connection reconnect failed.");
         }
 
         return $redis;
@@ -351,7 +351,7 @@ class RedisConnection
         try {
             return call_user_func_array([$this->driver, $name], $params);
         } catch (\Throwable $exception) {
-            Server::$instance->getLog()->error('Redis Execute Command failed: ' . $exception->getMessage());
+            Server::$instance->getLog()->error("Redis Execute Command failed: " . $exception->getMessage());
             throw new \Exception($exception->getMessage());
         }
     }

@@ -355,7 +355,7 @@ class Module extends ServiceLocator
      *
      * Each sub-module should be specified as a name-value pair, where
      * name refers to the ID of the module and value the module or a configuration
-     * array that can be used to create the module. In the latter case, [[Yii::createObject()]]
+     * array that can be used to create the module. In the latter case, [[Yew::createObject()]]
      * will be used to create the module.
      *
      * If a new sub-module has the same ID as an existing one, the existing one will be overwritten silently.
@@ -434,9 +434,6 @@ class Module extends ServiceLocator
 		
 	    $id = $this->getUniqueId();
 	    throw new InvalidRouteException('Unable to resolve the request "' . ($id === '' ? $route : $id . '/' . $route) . '".');
-
-
-	    return null;
     }
 
     /**

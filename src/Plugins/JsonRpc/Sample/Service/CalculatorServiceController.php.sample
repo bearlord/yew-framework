@@ -24,7 +24,7 @@ class CalculatorServiceController extends ServiceController
      */
     public function index()
     {
-        return '';
+        return "";
     }
 
 }

@@ -66,21 +66,21 @@ class CorsFilter extends AbstractFilter
             }
 
             if ($this->corsConfig->getAllowOrigins() == ["*"]) {
-                $clientData->getResponse()->withHeader('Access-Control-Allow-Origin', $allowedOrigins);
+                $clientData->getResponse()->withHeader("Access-Control-Allow-Origin", $allowedOrigins);
             } else {
-                $origin = $clientData->getRequest()->getHeader('origin');
+                $origin = $clientData->getRequest()->getHeader("origin");
                 if (!empty($origin)) {
-                    $originBlackList = explode(',', $allowedOrigins);
+                    $originBlackList = explode(",", $allowedOrigins);
                     if (in_array($origin[0], $originBlackList)) {
-                        $clientData->getResponse()->withHeader('Access-Control-Allow-Origin', $origin[0]);
+                        $clientData->getResponse()->withHeader("Access-Control-Allow-Origin", $origin[0]);
                     }
                 }
             }
 
-            $clientData->getResponse()->withHeader('Access-Control-Allow-Credentials', $allowCredentials);
-            $clientData->getResponse()->withHeader('Access-Control-Allow-Methods', $allowedMethods);
-            $clientData->getResponse()->withHeader('Access-Control-Allow-Headers', $allowedHeaders);
-            $clientData->getResponse()->withHeader('Access-Control-Max-Age', $maxAge);
+            $clientData->getResponse()->withHeader("Access-Control-Allow-Credentials", $allowCredentials);
+            $clientData->getResponse()->withHeader("Access-Control-Allow-Methods", $allowedMethods);
+            $clientData->getResponse()->withHeader("Access-Control-Allow-Headers", $allowedHeaders);
+            $clientData->getResponse()->withHeader("Access-Control-Max-Age", $maxAge);
         }
 
         return AbstractFilter::RETURN_NEXT;

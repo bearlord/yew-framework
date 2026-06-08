@@ -38,7 +38,7 @@ class Topic
         $this->topicTable = $topicTable;
 
         foreach ($this->topicTable as $value) {
-            $this->addSubFormTable($value['topic'], $value['uid']);
+            $this->addSubFormTable($value["topic"], $value["uid"]);
         }
     }
 
@@ -91,7 +91,7 @@ class Topic
     }
 
     /**
-     * Clear fd's subscription
+     * Clear fd"s subscription
      *
      * @param int $fd
      * @throws \Exception
@@ -107,7 +107,7 @@ class Topic
     }
 
     /**
-     * Clear uid's subscription
+     * Clear uid"s subscription
      *
      * @param string $uid
      * @throws \Exception
@@ -206,7 +206,7 @@ class Topic
             $a = array_slice($p, 0, $j + 1);
             $arr = [$a];
             $count_a = count($a);
-            $value = implode('/', $a);
+            $value = implode("/", $a);
             $result->add($value . "/#");
             $complete = false;
             if ($count_a == $countPlies) {
@@ -238,10 +238,10 @@ class Topic
         if ($isSYS) $m = 1;
         for ($i = $m; $i < $count; $i++) {
             $new = $arr;
-            if ($new[$i] == '+') continue;
-            $new[$i] = '+';
+            if ($new[$i] == "+") continue;
+            $new[$i] = "+";
             $temp[] = $new;
-            $value = implode('/', $new);
+            $value = implode("/", $new);
             $result->add($value . "/#");
             if ($complete) {
                 $result->add($value);

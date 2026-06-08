@@ -17,7 +17,7 @@ use Yew\LoadBalance\LoadBalancerInterface;
 use Yew\LoadBalance\Node;
 use Yew\Framework\Base\Component;
 use Yew\Framework\Base\InvalidArgumentException;
-use Yew\Framework\Yii;
+use Yew\Yew;
 use Swoole\Coroutine\Client as SwooleClient;
 use RuntimeException;
 
@@ -30,7 +30,7 @@ class JsonRpcTransporter extends Component implements TransporterInterface
      *
      * @var string
      */
-    protected $serviceName = '';
+    protected $serviceName = "";
 
     /**
      * @var float
@@ -67,7 +67,7 @@ class JsonRpcTransporter extends Component implements TransporterInterface
      *
      * @var string
      */
-    public $loadBalancerAlgorithm = 'random';
+    public $loadBalancerAlgorithm = "random";
 
     /**
      * JsonRpcHttpTransporter constructor.
@@ -77,20 +77,20 @@ class JsonRpcTransporter extends Component implements TransporterInterface
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->serviceName = $config['serviceName'];
-        $this->nodes = $config['nodes'];
+        $this->serviceName = $config["serviceName"];
+        $this->nodes = $config["nodes"];
 
-        if (!empty($config['connectTimeout'])) {
-            $this->connectTimeout = $config['connectTimeout'];
+        if (!empty($config["connectTimeout"])) {
+            $this->connectTimeout = $config["connectTimeout"];
         }
-        if (!empty($config['receiveTimeout'])) {
-            $this->receiveTimeout = $config['receiveTimeout'];
+        if (!empty($config["receiveTimeout"])) {
+            $this->receiveTimeout = $config["receiveTimeout"];
         }
-        if (!empty($config['loadBalancer'])) {
-            $this->loadBalancerAlgorithm = $config['loadBalancer'];
+        if (!empty($config["loadBalancer"])) {
+            $this->loadBalancerAlgorithm = $config["loadBalancer"];
         }
-        if (!empty($config['node'])) {
-            $this->setNode($config['node']);
+        if (!empty($config["node"])) {
+            $this->setNode($config["node"]);
         }
     }
 
@@ -115,15 +115,15 @@ class JsonRpcTransporter extends Component implements TransporterInterface
      */
     public function setNode(array $node)
     {
-        if (!is_int($node['port'])) {
+        if (!is_int($node["port"])) {
             throw new InvalidArgumentException(sprintf(
-                'Invalid node config [%s], the port option has to a integer.',
-                implode(':', $node)));
+                "Invalid node config [%s], the port option has to a integer.",
+                implode(":", $node)));
         }
-        $schema = $node['schema'] ?? null;
-        $path = $node['path'] ?? null;
-        $weight = $node['weight'] ?? 0;
-        $this->node = new Node($schema, $node['host'], $node['port'], $path, $weight);
+        $schema = $node["schema"] ?? null;
+        $path = $node["path"] ?? null;
+        $weight = $node["weight"] ?? 0;
+        $this->node = new Node($schema, $node["host"], $node["port"], $path, $weight);
     }
 
     /**
@@ -156,26 +156,26 @@ class JsonRpcTransporter extends Component implements TransporterInterface
     {
         $consumer = $this->config;
 
-        // Not exists the registry config, then looking for the 'nodes' property.
-        if (isset($consumer['nodes'])) {
+        // Not exists the registry config, then looking for the "nodes" property.
+        if (isset($consumer["nodes"])) {
             $nodes = [];
-            foreach ($consumer['nodes'] ?? [] as $item) {
-                if (isset($item['host'], $item['port'])) {
-                    if (!is_int($item['port'])) {
+            foreach ($consumer["nodes"] ?? [] as $item) {
+                if (isset($item["host"], $item["port"])) {
+                    if (!is_int($item["port"])) {
                         throw new InvalidArgumentException(sprintf(
-                            'Invalid node config [%s], the port option has to a integer.',
-                            implode(':', $item)));
+                            "Invalid node config [%s], the port option has to a integer.",
+                            implode(":", $item)));
                     }
-                    $schema = $item['schema'] ?? null;
-                    $path = $item['path'] ?? null;
-                    $weigth = $item['weight'] ?? 0;
-                    $nodes[] = new Node($schema, $item['host'], $item['port'], $path, $weigth);
+                    $schema = $item["schema"] ?? null;
+                    $path = $item["path"] ?? null;
+                    $weigth = $item["weight"] ?? 0;
+                    $nodes[] = new Node($schema, $item["host"], $item["port"], $path, $weigth);
                 }
             }
             return $nodes;
         }
 
-        throw new InvalidArgumentException('Config of registry or nodes missing.');
+        throw new InvalidArgumentException("Config of registry or nodes missing.");
     }
 
     /**
@@ -190,7 +190,7 @@ class JsonRpcTransporter extends Component implements TransporterInterface
 
             if ($client->send($data) === false) {
                 if ($client->errCode == 104) {
-                    throw new RuntimeException('Connect to server failed.');
+                    throw new RuntimeException("Connect to server failed.");
                 }
             }
             return $client;
@@ -217,7 +217,7 @@ class JsonRpcTransporter extends Component implements TransporterInterface
     public function createLoadBalancer(array $nodes)
     {
         /** @var LoadBalancerManager $loadBalanceManager */
-        $loadBalanceManager = Yii::createObject(LoadBalancerManager::class);
+        $loadBalanceManager = Yew::createObject(LoadBalancerManager::class);
         $loadBalance = $loadBalanceManager->getInstance($this->serviceName, $this->loadBalancerAlgorithm)->setNodes($nodes);
 
         return $loadBalance;
@@ -247,7 +247,7 @@ class JsonRpcTransporter extends Component implements TransporterInterface
      */
     public function getClient(): SwooleClient
     {
-        $class = spl_object_hash($this) . '.Connection';
+        $class = spl_object_hash($this) . ".Connection";
 
         $contextClient = getContextValue($class);
         if (getContextValue($class)) {
@@ -257,13 +257,13 @@ class JsonRpcTransporter extends Component implements TransporterInterface
         $contextClient = retry(2, function () {
             $node = $this->getNode();
             $swooleClient = new SwooleClient(SWOOLE_SOCK_TCP);
-            $swooleClient->set($this->config['settings'] ?? []);
+            $swooleClient->set($this->config["settings"] ?? []);
             $result = $swooleClient->connect($node->host, $node->port, $this->connectTimeout);
 
             if ($result === false && ($swooleClient->errCode == 114 or $swooleClient->errCode == 115)) {
                 // Force close and reconnect to server.
                 $swooleClient->close();
-                throw new RuntimeException('Connect to server failed.');
+                throw new RuntimeException("Connect to server failed.");
             }
             return $swooleClient;
         });
@@ -280,15 +280,15 @@ class JsonRpcTransporter extends Component implements TransporterInterface
     public function receiveAndCheck(\Swoole\Coroutine\Client $client, float $timeout)
     {
         $data = $client->recv((float) $timeout);
-        if ($data === '') {
+        if ($data === "") {
             // RpcConnection: When the next time the connection is taken out of the connection pool, it will reconnecting to the target service.
             // Client: It will reconnecting to the target service in the next request.
             $client->close();
-            throw new RuntimeException('Connection is closed. ' . $client->errMsg, $client->errCode);
+            throw new RuntimeException("Connection is closed. " . $client->errMsg, $client->errCode);
         }
         if ($data === false) {
             $client->close();
-            throw new RuntimeException('Error receiving data, errno=' . $client->errCode . ' errmsg=' . swoole_strerror($client->errCode), $client->errCode);
+            throw new RuntimeException("Error receiving data, errno=" . $client->errCode . " errmsg=" . swoole_strerror($client->errCode), $client->errCode);
         }
 
         return $data;

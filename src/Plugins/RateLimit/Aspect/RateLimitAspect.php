@@ -46,7 +46,7 @@ class RateLimitAspect extends OrderAspect
      */
     public function getName(): string
     {
-        return 'RateLimit';
+        return "RateLimit";
     }
     
     /**
@@ -113,7 +113,7 @@ class RateLimitAspect extends OrderAspect
                             if (empty($annotation->limitCallback)
                                 || !is_array($annotation->limitCallback)
                                 || count($annotation->limitCallback) != 2 ) {
-                                throw new RateLimitException('Service Unavailable.', 503);
+                                throw new RateLimitException("Service Unavailable.", 503);
                             }
 
                             $callResult = call_user_func([$annotation->limitCallback[0], $annotation->limitCallback[1]], $seconds);

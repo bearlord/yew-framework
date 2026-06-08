@@ -37,9 +37,9 @@ class StartCmd extends Command
      */
     protected function configure()
     {
-        $this->setName('start')->setDescription("Start server");
-        $this->addOption('daemonize', "d", InputOption::VALUE_NONE, 'Who do you want daemonize?');
-        $this->addOption('clearCache', "c", InputOption::VALUE_NONE, 'Who do you want to clear cache?');
+        $this->setName("start")->setDescription("Start server");
+        $this->addOption("daemonize", "d", InputOption::VALUE_NONE, "Who do you want daemonize?");
+        $this->addOption("clearCache", "c", InputOption::VALUE_NONE, "Who do you want to clear cache?");
     }
 
     /**
@@ -54,14 +54,12 @@ class StartCmd extends Command
         $io = new SymfonyStyle($input, $output);
         $serverConfig = Server::$instance->getServerConfig();
         $serverName = $serverConfig->getName();
-
-        $masterPid = @exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
-		
+	    $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
         if (!empty($masterPid)) {
             $io->warning("server $serverName is running");
             return ConsolePlugin::SUCCESS_EXIT;
         }
-        if ($input->getOption('clearCache')) {
+        if ($input->getOption("clearCache")) {
             $io->note("Clear cache file");
 
             $serverConfig = Server::$instance->getServerConfig();
@@ -76,7 +74,7 @@ class StartCmd extends Command
             }
         }
 
-        if ($input->getOption('daemonize')) {
+        if ($input->getOption("daemonize")) {
             $serverConfig = Server::$instance->getServerConfig();
             $serverConfig->setDaemonize(true);
             $io->success("Input php server.php stop to quit. Start success.");

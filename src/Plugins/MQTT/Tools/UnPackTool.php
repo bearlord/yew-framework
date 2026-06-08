@@ -28,7 +28,7 @@ class UnPackTool extends Common
      */
     public static function string(string &$remaining): string
     {
-        $length = unpack('n', $remaining)[1];
+        $length = unpack("n", $remaining)[1];
         if ($length + 2 > strlen($remaining)) {
             throw new LengthException("unpack remaining length error, get {$length}");
         }
@@ -44,7 +44,7 @@ class UnPackTool extends Common
      */
     public static function shortInt(string &$remaining): int
     {
-        $tmp = unpack('n', $remaining);
+        $tmp = unpack("n", $remaining);
         $remaining = substr($remaining, 2);
 
         return $tmp[1];
@@ -56,7 +56,7 @@ class UnPackTool extends Common
      */
     public static function longInt(string &$remaining): int
     {
-        $tmp = unpack('N', $remaining);
+        $tmp = unpack("N", $remaining);
         $remaining = substr($remaining, 4);
 
         return $tmp[1];
@@ -106,7 +106,7 @@ class UnPackTool extends Common
         $value = 0;
         do {
             if (!isset($data[$headBytes])) {
-                throw new LengthException('Malformed Remaining Length');
+                throw new LengthException("Malformed Remaining Length");
             }
             $digit = ord($data[$headBytes]);
             $value += ($digit & 127) * $multiplier;
@@ -138,11 +138,11 @@ class UnPackTool extends Common
         $type = static::getType($data);
 
         if ($type !== Types::CONNECT) {
-            throw new InvalidArgumentException(sprintf('packet must be of type connect, %s given', Types::getType($type)));
+            throw new InvalidArgumentException(sprintf("packet must be of type connect, %s given", Types::getType($type)));
         }
 
         $remaining = static::getRemaining($data);
-        $length = unpack('n', $remaining)[1];
+        $length = unpack("n", $remaining)[1];
 
         return ord($remaining[$length + 2]);
     }

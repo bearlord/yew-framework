@@ -48,10 +48,10 @@ class NonJsonPack implements IPack
     {
         $value = json_decode($data, true);
         if (empty($value)) {
-            $this->warn('Packet unpack failed');
+            $this->warn("Packet unpack failed");
             return null;
         }
-        $clientData = new ClientData($fd, $portConfig->getBaseType(), $value['p'], $value);
+        $clientData = new ClientData($fd, $portConfig->getBaseType(), $value["p"], $value);
         return $clientData;
     }
 

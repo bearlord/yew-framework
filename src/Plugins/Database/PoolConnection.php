@@ -89,7 +89,7 @@ class PoolConnection extends CorePoolConnection
         }
 
         if (! $this->reconnect()) {
-            throw new ConnectionException('Connection reconnect failed.');
+            throw new ConnectionException("Connection reconnect failed.");
         }
 
         return $this;
@@ -135,7 +135,7 @@ class PoolConnection extends CorePoolConnection
             $activeConnection =  $this->getActiveConnection();
             return $activeConnection->getConnection();
         } catch (\Throwable $exception) {
-            Server::$instance->getLog()->warning('Get connection failed, try again. ' . $exception);
+            Server::$instance->getLog()->warning("Get connection failed, try again. " . $exception);
 
             $activeConnection =  $this->getActiveConnection();
             return $activeConnection->getConnection();

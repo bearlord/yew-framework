@@ -13,7 +13,7 @@ class RedisSentinelFactory
 
     public function __construct()
     {
-        $this->isOlderThan6 = (bool)version_compare(phpversion('redis'), '6.0.0', '<');
+        $this->isOlderThan6 = (bool)version_compare(phpversion("redis"), "6.0.0", "<");
     }
 
     /**
@@ -24,12 +24,12 @@ class RedisSentinelFactory
     {
         if ($this->isOlderThan6) {
             return new RedisSentinel(
-                $options['host'],
-                (int) $options['port'],
-                (float) $options['connectTimeout'],
-                $options['persistent'],
-                (int) $options['retryInterval'],
-                (float) $options['readTimeout'],
+                $options["host"],
+                (int) $options["port"],
+                (float) $options["connectTimeout"],
+                $options["persistent"],
+                (int) $options["retryInterval"],
+                (float) $options["readTimeout"],
             );
         }
 

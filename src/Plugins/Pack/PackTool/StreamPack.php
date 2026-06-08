@@ -38,7 +38,7 @@ class StreamPack extends AbstractPack
      */
     public function decode($buffer)
     {
-        $data = str_replace($this->portConfig->getPackageEof(), '', $buffer);
+        $data = str_replace($this->portConfig->getPackageEof(), "", $buffer);
         return $data;
     }
 
@@ -70,7 +70,7 @@ class StreamPack extends AbstractPack
         $this->portConfig = $portConfig;
         //Value can be empty
         $value = $this->decode($data);
-        $clientData = new ClientData($fd, $portConfig->getBaseType(), 'onReceive', $value);
+        $clientData = new ClientData($fd, $portConfig->getBaseType(), "onReceive", $value);
         return $clientData;
     }
 
@@ -85,7 +85,7 @@ class StreamPack extends AbstractPack
         if ($portConfig->isOpenEofCheck() || $portConfig->isOpenEofSplit()) {
             return true;
         } else {
-            Server::$instance->getLog()->warning('Packet used EofJsonPack but EOF protocol is not enabled, Enable open_eof_split automatically');
+            Server::$instance->getLog()->warning("Packet used EofJsonPack but EOF protocol is not enabled, Enable open_eof_split automatically");
             $portConfig->setOpenEofSplit(true);
         }
     }
