@@ -598,7 +598,7 @@ class WhoopsHandler extends Handler
     {
         if (!is_dir($path)) {
             throw new InvalidArgumentException(
-                ""$path" is not a valid directory"
+                "‘$path’ is not a valid directory"
             );
         }
 
@@ -658,7 +658,7 @@ class WhoopsHandler extends Handler
 
         // If we got this far, nothing was found.
         throw new RuntimeException(
-            "Could not find resource "$resource" in any resource paths."
+            "Could not find resource ‘$resource’ in any resource paths."
             . "(searched: " . join(", ", $this->searchPaths) . ")"
         );
     }
