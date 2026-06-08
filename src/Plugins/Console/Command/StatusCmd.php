@@ -57,8 +57,8 @@ class StatusCmd extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $server_name = $this->config->get("yew.server.name") ?? "Yew";
-        $master_pid = exec("ps -ef | grep $server_name-master | grep -v "grep " | awk "{print $2}"");
+	    $server_name = $this->config->get('yew.server.name') ?? 'Yew';
+	    $master_pid = exec("ps -ef | grep $server_name-master | grep -v 'grep ' | awk '{print $2}'");
         $io->title("WELCOME TO Yew-FRAMEWORK!");
         $io->table(
             [

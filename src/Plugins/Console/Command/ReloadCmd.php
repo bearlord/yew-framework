@@ -55,8 +55,8 @@ class ReloadCmd extends Command
         $serverConfig = Server::$instance->getServerConfig();
         $serverName = $serverConfig->getName();
 
-        $masterPid = exec("ps -ef | grep $serverName-master | grep -v "grep " | awk "{print $2}"");
-        $managerPid = exec("ps -ef | grep $serverName-manager | grep -v "grep " | awk "{print $2}"");
+	    $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
+	    $managerPid = exec("ps -ef | grep $serverName-manager | grep -v 'grep ' | awk '{print $2}'");
         if (empty($masterPid)) {
             $io->warning(sprintf("Server %s not run", $serverName));
             return ConsolePlugin::SUCCESS_EXIT;
