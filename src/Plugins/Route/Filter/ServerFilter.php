@@ -25,7 +25,7 @@ class ServerFilter extends AbstractFilter
      */
     public function filter(ClientData $clientData): int
     {
-        $clientData->getResponse()->withHeader('Server', Server::$instance->getServerConfig()->getName());
+        $clientData->getResponse()->withHeader("Server", Server::$instance->getServerConfig()->getName());
         return AbstractFilter::RETURN_NEXT;
     }
 

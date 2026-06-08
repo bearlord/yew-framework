@@ -36,7 +36,7 @@ abstract class Target extends Component
     /**
      * @var int how many messages should be accumulated before they are exported.
      * Defaults to 1000. Note that messages will always be exported when the application terminates.
-     * Set this property to be 0 if you don't want to export messages until the application terminates.
+     * Set this property to be 0 if you don"t want to export messages until the application terminates.
      */
     public $exportInterval = 1000;
 
@@ -133,16 +133,16 @@ abstract class Target extends Component
     }
 
     /**
-     * Returns formatted ('Y-m-d H:i:s') timestamp for message.
-     * If [[microtime]] is configured to true it will return format 'Y-m-d H:i:s.u'.
+     * Returns formatted ("Y-m-d H:i:s") timestamp for message.
+     * If [[microtime]] is configured to true it will return format "Y-m-d H:i:s.u".
      * @param float $timestamp
      * @return string
      * @since 2.0.13
      */
     protected function getTime($timestamp)
     {
-        $parts = explode('.', sprintf('%F', $timestamp));
+        $parts = explode(".", sprintf("%F", $timestamp));
 
-        return date('Y-m-d H:i:s', $parts[0]) . ($this->microtime ? ('.' . $parts[1]) : '');
+        return date("Y-m-d H:i:s", $parts[0]) . ($this->microtime ? ("." . $parts[1]) : "");
     }
 }

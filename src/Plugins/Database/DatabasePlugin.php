@@ -34,7 +34,7 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
      */
     public function getName(): string
     {
-        return 'Database';
+        return "Database";
     }
 
     /**
@@ -95,7 +95,7 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
 
         $configs = $this->configs->getConfigs();
         if (empty($configs)) {
-            $this->warn('Database configuration not found');
+            $this->warn("Database configuration not found");
             return;
         }
 
@@ -128,22 +128,22 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
      */
     protected function getMasterConfigs(array $config)
     {
-        if (empty($config['masters'])) {
+        if (empty($config["masters"])) {
             return false;
         }
-        if (empty($config['masterConfig'])) {
+        if (empty($config["masterConfig"])) {
             return false;
         }
         $row = [];
-        foreach ($config['masters'] as $v) {
-            $v['username'] = $config['masterConfig']['username'];
-            $v['password'] = $config['masterConfig']['password'];
-            $v['poolMaxNumber'] = $config['masterConfig']['poolMaxNumber'];
-            $v['charset'] = $config['charset'];
-            $v['tablePrefix'] = $config['tablePrefix'];
-            $v['enableSchemaCache'] = $config['enableSchemaCache'];
-            $v['schemaCacheDuration'] = $config['schemaCacheDuration'];
-            $v['schemaCache'] = $config['schemaCache'];
+        foreach ($config["masters"] as $v) {
+            $v["username"] = $config["masterConfig"]["username"];
+            $v["password"] = $config["masterConfig"]["password"];
+            $v["poolMaxNumber"] = $config["masterConfig"]["poolMaxNumber"];
+            $v["charset"] = $config["charset"];
+            $v["tablePrefix"] = $config["tablePrefix"];
+            $v["enableSchemaCache"] = $config["enableSchemaCache"];
+            $v["schemaCacheDuration"] = $config["schemaCacheDuration"];
+            $v["schemaCache"] = $config["schemaCache"];
             $row[] = $v;
         }
         return $row;
@@ -155,22 +155,22 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
      */
     protected function getSlaveConfigs(array $config)
     {
-        if (empty($config['slaves'])) {
+        if (empty($config["slaves"])) {
             return false;
         }
-        if (empty($config['slaveConfig'])) {
+        if (empty($config["slaveConfig"])) {
             return false;
         }
         $row = [];
-        foreach ($config['slaves'] as $v) {
-            $v['username'] = $config['slaveConfig']['username'];
-            $v['password'] = $config['slaveConfig']['password'];
-            $v['poolMaxNumber'] = $config['slaveConfig']['poolMaxNumber'];
-            $v['charset'] = $config['charset'];
-            $v['tablePrefix'] = $config['tablePrefix'];
-            $v['enableSchemaCache'] = $config['enableSchemaCache'];
-            $v['schemaCacheDuration'] = $config['schemaCacheDuration'];
-            $v['schemaCache'] = $config['schemaCache'];
+        foreach ($config["slaves"] as $v) {
+            $v["username"] = $config["slaveConfig"]["username"];
+            $v["password"] = $config["slaveConfig"]["password"];
+            $v["poolMaxNumber"] = $config["slaveConfig"]["poolMaxNumber"];
+            $v["charset"] = $config["charset"];
+            $v["tablePrefix"] = $config["tablePrefix"];
+            $v["enableSchemaCache"] = $config["enableSchemaCache"];
+            $v["schemaCacheDuration"] = $config["schemaCacheDuration"];
+            $v["schemaCache"] = $config["schemaCache"];
             $row [] = $v;
         }
         return $row;

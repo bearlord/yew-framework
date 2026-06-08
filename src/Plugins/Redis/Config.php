@@ -71,7 +71,7 @@ class Config extends \Yew\Core\Pool\Config
      */
     protected function getKey(): string
     {
-        return 'redis';
+        return "redis";
     }
 
     /**
@@ -112,14 +112,14 @@ class Config extends \Yew\Core\Pool\Config
      */
     public function buildConfig(): array
     {
-        if (!extension_loaded('redis')) {
-            throw new RedisException('Redis extension is not loaded');
+        if (!extension_loaded("redis")) {
+            throw new RedisException("Redis extension is not loaded");
         }
         if (empty($this->name)) {
-            throw new RedisException('Redis name must be set');
+            throw new RedisException("Redis name must be set");
         }
         if (empty($this->host)) {
-            throw new RedisException('Redis host must be set');
+            throw new RedisException("Redis host must be set");
         }
 
         return [

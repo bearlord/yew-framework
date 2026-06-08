@@ -88,20 +88,20 @@ class Types
      * @var string[]
      */
     protected static $types = [
-        self::CONNECT => 'connect',
-        self::CONNACK => 'connack',
-        self::PUBLISH => 'publish',
-        self::PUBACK => 'puback',
-        self::PUBREC => 'pubrec',
-        self::PUBREL => 'pubrel',
-        self::PUBCOMP => 'pubcomp',
-        self::SUBSCRIBE => 'subscribe',
-        self::SUBACK => 'suback',
-        self::UNSUBSCRIBE => 'unsubscribe',
-        self::PINGREQ => 'pingreq',
-        self::PINGRESP => 'pingresp',
-        self::DISCONNECT => 'disconnect',
-        self::AUTH => 'auth',
+        self::CONNECT => "connect",
+        self::CONNACK => "connack",
+        self::PUBLISH => "publish",
+        self::PUBACK => "puback",
+        self::PUBREC => "pubrec",
+        self::PUBREL => "pubrel",
+        self::PUBCOMP => "pubcomp",
+        self::SUBSCRIBE => "subscribe",
+        self::SUBACK => "suback",
+        self::UNSUBSCRIBE => "unsubscribe",
+        self::PINGREQ => "pingreq",
+        self::PINGRESP => "pingresp",
+        self::DISCONNECT => "disconnect",
+        self::AUTH => "auth",
     ];
 
     /**
@@ -118,6 +118,6 @@ class Types
      */
     public static function getType(int $type): string
     {
-        return static::$types[$type] ?? '';
+        return static::$types[$type] ?? "";
     }
 }

@@ -93,9 +93,9 @@ class Client extends BaseClient
     public function recv()
     {
         $response = $this->getResponse();
-        if ($response === '' || !$this->client->isConnected()) {
+        if ($response === "" || !$this->client->isConnected()) {
             $this->reConnect();
-            $this->connect($this->getConnectData('clean_session') ?? true, $this->getConnectData('will') ?? []);
+            $this->connect($this->getConnectData("clean_session") ?? true, $this->getConnectData("will") ?? []);
         } elseif ($response === false && $this->client->errCode !== SOCKET_ETIMEDOUT) {
             $this->handleException();
         } elseif (is_string($response) && strlen($response) > 0) {

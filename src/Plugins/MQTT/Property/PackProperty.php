@@ -18,7 +18,7 @@ class PackProperty
      */
     public static function connect(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $connect = array_flip(PacketMap::$connect);
         foreach ($data as $key => $item) {
             if (isset($connect[$key])) {
@@ -44,7 +44,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($connect['user_property']);
+                $tmpBody .= chr($connect["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -58,7 +58,7 @@ class PackProperty
      */
     public static function willProperties(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $willProperties = array_flip(PacketMap::$willProperties);
         foreach ($data as $key => $item) {
             if (isset($willProperties[$key])) {
@@ -80,7 +80,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($willProperties['user_property']);
+                $tmpBody .= chr($willProperties["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -94,7 +94,7 @@ class PackProperty
      */
     public static function connAck(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $connAck = array_flip(PacketMap::$connAck);
         foreach ($data as $key => $item) {
             if (isset($connAck[$key])) {
@@ -128,7 +128,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($connAck['user_property']);
+                $tmpBody .= chr($connAck["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -142,7 +142,7 @@ class PackProperty
      */
     public static function publish(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $publish = array_flip(PacketMap::$publish);
         foreach ($data as $key => $item) {
             if (isset($publish[$key])) {
@@ -169,7 +169,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($publish['user_property']);
+                $tmpBody .= chr($publish["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -183,7 +183,7 @@ class PackProperty
      */
     public static function pubAndSub(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $pubAndSub = array_flip(PacketMap::$pubAndSub);
         foreach ($data as $key => $item) {
             if (isset($pubAndSub[$key])) {
@@ -196,7 +196,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($pubAndSub['user_property']);
+                $tmpBody .= chr($pubAndSub["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -210,7 +210,7 @@ class PackProperty
      */
     public static function subscribe(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $subscribe = array_flip(PacketMap::$subscribe);
         foreach ($data as $key => $item) {
             if (isset($subscribe[$key])) {
@@ -223,7 +223,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($subscribe['user_property']);
+                $tmpBody .= chr($subscribe["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -237,11 +237,11 @@ class PackProperty
      */
     public static function unSubscribe(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $unSubscribe = array_flip(PacketMap::$unSubscribe);
         foreach ($data as $key => $item) {
             // Property::USER_PROPERTY
-            $tmpBody .= chr($unSubscribe['user_property']);
+            $tmpBody .= chr($unSubscribe["user_property"]);
             $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
         }
 
@@ -254,7 +254,7 @@ class PackProperty
      */
     public static function disConnect(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $disConnect = array_flip(PacketMap::$disConnect);
         foreach ($data as $key => $item) {
             if (isset($disConnect[$key])) {
@@ -271,7 +271,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($disConnect['user_property']);
+                $tmpBody .= chr($disConnect["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }
@@ -285,7 +285,7 @@ class PackProperty
      */
     public static function auth(array $data): string
     {
-        $tmpBody = '';
+        $tmpBody = "";
         $auth = array_flip(PacketMap::$auth);
         foreach ($data as $key => $item) {
             if (isset($auth[$key])) {
@@ -300,7 +300,7 @@ class PackProperty
                 }
             } else {
                 // Property::USER_PROPERTY
-                $tmpBody .= chr($auth['user_property']);
+                $tmpBody .= chr($auth["user_property"]);
                 $tmpBody .= PackTool::stringPair((string) $key, (string) $item);
             }
         }

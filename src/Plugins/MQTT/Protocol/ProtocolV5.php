@@ -22,7 +22,7 @@ class ProtocolV5 implements ProtocolInterface
      */
     public static function pack(array $array): string
     {
-        $type = $array['type'];
+        $type = $array["type"];
         switch ($type) {
             case Types::CONNECT:
                 $package = PackV5::connect($array);
@@ -73,7 +73,7 @@ class ProtocolV5 implements ProtocolInterface
                 break;
 
             default:
-                throw new InvalidArgumentException('MQTT Type not exist');
+                throw new InvalidArgumentException("MQTT Type not exist");
         }
 
         return $package;
@@ -112,7 +112,7 @@ class ProtocolV5 implements ProtocolInterface
 
             case Types::PINGREQ:
             case Types::PINGRESP:
-                $package = ['type' => $type];
+                $package = ["type" => $type];
                 break;
 
             case Types::DISCONNECT:

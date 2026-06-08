@@ -34,7 +34,7 @@ class EofJsonPack extends AbstractPack
      */
     public function decode($buffer): string
     {
-        return str_replace($this->portConfig->getPackageEof(), '', $buffer);
+        return str_replace($this->portConfig->getPackageEof(), "", $buffer);
     }
 
     /**
@@ -67,11 +67,11 @@ class EofJsonPack extends AbstractPack
         $value = json_decode($this->decode($data), true);
 
         if (empty($value)) {
-            $this->warn('Packet unpack failed');
+            $this->warn("Packet unpack failed");
             return null;
         }
 
-        return new ClientData($fd, $portConfig->getBaseType(), $value['p'], $value);
+        return new ClientData($fd, $portConfig->getBaseType(), $value["p"], $value);
     }
 
     /**
@@ -86,7 +86,7 @@ class EofJsonPack extends AbstractPack
         if ($portConfig->isOpenEofCheck() || $portConfig->isOpenEofSplit()) {
             return true;
         } else {
-            Server::$instance->getLog()->warning('Packet used EofJsonPack but EOF protocol is not enabled, Enable open_eof_split automatically');
+            Server::$instance->getLog()->warning("Packet used EofJsonPack but EOF protocol is not enabled, Enable open_eof_split automatically");
             $portConfig->setOpenEofSplit(true);
         }
     }

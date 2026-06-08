@@ -15,9 +15,9 @@ interface ProtocolInterface
 
     public const MQTT_PROTOCOL_LEVEL_5_0 = 5;
 
-    public const MQISDP_PROTOCOL_NAME = 'MQIsdp';
+    public const MQISDP_PROTOCOL_NAME = "MQIsdp";
 
-    public const MQTT_PROTOCOL_NAME = 'MQTT';
+    public const MQTT_PROTOCOL_NAME = "MQTT";
 
     public const MQTT_QOS_0 = 0;
 

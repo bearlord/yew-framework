@@ -70,13 +70,13 @@ class PubComp extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::PUBCOMP,
-            'message_id' => $this->getMessageId(),
+            "type" => Types::PUBCOMP,
+            "message_id" => $this->getMessageId(),
         ];
 
         if ($this->isMQTT5()) {
-            $buffer['code'] = $this->getCode();
-            $buffer['properties'] = $this->getProperties();
+            $buffer["code"] = $this->getCode();
+            $buffer["properties"] = $this->getProperties();
         }
 
         if ($isArray) {

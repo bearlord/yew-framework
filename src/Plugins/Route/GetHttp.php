@@ -65,7 +65,7 @@ trait GetHttp
      */
     public function postRequire($key)
     {
-        return $this->paramsRequire($key, 'post');
+        return $this->paramsRequire($key, "post");
     }
 
     /**
@@ -75,7 +75,7 @@ trait GetHttp
      */
     public function queryRequire($key)
     {
-        return $this->paramsRequire($key, 'query');
+        return $this->paramsRequire($key, "query");
     }
 
     /**
@@ -85,7 +85,7 @@ trait GetHttp
      */
     public function inputRequire($key)
     {
-        return $this->paramsRequire($key, 'input');
+        return $this->paramsRequire($key, "input");
     }
 
     /**
@@ -102,8 +102,8 @@ trait GetHttp
         try {
             $decoded = json_decode($raw, true);
         } catch (\Exception $exception) {
-            $this->warning('postRawJson error, raw:' . $raw);
-            throw new RouteException('RawJson Format error');
+            $this->warning("postRawJson error, raw:" . $raw);
+            throw new RouteException("RawJson Format error");
         }
 
         return $decoded;
@@ -121,10 +121,10 @@ trait GetHttp
         }
 
         try {
-            $xml = simplexml_load_string($raw, 'SimpleXMLElement', LIBXML_NOCDATA | LIBXML_NOBLANKS);
+            $xml = simplexml_load_string($raw, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NOBLANKS);
         } catch (\Exception $exception) {
-            $this->warning('RequestRawXml error, raw:' . $this->getRequest()->getBody()->getContents());
-            throw new RouteException('RawXml Format error');
+            $this->warning("RequestRawXml error, raw:" . $this->getRequest()->getBody()->getContents());
+            throw new RouteException("RawXml Format error");
         }
 
         return $xml;

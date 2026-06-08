@@ -53,7 +53,7 @@ class Config extends \Yew\Core\Pool\Config
      */
     protected function getKey(): string
     {
-        return 'database';
+        return "database";
     }
 
     /**
@@ -193,16 +193,16 @@ class Config extends \Yew\Core\Pool\Config
     public function buildConfig(): array
     {
         return [
-            'dsn' => $this->getDsn(),
-            'name' => $this->getName(),
-            'username' => $this->getUsername(),
-            'password' => $this->getPassword(),
-            'tablePrefix' => $this->getTablePrefix(),
-            'charset' => $this->getCharset(),
-            'enableSchemaCache' => $this->getEnableSchemaCache(),
-            'schemaCacheDuration' => $this->getSchemaCacheDuration(),
-            'schemaCache' => $this->getSchemaCache(),
-            'options' => $this->getOptions()
+            "dsn" => $this->getDsn(),
+            "name" => $this->getName(),
+            "username" => $this->getUsername(),
+            "password" => $this->getPassword(),
+            "tablePrefix" => $this->getTablePrefix(),
+            "charset" => $this->getCharset(),
+            "enableSchemaCache" => $this->getEnableSchemaCache(),
+            "schemaCacheDuration" => $this->getSchemaCacheDuration(),
+            "schemaCache" => $this->getSchemaCache(),
+            "options" => $this->getOptions()
         ];
     }
 
@@ -213,7 +213,7 @@ class Config extends \Yew\Core\Pool\Config
      */
     public function getDriverName(): string
     {
-        if (($pos = strpos($this->dsn, ':')) !== false) {
+        if (($pos = strpos($this->dsn, ":")) !== false) {
             return strtolower(substr($this->dsn, 0, $pos));
         }
         return "";

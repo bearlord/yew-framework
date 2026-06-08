@@ -9,9 +9,9 @@ namespace Yew\Plugins\Actor;
 
 class ActorMessage
 {
-    const TYPE_COMMON = 'common';
+    const TYPE_COMMON = "common";
 
-    const TYPE_MULTICAST = 'multicast';
+    const TYPE_MULTICAST = "multicast";
 
     /**
      * @var string|null Message id

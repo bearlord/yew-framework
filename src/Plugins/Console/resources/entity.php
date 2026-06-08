@@ -29,27 +29,27 @@ use Yew\Yew;
 <?php if (!empty($relations)): ?>
     *
     <?php foreach ($relations as $name => $relation): ?>
-        * @property <?= $relation[1] . ($relation[2] ? '[]' : '') . ' $' . lcfirst($name) . "\n" ?>
+        * @property <?= $relation[1] . ($relation[2] ? "[]" : "") . " $" . lcfirst($name) . "\n" ?>
     <?php endforeach; ?>
 <?php endif; ?>
 */
-class <?= $className ?> extends <?= '\\' . ltrim($generator->baseClass, '\\') . "\n" ?>
+class <?= $className ?> extends <?= "\\" . ltrim($generator->baseClass, "\\") . "\n" ?>
 {
 /**
 * @inheritdoc
 */
 public static function tableName()
 {
-return '<?= $generator->generateTableName($tableName) ?>';
+return "<?= $generator->generateTableName($tableName) ?>";
 }
-<?php if ($generator->db !== 'db'): ?>
+<?php if ($generator->db !== "db"): ?>
 
     /**
     * @return \Yew\Framework\Db\Connection the database connection used by this AR class.
     */
     public static function getDb()
     {
-    return Yew::$app->get('<?= $generator->db ?>');
+    return Yew::$app->get("<?= $generator->db ?>");
     }
 <?php endif; ?>
 
@@ -68,7 +68,7 @@ public function attributeLabels()
 {
 return [
 <?php foreach ($labels as $name => $label): ?>
-    <?= "'$name' => " . $generator->generateString($label) . ",\n" ?>
+    <?= ""$name" => " . $generator->generateString($label) . ",\n" ?>
 <?php endforeach; ?>
 ];
 }
@@ -84,7 +84,7 @@ return [
 <?php endforeach; ?>
 <?php if ($queryClassName): ?>
     <?php
-    $queryClassFullName = ($generator->ns === $generator->queryNs) ? $queryClassName : '\\' . $generator->queryNs . '\\' . $queryClassName;
+    $queryClassFullName = ($generator->ns === $generator->queryNs) ? $queryClassName : "\\" . $generator->queryNs . "\\" . $queryClassName;
     echo "\n";
     ?>
     /**

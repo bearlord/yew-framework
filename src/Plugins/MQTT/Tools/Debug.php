@@ -15,7 +15,7 @@ class Debug
     /**
      * @param string $encode
      */
-    public function __construct(string $encode = '')
+    public function __construct(string $encode = "")
     {
         $this->encode = $encode;
     }
@@ -87,21 +87,21 @@ class Debug
     private function toHexDump(string $contents, bool $hasAscii = false): string
     {
         $address = $column = 0;
-        $result = $hexDump = $asciiDump = '';
+        $result = $hexDump = $asciiDump = "";
 
-        $sprintf = '%08x    %-48s';
+        $sprintf = "%08x    %-48s";
 
         if ($hasAscii) {
-            $sprintf = '%08x    %-48s   %s';
+            $sprintf = "%08x    %-48s   %s";
         }
 
         foreach (str_split($contents) as $c) {
-            $hexDump = $hexDump . sprintf('%02x ', ord($c));
+            $hexDump = $hexDump . sprintf("%02x ", ord($c));
             if ($hasAscii) {
                 if (ord($c) > 31 && ord($c) < 128) {
                     $asciiDump .= $c;
                 } else {
-                    $asciiDump .= '.';
+                    $asciiDump .= ".";
                 }
             }
             $column++;
@@ -109,8 +109,8 @@ class Debug
                 $line = sprintf($sprintf, $address, $hexDump, $asciiDump);
                 $result .= $line . PHP_EOL;
 
-                $asciiDump = '';
-                $hexDump = '';
+                $asciiDump = "";
+                $hexDump = "";
                 $column = 0;
                 $address += 16;
             }
@@ -131,15 +131,15 @@ class Debug
     private function toAscii(string $contents): string
     {
         $address = $column = 0;
-        $result = $asciiDump = '';
+        $result = $asciiDump = "";
 
-        $sprintf = '%08x    %s';
+        $sprintf = "%08x    %s";
 
         foreach (str_split($contents) as $c) {
             if (ord($c) > 31 && ord($c) < 128) {
                 $asciiDump .= $c;
             } else {
-                $asciiDump .= '.';
+                $asciiDump .= ".";
             }
 
             $column++;
@@ -147,7 +147,7 @@ class Debug
                 $line = sprintf($sprintf, $address, $asciiDump);
                 $result .= $line . PHP_EOL;
 
-                $asciiDump = '';
+                $asciiDump = "";
                 $column = 0;
                 $address += 16;
             }

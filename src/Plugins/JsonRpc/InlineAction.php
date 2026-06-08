@@ -56,7 +56,7 @@ class InlineAction extends \Yew\Framework\Base\InlineAction
     public function runWithParams(?array $params = null)
     {
         $args = $this->controller->bindActionParams($this, $params);
-        Yew::debug('Running action: ' . get_class($this->controller) . '::' . $this->actionMethod . '()', __METHOD__);
+        Yew::debug("Running action: " . get_class($this->controller) . "::" . $this->actionMethod . "()", __METHOD__);
 
         return call_user_func_array([$this->controller, $this->actionMethod], $args);
     }

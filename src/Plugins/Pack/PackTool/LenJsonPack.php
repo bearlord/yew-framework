@@ -47,11 +47,11 @@ class LenJsonPack extends AbstractPack
 
         $value = json_decode($this->decode($data), true);
         if (empty($value)) {
-            $this->warn('Packet unpack failed');
+            $this->warn("Packet unpack failed");
             return null;
         }
 
-        return new ClientData($fd, $portConfig->getBaseType(), $value['p'], $value);
+        return new ClientData($fd, $portConfig->getBaseType(), $value["p"], $value);
     }
 
     /**

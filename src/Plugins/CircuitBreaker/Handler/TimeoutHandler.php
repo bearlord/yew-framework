@@ -22,7 +22,7 @@ class TimeoutHandler extends AbstractHandler
      */
     protected function process(string $routeMethodName, MethodInvocation $invocation, CircuitBreakerInterface $breaker, Annotation $annotation)
     {
-        $timeout = $annotation->options['timeout'] ?? self::DEFAULT_TIMEOUT;
+        $timeout = $annotation->options["timeout"] ?? self::DEFAULT_TIMEOUT;
 
         $markStartTime = microtime(true);
 
@@ -32,12 +32,12 @@ class TimeoutHandler extends AbstractHandler
         
         if ($useTime > $timeout) {
             if (Server::$instance->getServerConfig()->isDebug()) {
-                throw new TimeoutException('timeout, use ' . $useTime . ' s', 80504, $result);
+                throw new TimeoutException("timeout, use " . $useTime . " s", 80504, $result);
             }
         }
 
         /*
-        $msg = sprintf('%s success, use %ss.', $routeMethodName, $useTime);
+        $msg = sprintf("%s success, use %ss.", $routeMethodName, $useTime);
         $this->logger->debug($msg);
         */
 

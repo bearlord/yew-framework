@@ -58,7 +58,7 @@ class IpcProxy
     public function __call(string $name, array $arguments)
     {
         if ($this->sessionId != null) {
-            $arguments['sessionId'] = $this->sessionId;
+            $arguments["sessionId"] = $this->sessionId;
         }
         $message = new IpcCallMessage($this->className, $name, $arguments, $this->oneway);
 
@@ -76,7 +76,7 @@ class IpcProxy
                     return $result->getResult();
                 }
             } else {
-                throw new IpcException('Time out');
+                throw new IpcException("Time out");
             }
         }
     }

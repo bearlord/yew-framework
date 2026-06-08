@@ -33,12 +33,12 @@ class ApplicationAspectKernel extends AspectKernel
     public function initContainer(array $options)
     {
         $this->options = $this->normalizeOptions($options);
-        define('AOP_ROOT_DIR', $this->options['appDir']);
-        define('AOP_CACHE_DIR', $this->options['cacheDir']);
-        $this->container = new $this->options['containerClass'];
-        $this->container->set('kernel', $this);
-        $this->container->set('kernel.interceptFunctions', $this->hasFeature(Features::INTERCEPT_FUNCTIONS));
-        $this->container->set('kernel.options', $this->options);
+        define("AOP_ROOT_DIR", $this->options["appDir"]);
+        define("AOP_CACHE_DIR", $this->options["cacheDir"]);
+        $this->container = new $this->options["containerClass"];
+        $this->container->set("kernel", $this);
+        $this->container->set("kernel.interceptFunctions", $this->hasFeature(Features::INTERCEPT_FUNCTIONS));
+        $this->container->set("kernel.options", $this->options);
     }
 
     /**
@@ -62,7 +62,7 @@ class ApplicationAspectKernel extends AspectKernel
         }
 
         // Register kernel resources in the container for debug mode
-        if ($this->options['debug']) {
+        if ($this->options["debug"]) {
             $this->addKernelResourcesToContainer($container);
         }
 
@@ -86,7 +86,7 @@ class ApplicationAspectKernel extends AspectKernel
         ) : \Swoole\Coroutine::getBackTrace($cid, DEBUG_BACKTRACE_IGNORE_ARGS, 2);
         $refClass = new \ReflectionObject($this);
 
-        $container->addResource($trace[1]['file']);
+        $container->addResource($trace[1]["file"]);
         $container->addResource($refClass->getFileName());
     }
 

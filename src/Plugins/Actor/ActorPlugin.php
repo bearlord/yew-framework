@@ -30,12 +30,12 @@ class ActorPlugin extends AbstractPlugin
     {
         parent::__construct();
 
-        $config = Server::$instance->getConfigContext()->get('actor');
+        $config = Server::$instance->getConfigContext()->get("actor");
         $actorConfig = new ActorConfig();
-        $actorConfig->setActorMaxCount($config['actorMaxCount']);
-        $actorConfig->setActorMailboxCapacity($config['actorMaxClassCount']);
-        $actorConfig->setActorWorkerCount($config['actorWorkerCount']);
-        $actorConfig->setActorMaxClassCount($config['actorMailboxCapacity']);
+        $actorConfig->setActorMaxCount($config["actorMaxCount"]);
+        $actorConfig->setActorMailboxCapacity($config["actorMaxClassCount"]);
+        $actorConfig->setActorWorkerCount($config["actorWorkerCount"]);
+        $actorConfig->setActorMaxClassCount($config["actorMailboxCapacity"]);
         $this->actorConfig = $actorConfig;
 
         $this->atAfter(IpcPlugin::class);

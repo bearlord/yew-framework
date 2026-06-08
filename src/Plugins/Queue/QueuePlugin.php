@@ -1,6 +1,6 @@
 <?php
 /**
- * ESD Yii Queue plugin
+ * Yew Queue plugin
  * @author bearlord <565364226@qq.com>
  */
 
@@ -29,7 +29,7 @@ class QueuePlugin extends AbstractPlugin
 
     const PROCESS_GROUP_NAME = "HelperGroup";
 
-    const PROCESS_QUEUE_PREFIX  = 'queue-';
+    const PROCESS_QUEUE_PREFIX  = "queue-";
 
     /**
      * @var int
@@ -57,7 +57,7 @@ class QueuePlugin extends AbstractPlugin
      */
     public function getName(): string
     {
-        return 'Queue';
+        return "Queue";
     }
 
     /**
@@ -68,9 +68,7 @@ class QueuePlugin extends AbstractPlugin
     {
         $this->config = Server::$instance->getConfigContext()->get("yii.queue");
         if (empty($this->config)) {
-            $this->warn(Yew::t('esd', '{name} configuration not found', [
-                'name' => 'Queue'
-            ]));
+	        $this->warn("Queue configuration not found");
             return false;
         }
         
@@ -98,8 +96,8 @@ class QueuePlugin extends AbstractPlugin
 
         $index = 0;
         foreach ($this->config as $key => $config) {
-            if (empty($config['minIntervalTime']) || $config['minIntervalTime'] < 1000) {
-                $config['minIntervalTime'] = 1000;
+            if (empty($config["minIntervalTime"]) || $config["minIntervalTime"] < 1000) {
+                $config["minIntervalTime"] = 1000;
             }
 
             $pool = new QueuePool($key, $config);

@@ -166,17 +166,17 @@ class Publish extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::PUBLISH,
-            'topic' => $this->getTopic(),
-            'message' => $this->getMessage(),
-            'dup' => $this->getDup(),
-            'qos' => $this->getQos(),
-            'retain' => $this->getRetain(),
-            'message_id' => $this->getMessageId(),
+            "type" => Types::PUBLISH,
+            "topic" => $this->getTopic(),
+            "message" => $this->getMessage(),
+            "dup" => $this->getDup(),
+            "qos" => $this->getQos(),
+            "retain" => $this->getRetain(),
+            "message_id" => $this->getMessageId(),
         ];
 
         if ($this->isMQTT5()) {
-            $buffer['properties'] = $this->getProperties();
+            $buffer["properties"] = $this->getProperties();
         }
         if ($isArray) {
             return $buffer;

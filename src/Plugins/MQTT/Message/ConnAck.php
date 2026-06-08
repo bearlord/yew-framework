@@ -71,13 +71,13 @@ class ConnAck extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::CONNACK,
-            'code' => $this->getCode(),
-            'session_present' => $this->getSessionPresent(),
+            "type" => Types::CONNACK,
+            "code" => $this->getCode(),
+            "session_present" => $this->getSessionPresent(),
         ];
 
         if ($this->isMQTT5()) {
-            $buffer['properties'] = $this->getProperties();
+            $buffer["properties"] = $this->getProperties();
         }
 
         if ($isArray) {

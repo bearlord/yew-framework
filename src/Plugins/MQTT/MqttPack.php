@@ -243,9 +243,9 @@ class MqttPack extends AbstractPack
                 //协议版本
                 $protocolLevel = UnPackTool::getLevel($data);
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
                 //客户端标识
-                $clientId = $unpackedData['client_id'];
+                $clientId = $unpackedData["client_id"];
                 //保存协议到上下文
                 $this->setFdProtocolLevel($fd, $protocolLevel);
                 //保存 fd 和 clientId 映射关系
@@ -261,16 +261,16 @@ class MqttPack extends AbstractPack
                 //协议版本
                 $protocolLevel = $this->getFdProtocolLevel($fd);
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
                 //客户端标识
                 $clientId = $this->getClientIdFromFd($fd);
         }
 
-        return new ClientData($fd, $portConfig->getBaseType(), 'onReceive', [
-            'type' => $type,
-            'level' => $protocolLevel,
-            'client_id' => $clientId,
-            'data' => $unpackedData
+        return new ClientData($fd, $portConfig->getBaseType(), "onReceive", [
+            "type" => $type,
+            "level" => $protocolLevel,
+            "client_id" => $clientId,
+            "data" => $unpackedData
         ]);
     }
 

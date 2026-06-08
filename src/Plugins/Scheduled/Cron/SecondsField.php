@@ -24,11 +24,11 @@ class SecondsField extends AbstractField
      */
     public function isSatisfiedBy(DateTimeInterface $date, string $value): bool
     {
-        if ($value == '?') {
+        if ($value == "?") {
             return true;
         }
 
-        return $this->isSatisfied($date->format('s'), $value);
+        return $this->isSatisfied($date->format("s"), $value);
     }
 
     /**
@@ -40,17 +40,17 @@ class SecondsField extends AbstractField
     public function increment(DateTimeInterface &$date, bool $invert = false, ?string $parts = null)
     {
         if (is_null($parts)) {
-            $date = $date->modify(($invert ? '-' : '+') . '1 second');
+            $date = $date->modify(($invert ? "-" : "+") . "1 second");
             return $this;
         }
 
-        $parts = strpos($parts, ',') !== false ? explode(',', $parts) : array($parts);
+        $parts = strpos($parts, ",") !== false ? explode(",", $parts) : array($parts);
         $seconds = array();
         foreach ($parts as $part) {
             $seconds = array_merge($seconds, $this->getRangeForExpression($part, 59));
         }
 
-        $current_second = $date->format('s');
+        $current_second = $date->format("s");
         $position = $invert ? count($seconds) - 1 : 0;
         if (count($seconds) > 1) {
             for ($i = 0; $i < count($seconds) - 1; $i++) {
@@ -63,11 +63,11 @@ class SecondsField extends AbstractField
         }
 
         if ((!$invert && $current_second >= $seconds[$position]) || ($invert && $current_second <= $seconds[$position])) {
-            $date = $date->modify(($invert ? '-' : '+') . '1 minute');
-            $date = $date->setTime($date->format('H'),$date->format('i'), $invert ? 59 : 0);
+            $date = $date->modify(($invert ? "-" : "+") . "1 minute");
+            $date = $date->setTime($date->format("H"),$date->format("i"), $invert ? 59 : 0);
         }
         else {
-            $date = $date->setTime($date->format('H'),$date->format('i'), $seconds[$position]);
+            $date = $date->setTime($date->format("H"),$date->format("i"), $seconds[$position]);
         }
 
         return $this;

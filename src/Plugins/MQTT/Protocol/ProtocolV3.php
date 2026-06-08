@@ -26,7 +26,7 @@ class ProtocolV3 implements ProtocolInterface
     public static function pack(array $array): string
     {
         try {
-            $type = $array['type'];
+            $type = $array["type"];
             switch ($type) {
                 case Types::CONNECT:
                     $package = PackV3::connect($array);
@@ -45,7 +45,7 @@ class ProtocolV3 implements ProtocolInterface
                 case Types::PUBREL:
                 case Types::PUBCOMP:
                 case Types::UNSUBACK:
-                    $body = PackTool::shortInt($array['message_id']);
+                    $body = PackTool::shortInt($array["message_id"]);
                     if ($type === Types::PUBREL) {
                         $head = PackTool::packHeader($type, strlen($body), 0, 1);
                     } else {
@@ -73,7 +73,7 @@ class ProtocolV3 implements ProtocolInterface
                     break;
 
                 default:
-                    throw new InvalidArgumentException('MQTT Type not exist');
+                    throw new InvalidArgumentException("MQTT Type not exist");
             }
         } catch (TypeError $e) {
             throw new RuntimeException($e->getMessage(), $e->getCode());
@@ -115,13 +115,13 @@ class ProtocolV3 implements ProtocolInterface
                 case Types::PUBREL:
                 case Types::PUBCOMP:
                 case Types::UNSUBACK:
-                    $package = ['type' => $type, 'message_id' => UnPackTool::shortInt($remaining)];
+                    $package = ["type" => $type, "message_id" => UnPackTool::shortInt($remaining)];
                     break;
 
                 case Types::PINGREQ:
                 case Types::PINGRESP:
                 case Types::DISCONNECT:
-                    $package = ['type' => $type];
+                    $package = ["type" => $type];
                     break;
 
                 case Types::SUBSCRIBE:

@@ -40,7 +40,7 @@ class JsonRpcPack extends AbstractPack
      */
     public function decode($buffer)
     {
-        $data = str_replace($this->portConfig->getPackageEof(), '', $buffer);
+        $data = str_replace($this->portConfig->getPackageEof(), "", $buffer);
         return $data;
     }
 
@@ -72,7 +72,7 @@ class JsonRpcPack extends AbstractPack
         $this->portConfig = $portConfig;
         //Value can be empty
         $value = $this->decode($data);
-        $clientData = new ClientData($fd, $portConfig->getBaseType(), 'actionAct', $value);
+        $clientData = new ClientData($fd, $portConfig->getBaseType(), "actionAct", $value);
         setContextValueWithClass(ClientData::class, $clientData, ClientData::class);
         return $clientData;
     }

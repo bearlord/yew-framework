@@ -27,11 +27,11 @@ class HoursField extends AbstractField
      */
     public function isSatisfiedBy(DateTimeInterface $date, string $value): bool
     {
-        if ($value == '?') {
+        if ($value == "?") {
             return true;
         }
 
-        return $this->isSatisfied($date->format('H'), $value);
+        return $this->isSatisfied($date->format("H"), $value);
     }
 
     /**
@@ -45,23 +45,23 @@ class HoursField extends AbstractField
         // Change timezone to UTC temporarily. This will
         // allow us to go back or forwards and hour even
         // if DST will be changed between the hours.
-        if (is_null($parts) || $parts == '*') {
+        if (is_null($parts) || $parts == "*") {
             $timezone = $date->getTimezone();
-            $date = $date->setTimezone(new DateTimeZone('UTC'));
-            $date = $date->modify(($invert ? '-' : '+') . '1 hour');
+            $date = $date->setTimezone(new DateTimeZone("UTC"));
+            $date = $date->modify(($invert ? "-" : "+") . "1 hour");
             $date = $date->setTimezone($timezone);
 
-            $date = $date->setTime($date->format('H'), $invert ? 59 : 0);
+            $date = $date->setTime($date->format("H"), $invert ? 59 : 0);
             return $this;
         }
 
-        $parts = strpos($parts, ',') !== false ? explode(',', $parts) : array($parts);
+        $parts = strpos($parts, ",") !== false ? explode(",", $parts) : array($parts);
         $hours = array();
         foreach ($parts as $part) {
             $hours = array_merge($hours, $this->getRangeForExpression($part, 23));
         }
 
-        $current_hour = $date->format('H');
+        $current_hour = $date->format("H");
         $position = $invert ? count($hours) - 1 : 0;
         if (count($hours) > 1) {
             for ($i = 0; $i < count($hours) - 1; $i++) {
@@ -74,8 +74,8 @@ class HoursField extends AbstractField
         }
 
         $hour = $hours[$position];
-        if ((!$invert && $date->format('H') >= $hour) || ($invert && $date->format('H') <= $hour)) {
-            $date = $date->modify(($invert ? '-' : '+') . '1 day');
+        if ((!$invert && $date->format("H") >= $hour) || ($invert && $date->format("H") <= $hour)) {
+            $date = $date->modify(($invert ? "-" : "+") . "1 day");
             $date = $date->setTime($invert ? 23 : 0, $invert ? 59 : 0);
         }
         else {

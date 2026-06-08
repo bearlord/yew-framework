@@ -24,7 +24,7 @@ class Client extends \Yew\Rpc\Client\Client
     /**
      * @var string
      */
-    public string $protocol = '';
+    public string $protocol = "";
 
     /**
      * @var array
@@ -99,10 +99,10 @@ class Client extends \Yew\Rpc\Client\Client
         $packer = $this->getPacker();
 
         $params = [
-            'class' => $packer
+            "class" => $packer
         ];
-        if (!empty($this->config['setting'])) {
-            $params = array_merge($params, $this->config['setting']);
+        if (!empty($this->config["setting"])) {
+            $params = array_merge($params, $this->config["setting"]);
         }
 
         return Yew::createObject($params);

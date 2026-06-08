@@ -16,10 +16,10 @@ class DataFormatter
     {
         [$path, $params, $id] = $data;
         return [
-            'jsonrpc' => '2.0',
-            'method' => $path,
-            'params' => $params,
-            'id' => $id,
+            "jsonrpc" => "2.0",
+            "method" => $path,
+            "params" => $params,
+            "id" => $id,
         ];
     }
 
@@ -31,9 +31,9 @@ class DataFormatter
     {
         [$id, $result] = $data;
         return [
-            'jsonrpc' => '2.0',
-            'id' => $id,
-            'result' => $result
+            "jsonrpc" => "2.0",
+            "id" => $id,
+            "result" => $result
         ];
     }
 
@@ -47,18 +47,18 @@ class DataFormatter
 
         if (isset($data) && $data instanceof \Throwable) {
             $data = [
-                'class' => get_class($data),
-                'code' => $data->getCode(),
-                'message' => $data->getMessage(),
+                "class" => get_class($data),
+                "code" => $data->getCode(),
+                "message" => $data->getMessage(),
             ];
         }
         return [
-            'jsonrpc' => '2.0',
-            'id' => $id ?? null,
-            'error' => [
-                'code' => $code,
-                'message' => $message,
-                'data' => $data,
+            "jsonrpc" => "2.0",
+            "id" => $id ?? null,
+            "error" => [
+                "code" => $code,
+                "message" => $message,
+                "data" => $data,
             ]
         ];
     }

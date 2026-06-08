@@ -31,14 +31,14 @@ class ActuatorController
         /**
          * @var $table Table
          */
-        $table = DIGet('RouteCountTable');
+        $table = DIGet("RouteCountTable");
         $output = [];
         foreach ($table as $path  => $num) {
-            $output[$path] = [$num['num_60'] , $num['num_3600'], $num['num_86400']];
+            $output[$path] = [$num["num_60"] , $num["num_3600"], $num["num_86400"]];
         }
         return json_encode([
             "status"=>"UP",
-            'route' => $output
+            "route" => $output
         ], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
     }
 
@@ -48,17 +48,17 @@ class ActuatorController
     public function info(): string
     {
         $serverStats = Server::$instance->stats();
-        $output['server'] = 'yew-server';
-        $output['Start time']      = date('Y-m-d H:i:s', $serverStats->getStartTime());
-        $output['Accept count']    = $serverStats->getAcceptCount();
-        $output['Close count']     = $serverStats->getCloseCount();
-        $output['Request count']   = $serverStats->getRequestCount();
-        $output['Coroutine num']   = $serverStats->getCoroutineNum();
-        $output['Connection num']  = $serverStats->getConnectionNum();
-        $output['Tasking num']     = $serverStats->getTaskingNum();
-        $output['TaskQueue bytes'] = $serverStats->getTaskQueueBytes();
-        $output['Worker dispatch count'] = $serverStats->getWorkerDispatchCount();
-        $output['Worker request count']  = $serverStats->getWorkerRequestCount();
+        $output["server"] = "yew-server";
+        $output["Start time"]      = date("Y-m-d H:i:s", $serverStats->getStartTime());
+        $output["Accept count"]    = $serverStats->getAcceptCount();
+        $output["Close count"]     = $serverStats->getCloseCount();
+        $output["Request count"]   = $serverStats->getRequestCount();
+        $output["Coroutine num"]   = $serverStats->getCoroutineNum();
+        $output["Connection num"]  = $serverStats->getConnectionNum();
+        $output["Tasking num"]     = $serverStats->getTaskingNum();
+        $output["TaskQueue bytes"] = $serverStats->getTaskQueueBytes();
+        $output["Worker dispatch count"] = $serverStats->getWorkerDispatchCount();
+        $output["Worker request count"]  = $serverStats->getWorkerRequestCount();
         return json_encode($output, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
     }
 

@@ -144,8 +144,8 @@ class AnnotationsScanPlugin extends AbstractPlugin
         $this->annotationsScanConfig->merge();
         if ($this->annotationsScanConfig->isFileCache()) {
             $cache = new FilesystemCache(
-                Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . '_annotations_scan' . DIRECTORY_SEPARATOR,
-                '.annotations.cache');
+                Server::$instance->getServerConfig()->getCacheDir() . DIRECTORY_SEPARATOR . "_annotations_scan" . DIRECTORY_SEPARATOR,
+                ".annotations.cache");
         } else {
             $cache = new ArrayCache();
         }

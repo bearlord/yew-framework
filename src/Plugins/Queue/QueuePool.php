@@ -80,7 +80,7 @@ class QueuePool
      */
     protected function getPoolMaxNumber()
     {
-        return $this->config['poolMaxNumber'] ?? $this->poolMaxNumber;
+        return $this->config["poolMaxNumber"] ?? $this->poolMaxNumber;
     }
 
     /**
@@ -89,11 +89,11 @@ class QueuePool
      */
     public function buildQueue($config)
     {
-        if (!empty($config['minIntervalTime'])) {
-            unset($config['minIntervalTime']);
+        if (!empty($config["minIntervalTime"])) {
+            unset($config["minIntervalTime"]);
         }
-        if (!empty($config['poolMaxNumber'])) {
-            unset($config['poolMaxNumber']);
+        if (!empty($config["poolMaxNumber"])) {
+            unset($config["poolMaxNumber"]);
         }
 
         return Yew::createObject($config);

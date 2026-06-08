@@ -46,12 +46,12 @@ class DisConnect extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::DISCONNECT,
+            "type" => Types::DISCONNECT,
         ];
 
         if ($this->isMQTT5()) {
-            $buffer['code'] = $this->getCode();
-            $buffer['properties'] = $this->getProperties();
+            $buffer["code"] = $this->getCode();
+            $buffer["properties"] = $this->getProperties();
         }
 
         if ($isArray) {

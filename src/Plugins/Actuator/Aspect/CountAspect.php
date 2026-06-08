@@ -31,7 +31,7 @@ class CountAspect extends OrderAspect
     {
         $this->atBefore(RouteAspect::class);
 
-        $this->table = DI::getInstance()->get('RouteCountTable');
+        $this->table = DI::getInstance()->get("RouteCountTable");
     }
 
     /**
@@ -58,9 +58,9 @@ class CountAspect extends OrderAspect
         list($request, $response) = $invocation->getArguments();
         $path = $request->getUri()->getPath();
 
-        $this->table->incr($path,'num_60');
-        $this->table->incr($path,'num_3600');
-        $this->table->incr($path,'num_86400');
+        $this->table->incr($path,"num_60");
+        $this->table->incr($path,"num_3600");
+        $this->table->incr($path,"num_86400");
 
         return $invocation->proceed();
     }

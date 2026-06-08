@@ -43,7 +43,7 @@ class StatusCmd extends Command
      */
     protected function configure()
     {
-        $this->setName('status')->setDescription("Server Status");
+        $this->setName("status")->setDescription("Server Status");
     }
 
     /**
@@ -57,9 +57,9 @@ class StatusCmd extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $server_name = $this->config->get('yew.server.name') ?? 'Yew';
-        $master_pid = exec("ps -ef | grep $server_name-master | grep -v 'grep ' | awk '{print $2}'");
-        $io->title('WELCOME TO Yew-FRAMEWORK!');
+        $server_name = $this->config->get("yew.server.name") ?? "Yew";
+        $master_pid = exec("ps -ef | grep $server_name-master | grep -v "grep " | awk "{print $2}"");
+        $io->title("WELCOME TO Yew-FRAMEWORK!");
         $io->table(
             [
                 "System",
@@ -74,11 +74,11 @@ class StatusCmd extends Command
                     PHP_VERSION,
                     SWOOLE_VERSION,
                     Version::getVersion(),
-                    $this->config->get('yew.server.workerNum', 0),
+                    $this->config->get("yew.server.workerNum", 0),
                 ]
             ]
         );
-        $io->section('Port Information');
+        $io->section("Port Information");
 
         foreach (Server::$instance->getPortManager()->getPortConfigs() as $key => $portConfig) {
             $protocol = "http";
@@ -114,7 +114,7 @@ class StatusCmd extends Command
         }
 
         $io->table(
-            ['TYPE', 'NAME', 'HOST', 'PORT', 'SSL'],
+            ["TYPE", "NAME", "HOST", "PORT", "SSL"],
             $show
         );
         if (!empty($master_pid)) {

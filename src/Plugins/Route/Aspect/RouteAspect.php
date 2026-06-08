@@ -205,9 +205,9 @@ class RouteAspect extends OrderAspect
         //Server port
         $serverPort = $clientInfo->getServerPort();
         //Request method
-        $requestMethod = 'TCP';
+        $requestMethod = "TCP";
         //Defined path
-        $onConnectPath = '/onConnect';
+        $onConnectPath = "/onConnect";
         //Route info
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onConnectPath);
 
@@ -284,9 +284,9 @@ class RouteAspect extends OrderAspect
         //Server port
         $serverPort = $clientInfo->getServerPort();
         //Request method
-        $requestMethod = 'TCP';
+        $requestMethod = "TCP";
         //Defined path
-        $onClosePath = '/beforeClose';
+        $onClosePath = "/beforeClose";
         //Route info
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
@@ -313,9 +313,9 @@ class RouteAspect extends OrderAspect
         //Server port
         $serverPort = $clientInfo->getServerPort();
         //Request method
-        $requestMethod = 'TCP';
+        $requestMethod = "TCP";
         //Defined path
-        $onClosePath = '/onClose';
+        $onClosePath = "/onClose";
         //Route info
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
@@ -346,9 +346,9 @@ class RouteAspect extends OrderAspect
         //Server port
         $serverPort = $clientInfo->getServerPort();
         //Request method
-        $requestMethod = 'WS';
+        $requestMethod = "WS";
         //Defined path
-        $onConnectPath = '/onWsOpen';
+        $onConnectPath = "/onWsOpen";
         //Route info
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onConnectPath);
 
@@ -425,9 +425,9 @@ class RouteAspect extends OrderAspect
         //Server port
         $serverPort = $clientInfo->getServerPort();
         //Request method
-        $requestMethod = 'WS';
+        $requestMethod = "WS";
         //Define path
-        $onClosePath = '/beforeWsClose';
+        $onClosePath = "/beforeWsClose";
         //Route info
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
@@ -454,9 +454,9 @@ class RouteAspect extends OrderAspect
         //Server port
         $serverPort = $clientInfo->getServerPort();
         //Request method
-        $requestMethod = 'WS';
+        $requestMethod = "WS";
         //Define path
-        $onClosePath = '/onWsClose';
+        $onClosePath = "/onWsClose";
         //Route info
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 

@@ -97,19 +97,19 @@ class AopPlugin extends AbstractPlugin
         $this->applicationAspectKernel = ApplicationAspectKernel::getInstance();
         $this->applicationAspectKernel->setConfig($this->aopConfig);
         $this->options = [
-            //Use 'false' for production mode
-            'debug' => $serverConfig->isDebug(),
+            //Use "false" for production mode
+            "debug" => $serverConfig->isDebug(),
             //Application root directory
-            'appDir' => $serverConfig->getRootDir(),
+            "appDir" => $serverConfig->getRootDir(),
             //Cache directory
-            'cacheDir' => $this->aopConfig->getCacheDir(),
+            "cacheDir" => $this->aopConfig->getCacheDir(),
             //Include paths
-            'includePaths' => $this->aopConfig->getIncludePaths(),
+            "includePaths" => $this->aopConfig->getIncludePaths(),
             //Exclude paths
-            'excludePaths' => $this->aopConfig->getExcludePaths()
+            "excludePaths" => $this->aopConfig->getExcludePaths()
         ];
         if (!$this->aopConfig->isFileCache()) {
-            $this->options['annotationCache'] = new ArrayCache();
+            $this->options["annotationCache"] = new ArrayCache();
         }
 
         $this->applicationAspectKernel->initContainer($this->options);
@@ -126,16 +126,16 @@ class AopPlugin extends AbstractPlugin
     {
         $serverConfig = Server::$instance->getServerConfig();
         $this->options = [
-            //Use 'false' for production mode
-            'debug' => $serverConfig->isDebug(),
+            //Use "false" for production mode
+            "debug" => $serverConfig->isDebug(),
             //Application root directory
-            'appDir' => $serverConfig->getRootDir(),
+            "appDir" => $serverConfig->getRootDir(),
             //Cache directory
-            'cacheDir' => $this->aopConfig->getCacheDir(),
+            "cacheDir" => $this->aopConfig->getCacheDir(),
             //Include paths
-            'includePaths' => $this->aopConfig->getIncludePaths(),
+            "includePaths" => $this->aopConfig->getIncludePaths(),
             //Exclude paths
-            'excludePaths' => $this->aopConfig->getExcludePaths()
+            "excludePaths" => $this->aopConfig->getExcludePaths()
         ];
 
         $this->applicationAspectKernel->init($this->options);

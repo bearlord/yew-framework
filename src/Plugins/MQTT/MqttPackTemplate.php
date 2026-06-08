@@ -164,18 +164,18 @@ class MqttPackTemplate implements IPack
                 //协议版本
                 $protocolLevel = UnPackTool::getProtocolLevel($data);
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
 
                 $this->redis()->hMSet($this->buildRedisFdKey($fd), [
-                    'fd' => $fd,
-                    'client_id' => $unpackedData['client_id'],
-                    'protocol_level' => $protocolLevel
+                    "fd" => $fd,
+                    "client_id" => $unpackedData["client_id"],
+                    "protocol_level" => $protocolLevel
                 ]);
 
-                $this->redis()->hMSet($this->buildRedisClientKey($unpackedData['client_id']), [
-                    'fd' => $fd,
-                    'client_id' => $unpackedData['client_id'],
-                    'protocol_level' => $protocolLevel
+                $this->redis()->hMSet($this->buildRedisClientKey($unpackedData["client_id"]), [
+                    "fd" => $fd,
+                    "client_id" => $unpackedData["client_id"],
+                    "protocol_level" => $protocolLevel
                 ]);
 
                 $this->autoBoostSend(
@@ -189,9 +189,9 @@ class MqttPackTemplate implements IPack
 
             case Types::PUBLISH:
                 //协议版本
-                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), 'protocol_level');
+                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), "protocol_level");
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
 
                 // Send to subscribers
                 $connections = Server::$instance->getConnections();
@@ -200,23 +200,23 @@ class MqttPackTemplate implements IPack
                         $sub_fd,
                         (new Publish())
                             ->setProtocolLevel($protocolLevel)
-                            ->setTopic($unpackedData['topic'])
-                            ->setMessage($unpackedData['message'])
-                            ->setDup($unpackedData['dup'])
-                            ->setQos($unpackedData['qos'])
-                            ->setRetain($unpackedData['retain'])
-                            ->setMessageId($unpackedData['message_id'] ?? 0)
+                            ->setTopic($unpackedData["topic"])
+                            ->setMessage($unpackedData["message"])
+                            ->setDup($unpackedData["dup"])
+                            ->setQos($unpackedData["qos"])
+                            ->setRetain($unpackedData["retain"])
+                            ->setMessageId($unpackedData["message_id"] ?? 0)
                     );
                 }
 
-                switch ($unpackedData['qos'])
+                switch ($unpackedData["qos"])
                 {
                     case 1:
                         $this->autoBoostSend(
                             $fd,
                             (new PubAck())
                                 ->setProtocolLevel($protocolLevel)
-                                ->setMessageId($unpackedData['message_id'])
+                                ->setMessageId($unpackedData["message_id"])
                         );
                         break;
 
@@ -225,7 +225,7 @@ class MqttPackTemplate implements IPack
                             $fd,
                             (new PubRec())
                                 ->setProtocolLevel($protocolLevel)
-                                ->setMessageId($unpackedData['message_id'])
+                                ->setMessageId($unpackedData["message_id"])
                         );
                         break;
                 }
@@ -233,9 +233,9 @@ class MqttPackTemplate implements IPack
 
             case Types::PUBACK:
                 //协议版本
-                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), 'protocol_level');
+                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), "protocol_level");
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
                 printf("PUBACK\n");
 
                 var_dump($unpackedData);
@@ -244,23 +244,23 @@ class MqttPackTemplate implements IPack
 
             case Types::PUBREL:
                 //协议版本
-                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), 'protocol_level');
+                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), "protocol_level");
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
                 var_dump($unpackedData);
 
                 break;
 
             case Types::SUBSCRIBE:
                 //协议版本
-                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), 'protocol_level');
+                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), "protocol_level");
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
 
                 $payload = [];
-                foreach ($unpackedData['topics'] as $k => $topic) {
-                    if (is_numeric($topic['qos']) && $topic['qos'] < 3) {
-                        $payload[] = $topic['qos'];
+                foreach ($unpackedData["topics"] as $k => $topic) {
+                    if (is_numeric($topic["qos"]) && $topic["qos"] < 3) {
+                        $payload[] = $topic["qos"];
                     } else {
                         $payload[] = 0x80;
                     }
@@ -269,22 +269,22 @@ class MqttPackTemplate implements IPack
                 $this->autoBoostSend(
                     $fd,
                     (new SubAck())->setProtocolLevel($protocolLevel)
-                        ->setMessageId($unpackedData['message_id'] ?? 0)
+                        ->setMessageId($unpackedData["message_id"] ?? 0)
                         ->setCodes($payload)
                 );
                 break;
 
             case Types::UNSUBSCRIBE:
                 //协议版本
-                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), 'protocol_level');
+                $protocolLevel = $this->redis()->hGet($this->buildRedisFdKey($fd), "protocol_level");
                 //解包数据
-                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), 'unpack'], $data);
+                $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
 
                 $this->autoBoostSend(
                     $fd,
                     (new UnSubAck())
                         ->setProtocolLevel($protocolLevel)
-                        ->setMessageId($unpackedData['message_id'] ?? 0)
+                        ->setMessageId($unpackedData["message_id"] ?? 0)
                 );
                 break;
 

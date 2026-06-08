@@ -15,7 +15,7 @@ class RedisStorage extends BaseObject implements StorageInterface, Storage
 {
     use GetRedis;
 
-    public const KEY_PREFIX = 'rateLimiter:storage:';
+    public const KEY_PREFIX = "rateLimiter:storage:";
 
     private Mutex $mutex;
 
@@ -51,7 +51,7 @@ class RedisStorage extends BaseObject implements StorageInterface, Storage
         try {
             return (bool)$this->redis->exists($this->key);
         } catch (InvalidArgumentException $e) {
-            throw new StorageException('Failed to check for key existence', 0, $e);
+            throw new StorageException("Failed to check for key existence", 0, $e);
         }
     }
 
@@ -59,10 +59,10 @@ class RedisStorage extends BaseObject implements StorageInterface, Storage
     {
         try {
             if (!$this->redis->del($this->key)) {
-                throw new StorageException('Failed to delete key');
+                throw new StorageException("Failed to delete key");
             }
         } catch (InvalidArgumentException $e) {
-            throw new StorageException('Failed to delete key', 0, $e);
+            throw new StorageException("Failed to delete key", 0, $e);
         }
     }
 
@@ -77,13 +77,13 @@ class RedisStorage extends BaseObject implements StorageInterface, Storage
             $data = DoublePacker::pack($microtime);
 
             if (!$this->redis->set($this->key, $data)) {
-                throw new StorageException('Failed to store microtime');
+                throw new StorageException("Failed to store microtime");
             }
-            if (!empty($this->options['expired_time']) && $this->options['expired_time'] > 0) {
-                $this->redis->expire($this->key, $this->options['expired_time']);
+            if (!empty($this->options["expired_time"]) && $this->options["expired_time"] > 0) {
+                $this->redis->expire($this->key, $this->options["expired_time"]);
             }
         } catch (InvalidArgumentException $e) {
-            throw new StorageException('Failed to store microtime', 0, $e);
+            throw new StorageException("Failed to store microtime", 0, $e);
         }
     }
 
@@ -96,11 +96,11 @@ class RedisStorage extends BaseObject implements StorageInterface, Storage
         try {
             $data = $this->redis->get($this->key);
             if ($data === false) {
-                throw new StorageException('Failed to get microtime');
+                throw new StorageException("Failed to get microtime");
             }
             return DoublePacker::unpack($data);
         } catch (InvalidArgumentException $e) {
-            throw new StorageException('Failed to get microtime', 0, $e);
+            throw new StorageException("Failed to get microtime", 0, $e);
         }
     }
 

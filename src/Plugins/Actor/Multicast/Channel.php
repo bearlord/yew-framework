@@ -41,11 +41,11 @@ class Channel
         $this->channelTable = $channelTable;
 
         foreach ($this->channelTable as $value) {
-            $this->addSubscribeFormTable($value['channel'], $value['actor']);
+            $this->addSubscribeFormTable($value["channel"], $value["actor"]);
         }
 
-        $config = Server::$instance->getConfigContext()->get('actor');
-        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config['actorMulticastChannelCapacity']]);
+        $config = Server::$instance->getConfigContext()->get("actor");
+        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config["actorMulticastChannelCapacity"]]);
 
         //Iterate to publish messages to the actor
         goWithContext(function () {
@@ -124,7 +124,7 @@ class Channel
      * @return void
      * @throws ActorException
      */
-    public function publish(string $channel, string $message, array $excludeActorList = [], ?string $from = ''): void
+    public function publish(string $channel, string $message, array $excludeActorList = [], ?string $from = ""): void
     {
         $tree = $this->buildTrees($channel);
 
@@ -149,15 +149,15 @@ class Channel
      * @return void
      * @throws ActorException
      */
-    protected function publishToActor(string $channel, string $toActor, $message, ?string $fromActor = ''): void
+    protected function publishToActor(string $channel, string $toActor, $message, ?string $fromActor = ""): void
     {
         $actorInstance = Actor::getProxy($toActor);
 
         if (!empty($actorInstance)) {
             $actorMessage = new ActorMessage([
-                'channel' => $channel,
-                'type' => 'multicast',
-                'message' => $message
+                "channel" => $channel,
+                "type" => "multicast",
+                "message" => $message
             ], ActorMessage::TYPE_MULTICAST,  ("YmdHis").  mt_rand(10000, 99999), $fromActor, $toActor);
             $actorInstance->sendMessage($actorMessage);
         }
@@ -260,7 +260,7 @@ class Channel
             $a = array_slice($p, 0, $j + 1);
             $arr = [$a];
             $count_a = count($a);
-            $value = implode('/', $a);
+            $value = implode("/", $a);
             $result->add($value . "/#");
             $complete = false;
             if ($count_a == $countPlies) {
@@ -298,12 +298,12 @@ class Channel
 
         for ($i = $m; $i < $count; $i++) {
             $new = $arr;
-            if ($new[$i] == '+') {
+            if ($new[$i] == "+") {
                 continue;
             }
-            $new[$i] = '+';
+            $new[$i] = "+";
             $temp[] = $new;
-            $value = implode('/', $new);
+            $value = implode("/", $new);
             $result->add($value . "/#");
             if ($complete) {
                 $result->add($value);

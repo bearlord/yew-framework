@@ -46,7 +46,7 @@ abstract class BaseClient
     protected int $clientType = self::SYNC_CLIENT_TYPE;
 
     /** @var string */
-    protected string $path = '/mqtt';
+    protected string $path = "/mqtt";
 
     /** @var bool */
     protected bool $ssl = false;
@@ -194,7 +194,7 @@ abstract class BaseClient
         return ++$this->messageId > 65535 ? $this->messageId = 1 : $this->messageId;
     }
 
-    public static function genClientID(string $prefix = 'yew_'): string
+    public static function genClientID(string $prefix = "yew_"): string
     {
         return uniqid($prefix);
     }
@@ -237,21 +237,21 @@ abstract class BaseClient
     public function connect(bool $clean = true, array $will = [])
     {
         $data = [
-            'type' => Types::CONNECT,
-            'protocol_name' => $this->getConfig()->getProtocolName(),
-            'protocol_level' => $this->getConfig()->getProtocolLevel(),
-            'clean_session' => $clean,
-            'client_id' => $this->getConfig()->getClientId(),
-            'keep_alive' => $this->getConfig()->getKeepAlive(),
-            'properties' => $this->getConfig()->getProperties(),
-            'user_name' => $this->getConfig()->getUserName(),
-            'password' => $this->getConfig()->getPassword(),
+            "type" => Types::CONNECT,
+            "protocol_name" => $this->getConfig()->getProtocolName(),
+            "protocol_level" => $this->getConfig()->getProtocolLevel(),
+            "clean_session" => $clean,
+            "client_id" => $this->getConfig()->getClientId(),
+            "keep_alive" => $this->getConfig()->getKeepAlive(),
+            "properties" => $this->getConfig()->getProperties(),
+            "user_name" => $this->getConfig()->getUserName(),
+            "password" => $this->getConfig()->getPassword(),
         ];
         if (!empty($will)) {
-            if (empty($will['topic'])) {
-                throw new ProtocolException('Topic cannot be empty');
+            if (empty($will["topic"])) {
+                throw new ProtocolException("Topic cannot be empty");
             }
-            $data['will'] = $will;
+            $data["will"] = $will;
         }
 
         $this->setConnectData($data);
@@ -262,20 +262,20 @@ abstract class BaseClient
     public function subscribe(array $topics, array $properties = [])
     {
         return $this->send([
-            'type' => Types::SUBSCRIBE,
-            'message_id' => $this->buildMessageId(),
-            'properties' => $properties,
-            'topics' => $topics,
+            "type" => Types::SUBSCRIBE,
+            "message_id" => $this->buildMessageId(),
+            "properties" => $properties,
+            "topics" => $topics,
         ]);
     }
 
     public function unSubscribe(array $topics, array $properties = [])
     {
         return $this->send([
-            'type' => Types::UNSUBSCRIBE,
-            'message_id' => $this->buildMessageId(),
-            'properties' => $properties,
-            'topics' => $topics,
+            "type" => Types::UNSUBSCRIBE,
+            "message_id" => $this->buildMessageId(),
+            "properties" => $properties,
+            "topics" => $topics,
         ]);
     }
 
@@ -289,11 +289,11 @@ abstract class BaseClient
     ) {
         if (empty($topic)) {
             if ($this->getConfig()->isMQTT5()) {
-                if (empty($properties['topic_alias'])) {
-                    throw new ProtocolException('Topic cannot be empty or need to set topic_alias');
+                if (empty($properties["topic_alias"])) {
+                    throw new ProtocolException("Topic cannot be empty or need to set topic_alias");
                 }
             } else {
-                throw new ProtocolException('Topic cannot be empty');
+                throw new ProtocolException("Topic cannot be empty");
             }
         }
 
@@ -307,14 +307,14 @@ abstract class BaseClient
 
         return $this->send(
             [
-                'type' => Types::PUBLISH,
-                'qos' => $qos,
-                'dup' => $dup,
-                'retain' => $retain,
-                'topic' => $topic,
-                'message_id' => $message_id,
-                'properties' => $properties,
-                'message' => $message,
+                "type" => Types::PUBLISH,
+                "qos" => $qos,
+                "dup" => $dup,
+                "retain" => $retain,
+                "topic" => $topic,
+                "message_id" => $message_id,
+                "properties" => $properties,
+                "message" => $message,
             ],
             $response
         );
@@ -322,19 +322,19 @@ abstract class BaseClient
 
     public function ping()
     {
-        return $this->send(['type' => Types::PINGREQ]);
+        return $this->send(["type" => Types::PINGREQ]);
     }
 
     public function close(int $code = ReasonCode::NORMAL_DISCONNECTION, array $properties = []): bool
     {
-        $this->send(['type' => Types::DISCONNECT, 'code' => $code, 'properties' => $properties], false);
+        $this->send(["type" => Types::DISCONNECT, "code" => $code, "properties" => $properties], false);
 
         return $this->client->close();
     }
 
     public function auth(int $code = ReasonCode::SUCCESS, array $properties = [])
     {
-        return $this->send(['type' => Types::AUTH, 'code' => $code, 'properties' => $properties]);
+        return $this->send(["type" => Types::AUTH, "code" => $code, "properties" => $properties]);
     }
 
     abstract protected function reConnect(): void;

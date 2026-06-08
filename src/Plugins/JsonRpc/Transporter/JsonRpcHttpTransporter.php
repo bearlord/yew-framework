@@ -35,7 +35,7 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
      *
      * @var string
      */
-    protected $serviceName = '';
+    protected $serviceName = "";
 
     /**
      * @var float
@@ -72,7 +72,7 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
      *
      * @var string
      */
-    public $loadBalancerAlgorithm = 'random';
+    public $loadBalancerAlgorithm = "random";
 
     /**
      * JsonRpcHttpTransporter constructor.
@@ -82,17 +82,17 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
     public function __construct(array $config)
     {
         $this->config = $config;
-        $this->serviceName = $config['name'];
-        $this->nodes = $config['nodes'];
+        $this->serviceName = $config["name"];
+        $this->nodes = $config["nodes"];
 
-        if (!empty($config['connectTimeout'])) {
-            $this->connectTimeout = $config['connectTimeout'];
+        if (!empty($config["connectTimeout"])) {
+            $this->connectTimeout = $config["connectTimeout"];
         }
-        if (!empty($config['receiveTimeout'])) {
-            $this->receiveTimeout = $config['receiveTimeout'];
+        if (!empty($config["receiveTimeout"])) {
+            $this->receiveTimeout = $config["receiveTimeout"];
         }
-        if (!empty($config['loadBalancer'])) {
-            $this->loadBalancerAlgorithm = $config['loadBalancer'];
+        if (!empty($config["loadBalancer"])) {
+            $this->loadBalancerAlgorithm = $config["loadBalancer"];
         }
     }
 
@@ -149,15 +149,15 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
      */
     public function setNode(array $node)
     {
-        if (!is_int($node['port'])) {
+        if (!is_int($node["port"])) {
             throw new InvalidArgumentException(sprintf(
-                'Invalid node config [%s], the port option has to a integer.',
-                implode(':', $node)));
+                "Invalid node config [%s], the port option has to a integer.",
+                implode(":", $node)));
         }
-        $schema = $node['schema'] ?? null;
-        $path = $node['path'] ?? null;
-        $weight = $node['weight'] ?? 0;
-        $this->node = new Node($schema, $node['host'], $node['port'], $path, $weight);
+        $schema = $node["schema"] ?? null;
+        $path = $node["path"] ?? null;
+        $weight = $node["weight"] ?? 0;
+        $this->node = new Node($schema, $node["host"], $node["port"], $path, $weight);
     }
 
     /**
@@ -190,26 +190,26 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
     {
         $consumer = $this->config;
 
-        // Not exists the registry config, then looking for the 'nodes' property.
-        if (isset($consumer['nodes'])) {
+        // Not exists the registry config, then looking for the "nodes" property.
+        if (isset($consumer["nodes"])) {
             $nodes = [];
-            foreach ($consumer['nodes'] ?? [] as $item) {
-                if (isset($item['host'], $item['port'])) {
-                    if (!is_int($item['port'])) {
+            foreach ($consumer["nodes"] ?? [] as $item) {
+                if (isset($item["host"], $item["port"])) {
+                    if (!is_int($item["port"])) {
                         throw new InvalidArgumentException(sprintf(
-                            'Invalid node config [%s], the port option has to a integer.',
-                            implode(':', $item)));
+                            "Invalid node config [%s], the port option has to a integer.",
+                            implode(":", $item)));
                     }
-                    $schema = $item['schema'] ?? null;
-                    $path = $item['path'] ?? null;
-                    $weigth = $item['weight'] ?? 0;
-                    $nodes[] = new Node($schema, $item['host'], $item['port'], $path, $weigth);
+                    $schema = $item["schema"] ?? null;
+                    $path = $item["path"] ?? null;
+                    $weigth = $item["weight"] ?? 0;
+                    $nodes[] = new Node($schema, $item["host"], $item["port"], $path, $weigth);
                 }
             }
             return $nodes;
         }
 
-        throw new InvalidArgumentException('Config of registry or nodes missing.');
+        throw new InvalidArgumentException("Config of registry or nodes missing.");
     }
 
     /**
@@ -231,8 +231,8 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
         $channel = new Channel(1);
         goWithContext(function () use ($channel, $url, $node, $data) {
             $saber = Saber::create([
-                'headers' => [
-                    'Content-Type' => 'application/json; charset=UTF-8',
+                "headers" => [
+                    "Content-Type" => "application/json; charset=UTF-8",
                 ]
             ]);
             $responeData = $saber->post($url, $data)->getBody();
@@ -247,7 +247,7 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
 
     public function recv()
     {
-        throw new \RuntimeException(__CLASS__ . ' does not support recv method.');
+        throw new \RuntimeException(__CLASS__ . " does not support recv method.");
     }
 
 

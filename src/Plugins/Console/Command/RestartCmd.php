@@ -38,8 +38,8 @@ class RestartCmd extends Command
      */
     protected function configure()
     {
-        $this->setName('restart')->setDescription("Restart server");
-        $this->addOption('clearCache', "c", InputOption::VALUE_NONE, 'Who do you want to clear cache?');
+        $this->setName("restart")->setDescription("Restart server");
+        $this->addOption("clearCache", "c", InputOption::VALUE_NONE, "Who do you want to clear cache?");
     }
 
     /**
@@ -55,22 +55,22 @@ class RestartCmd extends Command
         $serverConfig = Server::$instance->getServerConfig();
 
         $serverName = $serverConfig->getName();
-        $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
+        $masterPid = exec("ps -ef | grep $serverName-master | grep -v "grep " | awk "{print $2}"");
         if (empty($masterPid)) {
             $io->warning(sprintf("Server %s is not running", $serverName));
             return ConsolePlugin::SUCCESS_EXIT;
         }
 
-        $command = $this->getApplication()->find('stop');
+        $command = $this->getApplication()->find("stop");
         $arguments = array(
-            'command' => 'stop'
+            "command" => "stop"
         );
         $greetInput = new ArrayInput($arguments);
         $code = $command->run($greetInput, $output);
         if ($code == ConsolePlugin::FAIL_EXIT) {
             return ConsolePlugin::FAIL_EXIT;
         }
-        if ($input->getOption('clearCache')) {
+        if ($input->getOption("clearCache")) {
             $io->note("Clear cache file");
 
             $serverConfig = Server::$instance->getServerConfig();

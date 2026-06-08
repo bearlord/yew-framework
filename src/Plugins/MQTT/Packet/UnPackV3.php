@@ -34,7 +34,7 @@ class UnPackV3
             $willMessage = UnPackTool::string($remaining);
         }
 
-        $userName = $password = '';
+        $userName = $password = "";
         if ($userNameFlag) {
             $userName = UnPackTool::string($remaining);
         }
@@ -43,22 +43,22 @@ class UnPackV3
         }
 
         $package = [
-            'type' => Types::CONNECT,
-            'protocol_name' => $protocolName,
-            'protocol_level' => $protocolLevel,
-            'clean_session' => $cleanSession,
-            'user_name' => $userName,
-            'password' => $password,
-            'keep_alive' => $keepAlive,
-            'client_id' => $clientId,
+            "type" => Types::CONNECT,
+            "protocol_name" => $protocolName,
+            "protocol_level" => $protocolLevel,
+            "clean_session" => $cleanSession,
+            "user_name" => $userName,
+            "password" => $password,
+            "keep_alive" => $keepAlive,
+            "client_id" => $clientId,
         ];
 
         if ($willFlag) {
-            $package['will'] = [
-                'qos' => $willQos,
-                'retain' => $willRetain,
-                'topic' => $willTopic,
-                'message' => $willMessage,
+            $package["will"] = [
+                "qos" => $willQos,
+                "retain" => $willRetain,
+                "topic" => $willTopic,
+                "message" => $willMessage,
             ];
         } 
 
@@ -72,9 +72,9 @@ class UnPackV3
     public static function connAck(string $remaining): array
     {
         return [
-            'type' => Types::CONNACK,
-            'session_present' => ord($remaining[0]) & 0x01,
-            'code' => ord($remaining[1])
+            "type" => Types::CONNACK,
+            "session_present" => ord($remaining[0]) & 0x01,
+            "code" => ord($remaining[1])
         ];
     }
 
@@ -92,15 +92,15 @@ class UnPackV3
             $messageId = UnPackTool::shortInt($remaining);
         }
         $package = [
-            'type' => Types::PUBLISH,
-            'dup' => $dup,
-            'qos' => $qos,
-            'retain' => $retain,
-            'topic' => $topic,
-            'message' => $remaining,
+            "type" => Types::PUBLISH,
+            "dup" => $dup,
+            "qos" => $qos,
+            "retain" => $retain,
+            "topic" => $topic,
+            "message" => $remaining,
         ];
         if ($qos) {
-            $package['message_id'] = $messageId;
+            $package["message_id"] = $messageId;
         }
 
         return $package;
@@ -117,10 +117,10 @@ class UnPackV3
         while ($remaining) {
             $topic = UnPackTool::string($remaining);
             $qos = UnPackTool::byte($remaining);
-            $topics[$topic]['qos'] = $qos;
+            $topics[$topic]["qos"] = $qos;
         }
 
-        return ['type' => Types::SUBSCRIBE, 'message_id' => $messageId, 'topics' => $topics];
+        return ["type" => Types::SUBSCRIBE, "message_id" => $messageId, "topics" => $topics];
     }
 
     /**
@@ -130,12 +130,12 @@ class UnPackV3
     public static function subAck(string $remaining): array
     {
         $messageId = UnPackTool::shortInt($remaining);
-        $codes = unpack('C*', $remaining);
+        $codes = unpack("C*", $remaining);
 
         return [
-            'type' => Types::SUBACK,
-            'message_id' => $messageId,
-            'codes' => array_values($codes)
+            "type" => Types::SUBACK,
+            "message_id" => $messageId,
+            "codes" => array_values($codes)
         ];
     }
 
@@ -153,8 +153,8 @@ class UnPackV3
         }
 
         return [
-            'type' => Types::UNSUBSCRIBE,
-            'message_id' => $messageId,
-            'topics' => $topics];
+            "type" => Types::UNSUBSCRIBE,
+            "message_id" => $messageId,
+            "topics" => $topics];
     }
 }

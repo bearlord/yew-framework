@@ -12,7 +12,7 @@ class CalculatorService extends Service
 {
     public function hello()
     {
-        return 'hello';
+        return "hello";
     }
 
     public function add(int $a, int $b): int

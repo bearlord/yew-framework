@@ -26,7 +26,7 @@ class Service extends Component
         if ($action instanceof InlineAction) {
             $method = new \ReflectionMethod($this, $action->actionMethod);
         } else {
-            $method = new \ReflectionMethod($action, 'run');
+            $method = new \ReflectionMethod($action, "run");
         }
 
         $args = [];
@@ -45,7 +45,7 @@ class Service extends Component
 
             if ($key !== null) {
                 if ($param->isArray()) {
-                    $params[$key] = $params[$key] === '' ? [] : preg_split('/\s*,\s*/', $params[$key]);
+                    $params[$key] = $params[$key] === "" ? [] : preg_split("/\s*,\s*/", $params[$key]);
                 }
                 $args[] = $actionParams[$key] = $params[$key];
                 unset($params[$key]);
@@ -63,7 +63,7 @@ class Service extends Component
         }
 
         if (!empty($missing)) {
-            throw new Exception(Yew::t('yii', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
+            throw new Exception(Yew::t("yii", "Missing required arguments: {params}", ["params" => implode(", ", $missing)]));
         }
 
         return $args;

@@ -68,7 +68,7 @@ class HttpSession
             $_sessionIdentify = $this->request->getHeader(SessionConfig::HEADER_IDENTIFY);
             $this->id = !empty($_sessionIdentify[0]) ? $_sessionIdentify[0] : null;
         } else {
-            $authorization = explode(' ', $this->request->getHeaderLine('authorization'));
+            $authorization = explode(" ", $this->request->getHeaderLine("authorization"));
             if (isset($authorization[1])) {
                 $this->id = $authorization[1];
             }
@@ -176,7 +176,7 @@ class HttpSession
                 $this->response->withHeader(SessionConfig::HEADER_IDENTIFY, $sesionIdentify);
             }
         } else {
-            $this->response->withHeader('Authorization', 'Bearer ' . $this->id);
+            $this->response->withHeader("Authorization", "Bearer " . $this->id);
         }
         $this->setAttribute("createTime", time());
         $this->setAttribute("expireTime", time() + $this->config->getTimeout());
@@ -188,7 +188,7 @@ class HttpSession
      * @return int
      */
     public function getExpireTime(): int  {
-        return $this->getAttribute('expireTime');
+        return $this->getAttribute("expireTime");
     }
 
 
@@ -257,7 +257,7 @@ class HttpSession
     /**
      * @var string the name of the session variable that stores the flash message data.
      */
-    public $flashParam = '__flash';
+    public $flashParam = "__flash";
 
     /**
      * Returns a flash message.
@@ -299,7 +299,7 @@ class HttpSession
      * ```php
      * <?php
      * foreach (Yew::$app->session->getAllFlashes() as $key => $message) {
-     *     echo '<div class="alert alert-' . $key . '">' . $message . '</div>';
+     *     echo "<div class="alert alert-" . $key . "">" . $message . "</div>";
      * } ?>
      * ```
      *

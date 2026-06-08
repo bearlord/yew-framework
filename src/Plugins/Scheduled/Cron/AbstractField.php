@@ -55,7 +55,7 @@ abstract class AbstractField implements FieldInterface
             return $this->isInRange($dateValue, $value);
         }
 
-        return $value == '*' || $dateValue == $value;
+        return $value == "*" || $dateValue == $value;
     }
 
     /**
@@ -67,7 +67,7 @@ abstract class AbstractField implements FieldInterface
      */
     public function isRange(string $value): bool
     {
-        return strpos($value, '-') !== false;
+        return strpos($value, "-") !== false;
     }
 
     /**
@@ -79,7 +79,7 @@ abstract class AbstractField implements FieldInterface
      */
     public function isIncrementsOfRanges(string $value): bool
     {
-        return strpos($value, '/') !== false;
+        return strpos($value, "/") !== false;
     }
 
     /**
@@ -95,7 +95,7 @@ abstract class AbstractField implements FieldInterface
         $parts = array_map(function ($value) {
             $value = trim($value);
             return $this->convertLiterals($value);
-        }, explode('-', $value, 2));
+        }, explode("-", $value, 2));
 
 
         return $dateValue >= $parts[0] && $dateValue <= $parts[1];
@@ -111,35 +111,35 @@ abstract class AbstractField implements FieldInterface
      */
     public function isInIncrementsOfRanges(string $dateValue, string $value): bool
     {
-        $chunks = array_map('trim', explode('/', $value, 2));
+        $chunks = array_map("trim", explode("/", $value, 2));
         $range = $chunks[0];
         $step = $chunks[1] ?? 0;
 
-        // No step or 0 steps aren't cool
-        if (is_null($step) || '0' === $step || 0 === $step) {
+        // No step or 0 steps aren"t cool
+        if (is_null($step) || "0" === $step || 0 === $step) {
             return false;
         }
 
         // Expand the * to a full range
-        if ('*' == $range) {
-            $range = $this->rangeStart . '-' . $this->rangeEnd;
+        if ("*" == $range) {
+            $range = $this->rangeStart . "-" . $this->rangeEnd;
         }
 
         // Generate the requested small range
-        $rangeChunks = explode('-', $range, 2);
+        $rangeChunks = explode("-", $range, 2);
         $rangeStart = $rangeChunks[0];
         $rangeEnd = $rangeChunks[1] ?? $rangeStart;
 
         if ($rangeStart > $rangeEnd) {
-            throw new \OutOfRangeException('Invalid range requested');
+            throw new \OutOfRangeException("Invalid range requested");
         }
 
         if ($rangeStart < $this->rangeStart || $rangeStart > $this->rangeEnd) {
-            throw new \OutOfRangeException('Invalid range start requested');
+            throw new \OutOfRangeException("Invalid range start requested");
         }
 
         if ($rangeEnd < $this->rangeStart || $rangeEnd > $this->rangeEnd) {
-            throw new \OutOfRangeException('Invalid range end requested');
+            throw new \OutOfRangeException("Invalid range end requested");
         }
 
         // Steps larger than the range need to wrap around and be handled slightly differently than smaller steps
@@ -165,8 +165,8 @@ abstract class AbstractField implements FieldInterface
         $values = array();
         $expression = $this->convertLiterals($expression);
 
-        if (strpos($expression, ',') !== false) {
-            $ranges = explode(',', $expression);
+        if (strpos($expression, ",") !== false) {
+            $ranges = explode(",", $expression);
             $values = [];
             foreach ($ranges as $range) {
                 $expanded = $this->getRangeForExpression($range, $this->rangeEnd);
@@ -177,19 +177,19 @@ abstract class AbstractField implements FieldInterface
 
         if ($this->isRange($expression) || $this->isIncrementsOfRanges($expression)) {
             if (!$this->isIncrementsOfRanges($expression)) {
-                list ($offset, $to) = explode('-', $expression);
+                list ($offset, $to) = explode("-", $expression);
                 $offset = $this->convertLiterals($offset);
                 $to = $this->convertLiterals($to);
                 $stepSize = 1;
             } else {
-                $range = array_map('trim', explode('/', $expression, 2));
+                $range = array_map("trim", explode("/", $expression, 2));
                 $stepSize = $range[1] ?? 0;
                 $range = $range[0];
-                $range = explode('-', $range, 2);
+                $range = explode("-", $range, 2);
                 $offset = $range[0];
                 $to = $range[1] ?? $max;
             }
-            $offset = $offset == '*' ? $this->rangeStart : $offset;
+            $offset = $offset == "*" ? $this->rangeStart : $offset;
             if ($stepSize >= $this->rangeEnd) {
                 $values = [$this->fullRange[$stepSize % count($this->fullRange)]];
             } else {
@@ -234,18 +234,18 @@ abstract class AbstractField implements FieldInterface
         $value = $this->convertLiterals($value);
 
         // All fields allow * as a valid value
-        if ('*' === $value) {
+        if ("*" === $value) {
             return true;
         }
 
-        if (strpos($value, '/') !== false) {
-            list($range, $step) = explode('/', $value);
+        if (strpos($value, "/") !== false) {
+            list($range, $step) = explode("/", $value);
             return $this->validate($range) && filter_var($step, FILTER_VALIDATE_INT);
         }
 
         // Validate each chunk of a list individually
-        if (strpos($value, ',') !== false) {
-            foreach (explode(',', $value) as $listItem) {
+        if (strpos($value, ",") !== false) {
+            foreach (explode(",", $value) as $listItem) {
                 if (!$this->validate($listItem)) {
                     return false;
                 }
@@ -253,16 +253,16 @@ abstract class AbstractField implements FieldInterface
             return true;
         }
 
-        if (strpos($value, '-') !== false) {
-            if (substr_count($value, '-') > 1) {
+        if (strpos($value, "-") !== false) {
+            if (substr_count($value, "-") > 1) {
                 return false;
             }
 
-            $chunks = explode('-', $value);
+            $chunks = explode("-", $value);
             $chunks[0] = $this->convertLiterals($chunks[0]);
             $chunks[1] = $this->convertLiterals($chunks[1]);
 
-            if ('*' == $chunks[0] || '*' == $chunks[1]) {
+            if ("*" == $chunks[0] || "*" == $chunks[1]) {
                 return false;
             }
 
@@ -273,7 +273,7 @@ abstract class AbstractField implements FieldInterface
             return false;
         }
 
-        if (strpos($value, '.') !== false) {
+        if (strpos($value, ".") !== false) {
             return false;
         }
 

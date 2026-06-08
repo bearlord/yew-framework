@@ -21,7 +21,7 @@ class PingResp extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::PINGRESP,
+            "type" => Types::PINGRESP,
         ];
 
         if ($isArray) {

@@ -14,29 +14,29 @@ use Yew\Plugins\JsonRpc\Transporter\JsonRpcTransporter;
 
 class Protocol
 {
-    const PROTOCOL_JSON_RPC = 'jsonrpc';
+    const PROTOCOL_JSON_RPC = "jsonrpc";
 
-    const PROTOCOL_JSON_RPC_TCP_LENGTH_CHECK = 'jsonrpc-tcp-length-check';
+    const PROTOCOL_JSON_RPC_TCP_LENGTH_CHECK = "jsonrpc-tcp-length-check";
 
-    const PROTOCOL_JSON_RPC_HTTP = 'jsonrpc-http';
+    const PROTOCOL_JSON_RPC_HTTP = "jsonrpc-http";
 
     /**
      * @var array
      */
     protected $protocols = [
         self::PROTOCOL_JSON_RPC => [
-            'packer' => JsonEofPacker::class,
-            'transporter' => JsonRpcTransporter::class
+            "packer" => JsonEofPacker::class,
+            "transporter" => JsonRpcTransporter::class
         ],
 
         self::PROTOCOL_JSON_RPC_TCP_LENGTH_CHECK => [
-            'packer' => JsonLengthPacker::class,
-            'transporter' => JsonRpcTransporter::class
+            "packer" => JsonLengthPacker::class,
+            "transporter" => JsonRpcTransporter::class
         ],
 
         self::PROTOCOL_JSON_RPC_HTTP => [
-            'packer' => JsonPacker::class,
-            'transporter' => JsonRpcHttpTransporter::class
+            "packer" => JsonPacker::class,
+            "transporter" => JsonRpcHttpTransporter::class
         ]
     ];
 
@@ -46,12 +46,12 @@ class Protocol
      */
     public function getPacker(string $protocol): string
     {
-        $value = !empty($this->protocols[$protocol]) ? $this->protocols[$protocol] : '';
+        $value = !empty($this->protocols[$protocol]) ? $this->protocols[$protocol] : "";
         if (empty($value)) {
             return false;
         }
 
-        return $value['packer'];
+        return $value["packer"];
     }
 
     /**
@@ -60,11 +60,11 @@ class Protocol
      */
     public function getTransporter(string $protocol): string
     {
-        $value = !empty($this->protocols[$protocol]) ? $this->protocols[$protocol] : '';
+        $value = !empty($this->protocols[$protocol]) ? $this->protocols[$protocol] : "";
         if (empty($value)) {
             return false;
         }
         
-        return $value['transporter'];
+        return $value["transporter"];
     }
 }

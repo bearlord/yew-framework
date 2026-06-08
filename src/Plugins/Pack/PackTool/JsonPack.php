@@ -32,15 +32,15 @@ class JsonPack implements IPack
     {
         $value = json_decode($data, true);
         if (empty($value)) {
-            $this->warn('json unPack 失败');
+            $this->warn("json unPack 失败");
             return null;
         }
-        if (empty($value['action'])) {
-            $this->warn('Parameter error');
+        if (empty($value["action"])) {
+            $this->warn("Parameter error");
             return null;
         }
 
-        return new ClientData($fd, $portConfig->getBaseType(), $value['action'], $value);
+        return new ClientData($fd, $portConfig->getBaseType(), $value["action"], $value);
     }
 
     /**

@@ -46,9 +46,9 @@ class Auth extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::AUTH,
-            'code' => $this->getCode(),
-            'properties' => $this->getProperties(),
+            "type" => Types::AUTH,
+            "code" => $this->getCode(),
+            "properties" => $this->getProperties(),
         ];
 
         if ($isArray) {

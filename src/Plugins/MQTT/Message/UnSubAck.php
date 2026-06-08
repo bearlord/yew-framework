@@ -69,13 +69,13 @@ class UnSubAck extends AbstractMessage
     public function getContents(bool $isArray = false)
     {
         $buffer = [
-            'type' => Types::UNSUBACK,
-            'message_id' => $this->getMessageId(),
+            "type" => Types::UNSUBACK,
+            "message_id" => $this->getMessageId(),
         ];
 
         if ($this->isMQTT5()) {
-            $buffer['codes'] = $this->getCodes();
-            $buffer['properties'] = $this->getProperties();
+            $buffer["codes"] = $this->getCodes();
+            $buffer["properties"] = $this->getProperties();
         }
 
         if ($isArray) {

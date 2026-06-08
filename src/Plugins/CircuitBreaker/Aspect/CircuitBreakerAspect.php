@@ -31,7 +31,7 @@ class CircuitBreakerAspect extends OrderAspect
      */
     public function getName(): string
     {
-        return 'CircuitBreaker';
+        return "CircuitBreaker";
     }
 
     /**

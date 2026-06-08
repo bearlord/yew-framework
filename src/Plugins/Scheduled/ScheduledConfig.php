@@ -51,7 +51,7 @@ class ScheduledConfig extends BaseConfig
         parent::__construct(self::KEY);
         $this->minIntervalTime = $minIntervalTime;
         if ($minIntervalTime < 1000) {
-            throw new ConfigException('The minimum time unit for scheduled tasks is 1s');
+            throw new ConfigException("The minimum time unit for scheduled tasks is 1s");
         }
     }
 
