@@ -5,15 +5,11 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Yii\Plugin\Queue;
+namespace Yew\Plugins\Queue;
 
-use ESD\Core\Message\Message;
-use ESD\Core\Server\Process\Process;
+use Yew\Core\Message\Message;
+use Yew\Core\Server\Process\Process;
 
-/**
- * Class QueueProcess
- * @package ESD\Plugins\Queue
- */
 class QueueProcess extends Process
 {
 

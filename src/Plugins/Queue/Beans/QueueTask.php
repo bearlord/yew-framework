@@ -4,15 +4,11 @@
  * @author tmtbe <896369042@qq.com>
  */
 
-namespace ESD\Yii\Plugin\Queue\Beans;
+namespace Yew\Plugins\Queue\Beans;
 
-use ESD\Core\Plugins\Config\BaseConfig;
-use ESD\Plugins\Scheduled\Cron\CronExpression;
+use Yew\Core\Plugins\Config\BaseConfig;
+use Yew\Plugins\Scheduled\Cron\CronExpression;
 
-/**
- * Class ScheduledTask
- * @package ESD\Plugins\Scheduled\Beans
- */
 class QueueTask extends BaseConfig
 {
     const KEY = "queue.task";

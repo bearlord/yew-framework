@@ -7,7 +7,7 @@
 
 namespace Yew\Framework\Queue\Drivers\Redis;
 
-use ESD\Plugins\Redis\GetRedis;
+use Yew\Plugins\Redis\GetRedis;
 use Yew\Framework\Base\InvalidArgumentException;
 use Yew\Framework\Base\NotSupportedException;
 use Yew\Framework\Di\Instance;

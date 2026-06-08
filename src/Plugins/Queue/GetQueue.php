@@ -4,14 +4,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Yii\Plugin\Queue;
+namespace Yew\Plugins\Queue;
 
-use ESD\Yii\Queue\Cli\Queue;
-use ESD\Yii\Yii;
+use Yew\Framework\Queue\Cli\Queue;
+use Yew\Yew;
 
 /**
  * Trait GetQueue
- * @package ESD\Yii\Plugin\Queue
+ * @package Yew\Plugins\Queue
  */
 trait GetQueue
 {

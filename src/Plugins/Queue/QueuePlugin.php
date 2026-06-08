@@ -4,27 +4,23 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Yii\Plugin\Queue;
+namespace Yew\Plugins\Queue;
 
-use ESD\Core\Context\Context;
-use ESD\Core\Plugin\AbstractPlugin;
-use ESD\Core\Plugin\PluginInterfaceManager;
-use ESD\Core\Plugins\Logger\GetLogger;
-use ESD\Plugins\Amqp\AmqpPlugin;
-use ESD\Plugins\Redis\RedisPlugin;
-use ESD\Server\Coroutine\Server;
-use ESD\Yii\Helpers\Json;
-use ESD\Yii\Plugin\YiiPlugin;
-use ESD\Yii\Plugin\Queue\Beans\QueueTask;
-use ESD\Yii\Plugin\Queue\HelperQueueProcess;
-use ESD\Yii\Plugin\Queue\QueueProcess;
-use ESD\Yii\Queue\Drivers\Redis\Queue;
-use ESD\Yii\Yii;
+use Yew\Core\Context\Context;
+use Yew\Core\Plugin\AbstractPlugin;
+use Yew\Core\Plugin\PluginInterfaceManager;
+use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Plugins\Amqp\AmqpPlugin;
+use Yew\Plugins\Redis\RedisPlugin;
+use Yew\Core\Server\Coroutine\Server;
+use Yew\Framework\Helpers\Json;
+use Yew\Core\Plugins\Yew\YewPlugin;
+use Yew\Plugins\Queue\Beans\QueueTask;
+use Yew\Plugins\Queue\HelperQueueProcess;
+use Yew\Plugins\Queue\QueueProcess;
+use Yew\Framework\Queue\Drivers\Redis\Queue;
+use Yew\Yew;
 
-/**
- * Class QueuePlugin
- * @package ESD\Yii\Plugin
- */
 class QueuePlugin extends AbstractPlugin
 {
     use GetLogger;
@@ -67,7 +63,6 @@ class QueuePlugin extends AbstractPlugin
     /**
      * @param Context $context
      * @return mixed|void
-     * @throws \ESD\Yii\Base\InvalidConfigException
      */
     public function beforeServerStart(Context $context)
     {

@@ -1,12 +1,12 @@
 <?php
 
 
-namespace ESD\Yii\Plugin\Queue;
+namespace Yew\Plugins\Queue;
 
 
-use ESD\Core\Channel\Channel;
-use ESD\Yii\Queue\Cli\Queue;
-use ESD\Yii\Yii;
+use Yew\Core\Channel\Channel;
+use Yew\Framework\Queue\Cli\Queue;
+use Yew\Yew;
 
 class QueuePool
 {
@@ -29,7 +29,6 @@ class QueuePool
      * QueuePool constructor.
      * @param string $name
      * @param array $config
-     * @throws \ESD\Yii\Base\InvalidConfigException
      */
     public function __construct(string $name, array $config)
     {
@@ -87,7 +86,6 @@ class QueuePool
     /**
      * @param $config
      * @return object
-     * @throws \ESD\Yii\Base\InvalidConfigException
      */
     public function buildQueue($config)
     {
@@ -110,7 +108,7 @@ class QueuePool
         $handle = getContextValue($contextKey);
 
         if ($handle == null) {
-            /** @var \ESD\Yii\Queue\Cli\Queue $handle */
+            /** @var \Yew\Framework\Queue\Cli\Queue $handle */
             $handle = $this->pool->pop();
 
             \Swoole\Coroutine::defer(function () use ($handle) {

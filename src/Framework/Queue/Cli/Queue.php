@@ -7,8 +7,8 @@
 
 namespace Yew\Framework\Queue\Cli;
 
-use ESD\Core\Plugins\Logger\GetLogger;
-use ESD\Server\Coroutine\Server;
+use Yew\Core\Plugins\Logger\GetLogger;
+use Yew\Server\Coroutine\Server;
 use Yew\Yew;
 use Yew\Framework\Base\InvalidConfigException;
 

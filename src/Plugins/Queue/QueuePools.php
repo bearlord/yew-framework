@@ -4,11 +4,11 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace ESD\Yii\Plugin\Queue;
+namespace Yew\Plugins\Queue;
 
 /**
  * Class QueuePools
- * @package ESD\Yii\Plugin\Queue
+ * @package Yew\Plugins\Queue
  */
 class QueuePools
 {
