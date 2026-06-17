@@ -41,7 +41,7 @@ class MqttPluginConfig extends BaseConfig
      * Only valid when useRoute is set to true, the topic name used by the message is returned to the client
      * @var string
      */
-    protected $serverTopic = "$SERVER_RPC";
+    protected $serverTopic = "";
 
     /**
      * MqttPluginConfig constructor.
