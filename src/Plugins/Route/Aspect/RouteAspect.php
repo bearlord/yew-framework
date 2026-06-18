@@ -12,7 +12,7 @@ use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\OrderAspect;
 use Yew\Plugins\Route\Controller\IController;
-use Yew\Plugins\Route\RoutePortConfig;
+use Yew\Plugins\Route\routePortConfig;
 use Yew\Plugins\Route\RoutePlugin;
 use Yew\Plugins\Route\Filter\AbstractFilter;
 use Yew\Plugins\Route\Filter\FilterManager;
@@ -35,9 +35,9 @@ class RouteAspect extends OrderAspect
     use GetBoostSend;
 
     /**
-     * @var RoutePortConfig[]
+     * @var routePortConfig[]
      */
-    protected array $RoutePortConfigs;
+    protected array $routePortConfigs;
     /**
      * @var IRoute[]
      */
@@ -60,17 +60,17 @@ class RouteAspect extends OrderAspect
 
     /**
      * RouteAspect constructor.
-     * @param $RoutePortConfigs
+     * @param $routePortConfigs
      * @param RouteConfig $routeConfig
      * @throws \Exception
      */
-    public function __construct($RoutePortConfigs, RouteConfig $routeConfig)
+    public function __construct($routePortConfigs, RouteConfig $routeConfig)
     {
-        $this->RoutePortConfigs = $RoutePortConfigs;
-        foreach ($this->RoutePortConfigs as $RoutePortConfig) {
-            if (!isset($this->routeTools[$RoutePortConfig->getRouteTool()])) {
-                $className = $RoutePortConfig->getRouteTool();
-                $this->routeTools[$RoutePortConfig->getRouteTool()] = DIget($className);
+        $this->routePortConfigs = $routePortConfigs;
+        foreach ($this->routePortConfigs as $routePortConfig) {
+            if (!isset($this->routeTools[$routePortConfig->getRouteTool()])) {
+                $className = $routePortConfig->getRouteTool();
+                $this->routeTools[$routePortConfig->getRouteTool()] = DIget($className);
             }
         }
 
@@ -99,8 +99,8 @@ class RouteAspect extends OrderAspect
     protected function aroundHttpRequest(MethodInvocation $invocation)
     {
         $abstractServerPort = $invocation->getThis();
-        $RoutePortConfig = $this->RoutePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
-        setContextValue("RoutePortConfig", $RoutePortConfig);
+        $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
+        setContextValue("routePortConfig", $routePortConfig);
 
         /** @var ClientData $clientData */
         $clientData = getContextValueByClassName(ClientData::class);
@@ -110,10 +110,10 @@ class RouteAspect extends OrderAspect
         if ($this->filterManager->filter(AbstractFilter::FILTER_PRE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
             return;
         }
-        $routeTool = $this->routeTools[$RoutePortConfig->getRouteTool()];
+        $routeTool = $this->routeTools[$routePortConfig->getRouteTool()];
 
         try {
-            if (!$routeTool->handleClientData($clientData, $RoutePortConfig)) {
+            if (!$routeTool->handleClientData($clientData, $routePortConfig)) {
                 return;
             }
 
@@ -167,10 +167,10 @@ class RouteAspect extends OrderAspect
     private function getController($controllerName): ?IController
     {
         if (empty($controllerName)) {
-//            $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
-//            if ($debug) {
-//                throw new RouteException("Controller name not found");
-//            }
+            $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
+            if ($debug) {
+                throw new RouteException("Controller name not found");
+            }
             return null;
         }
         if (!isset($this->controllers[$controllerName])) {
@@ -229,8 +229,8 @@ class RouteAspect extends OrderAspect
     protected function aroundTcpReceive(MethodInvocation $invocation)
     {
         $abstractServerPort = $invocation->getThis();
-        $RoutePortConfig = $this->RoutePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
-        setContextValue("RoutePortConfig", $RoutePortConfig);
+        $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
+        setContextValue("routePortConfig", $routePortConfig);
 
         /** @var ClientData $clientData */
         $clientData = getContextValueByClassName(ClientData::class);
@@ -240,10 +240,10 @@ class RouteAspect extends OrderAspect
         if ($this->filterManager->filter(AbstractFilter::FILTER_PRE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
             return;
         }
-        $routeTool = $this->routeTools[$RoutePortConfig->getRouteTool()];
+        $routeTool = $this->routeTools[$routePortConfig->getRouteTool()];
 
         try {
-            if (!$routeTool->handleClientData($clientData, $RoutePortConfig)) {
+            if (!$routeTool->handleClientData($clientData, $routePortConfig)) {
                 return;
             }
             $controllerInstance = $this->getController($routeTool->getControllerName());
@@ -253,7 +253,7 @@ class RouteAspect extends OrderAspect
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
             }
-            if ($RoutePortConfig->getAutoSendReturnValue()) {
+            if ($routePortConfig->getAutoSendReturnValue()) {
                 $this->autoBoostSend($clientData->getFd(), $clientData->getResponseRaw());
             }
         } catch (\Throwable $e) {
@@ -370,8 +370,8 @@ class RouteAspect extends OrderAspect
     protected function aroundWsMessage(MethodInvocation $invocation)
     {
         $abstractServerPort = $invocation->getThis();
-        $RoutePortConfig = $this->RoutePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
-        setContextValue("RoutePortConfig", $RoutePortConfig);
+        $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
+        setContextValue("routePortConfig", $routePortConfig);
 
         /** @var ClientData $clientData */
         $clientData = getContextValueByClassName(ClientData::class);
@@ -381,43 +381,27 @@ class RouteAspect extends OrderAspect
         if ($this->filterManager->filter(AbstractFilter::FILTER_PRE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
             return;
         }
-        $routeTool = $this->routeTools[$RoutePortConfig->getRouteTool()];
-
-		//Controller name
-		$controllerName = $routeTool->getControllerName();
-		//Method name
-		$methodName = $routeTool->getMethodName();
-		//Params
-		$params = $routeTool->getParams();
-
-		if (empty($controllerName)) {
-			$this->warn(sprintf("Controller name associated with path %s not exists", $clientData->getPath()));
-			return;
-		}
-		if (empty($methodName)) {
-			$this->warn(sprintf("Method name associated with path %s not exists", $clientData->getPath()));
-		}
-
+        $routeTool = $this->routeTools[$routePortConfig->getRouteTool()];
         try {
-            if (!$routeTool->handleClientData($clientData, $RoutePortConfig)) {
+            if (!$routeTool->handleClientData($clientData, $routePortConfig)) {
                 return;
             }
-            $controllerInstance = $this->getController($controllerName);
-            $controllerInstance->initialization($controllerName, $methodName);
+            $controllerInstance = $this->getController($routeTool->getControllerName());
+            $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
 
-            $clientData->setResponseRaw($controllerInstance->handle($controllerName, $methodName, $params));
+            $clientData->setResponseRaw($controllerInstance->handle($routeTool->getControllerName(), $routeTool->getMethodName(), $routeTool->getParams()));
 
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
             }
-            if ($RoutePortConfig->getAutoSendReturnValue()) {
+            if ($routePortConfig->getAutoSendReturnValue()) {
                 $this->autoBoostSend($clientData->getFd(), $clientData->getResponseRaw());
             }
         } catch (\Throwable $e) {
             try {
                 //The errors here will be handed over to the IndexController
                 $controllerInstance = $this->getController($this->routeConfig->getErrorControllerName());
-                $controllerInstance->initialization($controllerName, $methodName);
+                $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
                 $controllerInstance->onExceptionHandle($e);
             } catch (\Throwable $e) {
                 $this->warn($e);
@@ -494,8 +478,8 @@ class RouteAspect extends OrderAspect
     protected function aroundUdpPacket(MethodInvocation $invocation)
     {
         $abstractServerPort = $invocation->getThis();
-        $RoutePortConfig = $this->RoutePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
-        setContextValue("RoutePortConfig", $RoutePortConfig);
+        $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
+        setContextValue("routePortConfig", $routePortConfig);
 
         /** @var ClientData $clientData */
         $clientData = getContextValueByClassName(ClientData::class);
@@ -505,9 +489,9 @@ class RouteAspect extends OrderAspect
         if ($this->filterManager->filter(AbstractFilter::FILTER_PRE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
             return;
         }
-        $routeTool = $this->routeTools[$RoutePortConfig->getRouteTool()];
+        $routeTool = $this->routeTools[$routePortConfig->getRouteTool()];
         try {
-            if (!$routeTool->handleClientData($clientData, $RoutePortConfig)) {
+            if (!$routeTool->handleClientData($clientData, $routePortConfig)) {
                 return;
             }
             $controllerInstance = $this->getController($routeTool->getControllerName());
