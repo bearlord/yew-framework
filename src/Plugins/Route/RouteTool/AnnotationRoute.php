@@ -32,242 +32,243 @@ use Yew\Nikic\FastRoute\Dispatcher;
 
 class AnnotationRoute implements IRoute
 {
-    use GetLogger;
+	use GetLogger;
 
-    /**
-     * @var ClientData
-     */
-    private $clientData;
+	/**
+	 * @var ClientData
+	 */
+	private $clientData;
 
-    /**
-     * @inheritDoc
-     * @param ClientData $clientData
-     * @param RoutePortConfig $RoutePortConfig
-     * @return bool
-     * @throws MethodNotAllowedException
-     * @throws ParamException
-     * @throws RouteException
-     * @throws \Yew\Plugins\Validate\ValidationException
-     * @throws \ReflectionException
-     */
-    public function handleClientData(ClientData $clientData, RoutePortConfig $RoutePortConfig): bool
-    {
-        $this->clientData = $clientData;
-        //Port
-        $port = $this->clientData->getClientInfo()->getServerPort();
-        //Request method
-        $requestMethod = strtoupper($this->clientData->getRequestMethod());
-        //Route info
-        $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $port, $requestMethod), $this->clientData->getPath());
+	/**
+	 * @inheritDoc
+	 * @param ClientData $clientData
+	 * @param RoutePortConfig $RoutePortConfig
+	 * @return bool
+	 * @throws MethodNotAllowedException
+	 * @throws ParamException
+	 * @throws RouteException
+	 * @throws \Yew\Plugins\Validate\ValidationException
+	 * @throws \ReflectionException
+	 */
+	public function handleClientData(ClientData $clientData, RoutePortConfig $RoutePortConfig): bool
+	{
+		$this->clientData = $clientData;
+		//Port
+		$port = $this->clientData->getClientInfo()->getServerPort();
+		//Request method
+		$requestMethod = strtoupper($this->clientData->getRequestMethod());
+		//Route info
+		$routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $port, $requestMethod), $this->clientData->getPath());
 
-        $request = $this->clientData->getRequest();
+		$request = $this->clientData->getRequest();
 
-        switch ($routeInfo[0]) {
-            case Dispatcher::NOT_FOUND:
-                $message = "Path not found";
+		//is debug
+		$isDebug = Server::$instance->getConfigContext()->get("yew.server.debug");
 
-                $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
-                if ($debug) {
-                    throw new RouteException($message);
-                }
+		switch ($routeInfo[0]) {
+			case Dispatcher::NOT_FOUND:
+				$message = "Path not found";
 
-                $contentType = $this->clientData->getRequest()->getContentType();
-                if (strpos($contentType, "application/json") !== false) {
-                    $this->clientData->getResponse()->withHeader("Content-Type", $contentType);
-                    $exceptionJson = Json::encode([
-                        "code" => 400,
-                        "data" => [],
-                        "message" => $message
-                    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT);
-                    $this->clientData->getResponse()->withContent($exceptionJson)->end();
-                }
-                break;
+				if (!empty($this->clientData->getRequest())) {
+					$contentType = $this->clientData->getRequest()->getContentType();
+					if (strpos($contentType, "application/json") !== false) {
+						$this->clientData->getResponse()->withHeader("Content-Type", $contentType);
+						$exceptionJson = Json::encode([
+							"code" => 400,
+							"data" => null,
+							"message" => $message
+						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT);
+						$this->clientData->getResponse()->withContent($exceptionJson)->end();
+					}
+				}
 
-            case Dispatcher::METHOD_NOT_ALLOWED:
-                if ($this->clientData->getRequest()->getMethod() == "OPTIONS") {
-                    $methods = [];
-                    foreach ($routeInfo[1] as $value) {
-                        list($port, $method) = explode(":", $value);
-                        $methods[] = $method;
-                    }
-                    $this->clientData->getResponse()->withHeader("Access-Control-Allow-Methods", implode(",", $methods));
-                    $this->clientData->getResponse()->end();
-                    return false;
-                } else {
-                    throw new MethodNotAllowedException("Method not allowed");
-                }
-                break;
+				break;
 
-            case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
-                $vars = $routeInfo[2];
-                $this->clientData->setControllerName($handler[0]->name);
-                $this->clientData->setMethodName($handler[1]->name);
-                $params = [];
-                $methodReflection = $handler[1]->getReflectionMethod();
-                $annotations = RoutePlugin::$instance->getScanClass()->getMethodAndInterfaceAnnotations($methodReflection);
-                $this->clientData->setAnnotations($annotations);
+			case Dispatcher::METHOD_NOT_ALLOWED:
+				if (!empty($this->clientData->getRequest()) && $this->clientData->getRequest()->getMethod() == "OPTIONS") {
+					$methods = [];
+					foreach ($routeInfo[1] as $value) {
+						list($port, $method) = explode(":", $value);
+						$methods[] = $method;
+					}
+					$this->clientData->getResponse()->withHeader("Access-Control-Allow-Methods", implode(",", $methods));
+					$this->clientData->getResponse()->end();
+					return false;
+				} else {
+					throw new MethodNotAllowedException("Method not allowed");
+				}
+				break;
 
-                foreach ($annotations as $annotation) {
-                    switch (true) {
-                        case ($annotation instanceof PathVariable):
-                            $result = $vars[$annotation->value] ?? null;
-                            if ($annotation->required) {
-                                if ($result == null) {
-                                    throw new RouteException("path {$annotation->value} not found");
-                                }
-                            }
-                            $params[$annotation->param ?? $annotation->value] = $result;
-                            break;
+			case Dispatcher::FOUND:
+				$handler = $routeInfo[1];
+				$vars = $routeInfo[2];
+				$this->clientData->setControllerName($handler[0]->name);
+				$this->clientData->setMethodName($handler[1]->name);
+				$params = [];
+				$methodReflection = $handler[1]->getReflectionMethod();
+				$annotations = RoutePlugin::$instance->getScanClass()->getMethodAndInterfaceAnnotations($methodReflection);
+				$this->clientData->setAnnotations($annotations);
 
-                        case ($annotation instanceof RequestParam):
-                            if ($request == null) {
-                                break;
-                            }
-                            $result = $request->query($annotation->value);
-                            if ($annotation->required && $result == null) {
-                                throw new ParamException("require params $annotation->value");
-                            }
-                            $params[$annotation->param ?? $annotation->value] = $result;
-                            break;
+				foreach ($annotations as $annotation) {
+					switch (true) {
+						case ($annotation instanceof PathVariable):
+							$result = $vars[$annotation->value] ?? null;
+							if ($annotation->required) {
+								if ($result == null) {
+									throw new RouteException("path {$annotation->value} not found");
+								}
+							}
+							$params[$annotation->param ?? $annotation->value] = $result;
+							break;
 
-                        case ($annotation instanceof RequestFormData):
-                            if ($request == null) {
-                                break;
-                            }
-                            $result = $request->post($annotation->value);
-                            if ($annotation->required && $result == null) {
-                                throw new ParamException("require params $annotation->value");
-                            }
-                            $params[$annotation->param ?? $annotation->value] = $result;
-                            break;
+						case ($annotation instanceof RequestParam):
+							if ($request == null) {
+								break;
+							}
+							$result = $request->query($annotation->value);
+							if ($annotation->required && $result == null) {
+								throw new ParamException("require params $annotation->value");
+							}
+							$params[$annotation->param ?? $annotation->value] = $result;
+							break;
 
-                        case ($annotation instanceof RequestRawJson):
-                        case ($annotation instanceof RequestBody):
-                            if ($request == null) {
-                                break;
-                            }
-                            if (!$json = json_decode($request->getBody()->getContents(), true)) {
-                                $this->warning("RequestRawJson error, raw:" . $request->getBody()->getContents());
-                                throw new RouteException("RawJson Format error");
-                            }
-                            if (!empty($annotation->value)) {
-                                $params[$annotation->value] = $json;
-                            } else {
-                                $params = $json;
-                            }
-                            break;
+						case ($annotation instanceof RequestFormData):
+							if ($request == null) {
+								break;
+							}
+							$result = $request->post($annotation->value);
+							if ($annotation->required && $result == null) {
+								throw new ParamException("require params $annotation->value");
+							}
+							$params[$annotation->param ?? $annotation->value] = $result;
+							break;
 
-                        case ($annotation instanceof RequestRaw):
-                            if ($request == null) {
-                                break;
-                            }
-                            $raw = $request->getBody()->getContents();
-                            $params[$annotation->value] = $raw;
-                            break;
+						case ($annotation instanceof RequestRawJson):
+						case ($annotation instanceof RequestBody):
+							if ($request == null) {
+								break;
+							}
+							if (!$json = json_decode($request->getBody()->getContents(), true)) {
+								$this->warning("RequestRawJson error, raw:" . $request->getBody()->getContents());
+								throw new RouteException("RawJson Format error");
+							}
+							if (!empty($annotation->value)) {
+								$params[$annotation->value] = $json;
+							} else {
+								$params = $json;
+							}
+							break;
 
-                        case ($annotation instanceof RequestRawXml):
-                            if ($request == null) {
-                                break;
-                            }
-                            $raw = $request->getBody()->getContents();
-                            if (!$xml = simplexml_load_string($raw, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
-                                $this->warning("RequestRawXml error, raw:" . $request->getBody()->getContents());
-                                throw new RouteException("RawXml Format error");
-                            }
-                            $params[$annotation->value] = json_decode(json_encode($xml), true);
-                            break;
+						case ($annotation instanceof RequestRaw):
+							if ($request == null) {
+								break;
+							}
+							$raw = $request->getBody()->getContents();
+							$params[$annotation->value] = $raw;
+							break;
 
-                        case ($annotation instanceof ResponeJsonRpc):
-                            $clientData->getResponse()->withHeader("Content-Type", $annotation->value);
-                            break;
+						case ($annotation instanceof RequestRawXml):
+							if ($request == null) {
+								break;
+							}
+							$raw = $request->getBody()->getContents();
+							if (!$xml = simplexml_load_string($raw, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
+								$this->warning("RequestRawXml error, raw:" . $request->getBody()->getContents());
+								throw new RouteException("RawXml Format error");
+							}
+							$params[$annotation->value] = json_decode(json_encode($xml), true);
+							break;
 
-                    }
-                }
-                $realParams = [];
-                if ($methodReflection instanceof \ReflectionMethod) {
-                    foreach ($methodReflection->getParameters() as $parameter) {
-                        if ($parameter->getClass() != null) {
-                            $values = $params[$parameter->name];
-                            if ($values != null) {
-                                $values = ValidatedFilter::valid($parameter->getClass(), $values);
-                                $instance = $parameter->getClass()->newInstance();
-                                foreach ($instance as $key => $value) {
-                                    $instance->$key = $values[$key] ?? null;
-                                }
-                                $realParams[$parameter->getPosition()] = $instance;
-                            } else {
-                                $realParams[$parameter->getPosition()] = null;
-                            }
-                        } else {
-                            $realParams[$parameter->getPosition()] = $params[$parameter->name] ?? "";
-                        }
-                    }
-                }
+						case ($annotation instanceof ResponeJsonRpc):
+							$clientData->getResponse()->withHeader("Content-Type", $annotation->value);
+							break;
 
-                if (!empty($realParams)) {
-                    $this->clientData->setParams($realParams);
-                }
-                break;
-        }
-        return true;
-    }
+					}
+				}
+				$realParams = [];
+				if ($methodReflection instanceof \ReflectionMethod) {
+					foreach ($methodReflection->getParameters() as $parameter) {
+						if ($parameter->getClass() != null) {
+							$values = $params[$parameter->name];
+							if ($values != null) {
+								$values = ValidatedFilter::valid($parameter->getClass(), $values);
+								$instance = $parameter->getClass()->newInstance();
+								foreach ($instance as $key => $value) {
+									$instance->$key = $values[$key] ?? null;
+								}
+								$realParams[$parameter->getPosition()] = $instance;
+							} else {
+								$realParams[$parameter->getPosition()] = null;
+							}
+						} else {
+							$realParams[$parameter->getPosition()] = $params[$parameter->name] ?? "";
+						}
+					}
+				}
 
-    /**
-     * @inheritDoc
-     * @return string
-     */
-    public function getControllerName(): ?string
-    {
-        if ($this->clientData == null) {
-            return null;
-        }
-        return $this->clientData->getControllerName();
-    }
+				if (!empty($realParams)) {
+					$this->clientData->setParams($realParams);
+				}
+				break;
+		}
+		return true;
+	}
 
-    /**
-     * @inheritDoc
-     * @return string
-     */
-    public function getMethodName(): ?string
-    {
-        if ($this->clientData == null) {
-            return null;
-        }
-        return $this->clientData->getMethodName();
-    }
+	/**
+	 * @inheritDoc
+	 * @return string
+	 */
+	public function getControllerName(): ?string
+	{
+		if ($this->clientData == null) {
+			return null;
+		}
+		return $this->clientData->getControllerName();
+	}
 
-    /**
-     * @inheritDoc
-     * @return string|null
-     */
-    public function getPath(): ?string
-    {
-        if ($this->clientData == null) {
-            return null;
-        }
-        return $this->clientData->getPath();
-    }
+	/**
+	 * @inheritDoc
+	 * @return string
+	 */
+	public function getMethodName(): ?string
+	{
+		if ($this->clientData == null) {
+			return null;
+		}
+		return $this->clientData->getMethodName();
+	}
 
-    /**
-     * @inheritDoc
-     * @return array|null
-     */
-    public function getParams(): ?array
-    {
-        if ($this->clientData == null) {
-            return null;
-        }
-        return $this->clientData->getParams();
-    }
+	/**
+	 * @inheritDoc
+	 * @return string|null
+	 */
+	public function getPath(): ?string
+	{
+		if ($this->clientData == null) {
+			return null;
+		}
+		return $this->clientData->getPath();
+	}
 
-    /**
-     * Get client data
-     *
-     * @return ClientData
-     */
-    public function getClientData(): ?ClientData
-    {
-        return $this->clientData;
-    }
+	/**
+	 * @inheritDoc
+	 * @return array|null
+	 */
+	public function getParams(): ?array
+	{
+		if ($this->clientData == null) {
+			return null;
+		}
+		return $this->clientData->getParams();
+	}
+
+	/**
+	 * Get client data
+	 *
+	 * @return ClientData
+	 */
+	public function getClientData(): ?ClientData
+	{
+		return $this->clientData;
+	}
 }

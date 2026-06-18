@@ -105,7 +105,7 @@ class Topic
         }
 
         $uid = $this->getFdUid($fd);
-        $this->clearUidSubbscription($uid);
+        $this->clearFdSubscription($uid);
     }
 
     /**

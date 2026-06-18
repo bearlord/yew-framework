@@ -167,10 +167,10 @@ class RouteAspect extends OrderAspect
     private function getController($controllerName): ?IController
     {
         if (empty($controllerName)) {
-            $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
-            if ($debug) {
-                throw new RouteException("Controller name not found");
-            }
+//            $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
+//            if ($debug) {
+//                throw new RouteException("Controller name not found");
+//            }
             return null;
         }
         if (!isset($this->controllers[$controllerName])) {
@@ -382,14 +382,34 @@ class RouteAspect extends OrderAspect
             return;
         }
         $routeTool = $this->routeTools[$RoutePortConfig->getRouteTool()];
+
+		//Controller name
+		$controllerName = $routeTool->getControllerName();
+		//Method name
+		$methodName = $routeTool->getMethodName();
+		//Params
+		$params = $routeTool->getParams();
+
+		var_dump([
+			"clientData" => $clientData,
+		]);
+
+		if (empty($controllerName)) {
+			$this->warn("Controller name not exists");
+			return;
+		}
+		if (empty($methodName)) {
+			$this->warn("Method name not exists");
+		}
+
         try {
             if (!$routeTool->handleClientData($clientData, $RoutePortConfig)) {
                 return;
             }
-            $controllerInstance = $this->getController($routeTool->getControllerName());
-            $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
+            $controllerInstance = $this->getController($controllerName);
+            $controllerInstance->initialization($controllerName, $methodName);
 
-            $clientData->setResponseRaw($controllerInstance->handle($routeTool->getControllerName(), $routeTool->getMethodName(), $routeTool->getParams()));
+            $clientData->setResponseRaw($controllerInstance->handle($controllerName, $methodName, $params));
 
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
@@ -401,7 +421,7 @@ class RouteAspect extends OrderAspect
             try {
                 //The errors here will be handed over to the IndexController
                 $controllerInstance = $this->getController($this->routeConfig->getErrorControllerName());
-                $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
+                $controllerInstance->initialization($controllerName, $methodName);
                 $controllerInstance->onExceptionHandle($e);
             } catch (\Throwable $e) {
                 $this->warn($e);

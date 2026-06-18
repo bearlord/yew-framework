@@ -25,8 +25,6 @@ trait GetTopic
      * @param string $topic
      * @param string $uid
      * @return bool
-     * @throws IpcException
-     * @throws \Exception
      */
     public function hasTopic(string $topic, string $uid): bool
     {
@@ -43,7 +41,6 @@ trait GetTopic
     /**
      * @param string $topic
      * @return void
-     * @throws IpcException
      */
     public function delTopic(string $topic)
     {
@@ -54,7 +51,6 @@ trait GetTopic
 
     /**
      * @return mixed|TopicConfig|null
-     * @throws \Exception
      */
     protected function getTopicConfig()
     {
@@ -68,10 +64,6 @@ trait GetTopic
      * @param string $topic
      * @param string $uid
      * @return void
-     * @throws BadUTF8
-     * @throws IpcException
-     * @throws Exception
-     * @throws \Exception
      */
     public function addSubscription(string $topic, string $uid)
     {
@@ -89,8 +81,6 @@ trait GetTopic
      * @param string $topic
      * @param string $uid
      * @return void
-     * @throws IpcException
-     * @throws \Exception
      */
     public function removeSubscription(string $topic, string $uid)
     {
@@ -107,8 +97,6 @@ trait GetTopic
     /**
      * @param int $fd
      * @return void
-     * @throws IpcException
-     * @throws \Exception
      */
     public function clearFdSubscription(int $fd)
     {
@@ -124,8 +112,6 @@ trait GetTopic
     /**
      * @param string $uid
      * @return void
-     * @throws IpcException
-     * @throws \Exception
      */
     public function clearUidSubbscription(string $uid)
     {
@@ -144,9 +130,6 @@ trait GetTopic
      * @param $data
      * @param array|null $excludeUidList
      * @return void
-     * @throws IpcException
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function pub(string $topic, $data, ?array $excludeUidList = [])
     {

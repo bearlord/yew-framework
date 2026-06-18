@@ -133,7 +133,7 @@ abstract class RouteController extends Controller implements IController
      */
     public function onExceptionHandle(\Throwable $exception)
     {
-        if ($this->clientData->getResponse() != null) {
+        if (!empty($this->clientData) && $this->clientData->getResponse() != null) {
             $this->response->withStatus(404);
             $this->response->withHeader("Content-Type", "text/html;charset=UTF-8");
 
