@@ -8,7 +8,6 @@ namespace Yew\Plugins\Topic;
 
 use DI\DependencyException;
 use DI\NotFoundException;
-use Ds\Set;
 use Yew\Core\Exception\Exception;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
@@ -21,7 +20,7 @@ class Topic
     use GetUid;
     use GetLogger;
 
-    protected array $subArr = [];
+    protected array $subscriptionItems = [];
 
     /**
      * @var Table
@@ -46,17 +45,17 @@ class Topic
      * @param string $topic
      * @param string $uid
      */
-    private function addSubFormTable(string $topic, string $uid)
+    private function addSubscriptionFormTable(string $topic, string $uid)
     {
         if (empty($uid)) {
             return;
         }
 
-        if (!isset($this->subArr[$topic])) {
-            $this->subArr[$topic] = new Set();
+        if (!isset($this->subscriptionItems[$topic])) {
+            $this->subscriptionItems[$topic] = [];
         }
 
-        $this->subArr[$topic]->add($uid);
+        $this->subscriptionItems[$topic][$uid] = $uid;
     }
 
     /**
@@ -66,12 +65,12 @@ class Topic
      */
     public function hasTopic(string $topic, string $uid): bool
     {
-        $set = !empty($this->subArr[$topic]) ? $this->subArr[$topic] : null;
-        if ($set == null) {
+        $subs = !empty($this->subscriptionItems[$topic]) ? $this->subscriptionItems[$topic] : null;
+        if ($subs == null) {
             return false;
         }
 
-        return $set->contains($uid);
+        return isset($subs[$uid]);
     }
 
     /**
@@ -112,13 +111,13 @@ class Topic
      * @param string $uid
      * @throws \Exception
      */
-    public function clearUidSub(string $uid)
+    public function clearUidSubscription(string $uid)
     {
         if (empty($uid)) {
             return;
         }
 
-        foreach ($this->subArr as $topic => $sub) {
+        foreach ($this->subscriptionItems as $topic => $sub) {
             $this->removeSub($topic, $uid);
         }
     }
@@ -134,10 +133,11 @@ class Topic
         if (empty($uid)) {
             return;
         }
-        if (isset($this->subArr[$topic])) {
-            $this->subArr[$topic]->remove($uid);
-            if ($this->subArr[$topic]->count() == 0) {
-                unset($this->subArr[$topic]);
+        if (isset($this->subscriptionItems[$topic])) {
+            unset($this->subscriptionItems[$topic][$uid]);
+
+            if (empty($this->subscriptionItems[$topic])) {
+                unset($this->subscriptionItems[$topic]);
             }
         }
 
@@ -152,10 +152,11 @@ class Topic
      */
     public function delTopic(string $topic)
     {
-        $uidArr = !empty($this->subArr[$topic]) ? $this->subArr[$topic] : [];
-        unset($this->subArr[$topic]);
+        $uidItems = !empty($this->subscriptionItems[$topic]) ? $this->subscriptionItems[$topic] : [];
 
-        foreach ($uidArr as $uid) {
+        unset($this->subscriptionItems[$topic]);
+
+        foreach ($uidItems as $uid) {
             $this->topicTable->del($topic . $uid);
         }
     }
@@ -169,18 +170,21 @@ class Topic
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function pub(string $topic, $data, ?array $excludeUidList = [])
+    public function pub(string $topic, $data, ?array $excludeUidList = null)
     {
         $tree = $this->buildTrees($topic);
 
         foreach ($tree as $one) {
-            if (isset($this->subArr[$one])) {
-                foreach ($this->subArr[$one] as $uid) {
-                    if (!in_array($uid, $excludeUidList)) {
-                        $this->pubToUid($uid, $data, $topic);
-                    }
-                }
-            }
+	        if (empty($this->subscriptionItems[$one])) {
+				continue;
+	        }
+
+	        foreach ($this->subscriptionItems[$one] as $uid) {
+		        if (in_array($uid, $excludeUidList)) {
+			        continue;
+		        }
+		        $this->pubToUid($uid, $data, $topic);
+	        }
         }
     }
 
@@ -188,35 +192,35 @@ class Topic
      * Build a subscription tree, allowing only 5 layers
      *
      * @param string $topic
-     * @return Set
+     * @return array
      */
-    private function buildTrees(string $topic): Set
+    private function buildTrees(string $topic): array
     {
-        $isSYS = false;
+        $isSys = false;
         if ($topic[0] == "$") {
-            $isSYS = true;
+            $isSys = true;
         }
         $p = explode("/", $topic);
         $countPlies = count($p);
-        $result = new Set();
-        if (!$isSYS) {
-            $result->add("#");
+        $result = [];
+        if (!$isSys) {
+            $result["#"] = "#";
         }
         for ($j = 0; $j < $countPlies; $j++) {
             $a = array_slice($p, 0, $j + 1);
             $arr = [$a];
             $count_a = count($a);
             $value = implode("/", $a);
-            $result->add($value . "/#");
+            $result[$value . "/#"] = $value . "/#";
             $complete = false;
             if ($count_a == $countPlies) {
                 $complete = true;
-                $result->add($value);
+                $result[$value] = $value;
             }
             for ($i = 0; $i < $count_a; $i++) {
                 $temp = [];
                 foreach ($arr as $one) {
-                    $this->helpReplacePlus($one, $temp, $result, $complete, $isSYS);
+                    $this->helpReplacePlus($one, $temp, $result, $complete, $isSys);
                 }
                 $arr = $temp;
             }
@@ -242,9 +246,9 @@ class Topic
             $new[$i] = "+";
             $temp[] = $new;
             $value = implode("/", $new);
-            $result->add($value . "/#");
+            $result[$value . "/#"] = $value . "/#";
             if ($complete) {
-                $result->add($value);
+                $result[$value] = $value;
             }
         }
     }
