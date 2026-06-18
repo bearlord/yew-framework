@@ -199,61 +199,52 @@ class Topic
      */
     private function buildTrees(string $topic): array
     {
-        $isSys = false;
-        if ($topic[0] == "$") {
-            $isSys = true;
-        }
-        $p = explode("/", $topic);
-        $countPlies = count($p);
+        $segments = explode('/', $topic);
+        $levelCount = count($segments);
         $result = [];
-        if (!$isSys) {
-            $result["#"] = "#";
-        }
-        for ($j = 0; $j < $countPlies; $j++) {
-            $a = array_slice($p, 0, $j + 1);
-            $arr = [$a];
-            $count_a = count($a);
-            $value = implode("/", $a);
-            $result[$value . "/#"] = $value . "/#";
-            $complete = false;
-            if ($count_a == $countPlies) {
-                $complete = true;
-                $result[$value] = $value;
-            }
-            for ($i = 0; $i < $count_a; $i++) {
-                $temp = [];
-                foreach ($arr as $one) {
-                    $this->helpReplacePlus($one, $temp, $result, $complete, $isSys);
-                }
-                $arr = $temp;
-            }
-        }
-        return $result;
-    }
+        $isSys = $topic[0] === '$';
 
-    /**
-     * @param $arr
-     * @param $temp
-     * @param $result
-     * @param $complete
-     * @param $isSYS
-     */
-    private function helpReplacePlus($arr, &$temp, &$result, $complete, $isSYS)
-    {
-        $count = count($arr);
-        $m = 0;
-        if ($isSYS) $m = 1;
-        for ($i = $m; $i < $count; $i++) {
-            $new = $arr;
-            if ($new[$i] == "+") continue;
-            $new[$i] = "+";
-            $temp[] = $new;
-            $value = implode("/", $new);
-            $result[$value . "/#"] = $value . "/#";
-            if ($complete) {
-                $result[$value] = $value;
+        if (!$isSys) {
+            $result['#'] = '#';
+        }
+
+        for ($level = 1; $level <= $levelCount; $level++) {
+            $levelSegments = array_slice($segments, 0, $level);
+            $isComplete = $level === $levelCount;
+            $exactTopic = implode('/', $levelSegments);
+
+            // Exact match and prefix wildcard
+            $result[$exactTopic . '/#'] = $exactTopic . '/#';
+            if ($isComplete) {
+                $result[$exactTopic] = $exactTopic;
+            }
+
+            // Generate + wildcard combinations via bitmask
+            $firstReplaceableIdx = $isSys ? 1 : 0;
+            $variantCount = 1 << $level;
+
+            for ($mask = 1; $mask < $variantCount; $mask++) {
+                // Skip masks that would replace the system prefix '$'
+                if ($mask & ((1 << $firstReplaceableIdx) - 1)) {
+                    continue;
+                }
+
+                $variant = $levelSegments;
+                for ($pos = $firstReplaceableIdx; $pos < $level; $pos++) {
+                    if ($mask & (1 << $pos)) {
+                        $variant[$pos] = '+';
+                    }
+                }
+
+                $variantTopic = implode('/', $variant);
+                $result[$variantTopic . '/#'] = $variantTopic . '/#';
+                if ($isComplete) {
+                    $result[$variantTopic] = $variantTopic;
+                }
             }
         }
+
+        return $result;
     }
 
     /**
