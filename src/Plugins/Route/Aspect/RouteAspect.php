@@ -393,6 +393,10 @@ class RouteAspect extends OrderAspect
 			$_params = $routeTool->getParams();
 
             $controllerInstance = $this->getController($_controllerName);
+
+			//set clientData
+			$controllerInstance->setClientData($clientData);
+
             $controllerInstance->initialization($_controllerName, $_methodName);
 
             $clientData->setResponseRaw($controllerInstance->handle($_controllerName, $_methodName, $_params));

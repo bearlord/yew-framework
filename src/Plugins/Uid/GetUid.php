@@ -20,8 +20,6 @@ trait GetUid
 
     /**
      * @return UidBean
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     protected function getUidBean(): UidBean
     {
@@ -33,7 +31,6 @@ trait GetUid
 
     /**
      * @param string $uid
-     * @throws \Exception
      */
     public function kickUid(string $uid)
     {
@@ -44,7 +41,6 @@ trait GetUid
      * @param int $fd
      * @param string $uid
      * @param bool $autoKick
-     * @throws \Exception
      */
     public function bindUid(int $fd, string $uid, ?bool $autoKick = true)
     {
@@ -53,7 +49,6 @@ trait GetUid
 
     /**
      * @param int $fd
-     * @throws \Exception
      */
     public function unBindUid(int $fd)
     {
@@ -63,8 +58,6 @@ trait GetUid
     /**
      * @param string $uid
      * @return mixed
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getUidFd(string $uid)
     {
@@ -74,8 +67,6 @@ trait GetUid
     /**
      * @param int $fd
      * @return mixed
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getFdUid(int $fd)
     {
@@ -85,8 +76,6 @@ trait GetUid
     /**
      * @param $uid
      * @return bool
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function isOnline($uid): bool
     {
@@ -95,8 +84,6 @@ trait GetUid
 
     /**
      * @return int
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getUidCount(): int
     {
@@ -105,8 +92,6 @@ trait GetUid
 
     /**
      * @return array
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getAllUid(): array
     {
@@ -115,8 +100,6 @@ trait GetUid
 
     /**
      * @return array
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getAllFd(): array
     {
@@ -125,8 +108,6 @@ trait GetUid
 
     /**
      * @return Table
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getUidFdTable(): Table
     {
@@ -135,8 +116,6 @@ trait GetUid
 
     /**
      * @return Table
-     * @throws DependencyException
-     * @throws NotFoundException
      */
     public function getFdUidTable(): Table
     {

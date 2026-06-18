@@ -45,15 +45,27 @@ abstract class RouteController extends Controller implements IController
 
     /**
      * @Inject()
-     * @var ClientData
+     * @var ClientData| null
      */
-    protected $clientData;
+    protected ?ClientData $clientData = null;
 
     /**
      * @Inject()
      * @var LoggerInterface
      */
     protected LoggerInterface $log;
+	
+
+	public function getClientData(): ?ClientData
+	{
+		return $this->clientData;
+	}
+
+	public function setClientData(?ClientData $clientData): void
+	{
+		$this->clientData = $clientData;
+	}
+
 
     /**
      * @inheritDoc
