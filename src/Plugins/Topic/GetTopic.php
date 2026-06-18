@@ -73,7 +73,7 @@ trait GetTopic
      * @throws Exception
      * @throws \Exception
      */
-    public function addSub(string $topic, string $uid)
+    public function addSubscription(string $topic, string $uid)
     {
         if (empty($uid)) {
             $this->warn("Uid is empty");
@@ -82,7 +82,7 @@ trait GetTopic
 
         /** @var Topic $rpcProxy */
         $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->addSub($topic, $uid);
+        $rpcProxy->addSubscription($topic, $uid);
     }
 
     /**
@@ -92,7 +92,7 @@ trait GetTopic
      * @throws IpcException
      * @throws \Exception
      */
-    public function removeSub(string $topic, string $uid)
+    public function removeSubscription(string $topic, string $uid)
     {
         if (empty($uid)) {
             $this->warn("Uid is empty");
@@ -101,7 +101,7 @@ trait GetTopic
 
         /** @var Topic $rpcProxy */
         $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->removeSub($topic, $uid);
+        $rpcProxy->removeSubscription($topic, $uid);
     }
 
     /**
@@ -110,7 +110,7 @@ trait GetTopic
      * @throws IpcException
      * @throws \Exception
      */
-    public function clearFdSub(int $fd)
+    public function clearFdSubscription(int $fd)
     {
         if (empty($fd)) {
             $this->warn("Fd is empty");
@@ -118,7 +118,7 @@ trait GetTopic
         }
         /** @var Topic $rpcProxy */
         $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->clearFdSub($fd);
+        $rpcProxy->clearFdSubscription($fd);
     }
 
     /**

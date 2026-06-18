@@ -5,15 +5,15 @@ namespace Yew\Plugins\Topic\Driver;
 interface DriverInterface
 {
 
-    public function addSub(string $topic, string $uid);
+    public function addSubscription(string $topic, string $uid);
 
-    public function removeSub(string $topic, string $uid);
+    public function removeSubscription(string $topic, string $uid);
 
     public function hasTopic(string $topic, string $uid): bool;
 
     public function delTopic(string $topic);
 
-    public function clearFdSub(int $fd);
+    public function clearFdSubbscription(int $fd);
 
     public function clearUidSub(string $uid);
     

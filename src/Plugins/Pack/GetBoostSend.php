@@ -29,13 +29,12 @@ trait GetBoostSend
 
     /**
      * Enhanced send, which can be transcoded and sent according to different protocols
-     *
-     * @param $fd
-     * @param $data
-     * @param $topic
-     * @return bool
-     */
-    public function autoBoostSend($fd, $data, $topic = null): bool
+	 * @param int $fd
+	 * @param $data
+	 * @param string|null $topic
+	 * @return bool
+	 */
+    public function autoBoostSend(int $fd, $data, ?string $topic = null): bool
     {
         return $this->getPackAspect()->autoBoostSend($fd, $data, $topic);
     }

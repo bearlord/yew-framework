@@ -140,13 +140,12 @@ class PackAspect extends OrderAspect
 
     /**
      * Enhanced send, which can be transcoded and sent according to different protocols
-     *
-     * @param $fd
-     * @param $data
-     * @param null $topic
-     * @return bool
-     */
-    public function autoBoostSend($fd, $data, $topic = null): bool
+	 * @param int $fd
+	 * @param $data
+	 * @param string|null $topic
+	 * @return bool
+	 */
+    public function autoBoostSend(int $fd, $data, ?string $topic = null): bool
     {
         if ($data == null) {
             return false;

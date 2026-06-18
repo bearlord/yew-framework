@@ -62,6 +62,6 @@ class TopicAspect extends OrderAspect
     protected function afterWsClose(MethodInvocation $invocation)
     {
         list($fd, $reactorId) = $invocation->getArguments();
-        $this->clearFdSub($fd);
+        $this->clearFdSubscription($fd);
     }
 }

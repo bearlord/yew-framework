@@ -25,14 +25,14 @@ class DriverStrategy
     }
 
 
-    public function addSub(string $topic, string $uid)
+    public function addSubscription(string $topic, string $uid)
     {
-        $this->strategy->addSub($topic, $uid);
+        $this->strategy->addSubscription($topic, $uid);
     }
 
-    public function removeSub(string $topic, string $uid)
+    public function removeSubscription(string $topic, string $uid)
     {
-        $this->strategy->removeSub($topic, $uid);
+        $this->strategy->removeSubscription($topic, $uid);
     }
 
     public function hasTopic(string $topic, string $uid): bool
@@ -45,9 +45,9 @@ class DriverStrategy
         $this->strategy->delTopic($topic);
     }
 
-    public function clearFdSub(int $fd)
+    public function clearFdSubbscription(int $fd)
     {
-        $this->strategy->clearFdSub($fd);
+        $this->strategy->clearFdSubbscription($fd);
     }
 
     public function clearUidSub(string $uid)

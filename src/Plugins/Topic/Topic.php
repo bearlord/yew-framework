@@ -37,7 +37,7 @@ class Topic
         $this->topicTable = $topicTable;
 
         foreach ($this->topicTable as $value) {
-            $this->addSubFormTable($value["topic"], $value["uid"]);
+            $this->addSubscriptionFormTable($value["topic"], $value["uid"]);
         }
     }
 
@@ -81,12 +81,15 @@ class Topic
      * @throws BadUTF8
      * @throws Exception
      */
-    public function addSub(string $topic, string $uid)
+    public function addSubscription(string $topic, string $uid)
     {
         Utility::checkTopicFilter($topic);
 
-        $this->addSubFormTable($topic, $uid);
-        $this->topicTable->set($topic . $uid, ["topic" => $topic, "uid" => $uid]);
+        $this->addSubscriptionFormTable($topic, $uid);
+        $this->topicTable->set($topic . $uid, [
+			"topic" => $topic,
+	        "uid" => $uid
+        ]);
     }
 
     /**
@@ -95,7 +98,7 @@ class Topic
      * @param int $fd
      * @throws \Exception
      */
-    public function clearFdSub(int $fd)
+    public function clearFdSubscription(int $fd)
     {
         if (empty($fd)) {
             return;
@@ -118,7 +121,7 @@ class Topic
         }
 
         foreach ($this->subscriptionItems as $topic => $sub) {
-            $this->removeSub($topic, $uid);
+            $this->removeSubscription($topic, $uid);
         }
     }
 
@@ -128,7 +131,7 @@ class Topic
      * @param string $uid
      * @throws \Exception
      */
-    public function removeSub(string $topic, string $uid)
+    public function removeSubscription(string $topic, string $uid)
     {
         if (empty($uid)) {
             return;

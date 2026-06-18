@@ -6,14 +6,14 @@ use Yew\Plugins\Topic\Driver\DriverInterface;
 
 class MemoryDriver implements DriverInterface
 {
-    public function addSub(string $topic, string $uid)
+    public function addSubscription(string $topic, string $uid)
     {
-        // TODO: Implement addSub() method.
+        // TODO: Implement addSubscription() method.
     }
 
-    public function removeSub(string $topic, string $uid)
+    public function removeSubscription(string $topic, string $uid)
     {
-        // TODO: Implement removeSub() method.
+        // TODO: Implement removeSubscription() method.
     }
 
     public function hasTopic(string $topic, string $uid): bool
@@ -26,9 +26,9 @@ class MemoryDriver implements DriverInterface
         // TODO: Implement delTopic() method.
     }
 
-    public function clearFdSub(int $fd)
+    public function clearFdSubbscription(int $fd)
     {
-        // TODO: Implement clearFdSub() method.
+        // TODO: Implement clearFdSubbscription() method.
     }
 
     public function clearUidSub(string $uid)
