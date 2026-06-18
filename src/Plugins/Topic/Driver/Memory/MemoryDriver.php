@@ -31,9 +31,9 @@ class MemoryDriver implements DriverInterface
         // TODO: Implement clearFdSubbscription() method.
     }
 
-    public function clearUidSub(string $uid)
+    public function clearUidSubbscription(string $uid)
     {
-        // TODO: Implement clearUidSub() method.
+        // TODO: Implement clearUidSubbscription() method.
     }
 
     public function pub(string $topic, $data, ?array $excludeUidList = [])

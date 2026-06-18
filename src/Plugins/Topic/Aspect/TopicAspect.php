@@ -48,7 +48,7 @@ class TopicAspect extends OrderAspect
         //This is a cross-process call, so use uid instead of fd to avoid timing errors
         $uid = $this->getFdUid($fd);
         if ($uid != null) {
-            $this->clearUidSub($uid);
+            $this->clearUidSubbscription($uid);
         }
     }
 

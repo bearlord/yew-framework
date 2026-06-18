@@ -50,9 +50,9 @@ class DriverStrategy
         $this->strategy->clearFdSubbscription($fd);
     }
 
-    public function clearUidSub(string $uid)
+    public function clearUidSubbscription(string $uid)
     {
-        $this->strategy->clearUidSub($uid);
+        $this->strategy->clearUidSubbscription($uid);
     }
 
     public function pub(string $topic, $data, ?array $excludeUidList = [])

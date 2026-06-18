@@ -127,7 +127,7 @@ trait GetTopic
      * @throws IpcException
      * @throws \Exception
      */
-    public function clearUidSub(string $uid)
+    public function clearUidSubbscription(string $uid)
     {
         if (empty($uid)) {
             $this->warn("Uid is empty");
@@ -136,7 +136,7 @@ trait GetTopic
 
         /** @var Topic $rpcProxy */
         $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->clearUidSub($uid);
+        $rpcProxy->clearUidSubbscription($uid);
     }
 
     /**
