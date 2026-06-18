@@ -104,7 +104,7 @@ class UidBean
 
 		$uid = $this->fdUidTable->get($fd, "uid");
 		$this->fdUidTable->del($fd);
-		
+
 		if ($uid != null) {
 			$this->uidFdTable->del($uid);
 		}
