@@ -390,16 +390,12 @@ class RouteAspect extends OrderAspect
 		//Params
 		$params = $routeTool->getParams();
 
-		var_dump([
-			"clientData" => $clientData,
-		]);
-
 		if (empty($controllerName)) {
-			$this->warn("Controller name not exists");
+			$this->warn(sprintf("Controller name associated with path %s not exists", $clientData->getPath()));
 			return;
 		}
 		if (empty($methodName)) {
-			$this->warn("Method name not exists");
+			$this->warn(sprintf("Method name associated with path %s not exists", $clientData->getPath()));
 		}
 
         try {
