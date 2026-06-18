@@ -382,14 +382,20 @@ class RouteAspect extends OrderAspect
             return;
         }
         $routeTool = $this->routeTools[$routePortConfig->getRouteTool()];
+
         try {
             if (!$routeTool->handleClientData($clientData, $routePortConfig)) {
                 return;
             }
-            $controllerInstance = $this->getController($routeTool->getControllerName());
-            $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
 
-            $clientData->setResponseRaw($controllerInstance->handle($routeTool->getControllerName(), $routeTool->getMethodName(), $routeTool->getParams()));
+			$_controllerName = $routeTool->getControllerName();
+			$_methodName = $routeTool->getMethodName();
+			$_params = $routeTool->getParams();
+
+            $controllerInstance = $this->getController($_controllerName);
+            $controllerInstance->initialization($_controllerName, $_methodName);
+
+            $clientData->setResponseRaw($controllerInstance->handle($_controllerName, $_methodName, $_params));
 
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
