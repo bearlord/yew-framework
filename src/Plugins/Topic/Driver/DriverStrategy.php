@@ -40,9 +40,9 @@ class DriverStrategy
         return $this->strategy->hasTopic($topic, $uid);
     }
 
-    public function delTopic(string $topic)
+    public function deleteTopic(string $topic)
     {
-        $this->strategy->delTopic($topic);
+        $this->strategy->deleteTopic($topic);
     }
 
     public function clearFdSubbscription(int $fd)
@@ -55,9 +55,9 @@ class DriverStrategy
         $this->strategy->clearUidSubbscription($uid);
     }
 
-    public function pub(string $topic, $data, ?array $excludeUidList = [])
+    public function publish(string $topic, $data, ?array $excludeUidList = [])
     {
-        $this->strategy->pub($topic, $data, $excludeUidList);
+        $this->strategy->publish($topic, $data, $excludeUidList);
     }
 
 

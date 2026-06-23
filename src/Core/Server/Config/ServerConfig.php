@@ -69,11 +69,6 @@ class ServerConfig extends BaseConfig
     protected ?int $maxConn = null;
 
     /**
-     * @var string|null
-     */
-    protected ?string $proxyServerClass = null;
-
-    /**
      * Daemonize => 1, after adding this parameter, it will be transferred to the background and run as a daemon
      * @var bool
      */
@@ -1025,26 +1020,6 @@ class ServerConfig extends BaseConfig
     public function getVendorDir(): string
     {
         return realpath($this->getRootDir()) . DIRECTORY_SEPARATOR . "vendor";
-    }
-
-    /**
-     * Get proxy server class
-     *
-     * @return string|null
-     */
-    public function getProxyServerClass(): ?string
-    {
-        return $this->proxyServerClass;
-    }
-
-    /**
-     * Set proxy server class
-     *
-     * @param string|null $proxyServerClass
-     */
-    public function setProxyServerClass(?string $proxyServerClass): void
-    {
-        $this->proxyServerClass = $proxyServerClass;
     }
 
     /**

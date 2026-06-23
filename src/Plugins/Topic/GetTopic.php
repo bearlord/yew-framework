@@ -42,11 +42,11 @@ trait GetTopic
      * @param string $topic
      * @return void
      */
-    public function delTopic(string $topic)
+    public function deleteTopic(string $topic)
     {
         /** @var Topic $rpcProxy */
         $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->delTopic($topic);
+        $rpcProxy->deleteTopic($topic);
     }
 
     /**
@@ -131,10 +131,10 @@ trait GetTopic
      * @param array|null $excludeUidList
      * @return void
      */
-    public function pub(string $topic, $data, ?array $excludeUidList = [])
+    public function publish(string $topic, $data, ?array $excludeUidList = [])
     {
         /** @var Topic $rpcProxy */
         $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->pub($topic, $data, $excludeUidList);
+        $rpcProxy->publish($topic, $data, $excludeUidList);
     }
 }

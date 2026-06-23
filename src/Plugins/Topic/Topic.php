@@ -153,7 +153,7 @@ class Topic
      *
      * @param string $topic
      */
-    public function delTopic(string $topic)
+    public function deleteTopic(string $topic)
     {
         $uidItems = !empty($this->subscriptionItems[$topic]) ? $this->subscriptionItems[$topic] : [];
 
@@ -173,7 +173,7 @@ class Topic
      * @throws DependencyException
      * @throws NotFoundException
      */
-    public function pub(string $topic, $data, ?array $excludeUidList = null)
+    public function publish(string $topic, $data, ?array $excludeUidList = null)
     {
         $tree = $this->buildTrees($topic);
 
@@ -256,7 +256,7 @@ class Topic
      * @throws DependencyException
      * @throws NotFoundException
      */
-    private function pubToUid(string $uid, $data, string $topic)
+    private function publishToUid(string $uid, $data, string $topic)
     {
         $fd = $this->getUidFd($uid);
         if (empty($uid)) {

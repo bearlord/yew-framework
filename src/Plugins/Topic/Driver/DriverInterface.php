@@ -30,7 +30,7 @@ interface DriverInterface
 	 * @param string $topic
 	 * @return mixed
 	 */
-    public function delTopic(string $topic);
+    public function deleteTopic(string $topic);
 
 	/**
 	 * @param int $fd
@@ -50,7 +50,7 @@ interface DriverInterface
 	 * @param array|null $excludeUidList
 	 * @return mixed
 	 */
-    public function pub(string $topic, $data, ?array $excludeUidList = []);
+    public function publish(string $topic, $data, ?array $excludeUidList = []);
 
 
 }

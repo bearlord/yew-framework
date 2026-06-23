@@ -21,9 +21,9 @@ class MemoryDriver implements DriverInterface
         // TODO: Implement hasTopic() method.
     }
 
-    public function delTopic(string $topic)
+    public function deleteTopic(string $topic)
     {
-        // TODO: Implement delTopic() method.
+        // TODO: Implement deleteTopic() method.
     }
 
     public function clearFdSubbscription(int $fd)
@@ -36,9 +36,9 @@ class MemoryDriver implements DriverInterface
         // TODO: Implement clearUidSubbscription() method.
     }
 
-    public function pub(string $topic, $data, ?array $excludeUidList = [])
+    public function publish(string $topic, $data, ?array $excludeUidList = [])
     {
-        // TODO: Implement pub() method.
+        // TODO: Implement publish() method.
     }
 
 
