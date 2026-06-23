@@ -328,7 +328,7 @@ abstract class Actor
             foreach ($this->timerIds as $timerId) {
                 $this->clearTimer($timerId);
             }
-            $this->debug(sprintf("Actor %s"s all timer cleared", $this->getName()));
+            $this->debug(sprintf("Actor %s's all timer cleared", $this->getName()));
         }
         return true;
     }
