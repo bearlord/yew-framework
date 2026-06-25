@@ -1,8 +1,8 @@
 <?php
 
-namespace Yew\Plugins\Topic\Driver\Db;
+namespace Yew\Plugins\Topic\Storage\Db;
 
-use Yew\Plugins\Topic\Driver\DriverInterface;
+use Yew\Plugins\Topic\Storage\DriverInterface;
 
 class DbDriver implements DriverInterface
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Yew\Plugins\Topic\Driver;
+namespace Yew\Plugins\Topic\Storage;
 
 interface DriverInterface
 {

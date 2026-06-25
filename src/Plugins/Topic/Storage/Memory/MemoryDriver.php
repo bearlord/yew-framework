@@ -1,8 +1,8 @@
 <?php
 
-namespace Yew\Plugins\Topic\Driver\Memory;
+namespace Yew\Plugins\Topic\Storage\Memory;
 
-use Yew\Plugins\Topic\Driver\DriverInterface;
+use Yew\Plugins\Topic\Storage\DriverInterface;
 
 class MemoryDriver implements DriverInterface
 {

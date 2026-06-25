@@ -1,9 +1,9 @@
 <?php
 
-namespace Yew\Plugins\Topic\Driver;
+namespace Yew\Plugins\Topic\Storage;
 
-use Yew\Plugins\Topic\Driver\Db\DbDriver;
-use Yew\Plugins\Topic\Driver\Memory\MemoryDriver;
+use Yew\Plugins\Topic\Storage\Db\DbDriver;
+use Yew\Plugins\Topic\Storage\Memory\MemoryDriver;
 
 class DriverStrategy
 {
