@@ -14,11 +14,12 @@ use Yew\Mqtt\Protocol\ProtocolV5;
 class Client extends BaseClient
 {
     /**
-     * Record subscribed topics for automatic re-subscription after reconnection
+     * Record all subscriptions for automatic re-subscription after reconnection
+     * Each element: ['topics' => [...], 'properties' => [...]]
      *
      * @var array
      */
-    protected array $subscribedTopics = [];
+    protected array $subscriptions = [];
 
     /**
      * @param string $host
@@ -105,9 +106,12 @@ class Client extends BaseClient
             $this->connect($this->getConnectData("clean_session") ?? true, $this->getConnectData("will") ?? []);
 
             // Re-subscribe to previously subscribed topics after reconnection
-            if (!empty($this->subscribedTopics)) {
-                parent::subscribe($this->subscribedTopics);
+            if (!empty($this->subscriptions)) {
+                foreach ($this->subscriptions as $subscription) {
+                    parent::subscribe($subscription['topics'], $subscription['properties']);
+                }
             }
+
         } elseif ($response === false && $this->client->errCode !== SOCKET_ETIMEDOUT) {
             $this->handleException();
         } elseif (is_string($response) && strlen($response) > 0) {
@@ -125,10 +129,13 @@ class Client extends BaseClient
      * @param array $topics
      * @return bool
      */
-    public function subscribe(array $topics)
+    public function subscribe(array $topics, array $properties = [])
     {
-        $this->subscribedTopics = $topics;
-        return parent::subscribe($topics);
+        $this->subscriptions[] = [
+            'topics' => $topics,
+            'properties' => $properties,
+        ];
+        return parent::subscribe($topics, $properties);
     }
 
     /**

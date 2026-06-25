@@ -160,7 +160,7 @@ class Topic
         unset($this->subscriptionItems[$topic]);
 
         foreach ($uidItems as $uid) {
-            $this->topicTable->del($topic . $uid);
+            $this->topicTable->delete($topic . $uid);
         }
     }
 
@@ -186,7 +186,7 @@ class Topic
 		        if (in_array($uid, $excludeUidList)) {
 			        continue;
 		        }
-		        $this->pubToUid($uid, $data, $topic);
+		        $this->publishToUid($uid, $data, $topic);
 	        }
         }
     }

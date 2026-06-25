@@ -305,7 +305,7 @@ class AnnotationsScanPlugin extends AbstractPlugin
                             $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
                             $annotationClass = get_parent_class($annotation);
                             if ($annotationClass != Annotation::class) {
-								
+
 								/*
                                 if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
                                     $_message = sprintf("%s in %s::%s",

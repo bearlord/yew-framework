@@ -153,13 +153,26 @@ class Table implements \Iterator, \Countable
     /**
      * Delete data
      *
-     * @param $key $key对应的数据不存在，将返回false
-     * @return bool 成功删除返回true
+     * @param string $key
+     * @return bool
      */
-    public function del($key): bool
+    public function del(string $key): bool
     {
         return $this->swooleTable->del($key);
     }
+
+	/**
+	 * Delete data
+	 *
+	 * @param string $key
+	 * @return bool
+	 */
+	public function delete(string $key): bool
+	{
+		return $this->swooleTable->delete($key);
+	}
+
+
 
     /**
      * Return the current element

@@ -26,7 +26,10 @@ class Logger extends Component
      */
     public $dispatcher;
 
-
+	/**
+	 * @param $message
+	 * @return void
+	 */
     public function log($message)
     {
         $time = microtime(true);
@@ -38,7 +41,10 @@ class Logger extends Component
         }
     }
 
-
+	/**
+	 * @param bool|null $final
+	 * @return void
+	 */
     public function flush(?bool $final = false)
     {
         $messages = $this->messages;
