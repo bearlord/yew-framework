@@ -26,18 +26,18 @@ class UidBean
 	protected UidConfig $uidConfig;
 
 	/**
-	 * @param int $getMaxCoroutine
+	 * @param int $maxCoroutine
 	 * @param UidConfig $uidConfig
 	 */
-	public function __construct(int $getMaxCoroutine, UidConfig $uidConfig)
+	public function __construct(int $maxCoroutine, UidConfig $uidConfig)
 	{
 		$this->uidConfig = $uidConfig;
 
-		$this->uidFdTable = new Table($getMaxCoroutine);
+		$this->uidFdTable = new Table($maxCoroutine);
 		$this->uidFdTable->column("fd", Table::TYPE_INT);
 		$this->uidFdTable->create();
 
-		$this->fdUidTable = new Table($getMaxCoroutine);
+		$this->fdUidTable = new Table($maxCoroutine);
 		$this->fdUidTable->column("uid", Table::TYPE_STRING, $uidConfig->getUidMaxLength());
 		$this->fdUidTable->create();
 	}

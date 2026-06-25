@@ -16,252 +16,260 @@ use Yew\Plugins\Uid\GetUid;
 
 class Topic
 {
-    use GetBoostSend;
-    use GetUid;
-    use GetLogger;
+	use GetBoostSend;
+	use GetUid;
+	use GetLogger;
 
-    protected array $subscriptionItems = [];
+	protected array $subscriptions = [];
 
-    /**
-     * @var Table
-     */
-    private Table $topicTable;
+	/**
+	 * @var Table
+	 */
+	private Table $topicTable;
 
-    /**
-     * Topic constructor.
-     * @param Table $topicTable
-     */
-    public function __construct(Table $topicTable)
-    {
-        //Read the table first, because the process may restart
-        $this->topicTable = $topicTable;
+	/**
+	 * Topic constructor.
+	 * @param Table $topicTable
+	 */
+	public function __construct(Table $topicTable)
+	{
+		//Read the table first, because the process may restart
+		$this->topicTable = $topicTable;
 
-        foreach ($this->topicTable as $value) {
-            $this->addSubscriptionFormTable($value["topic"], $value["uid"]);
-        }
-    }
+		foreach ($this->topicTable as $value) {
+			$this->indexSubscription($value["topic"], $value["uid"]);
+		}
+	}
 
-    /**
-     * @param string $topic
-     * @param string $uid
-     */
-    private function addSubscriptionFormTable(string $topic, string $uid)
-    {
-        if (empty($uid)) {
-            return;
-        }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 */
+	private function indexSubscription(string $topic, string $uid)
+	{
+		if (empty($uid)) {
+			return;
+		}
 
-        if (!isset($this->subscriptionItems[$topic])) {
-            $this->subscriptionItems[$topic] = [];
-        }
+		if (!isset($this->subscriptions[$topic])) {
+			$this->subscriptions[$topic] = [];
+		}
 
-        $this->subscriptionItems[$topic][$uid] = $uid;
-    }
+		$this->subscriptions[$topic][$uid] = $uid;
+	}
 
-    /**
-     * @param string $topic
-     * @param string $uid
-     * @return bool
-     */
-    public function hasTopic(string $topic, string $uid): bool
-    {
-        $subs = !empty($this->subscriptionItems[$topic]) ? $this->subscriptionItems[$topic] : null;
-        if ($subs == null) {
-            return false;
-        }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function hasTopic(string $topic, string $uid): bool
+	{
+		$subs = !empty($this->subscriptions[$topic]) ? $this->subscriptions[$topic] : null;
+		if ($subs == null) {
+			return false;
+		}
 
-        return isset($subs[$uid]);
-    }
+		return isset($subs[$uid]);
+	}
 
-    /**
-     * Add subscription
-     *
-     * @param string $topic
-     * @param string $uid
-     * @throws BadUTF8
-     * @throws Exception
-     */
-    public function addSubscription(string $topic, string $uid)
-    {
-        Utility::checkTopicFilter($topic);
+	/**
+	 * Add subscription
+	 *
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function addSubscription(string $topic, string $uid): bool
+	{
+		Utility::checkTopicFilter($topic);
 
-        $this->addSubscriptionFormTable($topic, $uid);
-        $this->topicTable->set($topic . $uid, [
+		$this->indexSubscription($topic, $uid);
+
+		$this->topicTable->set($topic . $uid, [
 			"topic" => $topic,
-	        "uid" => $uid
-        ]);
-    }
+			"uid" => $uid
+		]);
 
-    /**
-     * Clear fd"s subscription
-     *
-     * @param int $fd
-     * @throws \Exception
-     */
-    public function clearFdSubscription(int $fd)
-    {
-        if (empty($fd)) {
-            return;
-        }
+		return true;
+	}
 
-        $uid = $this->getFdUid($fd);
-        $this->clearFdSubscription($uid);
-    }
+	/**
+	 * Clear fd subscription
+	 *
+	 * @param int $fd
+	 */
+	public function clearFdSubscription(int $fd): bool
+	{
+		if (empty($fd)) {
+			return false;
+		}
 
-    /**
-     * Clear uid"s subscription
-     *
-     * @param string $uid
-     * @throws \Exception
-     */
-    public function clearUidSubscription(string $uid)
-    {
-        if (empty($uid)) {
-            return;
-        }
+		$uid = $this->getFdUid($fd);
 
-        foreach ($this->subscriptionItems as $topic => $sub) {
-            $this->removeSubscription($topic, $uid);
-        }
-    }
+		return $this->clearUidSubscription($uid);
+	}
 
-    /**
-     * Remove subscription
-     * @param string $topic
-     * @param string $uid
-     * @throws \Exception
-     */
-    public function removeSubscription(string $topic, string $uid)
-    {
-        if (empty($uid)) {
-            return;
-        }
-        if (isset($this->subscriptionItems[$topic])) {
-            unset($this->subscriptionItems[$topic][$uid]);
+	/**
+	 * Clear uid subscription
+	 *
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function clearUidSubscription(string $uid): bool
+	{
+		if (empty($uid)) {
+			return false;
+		}
 
-            if (empty($this->subscriptionItems[$topic])) {
-                unset($this->subscriptionItems[$topic]);
-            }
-        }
+		foreach ($this->subscriptions as $topic => $sub) {
+			$this->removeSubscription($topic, $uid);
+		}
 
-        $this->topicTable->del($topic . $uid);
-        $this->debug("$uid Remove Sub $topic");
-    }
+		return true;
+	}
 
-    /**
-     * Delete subscription
-     *
-     * @param string $topic
-     */
-    public function deleteTopic(string $topic)
-    {
-        $uidItems = !empty($this->subscriptionItems[$topic]) ? $this->subscriptionItems[$topic] : [];
+	/**
+	 * Remove subscription
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function removeSubscription(string $topic, string $uid): bool
+	{
+		if (empty($uid)) {
+			return;
+		}
+		if (isset($this->subscriptions[$topic])) {
+			unset($this->subscriptions[$topic][$uid]);
 
-        unset($this->subscriptionItems[$topic]);
+			if (empty($this->subscriptions[$topic])) {
+				unset($this->subscriptions[$topic]);
+			}
+		}
 
-        foreach ($uidItems as $uid) {
-            $this->topicTable->delete($topic . $uid);
-        }
-    }
+		$this->topicTable->delete($topic . $uid);
 
-    /**
-     * Publish subscription
-     *
-     * @param string $topic
-     * @param $data
-     * @param array|null $excludeUidList
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
-    public function publish(string $topic, $data, ?array $excludeUidList = null)
-    {
-        $tree = $this->buildTrees($topic);
+		return true;
+	}
 
-        foreach ($tree as $one) {
-	        if (empty($this->subscriptionItems[$one])) {
+	/**
+	 * Delete subscription
+	 *
+	 * @param string $topic
+	 * @return bool
+	 */
+	public function deleteTopic(string $topic): bool
+	{
+		$uidItems = !empty($this->subscriptions[$topic]) ? $this->subscriptions[$topic] : [];
+
+		unset($this->subscriptions[$topic]);
+
+		foreach ($uidItems as $uid) {
+			$this->topicTable->delete($topic . $uid);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Publish subscription
+	 *
+	 * @param string $topic
+	 * @param $data
+	 * @param array|null $excludeUidList
+	 * @return bool
+	 */
+	public function publish(string $topic, $data, ?array $excludeUidList = null): bool
+	{
+		$tree = $this->buildTrees($topic);
+
+		foreach ($tree as $one) {
+			if (empty($this->subscriptions[$one])) {
 				continue;
-	        }
+			}
 
-	        foreach ($this->subscriptionItems[$one] as $uid) {
-		        if (in_array($uid, $excludeUidList)) {
-			        continue;
-		        }
-		        $this->publishToUid($uid, $data, $topic);
-	        }
-        }
-    }
+			foreach ($this->subscriptions[$one] as $uid) {
+				if (in_array($uid, $excludeUidList)) {
+					continue;
+				}
+				$this->publishToUid($uid, $data, $topic);
+			}
+		}
 
-    /**
-     * Build a subscription tree, allowing only 5 layers
-     *
-     * @param string $topic
-     * @return array
-     */
-    private function buildTrees(string $topic): array
-    {
-        $segments = explode('/', $topic);
-        $levelCount = count($segments);
-        $result = [];
-        $isSys = $topic[0] === '$';
+		return true;
+	}
 
-        if (!$isSys) {
-            $result['#'] = '#';
-        }
+	/**
+	 * Build a subscription tree, allowing only 5 layers
+	 *
+	 * @param string $topic
+	 * @return array
+	 */
+	private function buildTrees(string $topic): array
+	{
+		$segments = explode('/', $topic);
+		$levelCount = count($segments);
+		$result = [];
+		$isSys = $topic[0] === '$';
 
-        for ($level = 1; $level <= $levelCount; $level++) {
-            $levelSegments = array_slice($segments, 0, $level);
-            $isComplete = $level === $levelCount;
-            $exactTopic = implode('/', $levelSegments);
+		if (!$isSys) {
+			$result['#'] = '#';
+		}
 
-            // Exact match and prefix wildcard
-            $result[$exactTopic . '/#'] = $exactTopic . '/#';
-            if ($isComplete) {
-                $result[$exactTopic] = $exactTopic;
-            }
+		for ($level = 1; $level <= $levelCount; $level++) {
+			$levelSegments = array_slice($segments, 0, $level);
+			$isComplete = $level === $levelCount;
+			$exactTopic = implode('/', $levelSegments);
 
-            // Generate + wildcard combinations via bitmask
-            $firstReplaceableIdx = $isSys ? 1 : 0;
-            $variantCount = 1 << $level;
+			// Exact match and prefix wildcard
+			$result[$exactTopic . '/#'] = $exactTopic . '/#';
+			if ($isComplete) {
+				$result[$exactTopic] = $exactTopic;
+			}
 
-            for ($mask = 1; $mask < $variantCount; $mask++) {
-                // Skip masks that would replace the system prefix '$'
-                if ($mask & ((1 << $firstReplaceableIdx) - 1)) {
-                    continue;
-                }
+			// Generate + wildcard combinations via bitmask
+			$firstReplaceableIdx = $isSys ? 1 : 0;
+			$variantCount = 1 << $level;
 
-                $variant = $levelSegments;
-                for ($pos = $firstReplaceableIdx; $pos < $level; $pos++) {
-                    if ($mask & (1 << $pos)) {
-                        $variant[$pos] = '+';
-                    }
-                }
+			for ($mask = 1; $mask < $variantCount; $mask++) {
+				// Skip masks that would replace the system prefix '$'
+				if ($mask & ((1 << $firstReplaceableIdx) - 1)) {
+					continue;
+				}
 
-                $variantTopic = implode('/', $variant);
-                $result[$variantTopic . '/#'] = $variantTopic . '/#';
-                if ($isComplete) {
-                    $result[$variantTopic] = $variantTopic;
-                }
-            }
-        }
+				$variant = $levelSegments;
+				for ($pos = $firstReplaceableIdx; $pos < $level; $pos++) {
+					if ($mask & (1 << $pos)) {
+						$variant[$pos] = '+';
+					}
+				}
 
-        return $result;
-    }
+				$variantTopic = implode('/', $variant);
+				$result[$variantTopic . '/#'] = $variantTopic . '/#';
+				if ($isComplete) {
+					$result[$variantTopic] = $variantTopic;
+				}
+			}
+		}
 
-    /**
-     * Publish subscription to uid
-     *
-     * @param string $uid
-     * @param $data
-     * @param string $topic
-     * @throws DependencyException
-     * @throws NotFoundException
-     */
-    private function publishToUid(string $uid, $data, string $topic)
-    {
-        $fd = $this->getUidFd($uid);
-        if (empty($uid)) {
-            return;
-        }
-        $this->autoBoostSend($fd, $data, $topic);
-    }
+		return $result;
+	}
+
+	/**
+	 * Publish subscription to uid
+	 *
+	 * @param string $uid
+	 * @param $data
+	 * @param string $topic
+	 */
+	private function publishToUid(string $uid, $data, string $topic): bool
+	{
+		$fd = $this->getUidFd($uid);
+		if (empty($uid)) {
+			return false;
+		}
+		
+		return $this->autoBoostSend($fd, $data, $topic);
+	}
 }

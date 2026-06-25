@@ -14,127 +14,135 @@ use Yew\Plugins\Ipc\IpcException;
 
 trait GetTopic
 {
-    use GetIpc;
-    
-    /**
-     * @var TopicConfig|null
-     */
-    protected ?TopicConfig $topicConfig = null;
+	use GetIpc;
 
-    /**
-     * @param string $topic
-     * @param string $uid
-     * @return bool
-     */
-    public function hasTopic(string $topic, string $uid): bool
-    {
-        if (empty($uid)) {
-            $this->warn("Uid is empty");
-            return false;
-        }
+	/**
+	 * @var TopicConfig|null
+	 */
+	protected ?TopicConfig $topicConfig = null;
 
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class);
-        return $rpcProxy->hasTopic($topic, $uid);
-    }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function hasTopic(string $topic, string $uid): bool
+	{
+		if (empty($uid)) {
+			return false;
+		}
 
-    /**
-     * @param string $topic
-     * @return void
-     */
-    public function deleteTopic(string $topic)
-    {
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->deleteTopic($topic);
-    }
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class);
+		if (empty($ipcProxy)) {
+			return false;
+		}
 
-    /**
-     * @return mixed|TopicConfig|null
-     */
-    protected function getTopicConfig()
-    {
-        if ($this->topicConfig == null) {
-            $this->topicConfig = DIGet(TopicConfig::class);
-        }
-        return $this->topicConfig;
-    }
+		return $ipcProxy->hasTopic($topic, $uid);
+	}
 
-    /**
-     * @param string $topic
-     * @param string $uid
-     * @return void
-     */
-    public function addSubscription(string $topic, string $uid)
-    {
-        if (empty($uid)) {
-            $this->warn("Uid is empty");
-            return;
-        }
+	/**
+	 * @param string $topic
+	 * @return bool
+	 */
+	public function deleteTopic(string $topic): bool
+	{
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		if (empty($ipcProxy)) {
+			return false;
+		}
 
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->addSubscription($topic, $uid);
-    }
+		return $ipcProxy->deleteTopic($topic);
+	}
 
-    /**
-     * @param string $topic
-     * @param string $uid
-     * @return void
-     */
-    public function removeSubscription(string $topic, string $uid)
-    {
-        if (empty($uid)) {
-            $this->warn("Uid is empty");
-            return;
-        }
+	/**
+	 * @return mixed|TopicConfig|null
+	 */
+	protected function getTopicConfig()
+	{
+		if ($this->topicConfig == null) {
+			$this->topicConfig = DIGet(TopicConfig::class);
+		}
+		return $this->topicConfig;
+	}
 
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->removeSubscription($topic, $uid);
-    }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function addSubscription(string $topic, string $uid): bool
+	{
+		if (empty($uid)) {
+			return false;
+		}
 
-    /**
-     * @param int $fd
-     * @return void
-     */
-    public function clearFdSubscription(int $fd)
-    {
-        if (empty($fd)) {
-            $this->warn("Fd is empty");
-            return;
-        }
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->clearFdSubscription($fd);
-    }
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		if (empty($ipcProxy)) {
+			return false;
+		}
 
-    /**
-     * @param string $uid
-     * @return void
-     */
-    public function clearUidSubbscription(string $uid)
-    {
-        if (empty($uid)) {
-            $this->warn("Uid is empty");
-            return;
-        }
+		return $ipcProxy->addSubscription($topic, $uid);
+	}
 
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->clearUidSubbscription($uid);
-    }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return void
+	 */
+	public function removeSubscription(string $topic, string $uid)
+	{
+		if (empty($uid)) {
+			return;
+		}
 
-    /**
-     * @param string $topic
-     * @param $data
-     * @param array|null $excludeUidList
-     * @return void
-     */
-    public function publish(string $topic, $data, ?array $excludeUidList = [])
-    {
-        /** @var Topic $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
-        $rpcProxy->publish($topic, $data, $excludeUidList);
-    }
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		$ipcProxy->removeSubscription($topic, $uid);
+	}
+
+	/**
+	 * @param int $fd
+	 * @return void
+	 */
+	public function clearFdSubscription(int $fd)
+	{
+		if (empty($fd)) {
+			return;
+		}
+
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		$ipcProxy->clearFdSubscription($fd);
+	}
+
+	/**
+	 * @param string $uid
+	 * @return void
+	 */
+	public function clearUidSubbscription(string $uid)
+	{
+		if (empty($uid)) {
+			return;
+		}
+
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		$ipcProxy->clearUidSubbscription($uid);
+	}
+
+	/**
+	 * @param string $topic
+	 * @param $data
+	 * @param array|null $excludeUidList
+	 * @return void
+	 */
+	public function publish(string $topic, $data, ?array $excludeUidList = null)
+	{
+		/** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		$ipcProxy->publish($topic, $data, $excludeUidList);
+	}
 }
