@@ -30,13 +30,7 @@ class ActorPlugin extends AbstractPlugin
     {
         parent::__construct();
 
-        $config = Server::$instance->getConfigContext()->get("actor");
-        $actorConfig = new ActorConfig();
-        $actorConfig->setActorMaxCount($config["actorMaxCount"]);
-        $actorConfig->setActorMailboxCapacity($config["actorMaxClassCount"]);
-        $actorConfig->setActorWorkerCount($config["actorWorkerCount"]);
-        $actorConfig->setActorMaxClassCount($config["actorMailboxCapacity"]);
-        $this->actorConfig = $actorConfig;
+        $this->initConfig();
 
         $this->atAfter(IpcPlugin::class);
     }
@@ -82,4 +76,24 @@ class ActorPlugin extends AbstractPlugin
     {
         $this->ready();
     }
+
+	/**
+	 * @return void
+	 */
+	protected function initConfig()
+	{
+		$config = Server::$instance->getConfigContext()->get("yew.actor");
+
+		$actorConfig = new ActorConfig();
+
+		$actorConfig->setMaxCount($config["maxCount"]);
+
+		$actorConfig->setMailboxCapacity($config["maxClassCount"]);
+
+		$actorConfig->setWorkerCount($config["workerCount"]);
+
+		$actorConfig->setMaxClassCount($config["maxClassCount"]);
+
+		$this->actorConfig = $actorConfig;
+	}
 }
