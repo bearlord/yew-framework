@@ -60,7 +60,7 @@ class ActorPlugin extends AbstractPlugin
     public function beforeServerStart(Context $context)
     {
         $this->actorConfig->merge();
-        for ($i = 0; $i < $this->actorConfig->getActorWorkerCount(); $i++) {
+        for ($i = 0; $i < $this->actorConfig->getWorkerCount(); $i++) {
             Server::$instance->addProcess("actor-$i", ActorProcess::class, ActorConfig::GROUP_NAME);
         }
 		

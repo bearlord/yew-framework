@@ -114,12 +114,9 @@ class TopicPlugin extends AbstractPlugin
         $topicConfig = new TopicConfig();
 
         $config = Server::$instance->getConfigContext()->get("yew.topic");
-        if ($config["storageType"]) {
-
+        if (!empty($config["storage"])) {
+            $topicConfig->setStorage($config["storage"]);
         }
-
-
-
 
         $this->topicConfig = $topicConfig;
     }

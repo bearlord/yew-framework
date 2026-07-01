@@ -33,11 +33,6 @@ class TopicConfig extends BaseConfig
      */
     protected array $storage = [];
 
-    /**
-     * @var array
-     */
-    protected array $storageOptions = [];
-
 
 	/**
 	 * @var array
@@ -103,6 +98,21 @@ class TopicConfig extends BaseConfig
         $this->topicMaxLength = $topicMaxLength;
     }
 
+    /**
+     * @return array
+     */
+    public function getStorage(): array
+    {
+        return $this->storage;
+    }
 
+    /**
+     * @param array $storage
+     * @return void
+     */
+    public function setStorage(array $storage): void
+    {
+        $this->storage = $storage;
+    }
 
 }
