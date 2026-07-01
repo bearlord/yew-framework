@@ -59,17 +59,17 @@ class ActorManager
     public function __construct()
     {
         $this->actorConfig = DIGet(ActorConfig::class);
-        $this->actorTable = new Table($this->actorConfig->getActorMaxCount());
+        $this->actorTable = new Table($this->actorConfig->getMaxCount());
         $this->actorTable->column("processId", Table::TYPE_INT);
         $this->actorTable->column("createTime", Table::TYPE_INT);
         $this->actorTable->column("classId", Table::TYPE_INT);
         $this->actorTable->create();
 
-        $this->actorIdClassNameTable = new Table($this->actorConfig->getActorMaxClassCount());
+        $this->actorIdClassNameTable = new Table($this->actorConfig->getMaxClassCount());
         $this->actorIdClassNameTable->column("className", Table::TYPE_STRING, 100);
         $this->actorIdClassNameTable->create();
 
-        $this->actorClassNameIdTable = new Table($this->actorConfig->getActorMaxClassCount());
+        $this->actorClassNameIdTable = new Table($this->actorConfig->getMaxClassCount());
         $this->actorClassNameIdTable->column("id", Table::TYPE_INT);
         $this->actorClassNameIdTable->create();
 
