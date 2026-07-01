@@ -6,40 +6,95 @@ use Yew\Plugins\Topic\Storage\DriverInterface;
 
 class DbDriver implements DriverInterface
 {
-    public function addSubscription(string $topic, string $uid)
+	public function __construct()
+	{
+		
+	}
+
+	public function init()
+	{
+
+	}
+	
+    /**
+     * Add a subscription for a uid to a topic
+     *
+     * @param string $topic
+     * @param string $uid
+     * @return bool
+     */
+    public function addSubscription(string $topic, string $uid): bool
     {
-        // TODO: Implement addSubscription() method.
+        return true;
     }
 
-    public function removeSubscription(string $topic, string $uid)
+    /**
+     * Remove a subscription for a uid from a topic
+     *
+     * @param string $topic
+     * @param string $uid
+     * @return bool
+     */
+    public function removeSubscription(string $topic, string $uid): bool
     {
-        // TODO: Implement removeSubscription() method.
+        return true;
     }
 
+    /**
+     * Check if a uid has subscribed to a topic
+     *
+     * @param string $topic
+     * @param string $uid
+     * @return bool
+     */
     public function hasTopic(string $topic, string $uid): bool
     {
-        // TODO: Implement hasTopic() method.
+        return true;
     }
 
-    public function deleteTopic(string $topic)
+    /**
+     * Delete all subscriptions for a topic
+     *
+     * @param string $topic
+     * @return bool
+     */
+    public function deleteTopic(string $topic): bool
     {
-        // TODO: Implement deleteTopic() method.
+        return true;
     }
 
-    public function clearFdSubbscription(int $fd)
+    /**
+     * Clear all subscriptions for a fd
+     *
+     * @param int $fd
+     * @return bool
+     */
+    public function clearFdSubbscription(int $fd): bool
     {
-        // TODO: Implement clearFdSubbscription() method.
+        return true;
     }
 
-    public function clearUidSubbscription(string $uid)
+    /**
+     * Clear all subscriptions for a uid
+     *
+     * @param string $uid
+     * @return bool
+     */
+    public function clearUidSubbscription(string $uid): bool
     {
-        // TODO: Implement clearUidSubbscription() method.
+        return true;
     }
 
-    public function publish(string $topic, $data, ?array $excludeUidList = [])
+    /**
+     * Publish data to all subscribers of a topic
+     *
+     * @param string $topic
+     * @param mixed $data
+     * @param array|null $excludeUidList
+     * @return bool
+     */
+    public function publish(string $topic, $data, ?array $excludeUidList = []): bool
     {
-        // TODO: Implement publish() method.
+        return true;
     }
-
-
 }

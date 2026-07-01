@@ -14,6 +14,7 @@ use Yew\Core\Exception\ConfigException;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Topic\Aspect\TopicAspect;
+use Yew\Plugins\Topic\Storage\DriverStrategy;
 use Yew\Plugins\Uid\UidConfig;
 use Yew\Plugins\Uid\UidPlugin;
 
@@ -35,15 +36,11 @@ class TopicPlugin extends AbstractPlugin
     /**
      * @param TopicConfig|null $topicConfig
      */
-    public function __construct(?TopicConfig $topicConfig = null)
+    public function __construct()
     {
         parent::__construct();
 
-        if ($topicConfig == null) {
-            $topicConfig = new TopicConfig();
-        }
-
-        $this->topicConfig = $topicConfig;
+        $this->initConfig();
 
         $this->atAfter(UidPlugin::class);
     }
@@ -61,7 +58,6 @@ class TopicPlugin extends AbstractPlugin
     /**
      * @param Context $context
      * @return void
-     * @throws \Exception
      */
     public function init(Context $context)
     {
@@ -85,19 +81,12 @@ class TopicPlugin extends AbstractPlugin
     /**
      * @param Context $context
      * @return void
-     * @throws ConfigException
-     * @throws \ReflectionException
-     * @throws \Exception
      */
     public function beforeServerStart(Context $context)
     {
         $this->topicConfig->merge();
-        $uidConfig = DIGet(UidConfig::class);
 
-        $this->topicTable = new Table($this->topicConfig->getCacheTopicCount());
-        $this->topicTable->column("topic", Table::TYPE_STRING, $this->topicConfig->getTopicMaxLength());
-        $this->topicTable->column("uid", Table::TYPE_STRING, $uidConfig->getUidMaxLength());
-        $this->topicTable->create();
+        $this->createTopicTable();
 
         Server::$instance->addProcess($this->topicConfig->getProcessName(), TopicProcess::class, self::PROCESS_GROUP_NAME);
     }
@@ -105,14 +94,48 @@ class TopicPlugin extends AbstractPlugin
     /**
      * @param Context $context
      * @return void
-     * @throws \Exception
      */
     public function beforeProcessStart(Context $context)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() == $this->topicConfig->getProcessName()) {
-            $topic = new Topic($this->topicTable);
-            $this->setToDIContainer(Topic::class, $topic);
+            (new DriverStrategy())->init();
         }
+
         $this->ready();
+    }
+
+
+    /**
+     * Init config
+     * @return void
+     */
+    protected function initConfig()
+    {
+        $topicConfig = new TopicConfig();
+
+        $config = Server::$instance->getConfigContext()->get("yew.topic");
+        if ($config["storageType"]) {
+
+        }
+
+
+
+
+        $this->topicConfig = $topicConfig;
+    }
+
+    /**
+     * Create topic table
+     * @return void
+     */
+    protected function createTopicTable()
+    {
+        $uidConfig = DIGet(UidConfig::class);
+        $this->topicTable = new Table($this->topicConfig->getCacheTopicCount());
+        $this->topicTable->column("topic", Table::TYPE_STRING, $this->topicConfig->getTopicMaxLength());
+        $this->topicTable->column("uid", Table::TYPE_STRING, $uidConfig->getUidMaxLength());
+        $this->topicTable->create();
+
+        DISet("topicTable", $this->topicTable);
     }
 }

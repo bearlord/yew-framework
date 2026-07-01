@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Auth;
+namespace Yew\Plugins\Mqtt\Auth;
 
 class MqttAuth implements MqttAuthInterfa
 {

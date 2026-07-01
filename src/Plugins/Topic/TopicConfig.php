@@ -28,6 +28,27 @@ class TopicConfig extends BaseConfig
      */
     protected string $processName = "helper";
 
+    /**
+     * @var array
+     */
+    protected array $storage = [];
+
+    /**
+     * @var array
+     */
+    protected array $storageOptions = [];
+
+
+	/**
+	 * @var array
+	 */
+	protected array $storageTemplate = [
+		"redis" => [
+			"db" => 9,
+		],
+		"db" => null,
+	];
+
 
     public function __construct()
     {
@@ -81,4 +102,7 @@ class TopicConfig extends BaseConfig
     {
         $this->topicMaxLength = $topicMaxLength;
     }
+
+
+
 }

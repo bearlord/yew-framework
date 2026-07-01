@@ -4,53 +4,64 @@ namespace Yew\Plugins\Topic\Storage;
 
 interface DriverInterface
 {
+    /**
+     * Add a subscription for a uid to a topic
+     *
+     * @param string $topic
+     * @param string $uid
+     * @return bool
+     */
+    public function addSubscription(string $topic, string $uid): bool;
 
-	/**
-	 * @param string $topic
-	 * @param string $uid
-	 * @return mixed
-	 */
-    public function addSubscription(string $topic, string $uid);
+    /**
+     * Remove a subscription for a uid from a topic
+     *
+     * @param string $topic
+     * @param string $uid
+     * @return bool
+     */
+    public function removeSubscription(string $topic, string $uid): bool;
 
-	/**
-	 * @param string $topic
-	 * @param string $uid
-	 * @return mixed
-	 */
-    public function removeSubscription(string $topic, string $uid);
-
-	/**
-	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
-	 */
+    /**
+     * Check if a uid has subscribed to a topic
+     *
+     * @param string $topic
+     * @param string $uid
+     * @return bool
+     */
     public function hasTopic(string $topic, string $uid): bool;
 
-	/**
-	 * @param string $topic
-	 * @return mixed
-	 */
-    public function deleteTopic(string $topic);
+    /**
+     * Delete all subscriptions for a topic
+     *
+     * @param string $topic
+     * @return bool
+     */
+    public function deleteTopic(string $topic): bool;
 
-	/**
-	 * @param int $fd
-	 * @return mixed
-	 */
-    public function clearFdSubbscription(int $fd);
+    /**
+     * Clear all subscriptions for a fd
+     *
+     * @param int $fd
+     * @return bool
+     */
+    public function clearFdSubbscription(int $fd): bool;
 
-	/**
-	 * @param string $uid
-	 * @return mixed
-	 */
-    public function clearUidSubbscription(string $uid);
+    /**
+     * Clear all subscriptions for a uid
+     *
+     * @param string $uid
+     * @return bool
+     */
+    public function clearUidSubbscription(string $uid): bool;
 
-	/**
-	 * @param string $topic
-	 * @param $data
-	 * @param array|null $excludeUidList
-	 * @return mixed
-	 */
-    public function publish(string $topic, $data, ?array $excludeUidList = []);
-
-
+    /**
+     * Publish data to all subscribers of a topic
+     *
+     * @param string $topic
+     * @param mixed $data
+     * @param array|null $excludeUidList
+     * @return bool
+     */
+    public function publish(string $topic, $data, ?array $excludeUidList = []): bool;
 }

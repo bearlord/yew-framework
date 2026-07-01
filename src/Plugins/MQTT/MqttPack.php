@@ -6,7 +6,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT;
+namespace Yew\Plugins\Mqtt;
 
 use DI\Annotation\Inject;
 use Yew\Mqtt\Message\AbstractMessage;
@@ -21,13 +21,13 @@ use Yew\Mqtt\Packet\PackV3;
 use Yew\Mqtt\Packet\PackV5;
 use Yew\Mqtt\Packet\UnPackV3;
 use Yew\Mqtt\Packet\UnPackV5;
-use Yew\Plugins\MQTT\Protocol\ProtocolV3;
-use Yew\Plugins\MQTT\Protocol\ProtocolV5;
-use Yew\Plugins\MQTT\Protocol\Types;
-use Yew\Plugins\MQTT\Tools\UnPackTool;
+use Yew\Plugins\Mqtt\Protocol\ProtocolV3;
+use Yew\Plugins\Mqtt\Protocol\ProtocolV5;
+use Yew\Plugins\Mqtt\Protocol\Types;
+use Yew\Plugins\Mqtt\Tools\UnPackTool;
 USE Yew\Core\Server\Config\PortConfig;
 use Yew\Coroutine\Server\Server;
-use Yew\Plugins\MQTT\MqttPluginConfig;
+use Yew\Plugins\Mqtt\MqttPluginConfig;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Plugins\Pack\GetBoostSend;
 use Yew\Plugins\Pack\PackTool\AbstractPack;
@@ -240,29 +240,29 @@ class MqttPack extends AbstractPack
 
         switch ($type) {
             case Types::CONNECT:
-                //协议版本
+                // Protocol version
                 $protocolLevel = UnPackTool::getLevel($data);
-                //解包数据
+                // Unpack data
                 $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
-                //客户端标识
+                // Client identifier
                 $clientId = $unpackedData["client_id"];
-                //保存协议到上下文
+                // Save protocol level to context
                 $this->setFdProtocolLevel($fd, $protocolLevel);
-                //保存 fd 和 clientId 映射关系
+                // Save fd to clientId mapping
                 $this->setFdClientIdMap($fd, $clientId);
-                //保存 clientId 和 fd 映射关系
+                // Save clientId to fd mapping
                 $this->setClientIdFdMap($clientId, $fd);
-                //保存客户端的连接信息
+                // Save client connection info
                 $this->setClientConnectionInfo($clientId, $unpackedData);
 
                 break;
 
             default:
-                //协议版本
+                // Protocol version
                 $protocolLevel = $this->getFdProtocolLevel($fd);
-                //解包数据
+                // Unpack data
                 $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
-                //客户端标识
+                // Client identifier
                 $clientId = $this->getClientIdFromFd($fd);
         }
 

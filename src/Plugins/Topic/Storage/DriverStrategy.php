@@ -8,57 +8,101 @@ use Yew\Plugins\Topic\Storage\Memory\MemoryDriver;
 class DriverStrategy
 {
 
-    private DriverInterface $strategy;
+	private DriverInterface $strategy;
 
+	/**
+	 * @param array $config
+	 */
+	public function __construct(array $config)
+	{
+		$type = $config["storage"] ?? "memory";
 
-    public function __construct(?string $type = null)
-    {
-        switch ($type) {
-            case "db":
-                $this->strategy = new DbDriver();
-                break;
+		switch ($type) {
+			case "db":
+				$this->strategy = new DbDriver();
+				break;
 
-            case "memory":
-            default:
-                $this->strategy = new MemoryDriver();
-        }
-    }
+			case "memory":
+			default:
+				$this->strategy = new MemoryDriver();
+		}
+	}
 
+	/**
+	 * @return void
+	 */
+	public function init()
+	{
+		$this->strategy->init();
+	}
 
-    public function addSubscription(string $topic, string $uid)
-    {
-        $this->strategy->addSubscription($topic, $uid);
-    }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function addSubscription(string $topic, string $uid): bool
+	{
+		return $this->strategy->addSubscription($topic, $uid);
+	}
 
-    public function removeSubscription(string $topic, string $uid)
-    {
-        $this->strategy->removeSubscription($topic, $uid);
-    }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function removeSubscription(string $topic, string $uid): bool
+	{
+		return $this->strategy->removeSubscription($topic, $uid);
+	}
 
-    public function hasTopic(string $topic, string $uid): bool
-    {
-        return $this->strategy->hasTopic($topic, $uid);
-    }
+	/**
+	 * @param string $topic
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function hasTopic(string $topic, string $uid): bool
+	{
+		return $this->strategy->hasTopic($topic, $uid);
+	}
 
-    public function deleteTopic(string $topic)
-    {
-        $this->strategy->deleteTopic($topic);
-    }
+	/**
+	 * @param string $topic
+	 * @return bool
+	 */
+	public function deleteTopic(string $topic): bool
+	{
+		$this->strategy->deleteTopic($topic);
+	}
 
-    public function clearFdSubbscription(int $fd)
-    {
-        $this->strategy->clearFdSubbscription($fd);
-    }
+	/**
+	 * @param int $fd
+	 * @return bool
+	 */
+	public function clearFdSubbscription(int $fd): bool
+	{
+		return $this->strategy->clearFdSubbscription($fd);
+	}
 
-    public function clearUidSubbscription(string $uid)
-    {
-        $this->strategy->clearUidSubbscription($uid);
-    }
+	/**
+	 * @param string $uid
+	 * @return bool
+	 */
+	public function clearUidSubbscription(string $uid): bool
+	{
+		return $this->strategy->clearUidSubbscription($uid);
+	}
 
-    public function publish(string $topic, $data, ?array $excludeUidList = [])
-    {
-        $this->strategy->publish($topic, $data, $excludeUidList);
-    }
+	/**
+	 * @param string $topic
+	 * @param $data
+	 * @param array|null $excludeUidList
+	 * @return bool
+	 */
+	public function publish(string $topic, $data, ?array $excludeUidList = []): bool
+	{
+		return $this->strategy->publish($topic, $data, $excludeUidList);
+	}
 
 
 }

@@ -12,7 +12,7 @@ class UidConfig extends BaseConfig
 {
     const KEY = "uid";
     
-    protected $uidMaxLength = 24;
+    protected $uidMaxLength = 80;
 
     /**
      * UidConfig constructor.

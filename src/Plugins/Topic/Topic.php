@@ -138,7 +138,7 @@ class Topic
 	public function removeSubscription(string $topic, string $uid): bool
 	{
 		if (empty($uid)) {
-			return;
+			return false;
 		}
 		if (isset($this->subscriptions[$topic])) {
 			unset($this->subscriptions[$topic][$uid]);
@@ -269,7 +269,7 @@ class Topic
 		if (empty($uid)) {
 			return false;
 		}
-		
+
 		return $this->autoBoostSend($fd, $data, $topic);
 	}
 }

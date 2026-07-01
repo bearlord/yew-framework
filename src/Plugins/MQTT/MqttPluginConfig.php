@@ -4,10 +4,10 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT;
+namespace Yew\Plugins\Mqtt;
 
 use Yew\Core\Plugins\Config\BaseConfig;
-use Yew\Plugins\MQTT\Auth\MqttAuth;
+use Yew\Plugins\Mqtt\Auth\MqttAuth;
 
 class MqttPluginConfig extends BaseConfig
 {
