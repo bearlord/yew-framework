@@ -113,17 +113,16 @@ class LoggerPlugin extends AbstractPlugin
     public function beforeProcessStart(Context $context)
     {
         $serverConfig = Server::$instance->getServerConfig();
-        if (Server::$instance->getServerConfig()->isDaemonize()) {
-            //Remove screen print handler
-            $this->logger->popHandler();
 
-            //Add a log handler
-            $handler = new RotatingFileHandler($serverConfig->getLogDir() . DIRECTORY_SEPARATOR . $this->loggerConfig->getName() . ".log",
-                $this->loggerConfig->getMaxFiles(),
-                $this->loggerConfig->getLevel());
-            $this->logger->pushHandler($handler);
-            $this->goSwooleProcessor->setColor(false);
-        }
+        //Remove screen print handler
+        $this->logger->popHandler();
+
+        //Add a log handler
+        $handler = new RotatingFileHandler($serverConfig->getLogDir() . DIRECTORY_SEPARATOR . $this->loggerConfig->getName() . ".log",
+            $this->loggerConfig->getMaxFiles(),
+            $this->loggerConfig->getLevel());
+        $this->logger->pushHandler($handler);
+        $this->goSwooleProcessor->setColor(false);
 
         //Monitoring configuration updates
         goWithContext(function () use ($context) {
