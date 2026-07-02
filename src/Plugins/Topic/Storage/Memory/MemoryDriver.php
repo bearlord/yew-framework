@@ -34,10 +34,6 @@ class MemoryDriver implements DriverInterface
             "uid" => $uid
         ]);
 
-        var_dump([
-            "here"
-        ]);
-
         return true;
     }
 

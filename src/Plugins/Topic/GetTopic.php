@@ -85,11 +85,7 @@ trait GetTopic
 			return false;
 		}
 
-		$aa = $ipcProxy->addSubscription($topic, $uid);
-
-        var_dump([
-            "aa" => get_class($ipcProxy)
-        ]);
+		$ipcProxy->addSubscription($topic, $uid);
 
         return true;
 	}
