@@ -4,7 +4,7 @@ namespace Yew\Plugins\Topic\Storage\Memory;
 
 use Yew\Plugins\Topic\Storage\DriverInterface;
 
-class MemoryDriver implements DriverInterface
+class RedisDriver implements DriverInterface
 {
 	public function init()
 	{
@@ -59,37 +59,22 @@ class MemoryDriver implements DriverInterface
     }
 
     /**
-     * Clear all subscriptions for a fd
-     *
-     * @param int $fd
-     * @return bool
+     * @return array|null
      */
-    public function clearFdSubbscription(int $fd): bool
+    public function allSubscriptions(): ?array
     {
-        return true;
+        return null;
     }
 
-    /**
-     * Clear all subscriptions for a uid
-     *
-     * @param string $uid
-     * @return bool
-     */
-    public function clearUidSubbscription(string $uid): bool
-    {
-        return true;
-    }
 
     /**
-     * Publish data to all subscribers of a topic
-     *
+     * Build key
      * @param string $topic
-     * @param mixed $data
-     * @param array|null $excludeUidList
-     * @return bool
+     * @param string $uid
+     * @return string
      */
-    public function publish(string $topic, $data, ?array $excludeUidList = []): bool
+    protected function buildKey(string $topic, string $uid)
     {
-        return true;
+        return sprintf("%s::%s", $topic, $uid);
     }
 }

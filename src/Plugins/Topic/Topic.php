@@ -49,6 +49,21 @@ class Topic
 		}
 	}
 
+    /**
+     * @return void
+     */
+    protected function recovery()
+    {
+        $allSubscriptions = $this->driver->allSubscriptions();
+        if (empty($allSubscriptions)) {
+            return;
+        }
+
+        foreach ($allSubscriptions as $subscription) {
+            $this->indexSubscription($subscription["topic"], $subscription["uid"]);
+        }
+    }
+
 	/**
 	 * @param string $topic
 	 * @param string $uid
@@ -171,7 +186,7 @@ class Topic
 		unset($this->subscriptions[$topic]);
 
 		foreach ($uidItems as $uid) {
-            $this->driver->deleteTopic($topic, $uid);
+            $this->driver->removeSubscription($topic, $uid);
 		}
 
 		return true;

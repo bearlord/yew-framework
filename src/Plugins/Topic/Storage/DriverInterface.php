@@ -22,7 +22,6 @@ interface DriverInterface
      */
     public function removeSubscription(string $topic, string $uid): bool;
 
-
     /**
      * Delete all subscriptions for a topic
      *
@@ -30,4 +29,9 @@ interface DriverInterface
      * @return bool
      */
     public function deleteTopic(string $topic): bool;
+
+    /**
+     * @return array|null
+     */
+    public function allSubscriptions(): ?array;
 }
