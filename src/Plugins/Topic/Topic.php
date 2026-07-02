@@ -12,6 +12,7 @@ use Yew\Core\Exception\Exception;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Pack\GetBoostSend;
+use Yew\Plugins\Topic\Storage\DriverInterface;
 use Yew\Plugins\Uid\GetUid;
 
 class Topic
@@ -27,14 +28,21 @@ class Topic
 	 */
 	private Table $topicTable;
 
+    /**
+     * @var DriverInterface
+     */
+    private DriverInterface $driver;
+
 	/**
 	 * Topic constructor.
 	 * @param Table $topicTable
 	 */
-	public function __construct(Table $topicTable)
+	public function __construct(DriverInterface $driver)
 	{
 		//Read the table first, because the process may restart
 		$this->topicTable = $topicTable;
+
+        $this->driver = $driver;
 
 		foreach ($this->topicTable as $value) {
 			$this->indexSubscription($value["topic"], $value["uid"]);
@@ -86,10 +94,7 @@ class Topic
 
 		$this->indexSubscription($topic, $uid);
 
-		$this->topicTable->set($topic . $uid, [
-			"topic" => $topic,
-			"uid" => $uid
-		]);
+        $this->driver->addSubscription($topic, $uid);
 
 		return true;
 	}
@@ -148,7 +153,7 @@ class Topic
 			}
 		}
 
-		$this->topicTable->delete($topic . $uid);
+        $this->driver->removeSubscription($topic, $uid);
 
 		return true;
 	}
@@ -166,7 +171,7 @@ class Topic
 		unset($this->subscriptions[$topic]);
 
 		foreach ($uidItems as $uid) {
-			$this->topicTable->delete($topic . $uid);
+            $this->driver->deleteTopic($topic, $uid);
 		}
 
 		return true;

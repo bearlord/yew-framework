@@ -98,7 +98,11 @@ class TopicPlugin extends AbstractPlugin
     public function beforeProcessStart(Context $context)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() == $this->topicConfig->getProcessName()) {
-            (new DriverStrategy())->init();
+            $driver = (new DriverStrategy($this->topicConfig->getStorage(), $this->topicTable));
+            $driver->init();
+
+            $topic = new Topic($driver);
+            $this->setToDIContainer(Topic::class, $topic);
         }
 
         $this->ready();
@@ -133,6 +137,6 @@ class TopicPlugin extends AbstractPlugin
         $this->topicTable->column("uid", Table::TYPE_STRING, $uidConfig->getUidMaxLength());
         $this->topicTable->create();
 
-        DISet("topicTable", $this->topicTable);
+        $this->setToDIContainer("topicTable", $this->topicTable);
     }
 }

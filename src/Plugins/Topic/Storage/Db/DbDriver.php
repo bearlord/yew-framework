@@ -41,59 +41,12 @@ class DbDriver implements DriverInterface
     }
 
     /**
-     * Check if a uid has subscribed to a topic
-     *
-     * @param string $topic
-     * @param string $uid
-     * @return bool
-     */
-    public function hasTopic(string $topic, string $uid): bool
-    {
-        return true;
-    }
-
-    /**
      * Delete all subscriptions for a topic
      *
      * @param string $topic
      * @return bool
      */
     public function deleteTopic(string $topic): bool
-    {
-        return true;
-    }
-
-    /**
-     * Clear all subscriptions for a fd
-     *
-     * @param int $fd
-     * @return bool
-     */
-    public function clearFdSubbscription(int $fd): bool
-    {
-        return true;
-    }
-
-    /**
-     * Clear all subscriptions for a uid
-     *
-     * @param string $uid
-     * @return bool
-     */
-    public function clearUidSubbscription(string $uid): bool
-    {
-        return true;
-    }
-
-    /**
-     * Publish data to all subscribers of a topic
-     *
-     * @param string $topic
-     * @param mixed $data
-     * @param array|null $excludeUidList
-     * @return bool
-     */
-    public function publish(string $topic, $data, ?array $excludeUidList = []): bool
     {
         return true;
     }

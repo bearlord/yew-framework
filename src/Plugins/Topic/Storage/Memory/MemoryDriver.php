@@ -2,13 +2,17 @@
 
 namespace Yew\Plugins\Topic\Storage\Memory;
 
+use Yew\Core\DI\DI;
+use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Plugins\Topic\Storage\DriverInterface;
 
 class MemoryDriver implements DriverInterface
 {
+    private Table $topicTable;
+    
 	public function init()
 	{
-		echo "init";
+        $this->topicTable = DI::getInstance()->get("topicTable");
 	}
 
     /**
@@ -20,6 +24,13 @@ class MemoryDriver implements DriverInterface
      */
     public function addSubscription(string $topic, string $uid): bool
     {
+        $key = sprintf("%s::%s", $topic, $uid);
+
+        $this->topicTable->set($key, [
+            "topic" => $topic,
+            "uid" => $uid
+        ]);
+
         return true;
     }
 
@@ -32,20 +43,12 @@ class MemoryDriver implements DriverInterface
      */
     public function removeSubscription(string $topic, string $uid): bool
     {
+        $key = sprintf("%s::%s", $topic, $uid);
+        $this->topicTable->delete($key);
+
         return true;
     }
 
-    /**
-     * Check if a uid has subscribed to a topic
-     *
-     * @param string $topic
-     * @param string $uid
-     * @return bool
-     */
-    public function hasTopic(string $topic, string $uid): bool
-    {
-        return true;
-    }
 
     /**
      * Delete all subscriptions for a topic
@@ -53,43 +56,11 @@ class MemoryDriver implements DriverInterface
      * @param string $topic
      * @return bool
      */
-    public function deleteTopic(string $topic): bool
+    public function deleteTopic(string $topic, string $uid): bool
     {
-        return true;
-    }
+        $key = sprintf("%s::%s", $topic, $uid);
+        $this->topicTable->delete($key);
 
-    /**
-     * Clear all subscriptions for a fd
-     *
-     * @param int $fd
-     * @return bool
-     */
-    public function clearFdSubbscription(int $fd): bool
-    {
-        return true;
-    }
-
-    /**
-     * Clear all subscriptions for a uid
-     *
-     * @param string $uid
-     * @return bool
-     */
-    public function clearUidSubbscription(string $uid): bool
-    {
-        return true;
-    }
-
-    /**
-     * Publish data to all subscribers of a topic
-     *
-     * @param string $topic
-     * @param mixed $data
-     * @param array|null $excludeUidList
-     * @return bool
-     */
-    public function publish(string $topic, $data, ?array $excludeUidList = []): bool
-    {
         return true;
     }
 }

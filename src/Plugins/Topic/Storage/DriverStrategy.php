@@ -2,6 +2,7 @@
 
 namespace Yew\Plugins\Topic\Storage;
 
+use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Plugins\Topic\Storage\Db\DbDriver;
 use Yew\Plugins\Topic\Storage\Memory\MemoryDriver;
 
@@ -10,13 +11,16 @@ class DriverStrategy
 
 	private DriverInterface $strategy;
 
+    private Table $topicTable;
+
 	/**
 	 * @param array $config
 	 */
-	public function __construct(array $config)
+	public function __construct(array $config, Table $topicTable)
 	{
-		$type = $config["storage"] ?? "memory";
+        $this->topicTable = $topicTable;
 
+		$type = $config["type"] ?? "memory";
 		switch ($type) {
 			case "db":
 				$this->strategy = new DbDriver();
@@ -26,6 +30,7 @@ class DriverStrategy
 			default:
 				$this->strategy = new MemoryDriver();
 		}
+
 	}
 
 	/**
