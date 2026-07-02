@@ -986,7 +986,7 @@ class ServerConfig extends BaseConfig
      */
     public function getCacheDir(): string
     {
-        return $this->getBinDir() . DIRECTORY_SEPARATOR . "cache";
+        return $this->getRuntimeDir() . DIRECTORY_SEPARATOR . "cache";
     }
 
     /**
@@ -997,7 +997,7 @@ class ServerConfig extends BaseConfig
      */
     public function getLogDir(): string
     {
-        return $this->getBinDir() . DIRECTORY_SEPARATOR . "logs";
+        return $this->getRuntimeDir() . DIRECTORY_SEPARATOR . "logs";
     }
 
     /**
