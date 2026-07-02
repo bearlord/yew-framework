@@ -153,7 +153,20 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
      */
     protected function loadClassPHP8(string $class, string $file)
     {
-        include_once $file;
+        if (strpos($class, "App\\") !== false) {
+            include $file;
+            return;
+        }
+
+        if (strpos($file, "php://") === 0) {
+            if (strpos($class, "Yew\\Nikic") !== false) {
+                if (preg_match("/resource=(.+)$/", $file, $matches)) {
+                    $file = PathResolver::realpath($matches[1]);
+                }
+            }
+        }
+
+        include $file;
     }
 
 
