@@ -33,10 +33,6 @@ class Topic
      */
 	public function __construct(DriverInterface $driver)
 	{
-        var_dump([
-            "driver" => $driver
-        ]);
-
         $this->driver = $driver;
 
 		$this->recovery();
@@ -100,27 +96,20 @@ class Topic
 	 */
 	public function addSubscription(string $topic, string $uid): bool
 	{
-
-        var_dump([
-            "topic" => $topic,
-            "uid" => $uid
-        ]);
-
         try {
 		    Utility::checkTopicFilter($topic);
         } catch (\Exception $exception) {
-            var_dump([
-                "exception" => $exception->getMessage(),
+            $this->warn("Topic addSubscription error", [
                 "code" => $exception->getCode(),
-                "trace" => $exception->getTraceAsString(),
+                "message" => $exception->getMessage(),
                 "file" => $exception->getFile(),
-                "line" => $exception->getLine()
+                "line" => $exception->getLine(),
+                "trace" => $exception->getTraceAsString()
             ]);
             return false;
         }
 
 		$this->indexSubscription($topic, $uid);
-
 
         $this->driver->addSubscription($topic, $uid);
 
@@ -223,7 +212,7 @@ class Topic
 			}
 
 			foreach ($this->subscriptions[$one] as $uid) {
-				if (in_array($uid, $excludeUidList)) {
+				if (!empty($excludeUidList) && in_array($uid, $excludeUidList)) {
 					continue;
 				}
 				$this->publishToUid($uid, $data, $topic);
