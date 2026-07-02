@@ -50,4 +50,13 @@ class DbDriver implements DriverInterface
     {
         return true;
     }
+
+    /**
+     * All subscriptions
+     * @return array|null
+     */
+    public function allSubscriptions(): ?array
+    {
+        return null;
+    }
 }

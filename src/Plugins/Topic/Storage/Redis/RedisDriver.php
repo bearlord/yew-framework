@@ -65,8 +65,7 @@ class RedisDriver implements DriverInterface
     {
         return null;
     }
-
-
+    
     /**
      * Build key
      * @param string $topic

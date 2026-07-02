@@ -23,36 +23,30 @@ class Topic
 
 	protected array $subscriptions = [];
 
-	/**
-	 * @var Table
-	 */
-	private Table $topicTable;
-
     /**
      * @var DriverInterface
      */
     private DriverInterface $driver;
 
-	/**
-	 * Topic constructor.
-	 * @param Table $topicTable
-	 */
+    /**
+     * @param DriverInterface $driver
+     */
 	public function __construct(DriverInterface $driver)
 	{
-		//Read the table first, because the process may restart
-		$this->topicTable = $topicTable;
+        var_dump([
+            "driver" => $driver
+        ]);
 
         $this->driver = $driver;
 
-		foreach ($this->topicTable as $value) {
-			$this->indexSubscription($value["topic"], $value["uid"]);
-		}
+		$this->recovery();
 	}
 
     /**
+     * Recovery subscriptions
      * @return void
      */
-    protected function recovery()
+    protected function recovery(): void
     {
         $allSubscriptions = $this->driver->allSubscriptions();
         if (empty($allSubscriptions)) {
@@ -63,12 +57,13 @@ class Topic
             $this->indexSubscription($subscription["topic"], $subscription["uid"]);
         }
     }
-
-	/**
-	 * @param string $topic
-	 * @param string $uid
-	 */
-	private function indexSubscription(string $topic, string $uid)
+    
+    /**
+     * @param string $topic
+     * @param string $uid
+     * @return void
+     */
+	private function indexSubscription(string $topic, string $uid): void
 	{
 		if (empty($uid)) {
 			return;
@@ -105,9 +100,27 @@ class Topic
 	 */
 	public function addSubscription(string $topic, string $uid): bool
 	{
-		Utility::checkTopicFilter($topic);
+
+        var_dump([
+            "topic" => $topic,
+            "uid" => $uid
+        ]);
+
+        try {
+		    Utility::checkTopicFilter($topic);
+        } catch (\Exception $exception) {
+            var_dump([
+                "exception" => $exception->getMessage(),
+                "code" => $exception->getCode(),
+                "trace" => $exception->getTraceAsString(),
+                "file" => $exception->getFile(),
+                "line" => $exception->getLine()
+            ]);
+            return false;
+        }
 
 		$this->indexSubscription($topic, $uid);
+
 
         $this->driver->addSubscription($topic, $uid);
 

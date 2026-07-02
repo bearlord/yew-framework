@@ -44,9 +44,9 @@ class Utility
          */
         if (($p = strpos($topicFilter, "#")) !== false) {
             if ($p != $length - 1) {
-                throw new Exception(""#" MUST be the last char in topic filter");
+                throw new Exception("''#' MUST be the last char in topic filter");
             } else if ($length > 1 && $topicFilter[$length - 2] != "/") {
-                throw new Exception(""#" MUST occupy an entire level of the filter");
+                throw new Exception("''#' MUST occupy an entire level of the filter");
             }
         }
 
@@ -64,7 +64,7 @@ class Utility
         }
 
         if ($topicFilter[0] == "#") {
-            DIGet(LoggerInterface::class)->debug("If you want to subscribe topic begin with $, please subscribe both "#" and "$SOMETOPIC/#"");
+            DIGet(LoggerInterface::class)->debug("If you want to subscribe topic begin with $, please subscribe both '#' and '{$SOMETOPIC}/#'");
         }
     }
 

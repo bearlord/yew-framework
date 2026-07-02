@@ -34,6 +34,10 @@ class MemoryDriver implements DriverInterface
             "uid" => $uid
         ]);
 
+        var_dump([
+            "here"
+        ]);
+
         return true;
     }
 
@@ -68,11 +72,11 @@ class MemoryDriver implements DriverInterface
      * All subscriptions
      * @return array|null
      */
-    protected function allSubscriptions(): ?array
+    public function allSubscriptions(): ?array
     {
         return null;
     }
-    
+
     /**
      * Build key
      * @param string $topic
@@ -81,6 +85,6 @@ class MemoryDriver implements DriverInterface
      */
     protected function buildKey(string $topic, string $uid)
     {
-        return sprintf("%s::%s", $topic, $uid);
+        return sprintf("%s%s", $topic, $uid);
     }
 }

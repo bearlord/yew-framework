@@ -13,7 +13,10 @@ use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Core\Exception\ConfigException;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Aop\AopConfig;
+use Yew\Plugins\Redis\RedisPlugin;
 use Yew\Plugins\Topic\Aspect\TopicAspect;
+use Yew\Plugins\Topic\Storage\DriverFactory;
+use Yew\Plugins\Topic\Storage\DriverInterface;
 use Yew\Plugins\Topic\Storage\DriverStrategy;
 use Yew\Plugins\Uid\UidConfig;
 use Yew\Plugins\Uid\UidPlugin;
@@ -43,6 +46,7 @@ class TopicPlugin extends AbstractPlugin
         $this->initConfig();
 
         $this->atAfter(UidPlugin::class);
+        $this->atAfter(RedisPlugin::class);
     }
 
     /**
@@ -98,8 +102,9 @@ class TopicPlugin extends AbstractPlugin
     public function beforeProcessStart(Context $context)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() == $this->topicConfig->getProcessName()) {
-            $driver = (new DriverStrategy($this->topicConfig->getStorage(), $this->topicTable));
-            $driver->init();
+            $driver = DriverFactory::create($this->topicConfig->getStorage(), $this->topicTable);
+
+            $this->setToDIContainer(DriverInterface::class, $driver);
 
             $topic = new Topic($driver);
             $this->setToDIContainer(Topic::class, $topic);

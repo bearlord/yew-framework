@@ -63,50 +63,11 @@ class DriverStrategy
 
 	/**
 	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
-	 */
-	public function hasTopic(string $topic, string $uid): bool
-	{
-		return $this->strategy->hasTopic($topic, $uid);
-	}
-
-	/**
-	 * @param string $topic
 	 * @return bool
 	 */
 	public function deleteTopic(string $topic): bool
 	{
 		$this->strategy->deleteTopic($topic);
-	}
-
-	/**
-	 * @param int $fd
-	 * @return bool
-	 */
-	public function clearFdSubbscription(int $fd): bool
-	{
-		return $this->strategy->clearFdSubbscription($fd);
-	}
-
-	/**
-	 * @param string $uid
-	 * @return bool
-	 */
-	public function clearUidSubbscription(string $uid): bool
-	{
-		return $this->strategy->clearUidSubbscription($uid);
-	}
-
-	/**
-	 * @param string $topic
-	 * @param $data
-	 * @param array|null $excludeUidList
-	 * @return bool
-	 */
-	public function publish(string $topic, $data, ?array $excludeUidList = []): bool
-	{
-		return $this->strategy->publish($topic, $data, $excludeUidList);
 	}
 
 

@@ -80,11 +80,18 @@ trait GetTopic
 
 		/** @var Topic $ipcProxy */
 		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+
 		if (empty($ipcProxy)) {
 			return false;
 		}
 
-		return $ipcProxy->addSubscription($topic, $uid);
+		$aa = $ipcProxy->addSubscription($topic, $uid);
+
+        var_dump([
+            "aa" => get_class($ipcProxy)
+        ]);
+
+        return true;
 	}
 
 	/**
