@@ -59,28 +59,28 @@ trait ConstraintFinderTrait
      * @param string $tableName table name.
      * @return ForeignKeyConstraint[] foreign keys for the given table.
      */
-    abstract protected function loadTableForeignKeys(string $tableName): array;
+    abstract protected function loadTableForeignKeys(string $tableName);
 
     /**
      * Loads all indexes for the given table.
      * @param string $tableName table name.
      * @return IndexConstraint[] indexes for the given table.
      */
-    abstract protected function loadTableIndexes(string $tableName): array;
+    abstract protected function loadTableIndexes(string $tableName);
 
     /**
      * Loads all unique constraints for the given table.
      * @param string $tableName table name.
      * @return Constraint[] unique constraints for the given table.
      */
-    abstract protected function loadTableUniques(string $tableName): array;
+    abstract protected function loadTableUniques(string $tableName);
 
     /**
      * Loads all check constraints for the given table.
      * @param string $tableName table name.
      * @return CheckConstraint[] check constraints for the given table.
      */
-    abstract protected function loadTableChecks(string $tableName): array;
+    abstract protected function loadTableChecks(string $tableName);
 
     /**
      * Loads all default value constraints for the given table.
@@ -88,7 +88,7 @@ trait ConstraintFinderTrait
      * @param string $tableName table name.
      * @return DefaultValueConstraint[] default value constraints for the given table.
      */
-    abstract protected function loadTableDefaultValues(string $tableName): array;
+    abstract protected function loadTableDefaultValues(string $tableName);
 
     /**
      * Obtains the primary key for the named table.
