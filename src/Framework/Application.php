@@ -127,7 +127,7 @@ class Application extends Server
 
     public function onStart()
     {
-        $this->debug('Application start');
+        //$this->debug('Application start');
     }
 
     public function onShutdown()
@@ -137,12 +137,12 @@ class Application extends Server
 
     public function onWorkerError(Process $process, int $exitCode, int $signal)
     {
-        $this->debug('Manager process start');
+        $this->debug('Worker process error');
     }
 
     public function onManagerStart()
     {
-        $this->debug('Manager process start');
+        //$this->debug('Manager process start');
     }
 
     public function onManagerStop()
