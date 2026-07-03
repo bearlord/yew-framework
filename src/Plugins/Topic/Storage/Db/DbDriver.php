@@ -36,14 +36,9 @@ class DbDriver implements DriverInterface
     protected ?Connection $db = null;
 
     /**
-     * @var string The table prefix for database tables
-     */
-    protected string $tablePrefix = "";
-
-    /**
      * @var string The name of the table storing topic subscriptions
      */
-    protected string $topicTable = "topic_subscriptions";
+    protected string $tableName = "topic_subscriptions";
 
     /**
      * Initialize the DbDriver with configuration values and set up the database connection
@@ -57,7 +52,7 @@ class DbDriver implements DriverInterface
         }
 
         if (!empty($config["table"])) {
-            $this->topicTable = $config["table"];
+            $this->tableName = $config["table"];
         }
 
         $this->init();
@@ -98,9 +93,6 @@ class DbDriver implements DriverInterface
         if (empty($this->dbKey)) {
             $this->db = Yew::$app->getDb();
         }
-
-        $dbConfig = Server::$instance->getConfigContext()->get("yew.db." . $this->dbKey);
-        $this->tablePrefix = $dbConfig["tablePrefix"] ?? "";
     }
 
     /**
@@ -123,7 +115,7 @@ class DbDriver implements DriverInterface
      */
     protected function checkTableExists(): bool
     {
-        $tableName = $this->topicTable;
+        $tableName = $this->tableName;
 
         $tableSchema = $this->getDb()->getSchema()->getTableSchema("{{%$tableName}}");
         if (empty($tableSchema)) {
@@ -140,7 +132,7 @@ class DbDriver implements DriverInterface
      */
     protected function createTable()
     {
-        $tableName = $this->topicTable;
+        $tableName = $this->tableName;
 
         $this->getDb()->createCommand()->createTable("{{%$tableName}}", [
             "id" => Schema::TYPE_PK,
@@ -172,11 +164,11 @@ class DbDriver implements DriverInterface
      */
     public function addSubscription(string $topic, string $uid): bool
     {
-        $tableName = $this->topicTable;
+        $tableName = $this->tableName;
 
         $currentTimestamp = (Carbon::now())->getTimestamp();
 
-        $exists = (new Query())->from($this->topicTable)->where([
+        $exists = (new Query())->from("{{%$tableName}}")->where([
             "uid" => $uid,
             "topic" => $topic
         ])->exists($this->getDb());
@@ -204,7 +196,8 @@ class DbDriver implements DriverInterface
      */
     public function removeSubscription(string $topic, string $uid): bool
     {
-        $tableName = $this->topicTable;
+        $tableName = $this->tableName;
+
         $this->getDb()->createCommand()->delete("{{%$tableName}}", [
             "uid" => $uid,
             "topic" => $topic
@@ -221,7 +214,8 @@ class DbDriver implements DriverInterface
      */
     public function deleteTopic(string $topic): bool
     {
-        $tableName = $this->topicTable;
+        $tableName = $this->tableName;
+        
         $this->getDb()->createCommand()->delete("{{%$tableName}}", [
             "topic" => $topic
         ])->execute();
@@ -236,7 +230,9 @@ class DbDriver implements DriverInterface
      */
     public function allItems(): ?array
     {
-        $items = (new Query())->from($this->topicTable)->select([
+        $tableName = $this->tableName;
+
+        $items = (new Query())->from("{{%$tableName}}")->select([
             "uid", "topic"
         ])->orderBy([
             "id" => SORT_ASC
@@ -257,7 +253,9 @@ class DbDriver implements DriverInterface
      */
     public function batchItems(int $limit = 50): ?array
     {
-        $items = (new Query())->from($this->topicTable)->select([
+        $tableName = $this->tableName;
+
+        $items = (new Query())->from("{{%$tableName}}")->select([
             "uid", "topic"
         ])->orderBy([
             "id" => SORT_ASC
@@ -277,7 +275,9 @@ class DbDriver implements DriverInterface
      */
     public function allSubscriptions(): ?array
     {
-        $items = (new Query())->from($this->topicTable)->select([
+        $tableName = $this->tableName;
+
+        $items = (new Query())->from("{{%$tableName}}")->select([
             "topic"
         ])->groupBy([
             "topic"
@@ -297,7 +297,9 @@ class DbDriver implements DriverInterface
      */
     public function allSubscribers(): ?array
     {
-        $items = (new Query())->from($this->topicTable)->select([
+        $tableName = $this->tableName;
+
+        $items = (new Query())->from("{{%$tableName}}")->select([
             "uid"
         ])->groupBy([
             "uid"
@@ -318,7 +320,9 @@ class DbDriver implements DriverInterface
      */
     public function getSubscribers(string $topic): ?array
     {
-        $items = (new Query())->from($this->topicTable)->select([
+        $tableName = $this->tableName;
+
+        $items = (new Query())->from("{{%$tableName}}")->select([
             "uid"
         ])->where([
             "topic" => $topic
@@ -338,7 +342,9 @@ class DbDriver implements DriverInterface
      */
     public function getSubscriptions(int $uid): ?array
     {
-        $items = (new Query())->from($this->topicTable)->select([
+        $tableName = $this->tableName;
+
+        $items = (new Query())->from("{{%$tableName}}")->select([
             "topic"
         ])->where([
             "uid" => $uid

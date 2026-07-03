@@ -30,7 +30,9 @@ class StorageFactory
                 "db"     => new DbDriver($storageConfig),
                 default  => throw new \InvalidArgumentException("Unknown topic storage type: {$type}"),
             };
-            
+
+            $driver->init();
+
             $drivers[] = $driver;
         }
 

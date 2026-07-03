@@ -104,7 +104,8 @@ class TopicPlugin extends AbstractPlugin
      */
     public function beforeProcessStart(Context $context)
     {
-        if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() == $this->topicConfig->getProcessName()) {
+        if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() == $this->topicConfig->getProcessName()
+        ) {
             $driver = StorageFactory::create($this->topicConfig->getStorage());
 
             $topic = new Topic($driver);

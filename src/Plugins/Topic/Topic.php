@@ -44,7 +44,7 @@ class Topic
      */
     protected function recovery(): void
     {
-        $allSubscriptions = $this->driver->allSubscriptions();
+        $allSubscriptions = $this->driver->batchItems();
         if (empty($allSubscriptions)) {
             return;
         }
