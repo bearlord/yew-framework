@@ -21,7 +21,7 @@ class DriverFactory
 
         switch ($type) {
             case "db":
-                $driver = new DbDriver();
+                $driver = new DbDriver($config);
                 break;
 
 

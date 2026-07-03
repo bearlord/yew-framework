@@ -2,36 +2,71 @@
 
 namespace Yew\Plugins\Topic\Storage;
 
+/**
+ * Interface for topic subscription storage drivers.
+ *
+ * Defines the contract for persisting and retrieving topic-subscriber relationships.
+ */
 interface DriverInterface
 {
     /**
+     * Initialize the storage driver
+     */
+    public function init();
+
+    /**
      * Add a subscription for a uid to a topic
      *
-     * @param string $topic
-     * @param string $uid
-     * @return bool
+     * @param string $topic The topic pattern to subscribe to
+     * @param string $uid The unique identifier of the subscriber
+     * @return bool True on success, false on failure
      */
     public function addSubscription(string $topic, string $uid): bool;
 
     /**
      * Remove a subscription for a uid from a topic
      *
-     * @param string $topic
-     * @param string $uid
-     * @return bool
+     * @param string $topic The topic pattern to unsubscribe from
+     * @param string $uid The unique identifier of the subscriber
+     * @return bool True on success, false on failure
      */
     public function removeSubscription(string $topic, string $uid): bool;
 
     /**
      * Delete all subscriptions for a topic
      *
-     * @param string $topic
-     * @return bool
+     * @param string $topic The topic pattern whose subscribers should be removed
+     * @return bool True on success, false on failure
      */
     public function deleteTopic(string $topic): bool;
 
     /**
-     * @return array|null
+     * Get all subscriptions
+     *
+     * @return array|null All subscriptions grouped by topic, or null if not available
      */
     public function allSubscriptions(): ?array;
+
+    /**
+     * Retrieve all stored subscriptions
+     *
+     * @return array|null All subscriptions grouped by topic, or null if not available
+     */
+    public function allSubscribers(): ?array;
+
+    /**
+     * Get all subscribers for a given topic
+     *
+     * @param string $topic The topic pattern to look up
+     * @return array List of subscriber uids subscribed to the topic
+     */
+    public function getSubscribers(string $topic): ?array;
+
+    /**
+     * Get all topic subscriptions for a given uid
+     *
+     * @param int $uid The unique identifier of the subscriber
+     * @return array List of topic patterns the uid is subscribed to
+     */
+    public function getSubscriptions(int $uid): ?array;
 }
