@@ -44,13 +44,15 @@ class Topic
      */
     protected function recovery(): void
     {
-        $allSubscriptions = $this->driver->batchItems();
-        if (empty($allSubscriptions)) {
-            return;
-        }
+        while (true) {
+            $batchItems = $this->driver->batchItems(50);
+            if (empty($batchItems)) {
+                break;
+            }
 
-        foreach ($allSubscriptions as $subscription) {
-            $this->indexSubscription($subscription["topic"], $subscription["uid"]);
+            foreach ($batchItems as $subscription) {
+                $this->indexSubscription($subscription["topic"], $subscription["uid"]);
+            }
         }
     }
     
