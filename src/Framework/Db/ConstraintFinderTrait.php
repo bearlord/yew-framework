@@ -96,7 +96,7 @@ trait ConstraintFinderTrait
      * @param bool $refresh whether to reload the information even if it is found in the cache.
      * @return Constraint|null table primary key, `null` if the table has no primary key.
      */
-    public function getTablePrimaryKey(string $name, bool $refresh = false): array
+    public function getTablePrimaryKey(string $name, bool $refresh = false)
     {
         return $this->getTableMetadata($name, 'primaryKey', $refresh);
     }
