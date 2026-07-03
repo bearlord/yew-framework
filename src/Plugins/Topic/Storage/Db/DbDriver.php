@@ -73,9 +73,20 @@ class DbDriver implements DriverInterface
         $this->setDb();
 
         if (!$this->checkTableExists()) {
-
+            $this->createTable();
         }
     }
+
+    /**
+     * Get the storage driver type identifier
+     *
+     * @return string The driver type
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
 
     /**
      * Set up the database connection and resolve the table prefix from configuration
@@ -152,7 +163,6 @@ class DbDriver implements DriverInterface
         )->execute();
     }
 
-
     /**
      * Add a subscription for a uid to a topic
      *
@@ -217,6 +227,47 @@ class DbDriver implements DriverInterface
         ])->execute();
 
         return true;
+    }
+
+    /**
+     * Retrieve all items from the database
+     *
+     * @return array An array of all items stored in the database
+     */
+    public function allItems(): ?array
+    {
+        $items = (new Query())->from($this->topicTable)->select([
+            "uid", "topic"
+        ])->orderBy([
+            "id" => SORT_ASC
+        ])->all($this->getDb());
+
+        if (empty($items)) {
+            return null;
+        }
+
+        return $items;
+    }
+    
+    /**
+     * Retrieve a batch of items from the database
+     *
+     * @param int $limit The maximum number of items to retrieve
+     * @return array|null An array of items, or null if no items found
+     */
+    public function batchItems(int $limit = 50): ?array
+    {
+        $items = (new Query())->from($this->topicTable)->select([
+            "uid", "topic"
+        ])->orderBy([
+            "id" => SORT_ASC
+        ])->limit($limit)->all($this->getDb());
+
+        if (empty($items)) {
+            return null;
+        }
+
+        return $items;
     }
 
     /**
@@ -299,4 +350,7 @@ class DbDriver implements DriverInterface
 
         return $items;
     }
+
+
+
 }

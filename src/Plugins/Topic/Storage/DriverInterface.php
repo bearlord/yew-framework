@@ -41,6 +41,21 @@ interface DriverInterface
     public function deleteTopic(string $topic): bool;
 
     /**
+     * Get all items
+     *
+     * @return array|null All items or null if not available
+     */
+    public function allItems(): ?array;
+
+    /**
+     * Get a batch of items
+     *
+     * @param int $limit The number of items to retrieve
+     * @return array|null A batch of items or null if not available
+     */
+    public function batchItems(int $limit = 50): ?array;
+
+    /**
      * Get all subscriptions
      *
      * @return array|null All subscriptions grouped by topic, or null if not available
@@ -69,4 +84,11 @@ interface DriverInterface
      * @return array List of topic patterns the uid is subscribed to
      */
     public function getSubscriptions(int $uid): ?array;
+
+    /**
+     * Get the type of the storage driver
+     *
+     * @return string The type of the storage driver
+     */
+    public function getType(): string;
 }

@@ -19,6 +19,7 @@ use Yew\Plugins\Topic\Aspect\TopicAspect;
 use Yew\Plugins\Topic\Storage\DriverFactory;
 use Yew\Plugins\Topic\Storage\DriverInterface;
 use Yew\Plugins\Topic\Storage\DriverStrategy;
+use Yew\Plugins\Topic\Storage\StorageFactory;
 use Yew\Plugins\Uid\UidConfig;
 use Yew\Plugins\Uid\UidPlugin;
 
@@ -104,9 +105,7 @@ class TopicPlugin extends AbstractPlugin
     public function beforeProcessStart(Context $context)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() == $this->topicConfig->getProcessName()) {
-            $driver = DriverFactory::create($this->topicConfig->getStorage(), $this->topicTable);
-
-            //$this->setToDIContainer(DriverInterface::class, $driver);
+            $driver = StorageFactory::create($this->topicConfig->getStorage());
 
             $topic = new Topic($driver);
             $this->setToDIContainer(Topic::class, $topic);

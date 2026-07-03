@@ -14,8 +14,14 @@ use Yew\Plugins\Topic\Storage\DriverInterface;
  */
 class MemoryDriver implements DriverInterface
 {
+    /**
+     * @var string The storage driver type identifier
+     */
     protected string $type = "memory";
 
+    /**
+     * @var Table The shared topicTable instance
+     */
     private Table $topicTable;
 
     /**
@@ -27,6 +33,16 @@ class MemoryDriver implements DriverInterface
 	{
         $this->topicTable = DI::getInstance()->get("topicTable");
 	}
+
+    /**
+     * Get the storage driver type identifier
+     *
+     * @return string The driver type
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
 
     /**
      * Build a unique key from topic and uid for table storage
@@ -86,6 +102,27 @@ class MemoryDriver implements DriverInterface
     }
 
     /**
+     * Retrieve all stored items
+     *
+     * @return array|null All items or null if not implemented
+     */
+    public function allItems(): ?array
+    {
+        return null;
+    }
+
+    /**
+     * Retrieve a batch of items
+     *
+     * @param int $limit The number of items to retrieve
+     * @return array|null A batch of items or null if not implemented
+     */
+    public function batchItems(int $limit = 50): ?array
+    {
+        return null;
+    }
+
+    /**
      * Retrieve all stored subscriptions
      *
      * @return array|null All subscriptions or null if not implemented
@@ -126,4 +163,7 @@ class MemoryDriver implements DriverInterface
     {
         return null;
     }
+
+
+
 }
