@@ -199,7 +199,11 @@ class Application extends Module
         $vendorPath = realpath(dirname($srcDir) . '/vendor');
         $this->setVendorPath($vendorPath);
 
-        $runtimePath = ROOT_DIR. '/runtime';
+        //Set runtime path
+        $runtimePath = $this->config->get('yew.runtimePath');
+        if (empty($runtimePath)) {
+            $runtimePath = ROOT_DIR. '/runtime';
+        }
         $this->setRuntimePath($runtimePath);
 
         //Set web path
