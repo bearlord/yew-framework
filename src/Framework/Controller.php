@@ -7,9 +7,13 @@ use Yew\Framework\Exception\ResponseException;
 use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\MethodNotAllowedException;
 use Yew\Plugins\Route\RouteException;
+use Yew\Plugins\Uid\GetUid;
 
 class Controller extends RouteController
 {
+    use GetUid;
+    use GetBoostSend;
+
     /**
      * @param string|null $has
      * @return bool
@@ -78,7 +82,7 @@ class Controller extends RouteController
      * @param string $url
      * @return string
      */
-    protected function msg(string $title = 'System Message', string $info = '', int $wait = 3, string $url = '/'): string
+    protected function message(string $title = 'System Message', string $info = '', int $wait = 3, string $url = '/'): string
     {
         return sprintf(
             '<!DOCTYPE html>
@@ -158,11 +162,12 @@ class Controller extends RouteController
     protected function sendToUid($uid, $data)
     {
         $fd = $this->getUidFd($uid);
-        if ($fd !== false) {
-            $this->autoBoostSend($fd, $data);
-        } else {
-            $this->log->warn("通过uid寻找fd不存在");
+        if ($fd === false) {
+            $this->log->warn("uid: $uid not found");
+            return;
         }
+
+        $this->autoBoostSend($fd, $data);
     }
 
     /**
