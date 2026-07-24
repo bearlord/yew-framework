@@ -39,6 +39,107 @@ class AnnotationRoute implements IRoute
 	 */
 	private $clientData;
 
+    /**
+     * @inheritDoc
+     * @return string
+     */
+    public function getControllerName(): ?string
+    {
+        if ($this->clientData == null) {
+            return null;
+        }
+        return $this->clientData->getControllerName();
+    }
+
+    /**
+     * @inheritDoc
+     * @return string
+     */
+    public function getMethodName(): ?string
+    {
+        if ($this->clientData == null) {
+            return null;
+        }
+        return $this->clientData->getMethodName();
+    }
+
+    /**
+     * @inheritDoc
+     * @return string|null
+     */
+    public function getPath(): ?string
+    {
+        if ($this->clientData == null) {
+            return null;
+        }
+        return $this->clientData->getPath();
+    }
+
+    /**
+     * @inheritDoc
+     * @return array|null
+     */
+    public function getParams(): ?array
+    {
+        if ($this->clientData == null) {
+            return null;
+        }
+        return $this->clientData->getParams();
+    }
+
+    /**
+     * Get client data
+     *
+     * @return ClientData
+     */
+    public function getClientData(): ?ClientData
+    {
+        return $this->clientData;
+    }
+
+    /**
+     * Dispatcher not found
+     * @return void
+     */
+    protected function dispatcherNotFound()
+    {
+        $_path = $this->clientData->getPath() ?? "";
+        $message = sprintf("Path %s not found", $_path);
+
+        if (!empty($this->clientData->getRequest())) {
+            $contentType = $this->clientData->getRequest()->getContentType();
+            if (strpos($contentType, "application/json") !== false) {
+                $this->clientData->getResponse()->withHeader("Content-Type", $contentType);
+                $exceptionJson = Json::encode([
+                    "code" => 400,
+                    "data" => null,
+                    "message" => $message
+                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT);
+                $this->clientData->getResponse()->withContent($exceptionJson)->end();
+            }
+        }
+    }
+
+    /**
+     * Dispatcher Method not allowed
+     * @return false
+     */
+    protected function dispatcherMethodNotAllowed()
+    {
+        if ($this->clientData->getRequest()->getMethod() == "OPTIONS") {
+            $methods = [];
+            foreach ($routeInfo[1] as $value) {
+                list($port, $method) = explode(":", $value);
+                $methods[] = $method;
+            }
+            $this->clientData->getResponse()->withHeader("Access-Control-Allow-Methods", implode(",", $methods));
+            $this->clientData->getResponse()->end();
+            return false;
+        } else {
+            throw new MethodNotAllowedException("Method not allowed");
+        }
+    }
+
 	/**
 	 * @inheritDoc
 	 * @param ClientData $clientData
@@ -67,20 +168,7 @@ class AnnotationRoute implements IRoute
 
 		switch ($routeInfo[0]) {
 			case Dispatcher::NOT_FOUND:
-				$message = "Path not found";
-
-				if (!empty($this->clientData->getRequest())) {
-					$contentType = $this->clientData->getRequest()->getContentType();
-					if (strpos($contentType, "application/json") !== false) {
-						$this->clientData->getResponse()->withHeader("Content-Type", $contentType);
-						$exceptionJson = Json::encode([
-							"code" => 400,
-							"data" => null,
-							"message" => $message
-						], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT);
-						$this->clientData->getResponse()->withContent($exceptionJson)->end();
-					}
-				}
+				$this->dispatcherNotFound();
 
 				break;
 
@@ -214,61 +302,5 @@ class AnnotationRoute implements IRoute
 		return true;
 	}
 
-	/**
-	 * @inheritDoc
-	 * @return string
-	 */
-	public function getControllerName(): ?string
-	{
-		if ($this->clientData == null) {
-			return null;
-		}
-		return $this->clientData->getControllerName();
-	}
 
-	/**
-	 * @inheritDoc
-	 * @return string
-	 */
-	public function getMethodName(): ?string
-	{
-		if ($this->clientData == null) {
-			return null;
-		}
-		return $this->clientData->getMethodName();
-	}
-
-	/**
-	 * @inheritDoc
-	 * @return string|null
-	 */
-	public function getPath(): ?string
-	{
-		if ($this->clientData == null) {
-			return null;
-		}
-		return $this->clientData->getPath();
-	}
-
-	/**
-	 * @inheritDoc
-	 * @return array|null
-	 */
-	public function getParams(): ?array
-	{
-		if ($this->clientData == null) {
-			return null;
-		}
-		return $this->clientData->getParams();
-	}
-
-	/**
-	 * Get client data
-	 *
-	 * @return ClientData
-	 */
-	public function getClientData(): ?ClientData
-	{
-		return $this->clientData;
-	}
 }

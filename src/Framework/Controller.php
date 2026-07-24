@@ -72,15 +72,28 @@ class Controller extends RouteController
     }
 
     /**
-     * @param string|null $title
-     * @param string|null $info
+     * @param string $title
+     * @param string $info
+     * @param int $wait
+     * @param string $url
      * @return string
      */
-    private function msg(?string $title = 'System Message', ?string $info = null): string
+    protected function msg(string $title = 'System Message', string $info = '', int $wait = 3, string $url = '/'): string
     {
-        return '<!DOCTYPE html><html>' .
-            '<head><title>' . $title . '</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/></head>' .
-            '<body><h1>' . $title . '</h1><h2>' . $info . '</h2></body></html>';
+        return sprintf(
+            '<!DOCTYPE html>
+        <html>
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+            <meta http-equiv="Refresh" content="%d; url=%s"/>
+        </head>
+        <body>
+            <h1>%s</h1>
+            <h2>%s</h2>
+        </body>
+        </html>',
+            $wait, $url, $title, $info
+        );
     }
 
     /**

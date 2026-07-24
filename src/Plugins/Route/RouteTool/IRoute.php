@@ -21,28 +21,28 @@ interface IRoute
     /**
      * Get Controller name
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getControllerName();
+    public function getControllerName(): ?string;
 
     /**
      * Get method name
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getMethodName();
+    public function getMethodName(): ?string;
 
     /**
      * Get params
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getParams();
+    public function getParams(): ?array;
 
     /**
      * Get path
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getPath();
+    public function getPath(): ?string;
 }
