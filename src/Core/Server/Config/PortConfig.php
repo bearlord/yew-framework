@@ -11,6 +11,9 @@ use Yew\Core\Plugins\Config\BaseConfig;
 
 class PortConfig extends BaseConfig
 {
+    /**
+     * Swoole socket type constants.
+     */
     const SWOOLE_SOCK_TCP = SWOOLE_SOCK_TCP;
     const SWOOLE_SOCK_TCP6 = SWOOLE_SOCK_TCP6;
     const SWOOLE_SOCK_UDP = SWOOLE_SOCK_UDP;
@@ -18,6 +21,9 @@ class PortConfig extends BaseConfig
     const SWOOLE_SOCK_UNIX_DGRAM = SWOOLE_SOCK_UNIX_DGRAM;
     const SWOOLE_SOCK_UNIX_STREAM = SWOOLE_SOCK_UNIX_STREAM;
 
+    /**
+     * WebSocket opcode and connection status constants.
+     */
     const WEBSOCKET_OPCODE_TEXT = WEBSOCKET_OPCODE_TEXT;
     const WEBSOCKET_OPCODE_BINARY = WEBSOCKET_OPCODE_BINARY;
     const WEBSOCKET_OPCODE_PING = WEBSOCKET_OPCODE_PING;
@@ -25,7 +31,45 @@ class PortConfig extends BaseConfig
     const WEBSOCKET_STATUS_HANDSHAKE = WEBSOCKET_STATUS_HANDSHAKE;
     const WEBSOCKET_STATUS_FRAME = WEBSOCKET_STATUS_FRAME;
 
+    /**
+     * Configuration key for port settings.
+     */
     const KEY = "yew.port";
+
+    /**
+     * Raw transport protocols.
+     */
+    const PROTOCOL_TCP = "tcp";
+    const PROTOCOL_TCP_SECURE = "tcp_secure";
+
+    const PROTOCOL_UDP = "udp";
+    const PROTOCOL_UDP_SECURE = "udp_secure";
+
+    /**
+     * HTTP/HTTPS application protocols.
+     */
+    const PROTOCOL_HTTP = "http";
+    const PROTOCOL_HTTPS = "https";
+
+    /**
+     * WebSocket / secure WebSocket protocols.
+     */
+    const PROTOCOL_WEBSOCKET = "ws";
+    const PROTOCOL_WEBSOCKET_SECURE = "wss";
+
+    /**
+     * MQTT and MQTT-over-transport protocol variants.
+     */
+    const PROTOCOL_MQTT = "mqtt";
+    const PROTOCOL_MQTT_OVER_TCP = "mqtt_over_tcp";
+    const PROTOCOL_MQTT_OVER_TLS = "mqtt_over_tls";
+    const PROTOCOL_MQTT_OVER_WEBSOCKET = "mqtt_over_ws";
+    const PROTOCOL_MQTT_OVER_WEBSOCKET_SECURE = "mqtt_over_wss";
+
+    /**
+     * @var string|null Port type
+     */
+    protected ?string $portType = null;
 
     /**
      * @var string
@@ -167,16 +211,22 @@ class PortConfig extends BaseConfig
     protected string $sslCertFile = "";
 
     /**
+     * SSL SNI Certs. After enabling SSL, set ssl_sni_certs to provide multiple SSL certificates for different hostnames.
+     * @var array|null
+     */
+    protected ?array $sslSniCerts = null;
+
+    /**
      * SSL ciphers. After enabling SSL, set ssl_ciphers to change the default encryption algorithm of openssl. Swoole support EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH
      * @var string
      */
     protected string $sslCiphers = "";
 
     /**
-     * SSL Tunnel encryption algorithm, default is SWOOLE_SSLv23_METHOD
-     * @var string
+     * SSL protocol version bitmask.
+     * @var int
      */
-    protected string $sslMethod = "";
+    protected int $sslProtocols = 0;
 
     /**
      * Open http protocol
@@ -249,6 +299,62 @@ class PortConfig extends BaseConfig
     public function __construct()
     {
         parent::__construct(self::KEY, true, "name");
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getProtocolType(): ?string
+    {
+        return $this->portType;
+    }
+
+    /**
+     * @param string|null $protocolType
+     * @return void
+     */
+    public function setProtocolType(?string $protocolType): void
+    {
+        $this->portType = $protocolType;
+
+        switch ($protocolType) {
+            case self::PROTOCOL_TCP:
+            case self::PROTOCOL_TCP_SECURE:
+                $this->setSockType(1);
+
+                $this->setOpenHttpProtocol(false);
+                $this->setOpenWebsocketProtocol(false);
+                break;
+
+            case self::PROTOCOL_WEBSOCKET:
+            case self::PROTOCOL_WEBSOCKET_SECURE:
+                $this->setSockType(1);
+
+                $this->setOpenHttpProtocol(false);
+                $this->setOpenWebsocketProtocol(true);
+                break;
+
+            case self::PROTOCOL_MQTT:
+            case self::PROTOCOL_MQTT_OVER_TCP:
+                $this->setSockType(1);
+
+                $this->setOpenMqttProtocol(true);
+                break;
+
+            case self::PROTOCOL_MQTT_OVER_WEBSOCKET:
+            case self::PROTOCOL_MQTT_OVER_WEBSOCKET_SECURE:
+                $this->setSockType(1);
+                $this->setOpenHttpProtocol(false);
+                $this->setOpenWebsocketProtocol(true);
+                break;
+
+            case self::PROTOCOL_UDP:
+            case self::PROTOCOL_UDP_SECURE:
+                $this->setSockType(2);
+                break;
+
+
+        }
     }
 
     /**
@@ -476,6 +582,23 @@ class PortConfig extends BaseConfig
     }
 
     /**
+     * @return array|null
+     */
+    public function getSslSniCerts(): ?array
+    {
+        return $this->sslSniCerts;
+    }
+
+    /**
+     * @param array|null $sslSniCerts
+     * @return void
+     */
+    public function setSslSniCerts(?array $sslSniCerts): void
+    {
+        $this->sslSniCerts = $sslSniCerts;
+    }
+
+    /**
      * @return string
      */
     public function getSslCiphers(): ?string
@@ -669,23 +792,20 @@ class PortConfig extends BaseConfig
     }
 
     /**
-     * Get ssl method
-     *
-     * @return string|null
+     * @return int
      */
-    public function getSslMethod(): ?string
+    public function getSslProtocols(): int
     {
-        return $this->sslMethod;
+        return $this->sslProtocols;
     }
 
     /**
-     * Set SSL method
-     *
-     * @param string $sslMethod
+     * @param int $sslProtocols
+     * @return void
      */
-    public function setSslMethod(string $sslMethod)
+    public function setSslProtocols(int $sslProtocols): void
     {
-        $this->sslMethod = $sslMethod;
+        $this->sslProtocols = $sslProtocols;
     }
 
     /**
@@ -901,7 +1021,7 @@ class PortConfig extends BaseConfig
     {
         $this->wsOpcode = $wsOpcode;
     }
-    
+
     /**
      * @return string
      */
@@ -926,7 +1046,8 @@ class PortConfig extends BaseConfig
     }
 
     /**
-     * @var bool auto send function's return value to remote port
+     * Whether to automatically send the return value of the handler back to the remote port.
+     * @var bool
      */
     protected $autoSendReturnValue = false;
 
