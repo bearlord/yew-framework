@@ -876,11 +876,6 @@ class PortConfig extends BaseConfig
      */
     public function getSwooleSockType(): int
     {
-        var_dump([
-            $this->getSockType(),
-            $this->getProtocolType()
-        ]);
-
         ConfigException::AssertNull($this, "sockType", $this->getSockType());
         if ($this->isEnableSsl()) {
             return $this->getSockType() | SWOOLE_SSL;
