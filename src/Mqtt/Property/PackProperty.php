@@ -5,10 +5,10 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Property;
+namespace Yew\Mqtt\Property;
 
-use Yew\Plugins\MQTT\Hex\Property;
-use Yew\Plugins\MQTT\Tools\PackTool;
+use Yew\Mqtt\Hex\Property;
+use Yew\Mqtt\Tools\PackTool;
 
 class PackProperty
 {

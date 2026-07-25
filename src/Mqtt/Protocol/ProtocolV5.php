@@ -5,13 +5,13 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Protocol;
+namespace Yew\Mqtt\Protocol;
 
-use Yew\Plugins\MQTT\Exception\InvalidArgumentException;
-use Yew\Plugins\MQTT\Packet\PackV5;
-use Yew\Plugins\MQTT\Packet\UnPackV5;
-use Yew\Plugins\MQTT\Tools\PackTool;
-use Yew\Plugins\MQTT\Tools\UnPackTool;
+use Yew\Mqtt\Exception\InvalidArgumentException;
+use Yew\Mqtt\Packet\PackV5;
+use Yew\Mqtt\Packet\UnPackV5;
+use Yew\Mqtt\Tools\PackTool;
+use Yew\Mqtt\Tools\UnPackTool;
 
 
 class ProtocolV5 implements ProtocolInterface

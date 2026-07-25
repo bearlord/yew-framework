@@ -10,7 +10,7 @@ namespace Yew\Mqtt\Packet;
 use Yew\Mqtt\Exception\ProtocolException;
 use Yew\Mqtt\Protocol\ProtocolInterface;
 use Yew\Mqtt\Protocol\Types;
-use Yew\Plugins\MQTT\Tools\PackTool;
+use Yew\Mqtt\Tools\PackTool;
 
 class PackV3
 {

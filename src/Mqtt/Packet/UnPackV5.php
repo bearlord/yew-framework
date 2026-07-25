@@ -5,12 +5,12 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Packet;
+namespace Yew\Mqtt\Packet;
 
-use Yew\Plugins\MQTT\Hex\ReasonCode;
-use Yew\Plugins\MQTT\Property\UnPackProperty;
-use Yew\Plugins\MQTT\Protocol\Types;
-use Yew\Plugins\MQTT\Tools\UnPackTool;
+use Yew\Mqtt\Hex\ReasonCode;
+use Yew\Mqtt\Property\UnPackProperty;
+use Yew\Mqtt\Protocol\Types;
+use Yew\Mqtt\Tools\UnPackTool;
 
 class UnPackV5
 {

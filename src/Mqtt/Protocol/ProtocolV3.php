@@ -5,14 +5,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Protocol;
+namespace Yew\Mqtt\Protocol;
 
-use Yew\Plugins\MQTT\Exception\InvalidArgumentException;
-use Yew\Plugins\MQTT\Exception\RuntimeException;
-use Yew\Plugins\MQTT\Packet\PackV3;
-use Yew\Plugins\MQTT\Packet\UnPackV3;
-use Yew\Plugins\MQTT\Tools\PackTool;
-use Yew\Plugins\MQTT\Tools\UnPackTool;
+use Yew\Mqtt\Exception\InvalidArgumentException;
+use Yew\Mqtt\Exception\RuntimeException;
+use Yew\Mqtt\Packet\PackV3;
+use Yew\Mqtt\Packet\UnPackV3;
+use Yew\Mqtt\Tools\PackTool;
+use Yew\Mqtt\Tools\UnPackTool;
 use Throwable;
 use TypeError;
 

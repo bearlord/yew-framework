@@ -8,9 +8,9 @@
 namespace Yew\Mqtt\Packet;
 
 use Yew\Mqtt\Hex\ReasonCode;
-use Yew\Plugins\MQTT\Property\PackProperty;
-use Yew\Plugins\MQTT\Protocol\Types;
-use Yew\Plugins\MQTT\Tools\PackTool;
+use Yew\Mqtt\Property\PackProperty;
+use Yew\Mqtt\Protocol\Types;
+use Yew\Mqtt\Tools\PackTool;
 
 class PackV5
 {

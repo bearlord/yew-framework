@@ -306,7 +306,7 @@ class PortConfig extends BaseConfig
      */
     public function getProtocolType(): ?string
     {
-        return $this->portProtocol;
+        return $this->protocolType;
     }
 
     /**
@@ -318,7 +318,7 @@ class PortConfig extends BaseConfig
      */
     public function setProtocolType(?string $protocolType): void
     {
-        $this->portProtocol = $protocolType;
+        $this->protocolType = $protocolType;
 
         switch ($protocolType) {
             // Plain TCP: use stream socket, disable HTTP and WebSocket.

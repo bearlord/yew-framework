@@ -6,7 +6,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Tools;
+namespace Yew\Mqtt\Tools;
 
 class Debug
 {

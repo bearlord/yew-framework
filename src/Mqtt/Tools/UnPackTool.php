@@ -5,11 +5,11 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\MQTT\Tools;
+namespace Yew\Mqtt\Tools;
 
-use Yew\Plugins\MQTT\Exception\InvalidArgumentException;
-use Yew\Plugins\MQTT\Exception\LengthException;
-use Yew\Plugins\MQTT\Protocol\Types;
+use Yew\Mqtt\Exception\InvalidArgumentException;
+use Yew\Mqtt\Exception\LengthException;
+use Yew\Mqtt\Protocol\Types;
 
 class UnPackTool extends Common
 {
