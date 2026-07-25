@@ -69,7 +69,7 @@ class PortConfig extends BaseConfig
     /**
      * @var string|null Port type
      */
-    protected ?string $portType = null;
+    protected ?string $protocolType = null;
 
     /**
      * @var string
@@ -97,7 +97,7 @@ class PortConfig extends BaseConfig
      * Socket type
      * @var int
      */
-    protected int $sockType;
+    protected ?int $sockType = null;
 
     /**
      * Enable ssl
@@ -306,54 +306,96 @@ class PortConfig extends BaseConfig
      */
     public function getProtocolType(): ?string
     {
-        return $this->portType;
+        return $this->portProtocol;
     }
 
     /**
+     * Set the protocol type and configure the corresponding Swoole socket type,
+     * application-layer protocol flags, and SSL enabled flag based on the protocol.
+     *
      * @param string|null $protocolType
      * @return void
      */
     public function setProtocolType(?string $protocolType): void
     {
-        $this->portType = $protocolType;
+        $this->portProtocol = $protocolType;
 
         switch ($protocolType) {
+            // Plain TCP: use stream socket, disable HTTP and WebSocket.
             case self::PROTOCOL_TCP:
-            case self::PROTOCOL_TCP_SECURE:
                 $this->setSockType(1);
-
                 $this->setOpenHttpProtocol(false);
                 $this->setOpenWebsocketProtocol(false);
                 break;
 
-            case self::PROTOCOL_WEBSOCKET:
-            case self::PROTOCOL_WEBSOCKET_SECURE:
+            // TLS-encrypted TCP: enable SSL on top of plain TCP settings.
+            case self::PROTOCOL_TCP_SECURE:
                 $this->setSockType(1);
+                $this->setOpenHttpProtocol(false);
+                $this->setOpenWebsocketProtocol(false);
+                $this->setEnableSsl(true);
+                break;
 
+            // Plain HTTP: use stream socket and enable HTTP protocol.
+            case self::PROTOCOL_HTTP:
+                $this->setSockType(1);
+                $this->setOpenHttpProtocol(true);
+                break;
+
+            // HTTPS: enable HTTP protocol and SSL.
+            case self::PROTOCOL_HTTPS:
+                $this->setSockType(1);
+                $this->setOpenHttpProtocol(true);
+                $this->setEnableSsl(true);
+                break;
+
+            // Plain WebSocket: use stream socket and enable WebSocket protocol.
+            case self::PROTOCOL_WEBSOCKET:
+                $this->setSockType(1);
                 $this->setOpenHttpProtocol(false);
                 $this->setOpenWebsocketProtocol(true);
                 break;
 
+            // Secure WebSocket (WSS): enable WebSocket and SSL.
+            case self::PROTOCOL_WEBSOCKET_SECURE:
+                $this->setSockType(1);
+                $this->setOpenHttpProtocol(false);
+                $this->setOpenWebsocketProtocol(true);
+                $this->setEnableSsl(true);
+                break;
+
+            // MQTT over plain TCP: enable MQTT protocol parsing.
             case self::PROTOCOL_MQTT:
             case self::PROTOCOL_MQTT_OVER_TCP:
                 $this->setSockType(1);
-
                 $this->setOpenMqttProtocol(true);
                 break;
 
+            // MQTT over WebSocket: enable WebSocket, MQTT is handled at application layer.
             case self::PROTOCOL_MQTT_OVER_WEBSOCKET:
+                $this->setSockType(1);
+                $this->setOpenHttpProtocol(false);
+                $this->setOpenWebsocketProtocol(true);
+                break;
+
+            // MQTT over secure WebSocket: enable WebSocket and SSL.
             case self::PROTOCOL_MQTT_OVER_WEBSOCKET_SECURE:
                 $this->setSockType(1);
                 $this->setOpenHttpProtocol(false);
                 $this->setOpenWebsocketProtocol(true);
+                $this->setEnableSsl(true);
                 break;
 
+            // Plain UDP: use datagram socket.
             case self::PROTOCOL_UDP:
-            case self::PROTOCOL_UDP_SECURE:
                 $this->setSockType(2);
                 break;
 
-
+            // DTLS: use datagram socket and enable SSL.
+            case self::PROTOCOL_UDP_SECURE:
+                $this->setSockType(2);
+                $this->setEnableSsl(true);
+                break;
         }
     }
 
@@ -759,17 +801,17 @@ class PortConfig extends BaseConfig
     }
 
     /**
-     * @return int
+     * @return int|null
      */
-    public function getSockType(): int
+    public function getSockType(): ?int
     {
         return $this->sockType;
     }
 
     /**
-     * @param int $sockType
+     * @param int|null $sockType
      */
-    public function setSockType(int $sockType)
+    public function setSockType(?int $sockType)
     {
         $this->sockType = $sockType;
     }
@@ -834,6 +876,11 @@ class PortConfig extends BaseConfig
      */
     public function getSwooleSockType(): int
     {
+        var_dump([
+            $this->getSockType(),
+            $this->getProtocolType()
+        ]);
+
         ConfigException::AssertNull($this, "sockType", $this->getSockType());
         if ($this->isEnableSsl()) {
             return $this->getSockType() | SWOOLE_SSL;
@@ -870,7 +917,7 @@ class PortConfig extends BaseConfig
         $build = [];
         ConfigException::AssertNull($this, "host", $this->getHost());
         ConfigException::AssertNull($this, "port", $this->getPort());
-        ConfigException::AssertNull($this, "sockType", $this->getSockType());
+        ConfigException::AssertNull($this, "protocolType", $this->getProtocolType());
         if ($this->isEnableSsl()) {
             ConfigException::AssertNull($this, "sslKeyFile", $this->getSslKeyFile());
             ConfigException::AssertNull($this, "sslCertFile", $this->getSslCertFile());
