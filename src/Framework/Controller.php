@@ -4,6 +4,7 @@ namespace Yew\Framework;
 
 use Yew\Framework\Exception\AlertResponseException;
 use Yew\Framework\Exception\ResponseException;
+use Yew\Plugins\Pack\GetBoostSend;
 use Yew\Plugins\Route\Controller\RouteController;
 use Yew\Plugins\Route\MethodNotAllowedException;
 use Yew\Plugins\Route\RouteException;
