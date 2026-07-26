@@ -70,7 +70,7 @@ class Generator extends \Yew\Framework\Generator\Generator
     public function rules(): array
     {
         return array_merge(parent::rules(), [
-            [['db', 'ns', 'tableName', 'modelClass', 'baseClass', 'queryNs', 'queryClass', 'queryBaseClass'], 'filter', 'filter' => 'trim'],
+            [['db', 'ns', 'tableName', 'modelClass', 'baseClass', 'queryNs', 'queryClass', 'queryBaseClass'], 'filter', 'filter' => 'trim', 'skipOnEmpty' => true],
             [['ns', 'queryNs'], 'filter', 'filter' => function ($value) { return trim($value, '\\'); }],
 
             [['db', 'ns', 'tableName', 'baseClass', 'queryNs', 'queryBaseClass'], 'required'],

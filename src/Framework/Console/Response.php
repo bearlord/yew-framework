@@ -13,6 +13,6 @@ namespace Yew\Framework\Console;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Response
+class Response extends \Yew\Framework\Base\Response
 {
 }

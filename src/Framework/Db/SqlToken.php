@@ -84,7 +84,7 @@ class SqlToken extends BaseObject implements \ArrayAccess
      * @param int $offset child token offset.
      * @return bool whether the token exists.
      */
-    public function offsetExists($offset)
+    public function offsetExists(mixed $offset): bool
     {
         return isset($this->_children[$this->calculateOffset($offset)]);
     }
@@ -94,9 +94,9 @@ class SqlToken extends BaseObject implements \ArrayAccess
      * This method is required by the SPL [[\ArrayAccess]] interface.
      * It is implicitly called when you use something like `$child = $token[$offset];`.
      * @param int $offset child token offset.
-     * @return SqlToken|null the child token at the specified offset, `null` if there's no token.
+     * @return SqlToken|null|mixed the child token at the specified offset, `null` if there's no token.
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         $offset = $this->calculateOffset($offset);
         return $this->_children[$offset] ?? null;
@@ -109,7 +109,7 @@ class SqlToken extends BaseObject implements \ArrayAccess
      * @param int|null $offset child token offset.
      * @param SqlToken $token token to be added.
      */
-    public function offsetSet($offset, $token)
+    public function offsetSet(mixed $offset, mixed $token): void
     {
         $token->parent = $this;
         if ($offset === null) {
@@ -126,7 +126,7 @@ class SqlToken extends BaseObject implements \ArrayAccess
      * It is implicitly called when you use something like `unset($token[$offset])`.
      * @param int $offset child token offset.
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         $offset = $this->calculateOffset($offset);
         if (isset($this->_children[$offset])) {

@@ -107,7 +107,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * The return value will be casted to boolean if non-boolean was returned.
      * @since 2.0.14
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return isset($this->value[$offset]);
     }
@@ -122,7 +122,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * @return mixed Can return all value types.
      * @since 2.0.14
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->value[$offset];
     }
@@ -140,7 +140,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * @return void
      * @since 2.0.14
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->value[$offset] = $value;
     }
@@ -155,7 +155,7 @@ class ArrayExpression implements ExpressionInterface, \ArrayAccess, \Countable, 
      * @return void
      * @since 2.0.14
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         unset($this->value[$offset]);
     }

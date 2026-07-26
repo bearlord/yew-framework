@@ -1241,7 +1241,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * @param mixed $offset the offset to check on
      * @return bool whether there is an element at the specified offset.
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return $this->__isset($offset);
     }
@@ -1739,7 +1739,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * It is implicitly called when you use something like `unset($model[$offset])`.
      * @param mixed $offset the offset to unset element
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         if (property_exists($this, $offset)) {
             $this->$offset = null;

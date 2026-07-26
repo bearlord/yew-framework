@@ -71,7 +71,7 @@ class JwtBuilder implements \ArrayAccess
      * @param $value
      * @return void
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         if (is_null($offset)) {
             $this->container[] = $value;
@@ -84,7 +84,7 @@ class JwtBuilder implements \ArrayAccess
      * @param $offset
      * @return bool
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return isset($this->container[$offset]);
     }
@@ -93,16 +93,16 @@ class JwtBuilder implements \ArrayAccess
      * @param $offset
      * @return void
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         unset($this->container[$offset]);
     }
 
     /**
-     * @param $offset
-     * @return mixed|null
+     * @param mixed $offset
+     * @return mixed
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->container[$offset] ?? null;
     }

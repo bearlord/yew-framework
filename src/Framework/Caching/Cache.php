@@ -523,7 +523,7 @@ abstract class Cache extends Component implements CacheInterface
      * @param string $offset a key identifying the cached value
      * @return bool
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return $this->get($offset) !== false;
     }
@@ -534,7 +534,7 @@ abstract class Cache extends Component implements CacheInterface
      * @param string $offset a key identifying the cached value
      * @return mixed the value stored in cache, false if the value is not in the cache or expired.
      */
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->get($offset);
     }
@@ -544,10 +544,10 @@ abstract class Cache extends Component implements CacheInterface
      * If the cache already contains such a key, the existing value will be
      * replaced with the new ones. To add expiration and dependencies, use the [[set()]] method.
      * This method is required by the interface [[\ArrayAccess]].
-     * @param string $offset the key identifying the value to be cached
+     * @param mixed $offset the key identifying the value to be cached
      * @param mixed $value the value to be cached
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->set($offset, $value);
     }
@@ -557,7 +557,7 @@ abstract class Cache extends Component implements CacheInterface
      * This method is required by the interface [[\ArrayAccess]].
      * @param string $offset the key of the value to be deleted
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         $this->delete($offset);
     }

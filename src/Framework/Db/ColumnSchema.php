@@ -54,22 +54,22 @@ class ColumnSchema extends BaseObject
     /**
      * @var array enumerable values. This is set only if the column is declared to be an enumerable type.
      */
-    public array $enumValues;
+    public array $enumValues = [];
 
     /**
-     * @var int display size of the column.
+     * @var int|null display size of the column.
      */
-    public int $size;
+    public ?int $size = null;
 
     /**
-     * @var int precision of the column data, if it is numeric.
+     * @var int|null precision of the column data, if it is numeric.
      */
-    public int $precision;
+    public ?int $precision = null;
 
     /**
-     * @var int scale of the column data, if it is numeric.
+     * @var int|null scale of the column data, if it is numeric.
      */
-    public int $scale;
+    public ?int $scale = null;
 
     /**
      * @var bool whether this column is a primary key
@@ -85,7 +85,7 @@ class ColumnSchema extends BaseObject
      * @var bool whether this column is unsigned. This is only meaningful
      * when [[type]] is `smallint`, `integer` or `bigint`.
      */
-    public bool $unsigned;
+    public bool $unsigned = false;
 
     /**
      * @var string|null comment of this column. Not all DBMS support this.

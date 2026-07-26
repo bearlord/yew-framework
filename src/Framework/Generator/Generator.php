@@ -400,6 +400,9 @@ abstract class Generator extends Model
      */
     public function isReservedKeyword($value): bool
     {
+        if (empty($value)) {
+            return false;
+        }
         static $keywords = [
             '__class__',
             '__dir__',

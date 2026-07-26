@@ -187,10 +187,10 @@ class HeaderCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * Returns whether there is a header with the specified name.
      * This method is required by the SPL interface [[\ArrayAccess]].
      * It is implicitly called when you use something like `isset($collection[$name])`.
-     * @param string $name the header name
+     * @param mixed $name the header name
      * @return bool whether the named header exists
      */
-    public function offsetExists($name)
+    public function offsetExists(mixed $name): bool
     {
         return $this->has($name);
     }
@@ -200,10 +200,10 @@ class HeaderCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * This method is required by the SPL interface [[\ArrayAccess]].
      * It is implicitly called when you use something like `$header = $collection[$name];`.
      * This is equivalent to [[get()]].
-     * @param string $name the header name
-     * @return string the header value with the specified name, null if the named header does not exist.
+     * @param mixed $name the header name
+     * @return mixed the header value with the specified name, null if the named header does not exist.
      */
-    public function offsetGet($name)
+    public function offsetGet(mixed $name): mixed
     {
         return $this->get($name);
     }
@@ -213,10 +213,10 @@ class HeaderCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * This method is required by the SPL interface [[\ArrayAccess]].
      * It is implicitly called when you use something like `$collection[$name] = $header;`.
      * This is equivalent to [[add()]].
-     * @param string $name the header name
-     * @param string $value the header value to be added
+     * @param mixed $name the header name
+     * @param mixed $value the header value to be added
      */
-    public function offsetSet($name, $value)
+    public function offsetSet(mixed $name, mixed $value): void
     {
         $this->set($name, $value);
     }
@@ -226,9 +226,9 @@ class HeaderCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * This method is required by the SPL interface [[\ArrayAccess]].
      * It is implicitly called when you use something like `unset($collection[$name])`.
      * This is equivalent to [[remove()]].
-     * @param string $name the header name
+     * @param mixed $name the header name
      */
-    public function offsetUnset($name)
+    public function offsetUnset(mixed $name)
     {
         $this->remove($name);
     }

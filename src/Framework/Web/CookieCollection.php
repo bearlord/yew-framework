@@ -199,7 +199,7 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * @param string $offset the cookie name
      * @return bool whether the named cookie exists
      */
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         return $this->has($offset);
     }
@@ -209,10 +209,10 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * This method is required by the SPL interface [[\ArrayAccess]].
      * It is implicitly called when you use something like `$cookie = $collection[$name];`.
      * This is equivalent to [[get()]].
-     * @param string $offset the cookie name
+     * @param mixed $offset the cookie name
      * @return Cookie the cookie with the specified name, null if the named cookie does not exist.
      */
-    public function offsetGet($offset): ?Cookie
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->get($offset);
     }
@@ -225,7 +225,7 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * @param string $offset the cookie name
      * @param Cookie $value the cookie to be added
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->add($value);
     }
@@ -237,7 +237,7 @@ class CookieCollection extends BaseObject implements \IteratorAggregate, \ArrayA
      * This is equivalent to [[remove()]].
      * @param string $offset the cookie name
      */
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         $this->remove($offset);
     }
