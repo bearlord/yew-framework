@@ -182,6 +182,8 @@ class Controller extends \Yew\Framework\Base\Controller
      */
     public function bindActionParams(Action $action, ?array $params = null): array
     {
+        $params = $params ?? [];
+
         if ($action instanceof InlineAction) {
             $method = new \ReflectionMethod($this, $action->actionMethod);
         } else {
@@ -203,35 +205,22 @@ class Controller extends \Yew\Framework\Base\Controller
             }
 
             if ($key !== null) {
-                if ($param->isArray()) {
-                    $params[$key] = $params[$key] === '' ? [] : preg_split('/\s*,\s*/', $params[$key]);
+                $value = $params[$key];
+                $type = $param->getType();
+
+                // Console array arguments are supplied as comma-separated strings.
+                if ($type instanceof \ReflectionNamedType && $type->getName() === 'array' && is_string($value)) {
+                    $value = $value === '' ? [] : preg_split('/\s*,\s*/', $value);
                 }
-                $args[] = $actionParams[$key] = $params[$key];
+
+                [$value, $isValid] = $this->filterActionParam($value, $type);
+                if (!$isValid) {
+                    throw new Exception(Yew::t('yew', 'Invalid data received for parameter "{param}".', ['param' => $name]));
+                }
+
+                $args[] = $actionParams[$key] = $value;
                 unset($params[$key]);
-            } elseif (
-                PHP_VERSION_ID >= 70000 &&
-                ($type = $param->getType()) !== null &&
-                $type->isBuiltin() &&
-                ((array_key_exists($name, $params)  && $params[$name] !== null) || !$type->allowsNull())
-            ) {
-                $typeName = PHP_VERSION_ID >= 70100 ? $type->getName() : (string)$type;
-                switch ($typeName) {
-                    case 'int':
-                        $params[$name] = filter_var($params[$name], FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE);
-                        break;
-                    case 'float':
-                        $params[$name] = filter_var($params[$name], FILTER_VALIDATE_FLOAT, FILTER_NULL_ON_FAILURE);
-                        break;
-                    case 'bool':
-                        $params[$name] = filter_var($params[$name], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-                        break;
-                }
-                if (array_key_exists($name, $params) && $params[$name] === null) {
-                    $isValid = false;
-                }
-            } elseif (PHP_VERSION_ID >= 70100 &&
-                ($type = $param->getType()) !== null &&
-                !$type->isBuiltin()) {
+            } elseif ($this->isInjectableType($type = $param->getType())) {
                 try {
                     $this->bindInjectedParams($type, $name, $args, $requestedParams);
                 } catch (\Yew\Framework\Exception\Exception $e) {
@@ -248,7 +237,12 @@ class Controller extends \Yew\Framework\Base\Controller
             throw new Exception(Yew::t('yew', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
         }
 
-        return $args;
+        // We use a different array here, specifically one that doesn't contain service instances but descriptions instead.
+        if (Yew::$app->requestedParams === null) {
+            Yew::$app->requestedParams = array_merge($actionParams, $requestedParams);
+        }
+
+        return array_merge($args, $params);
     }
 
     /**
@@ -560,7 +554,8 @@ class Controller extends \Yew\Framework\Base\Controller
 
         /** @var \ReflectionParameter $reflection */
         foreach ($method->getParameters() as $i => $reflection) {
-            if ($reflection->getClass() !== null) {
+            $type = $reflection->getType();
+            if ($type !== null && !$type->isBuiltin()) {
                 continue;
             }
             $name = $reflection->getName();
