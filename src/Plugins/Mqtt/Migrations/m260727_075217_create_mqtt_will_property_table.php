@@ -32,13 +32,13 @@ class m260727_075217_create_mqtt_will_property_table extends Migration
         // Indexes
         $this->createIndex(
             'idx_will_id',
-            '{{%mqtt_will_properties}}',
+            '{{%mqtt_will_property}}',
             'will_id'
         );
 
         $this->createIndex(
             'idx_name',
-            '{{%mqtt_will_properties}}',
+            '{{%mqtt_will_property}}',
             'name'
         );
 

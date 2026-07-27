@@ -10,7 +10,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
     /**
      * {@inheritdoc}
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
         $this->createTable('{{%mqtt_will_message}}', [
             'id' => $this->bigPrimaryKey()->comment('Primary key'),
@@ -21,7 +21,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
             'will_topic' => $this->string(255)->notNull()
                 ->comment('Will topic'),
 
-            'will_payload' => $this->getDb()->getSchema()->getColumnSchemaBuilder('LONGTEXT')
+            'will_payload' => $this->getDb()->getSchema()->createColumnSchemaBuilder('LONGTEXT')
                 ->null()
                 ->comment('Will message payload'),
 
@@ -52,8 +52,8 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
         ]);
 
         // Indexes
-        $this->createIndex('uk_client_id', '{{%mqtt_will_messages}}', 'client_id', true);
-        $this->createIndex('idx_will_topic', '{{%mqtt_will_messages}}', 'will_topic');
+        $this->createIndex('uk_client_id', '{{%mqtt_will_message}}', 'client_id', true);
+        $this->createIndex('idx_will_topic', '{{%mqtt_will_message}}', 'will_topic');
 
         return true;
     }
