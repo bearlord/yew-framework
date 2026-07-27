@@ -75,6 +75,11 @@ class Controller extends Component implements ViewContextInterface
      */
     public string $moduleName;
 
+    /**
+     * @var array parameters (name-value pairs) passed to the current action method.
+     */
+    public array $actionParams = [];
+
     
     public ?string $id = null;
 

@@ -14,7 +14,7 @@ class m250930_081922_create_mqtt_retained_message_table extends Migration
     {
         $this->createTable("{{%mqtt_retained_message}}", [
             "id" => $this->primaryKey()->comment("primary key"),
-            "topic" => $this->string(255)->notNull()->comment("topic"),
+            "topic" => $this->string(240)->notNull()->comment("topic"),
             "qos" => $this->smallInteger()->notNull()->defaultValue(0)->comment("qos"),
             "retain" => $this->smallInteger()->notNull()->defaultValue(0)->comment("retain"),
             "payload" => $this->binary()->notNull()->comment("payload"),

@@ -169,10 +169,12 @@ class RouteAspect extends OrderAspect
         if (empty($controllerName)) {
             $debug = Server::$instance->getConfigContext()->get("yew.server.debug");
             if ($debug) {
-                throw new RouteException("Controller name not found");
+                throw new RouteException("Controller name is null");
             }
             return null;
         }
+
+
         if (!isset($this->controllers[$controllerName])) {
             if (class_exists($controllerName)) {
                 $controller = DIget($controllerName);

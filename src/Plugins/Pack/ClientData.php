@@ -80,10 +80,10 @@ class ClientData
      */
     public function __construct($fd, $requestMethod, $path, $data)
     {
-        $this->setPath($path);
-        $this->setData($data);
         $this->setFd($fd);
         $this->setRequestMethod($requestMethod);
+        $this->setPath($path);
+        $this->setData($data);
     }
 
     /**

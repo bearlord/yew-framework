@@ -16,7 +16,7 @@ class m250930_065606_create_mqtt_message_table extends Migration
             "id" => $this->bigPrimaryKey()->comment("primary key"),
             "direction" => $this->smallInteger()->notNull()->defaultValue(0)->comment("0: up, 1: down"),
             "client_id" => $this->string(128)->notNull()->comment("client id"),
-            "topic" => $this->string(255)->notNull()->comment("topic"),
+            "topic" => $this->string(240)->notNull()->comment("topic"),
             "payload" => $this->text()->notNull()->comment("payload"),
             "qos" => $this->smallInteger()->notNull()->defaultValue(0)->comment("qos"),
             "retain" => $this->smallInteger()->notNull()->defaultValue(0)->comment("retain"),

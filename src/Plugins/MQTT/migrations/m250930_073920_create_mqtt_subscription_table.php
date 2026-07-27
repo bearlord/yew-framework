@@ -15,7 +15,7 @@ class m250930_073920_create_mqtt_subscription_table extends Migration
         $this->createTable("{{%mqtt_subscription}}", [
             "id" => $this->primaryKey()->comment("primary key"),
             "client_id" => $this->string(128)->notNull()->comment("client id"),
-            "topic" => $this->string(255)->notNull()->comment("topic"),
+            "topic" => $this->string(240)->notNull()->comment("topic"),
             "qos" => $this->smallInteger()->notNull()->defaultValue(0)->comment("qos"),
             "created_at" => $this->dateTime(6)->null()->comment("created at"),
             "updated_at" => $this->dateTime(6)->null()->comment("updated at"),

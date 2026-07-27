@@ -106,6 +106,8 @@ class AnnotationRoute implements IRoute
         $_path = $this->clientData->getPath() ?? "";
         $message = sprintf("Path %s not found", $_path);
 
+        $this->warn($message);
+
         if (!empty($this->clientData->getRequest())) {
             $contentType = $this->clientData->getRequest()->getContentType();
             if (strpos($contentType, "application/json") !== false) {
