@@ -107,7 +107,7 @@ class Migration extends Component implements MigrationInterface
      * @return bool return a false value to indicate the migration fails
      * and should not proceed further. All other return values mean the migration succeeds.
      */
-    public function up()
+    public function up(): bool
     {
         $transaction = $this->db->beginTransaction();
         try {
@@ -122,7 +122,7 @@ class Migration extends Component implements MigrationInterface
             return false;
         }
 
-        return null;
+        return true;
     }
 
     /**
@@ -132,7 +132,7 @@ class Migration extends Component implements MigrationInterface
      * @return bool return a false value to indicate the migration fails
      * and should not proceed further. All other return values mean the migration succeeds.
      */
-    public function down()
+    public function down(): bool
     {
         $transaction = $this->db->beginTransaction();
         try {
@@ -147,7 +147,7 @@ class Migration extends Component implements MigrationInterface
             return false;
         }
 
-        return null;
+        return true;
     }
 
     /**

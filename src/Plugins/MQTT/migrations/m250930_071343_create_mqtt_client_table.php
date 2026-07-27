@@ -10,20 +10,22 @@ class m250930_071343_create_mqtt_client_table extends Migration
     /**
      * {@inheritdoc}
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
         $this->createTable('{{%mqtt_client}}', [
             'id' => $this->bigPrimaryKey()->comment('Primary key'),
 
-            'client_id' => $this->string(128)->notNull()->comment('MQTT client identifier'),
-            'username' => $this->string(128)->null()->comment('Authentication username'),
-            'password_hash' => $this->string(255)->null()->comment('Password hash (optional)'),
+            'client_id' => $this->string(128)->notNull()
+                ->comment('MQTT client identifier'),
+
+            'username' => $this->string(64)->null()
+                ->comment('Authentication username'),
 
             'protocol_version' => $this->string(8)->notNull()->defaultValue('3.1.1')
                 ->comment('MQTT protocol version (3.1, 3.1.1, 5.0)'),
 
             'clean_start' => $this->tinyInteger(1)->notNull()->defaultValue(1)
-                ->comment('MQTT v5 clean start flag (1: clean, 0: resume session)'),
+                ->comment('MQTT v5 clean start flag (1: clean session, 0: resume session)'),
 
             'session_expiry' => $this->integer()->unsigned()->notNull()->defaultValue(0)
                 ->comment('Session expiry interval in seconds (0 = never expire)'),
@@ -37,31 +39,39 @@ class m250930_071343_create_mqtt_client_table extends Migration
             'keep_alive' => $this->integer()->unsigned()->null()
                 ->comment('Keep alive interval in seconds'),
 
-            'last_connected_at' => $this->dateTime(6)->null()
+            'last_connected' => $this->dateTime(6)->null()
                 ->comment('Last successful connection time'),
 
-            'last_disconnected_at' => $this->dateTime(6)->null()
+            'last_disconnected' => $this->dateTime(6)->null()
                 ->comment('Last disconnection time detected by broker'),
 
-            'disconnect_reason' => $this->smallInteger()->null()->comment('MQTT v5 DISCONNECT reason code'),
+            'disconnect_reason' => $this->smallInteger()->null()
+                ->comment('MQTT v5 DISCONNECT reason code'),
 
-            'created_at' => $this->dateTime(6)->notNull()->comment('Record creation time'),
-            'updated_at' => $this->dateTime(6)->notNull()->comment('Record last update time'),
+            'created_at' => $this->dateTime(6)->notNull()
+                ->defaultExpression('CURRENT_TIMESTAMP(6)')
+                ->comment('Record creation time'),
+
+            'updated_at' => $this->dateTime(6)->notNull()
+                ->defaultExpression('CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)')
+                ->comment('Record last update time'),
         ]);
 
         // Indexes
-        $this->createIndex('uk_client_id', '{{%mqtt_client}}', 'client_id', true);
-        $this->createIndex('idx_username', '{{%mqtt_client}}', 'username');
-        $this->createIndex('idx_is_active', '{{%mqtt_client}}', 'is_active');
-        $this->createIndex('idx_last_connected_at', '{{%mqtt_client}}', 'last_connected_at');
-        $this->createIndex('idx_last_disconnected_at', '{{%mqtt_client}}', 'last_disconnected_at');
+        $this->createIndex('uk_client_id', '{{%mqtt_clients}}', 'client_id', true);
+        $this->createIndex('idx_protocol_version', '{{%mqtt_clients}}', 'protocol_version');
+        $this->createIndex('idx_last_connected', '{{%mqtt_clients}}', 'last_connected');
+
+        return true;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
-        $this->dropTable("{{%mqtt_client}}");
+        $this->dropTable('{{%mqtt_client}}');
+
+        return true;
     }
 }
