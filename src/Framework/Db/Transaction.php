@@ -161,7 +161,13 @@ class Transaction extends \Yew\Framework\Base\BaseObject
         $this->_level--;
         if ($this->_level === 0) {
             Yew::debug('Commit transaction', __METHOD__);
-            $this->db->pdo->commit();
+            // DDL statements (e.g. CREATE/DROP/ALTER TABLE) cause an implicit commit in some DBMS
+            // (e.g. MySQL), which ends the underlying PDO transaction. Guard against calling
+            // commit() when there is no longer an active transaction to avoid "There is no active
+            // transaction" exceptions. The DDL has already been committed by the server.
+            if ($this->db->pdo->inTransaction()) {
+                $this->db->pdo->commit();
+            }
             $this->db->trigger(Connection::EVENT_COMMIT_TRANSACTION);
             return;
         }
@@ -189,7 +195,10 @@ class Transaction extends \Yew\Framework\Base\BaseObject
         $this->_level--;
         if ($this->_level === 0) {
             Yew::debug('Roll back transaction', __METHOD__);
-            $this->db->pdo->rollBack();
+            // Guard against DDL implicit commit ending the underlying transaction (see commit()).
+            if ($this->db->pdo->inTransaction()) {
+                $this->db->pdo->rollBack();
+            }
             $this->db->trigger(Connection::EVENT_ROLLBACK_TRANSACTION);
             return;
         }

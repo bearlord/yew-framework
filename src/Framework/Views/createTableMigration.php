@@ -44,10 +44,10 @@ class <?= $className ?> extends Migration
         'table' => $table,
         'tableComment' => $tableComment,
     ]);
-
-    return true;
 }
 ?>
+
+        return true;
     }
 
     /**

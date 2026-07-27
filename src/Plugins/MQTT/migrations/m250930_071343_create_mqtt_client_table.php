@@ -58,9 +58,9 @@ class m250930_071343_create_mqtt_client_table extends Migration
         ]);
 
         // Indexes
-        $this->createIndex('uk_client_id', '{{%mqtt_clients}}', 'client_id', true);
-        $this->createIndex('idx_protocol_version', '{{%mqtt_clients}}', 'protocol_version');
-        $this->createIndex('idx_last_connected', '{{%mqtt_clients}}', 'last_connected');
+        $this->createIndex('uk_client_id', '{{%mqtt_client}}', 'client_id', true);
+        $this->createIndex('idx_protocol_version', '{{%mqtt_client}}', 'protocol_version');
+        $this->createIndex('idx_last_connected', '{{%mqtt_client}}', 'last_connected');
 
         return true;
     }
