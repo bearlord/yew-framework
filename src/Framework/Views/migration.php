@@ -22,16 +22,18 @@ class <?= $className ?> extends Migration
 {
     /**
      * {@inheritdoc}
+     * @return bool
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
 
     }
 
     /**
      * {@inheritdoc}
+     * @return bool
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
         echo "<?= $className ?> cannot be reverted.\n";
 

@@ -29,8 +29,9 @@ class <?= $className ?> extends Migration
 {
     /**
      * {@inheritdoc}
+     * @return bool
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
 <?= $this->render('_createTable', [
     'table' => $table,
@@ -43,19 +44,24 @@ class <?= $className ?> extends Migration
         'table' => $table,
         'tableComment' => $tableComment,
     ]);
+
+    return true;
 }
 ?>
     }
 
     /**
      * {@inheritdoc}
+     * @return bool
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
 <?= $this->render('_dropTable', [
     'table' => $table,
     'foreignKeys' => $foreignKeys,
 ])
 ?>
+
+        return true;
     }
 }

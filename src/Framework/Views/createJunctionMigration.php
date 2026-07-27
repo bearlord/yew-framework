@@ -28,6 +28,7 @@ class <?= $className ?> extends Migration
 {
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeUp()
     {
@@ -66,13 +67,18 @@ class <?= $className ?> extends Migration
             'id',
             'CASCADE'
         );
+
+        return true;
     }
 
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeDown()
     {
         $this->dropTable('<?= $table ?>');
+
+        return true;
     }
 }
