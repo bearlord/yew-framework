@@ -34,7 +34,7 @@ class Service extends Component
         $actionParams = [];
         $requestedParams = [];
 
-        foreach ($method->getParameters() as $i => $param) {
+        foreach ($method->getParameters() as $param) {
             $name = $param->getName();
             $key = null;
             if (array_key_exists($i, $params)) {
@@ -44,19 +44,35 @@ class Service extends Component
             }
 
             if ($key !== null) {
-                if ($param->isArray()) {
-                    $params[$key] = $params[$key] === "" ? [] : preg_split("/\s*,\s*/", $params[$key]);
+                $isValid = true;
+                $type = $param->getType();
+                if ($type instanceof \ReflectionNamedType) {
+                    [$result, $isValid] = $this->filterSingleTypeActionParam($params[$key], $type);
+                    $params[$key] = $result;
+                } elseif ($type instanceof \ReflectionUnionType) {
+                    [$result, $isValid] = $this->filterUnionTypeActionParam($params[$key], $type);
+                    $params[$key] = $result;
                 }
+
+                if (!$isValid) {
+                    throw new Exception(Yew::t('yew', 'Invalid data received for parameter "{param}".', ['param' => $name]));
+                }
+
                 $args[] = $actionParams[$key] = $params[$key];
                 unset($params[$key]);
-            } elseif (PHP_VERSION_ID >= 70100 && ($type = $param->getType()) !== null && !$type->isBuiltin()) {
+            } elseif (
+                PHP_VERSION_ID >= 70100
+                && ($type = $param->getType()) !== null
+                && $type instanceof \ReflectionNamedType
+                && !$type->isBuiltin()
+            ) {
                 try {
                     $this->bindInjectedParams($type, $name, $args, $requestedParams);
                 } catch (Exception $e) {
                     throw new Exception($e->getMessage());
                 }
             } elseif ($param->isDefaultValueAvailable()) {
-                $args[] = $actionParams[$i] = $param->getDefaultValue();
+                $args[] = $actionParams[$name] = $param->getDefaultValue();
             } else {
                 $missing[] = $name;
             }
@@ -67,5 +83,32 @@ class Service extends Component
         }
 
         return $args;
+    }
+
+    /**
+     * Fills parameters based on types and names in action method signature.
+     * @param \ReflectionType $type The reflected type of the action parameter.
+     * @param string $name The name of the parameter.
+     * @param array &$args The array of arguments for the action, this function may append items to it.
+     * @param array &$requestedParams The array with requested params, this function may write specific keys to it.
+     * @throws \Yew\Framework\Exception\Exception
+     * @throws \Yew\Framework\Exception\InvalidConfigException Thrown when there is an error in the DI configuration.
+     * @throws \Yew\Framework\Di\NotInstantiableException
+     * @throws \ReflectionException
+     * @since 2.0.36
+     */
+    final protected function bindInjectedParams(\ReflectionType $type, string $name, array &$args, array &$requestedParams)
+    {
+        // Since it is not a builtin type it must be DI injection.
+        $typeName = $type->getName();
+        if (Yew::$container->has($typeName) && ($service = Yew::$container->get($typeName)) instanceof $typeName) {
+            $args[] = $service;
+            $requestedParams[$name] = "Container DI: $typeName \$$name";
+        } elseif ($type->allowsNull()) {
+            $args[] = null;
+            $requestedParams[$name] = "Unavailable service: $name";
+        } else {
+            throw new Exception('Could not load required service: ' . $name);
+        }
     }
 }
