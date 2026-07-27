@@ -61,6 +61,30 @@ class Application extends Module
     public $controller;
 
     /**
+     * @var string|bool the layout that should be applied for views in this application. Defaults to 'main'.
+     * If this is false, layout will be disabled.
+     */
+    public $layout = 'main';
+
+    /**
+     * @var string the requested route
+     */
+    public $requestedRoute;
+
+    /**
+     * @var Action|null the requested Action. If null, it means the request cannot be resolved into an action.
+     *
+     * @phpstan-var Action<covariant Controller<Module>>|null
+     * @psalm-var Action<covariant Controller<Module>>|null
+     */
+    public $requestedAction;
+
+    /**
+     * @var array the parameters supplied to the requested action.
+     */
+    public $requestedParams;
+
+    /**
      * @var string Default time zone
      */
     public string $timeZone = 'Asia/Shanghai';

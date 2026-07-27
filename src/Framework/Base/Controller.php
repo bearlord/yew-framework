@@ -30,6 +30,8 @@ use Yew\Yew;
  */
 class Controller extends Component implements ViewContextInterface
 {
+    use ActionParamFilterTrait;
+
     /**
      * @event ActionEvent an event raised right before executing a controller action.
      * You may set [[ActionEvent::isValid]] to be false to cancel the action execution.
@@ -219,6 +221,8 @@ class Controller extends Component implements ViewContextInterface
      */
     public function bindActionParams(Action $action, ?array $params = null): array
     {
+        $params = $params ?? [];
+
         if ($action instanceof InlineAction) {
             $method = new \ReflectionMethod($this, $action->actionMethod);
         } else {
@@ -229,37 +233,44 @@ class Controller extends Component implements ViewContextInterface
         $missing = [];
         $actionParams = [];
         $requestedParams = [];
-
-        foreach ($method->getParameters() as $i => $param) {
+        foreach ($method->getParameters() as $param) {
             $name = $param->getName();
-            $key = null;
-            if (array_key_exists($i, $params)) {
-                $key = $i;
-            } elseif (array_key_exists($name, $params)) {
-                $key = $name;
-            }
+            if (array_key_exists($name, $params)) {
+                $value = $params[$name];
+                [$value, $isValid] = $this->filterActionParam($value, $param->getType());
 
-            if ($key !== null) {
-                if ($param->isArray()) {
-                    $params[$key] = $params[$key] === '' ? [] : preg_split('/\s*,\s*/', $params[$key]);
+                if (!$isValid) {
+                    throw new BadRequestException(
+                        Yew::t('yew', 'Invalid data received for parameter "{param}".', ['param' => $name])
+                    );
                 }
-                $args[] = $actionParams[$key] = $params[$key];
-                unset($params[$key]);
-            } elseif (PHP_VERSION_ID >= 70100 && ($type = $param->getType()) !== null && !$type->isBuiltin()) {
+
+                $args[] = $actionParams[$name] = $value;
+                unset($params[$name]);
+            } elseif ($this->isInjectableType($type = $param->getType())) {
                 try {
                     $this->bindInjectedParams($type, $name, $args, $requestedParams);
                 } catch (Exception $e) {
-                    throw new Exception($e->getMessage());
+                    throw new Exception($e->getMessage(), 0, $e);
                 }
             } elseif ($param->isDefaultValueAvailable()) {
-                $args[] = $actionParams[$i] = $param->getDefaultValue();
+                $args[] = $actionParams[$name] = $param->getDefaultValue();
             } else {
                 $missing[] = $name;
             }
         }
 
         if (!empty($missing)) {
-            throw new Exception(Yew::t('yew', 'Missing required arguments: {params}', ['params' => implode(', ', $missing)]));
+            throw new BadRequestException(
+                Yew::t('yew', 'Missing required parameters: {params}', ['params' => implode(', ', $missing)])
+            );
+        }
+
+        $this->actionParams = $actionParams;
+
+        // We use a different array here, specifically one that doesn't contain service instances but descriptions instead.
+        if (Yew::$app->requestedParams === null) {
+            Yew::$app->requestedParams = array_merge($actionParams, $requestedParams);
         }
 
         return $args;

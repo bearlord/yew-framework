@@ -40,7 +40,9 @@ trait ActionParamFilterTrait
             return $this->filterUnionTypeActionParam($value, $type);
         }
 
-        if ($type instanceof \ReflectionIntersectionType) {
+        // ReflectionIntersectionType only exists since PHP 8.1; avoid a hard type-hint
+        // so the trait remains safe on PHP 8.0.
+        if (PHP_VERSION_ID >= 80100 && $type instanceof \ReflectionIntersectionType) {
             return $this->filterIntersectionTypeActionParam($value, $type);
         }
 
@@ -110,11 +112,12 @@ trait ActionParamFilterTrait
      * @param \ReflectionIntersectionType $type The declared intersection type.
      * @return array [$result, $isValid]
      */
-    protected function filterIntersectionTypeActionParam($value, \ReflectionIntersectionType $type): array
+    protected function filterIntersectionTypeActionParam($value, $type): array
     {
         foreach ($type->getTypes() as $innerType) {
             if ($innerType instanceof \ReflectionNamedType && !$innerType->isBuiltin()) {
-                if (!is_object($value) || !($value instanceof $innerType->getName())) {
+                $className = $innerType->getName();
+                if (!is_object($value) || !is_a($value, $className)) {
                     return [$value, false];
                 }
             }
