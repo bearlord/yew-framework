@@ -69,7 +69,7 @@ class Application extends Module
     /**
      * @var string the requested route
      */
-    public $requestedRoute;
+    public ?string $requestedRoute = null;
 
     /**
      * @var Action|null the requested Action. If null, it means the request cannot be resolved into an action.
@@ -80,9 +80,9 @@ class Application extends Module
     public $requestedAction;
 
     /**
-     * @var array the parameters supplied to the requested action.
+     * @var array|null the parameters supplied to the requested action.
      */
-    public $requestedParams;
+    public ?array $requestedParams = null;
 
     /**
      * @var string Default time zone

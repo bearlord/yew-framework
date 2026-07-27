@@ -41,27 +41,6 @@ class Application extends \Yew\Framework\Base\Application
     private static array $_instances = [];
 
     /**
-     * @var array mapping from controller ID to controller configurations.
-     * Each name-value pair specifies the configuration of a single controller.
-     * A controller configuration can be either a string or an array.
-     * If the former, the string should be the fully qualified class name of the controller.
-     * If the latter, the array must contain a `class` element which specifies
-     * the controller's fully qualified class name, and the rest of the name-value pairs
-     * in the array are used to initialize the corresponding controller properties. For example,
-     *
-     * ```php
-     * [
-     *   'account' => 'app\controllers\UserController',
-     *   'article' => [
-     *      'class' => 'app\controllers\PostController',
-     *      'pageTitle' => 'something new',
-     *   ],
-     * ]
-     * ```
-     */
-    public array $controllerMap = [];
-
-    /**
      * @var string the namespace that controller classes are located in.
      * This namespace will be used to load controller classes by prepending it to the controller class name.
      * The default namespace is `app\controllers`.
@@ -71,36 +50,10 @@ class Application extends \Yew\Framework\Base\Application
     public ?string $controllerNamespace = 'App\Commands';
 
     /**
-     * @var string the default route of this application. Defaults to 'help',
-     * meaning the `help` command.
-     */
-    public string $defaultRoute = 'help';
-
-    /**
      * @var bool whether to enable the commands provided by the core framework.
      * Defaults to true.
      */
     public bool $enableCoreCommands = true;
-
-    /**
-     * @var string the requested route
-     */
-    public string $requestedRoute;
-    
-    /**
-     * @var Action the requested Action. If null, it means the request cannot be resolved into an action.
-     */
-    public Action $requestedAction;
-
-    /**
-     * @var array|null the parameters supplied to the requested action.
-     */
-    public ?array $requestedParams = null;
-
-    /**
-     * @var Controller the currently active controller instance
-     */
-    public $controller;
 
 
     /**

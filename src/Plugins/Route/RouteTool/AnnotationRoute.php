@@ -278,12 +278,17 @@ class AnnotationRoute implements IRoute
 				$realParams = [];
 				if ($methodReflection instanceof \ReflectionMethod) {
 					foreach ($methodReflection->getParameters() as $parameter) {
-						if ($parameter->getClass() != null) {
-							$values = $params[$parameter->name];
-							if ($values != null) {
-								$values = ValidatedFilter::valid($parameter->getClass(), $values);
-								$instance = $parameter->getClass()->newInstance();
-								foreach ($instance as $key => $value) {
+					$paramClass = null;
+					$paramType = $parameter->getType();
+					if ($paramType instanceof \ReflectionNamedType && !$paramType->isBuiltin()) {
+						$paramClass = $paramType->getName();
+					}
+					if ($paramClass != null) {
+						$values = $params[$parameter->name];
+						if ($values != null) {
+							$values = ValidatedFilter::valid($paramClass, $values);
+							$instance = new $paramClass();
+							foreach ($instance as $key => $value) {
 									$instance->$key = $values[$key] ?? null;
 								}
 								$realParams[$parameter->getPosition()] = $instance;
