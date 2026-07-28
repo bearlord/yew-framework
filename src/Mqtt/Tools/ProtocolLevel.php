@@ -26,7 +26,7 @@ class ProtocolLevel
      * @param int $level
      * @return string
      */
-    public function getProtocolLevel(int $level)
+    public static function getProtocolLevelName(int $level): string
     {
         $all = self::protocolLevels();
         if (isset($all[$level])) {
