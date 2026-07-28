@@ -100,7 +100,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      * @var array|null old attribute values indexed by attribute names.
      * This is `null` if the record [[isNewRecord|is new]].
      */
-    private ?array $_oldAttributes;
+    private ?array $_oldAttributes = null;
 
     /**
      * @var array related models indexed by the relation names
