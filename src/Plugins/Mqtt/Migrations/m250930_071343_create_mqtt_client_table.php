@@ -9,6 +9,7 @@ class m250930_071343_create_mqtt_client_table extends Migration
 {
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeUp(): bool
     {
@@ -39,10 +40,10 @@ class m250930_071343_create_mqtt_client_table extends Migration
             'keep_alive' => $this->integer()->unsigned()->null()
                 ->comment('Keep alive interval in seconds'),
 
-            'last_connected' => $this->dateTime(6)->null()
+            'last_connected_time' => $this->dateTime(6)->null()
                 ->comment('Last successful connection time'),
 
-            'last_disconnected' => $this->dateTime(6)->null()
+            'last_disconnected_time' => $this->dateTime(6)->null()
                 ->comment('Last disconnection time detected by broker'),
 
             'disconnect_reason' => $this->smallInteger()->null()
@@ -60,13 +61,14 @@ class m250930_071343_create_mqtt_client_table extends Migration
         // Indexes
         $this->createIndex('uk_client_id', '{{%mqtt_client}}', 'client_id', true);
         $this->createIndex('idx_protocol_version', '{{%mqtt_client}}', 'protocol_version');
-        $this->createIndex('idx_last_connected', '{{%mqtt_client}}', 'last_connected');
+        $this->createIndex('idx_last_connected', '{{%mqtt_client}}', 'last_connected_time');
 
         return true;
     }
 
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeDown(): bool
     {

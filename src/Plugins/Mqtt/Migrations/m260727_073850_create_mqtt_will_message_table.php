@@ -9,6 +9,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
 {
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeUp(): bool
     {
@@ -18,7 +19,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
             'client_id' => $this->string(128)->notNull()
                 ->comment('MQTT client identifier'),
 
-            'will_topic' => $this->string(255)->notNull()
+            'will_topic' => $this->string(240)->notNull()
                 ->comment('Will topic'),
 
             'will_payload' => $this->getDb()->getSchema()->createColumnSchemaBuilder('LONGTEXT')
@@ -40,7 +41,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
             'content_type' => $this->string(128)->null()
                 ->comment('MQTT v5 content type'),
 
-            'response_topic' => $this->string(255)->null()
+            'response_topic' => $this->string(240)->null()
                 ->comment('MQTT v5 response topic'),
 
             'correlation_data' => $this->binary()->null()
@@ -60,6 +61,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
 
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeDown(): bool
     {

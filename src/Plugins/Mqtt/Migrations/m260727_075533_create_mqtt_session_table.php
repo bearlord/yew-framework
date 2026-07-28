@@ -9,6 +9,7 @@ class m260727_075533_create_mqtt_session_table extends Migration
 {
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeUp(): bool
     {
@@ -36,6 +37,7 @@ class m260727_075533_create_mqtt_session_table extends Migration
 
     /**
      * {@inheritdoc}
+     * @return bool
      */
     public function safeDown(): bool
     {
