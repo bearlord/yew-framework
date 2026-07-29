@@ -81,6 +81,9 @@ class StatusCmd extends Command
         $io->section("Port Information");
 
         foreach (Server::$instance->getPortManager()->getPortConfigs() as $key => $portConfig) {
+            $protocol = $portConfig->getProtocolType();
+            $ssl = $portConfig->isEnableSsl() ? "true" : "false";
+            /*
             $protocol = "http";
             $ssl = "";
             if ($portConfig->isOpenHttpProtocol()) {
@@ -102,6 +105,7 @@ class StatusCmd extends Command
             } elseif ($portConfig->getSockType() == PortConfig::SWOOLE_SOCK_TCP || $portConfig->getSockType() == PortConfig::SWOOLE_SOCK_TCP6) {
                 $protocol = "tcp";
             }
+            */
 
             $show[] = [
                 $protocol,

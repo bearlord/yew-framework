@@ -21,18 +21,36 @@ class TopicValidator
 
     use GetLogger;
 
+    /**
+     * Maximum allowed length (in bytes) of a topic name or topic filter.
+     */
     protected int $maxLength = 128;
 
+    /**
+     * Constructor.
+     *
+     * @param int $maxLength Maximum allowed topic length in bytes (default 128)
+     */
     public function __construct(int $maxLength = 128)
     {
         $this->setMaxLength($maxLength);
     }
 
+    /**
+     * Get the configured maximum topic length.
+     *
+     * @return int Maximum topic length in bytes
+     */
     public function getMaxLength(): int
     {
         return $this->maxLength;
     }
 
+    /**
+     * Set the maximum allowed topic length.
+     *
+     * @param int $maxLength Maximum allowed topic length in bytes
+     */
     public function setMaxLength(int $maxLength): void
     {
         $this->maxLength = $maxLength;

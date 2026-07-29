@@ -7,6 +7,7 @@
 namespace Yew\Core\Server\Port;
 
 use Yew\Core\Context\Context;
+use Yew\Core\Exception\ConfigException;
 use Yew\Core\Exception\Exception;
 use Yew\Core\Exception\ParamException;
 use Yew\Core\Server\Beans\AbstractRequest;
@@ -38,7 +39,7 @@ abstract class AbstractServerPort
     /**
      * @var \Swoole\Server\Port
      */
-    private \Swoole\Server\Port $swoolePort;
+    private $swoolePort;
 
     /**
      * AbstractServerPort constructor.
@@ -79,6 +80,16 @@ abstract class AbstractServerPort
                 $this->getPortConfig()->getPort(),
                 $this->getPortConfig()->getSwooleSockType()
             );
+
+            if ($this->swoolePort === false) {
+                throw new ConfigException(sprintf(
+                    "Failed to listen on port %s:%d (sockType=%s). "
+                    . "Common causes: port already in use, invalid SSL cert/key files, or wrong socket type.",
+                    $this->getPortConfig()->getHost(),
+                    $this->getPortConfig()->getPort(),
+                    $this->getPortConfig()->getProtocolType()
+                ));
+            }
 
             $this->swoolePort->set($configData);
 

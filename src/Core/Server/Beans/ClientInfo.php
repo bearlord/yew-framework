@@ -10,77 +10,77 @@ class ClientInfo
 {
     /**
      * Reactor thread
-     * @var int
+     * @var int|null
      */
-    private $reactorId;
+    private ?int $reactorId = null;
 
     /**
      * Server fd, not the fd of the client connection
-     * @var int
+     * @var int|null
      */
-    private $serverFd;
+    private ?int $serverFd = null;
 
     /**
      * Server port
-     * @var int
+     * @var int|null
      */
-    private $serverPort;
+    private ?int $serverPort = null;
 
     /**
-     * 客户端连接的端口
-     * @var int
+     * Client port
+     * @var int| null
      */
-    private $remotePort;
+    private ?int $remotePort = null;
 
     /**
      * IP address of the client connection
-     * @var int
+     * @var string|null
      */
-    private $remoteIp;
+    private ?string $remoteIp = null;
 
     /**
      * Time for the client to connect to the server, in seconds, set by the master process
-     * @var int
+     * @var int|null
      */
-    private $connectTime;
+    private ?int $connectTime = null;
 
     /**
      * Last time data was received, in seconds, set by the master process
-     * @var int
+     * @var int|null
      */
-    private $lastTime;
+    private ?int $lastTime = null;
 
     /**
      * Connection close error code. If the connection is closed abnormally,
      * the value of close_errno is non-zero. You can refer to the Linux error message list.
-     * @var int
+     * @var int|null
      */
-    private $closeErrno;
+    private ?int $closeErrno = null;
 
     /**
      * [Optional] WebSocket connection status,
      * this information will be added when the server is Swoole\WebSocket\Server
-     * @var int
+     * @var int|null
      */
-    private $websocketStatus;
+    private ?int $websocketStatus = null;
 
     /**
      * [Optional] Use SSL tunnel encryption and add this information when the client sets a certificate
-     * @var string
+     * @var string|null
      */
-    private $sslClientCert;
+    private ?string $sslClientCert = null;
 
     /**
      * [Optional] This information will be added when bind user ID with bind
-     * @var int
+     * @var int|null
      */
-    private $uid;
+    private ?int $uid = null;
 
     /**
      * ClientInfo constructor.
-     * @param $data
+     * @param array $data
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->reactorId = $data['reactor_id'] ?? null;
         $this->serverFd = $data['server_fd'] ?? null;
@@ -131,7 +131,7 @@ class ClientInfo
     /**
      * @return int
      */
-    public function getRemoteIp(): ?int
+    public function getRemoteIp(): ?string
     {
         return $this->remoteIp;
     }
@@ -179,7 +179,7 @@ class ClientInfo
     /**
      * @return int
      */
-    public function getUid()
+    public function getUid(): ?int
     {
         return $this->uid;
     }

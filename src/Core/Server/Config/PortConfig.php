@@ -921,8 +921,8 @@ class PortConfig extends BaseConfig
             if ($this->getSslCiphers() != null) {
                 $build['ssl_ciphers'] = $this->getSslCiphers();
             }
-            if ($this->getSslMethod() != null) {
-                $build['ssl_method'] = $this->getSslMethod();
+            if ($this->getSslProtocols() != null) {
+                $build['ssl_protocols'] = $this->getSslProtocols();
             }
         }
         $build['backlog'] = $this->getBacklog();
