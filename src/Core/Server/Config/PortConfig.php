@@ -295,6 +295,13 @@ class PortConfig extends BaseConfig
      */
     protected int $wsOpcode = self::WEBSOCKET_OPCODE_TEXT;
 
+    /**
+     * Set the WebSocket subprotocol. After setting the Http header of the handshake response, Sec-WebSocket-Protocol:
+     * {$websocket_subprotocol} will be added. For details, please refer to the RFC document related to the WebSocket protocol.
+     * @var string
+     */
+    protected string $websocketSubprotocol = "";
+
 
     public function __construct()
     {
@@ -376,6 +383,7 @@ class PortConfig extends BaseConfig
                 $this->setSockType(1);
                 $this->setOpenHttpProtocol(false);
                 $this->setOpenWebsocketProtocol(true);
+                $this->setWsOpcode(self::WEBSOCKET_OPCODE_BINARY);
                 break;
 
             // MQTT over secure WebSocket: enable WebSocket and SSL.
@@ -383,6 +391,7 @@ class PortConfig extends BaseConfig
                 $this->setSockType(1);
                 $this->setOpenHttpProtocol(false);
                 $this->setOpenWebsocketProtocol(true);
+                $this->setWsOpcode(self::WEBSOCKET_OPCODE_BINARY);
                 $this->setEnableSsl(true);
                 break;
 
@@ -392,10 +401,12 @@ class PortConfig extends BaseConfig
                 break;
 
             // DTLS: use datagram socket and enable SSL.
+            /*
             case self::PROTOCOL_UDP_SECURE:
                 $this->setSockType(2);
                 $this->setEnableSsl(true);
                 break;
+            */
         }
     }
 
@@ -943,11 +954,18 @@ class PortConfig extends BaseConfig
             $count++;
             $build['open_http_protocol'] = $this->isOpenHttpProtocol();
         }
+
         if ($this->isOpenWebsocketProtocol()) {
             $count++;
             $build['open_websocket_protocol'] = $this->isOpenWebsocketProtocol();
             $build['open_websocket_close_frame'] = $this->isOpenWebsocketCloseFrame();
+
+            if (!empty($this->getWebsocketSubprotocol())) {
+                $build['websocket_subprotocol'] = $this->getWebsocketSubprotocol();
+            }
         }
+
+
         if ($this->isOpenMqttProtocol()) {
             $count++;
             $build['open_mqtt_protocol'] = $this->isOpenMqttProtocol();
@@ -1062,6 +1080,22 @@ class PortConfig extends BaseConfig
     public function setWsOpcode(int $wsOpcode): void
     {
         $this->wsOpcode = $wsOpcode;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getWebsocketSubprotocol(): ?string
+    {
+        return $this->websocketSubprotocol;
+    }
+
+    /**
+     * @param string $websocketSubprotocol
+     */
+    public function setWebsocketSubprotocol(string $websocketSubprotocol): void
+    {
+        $this->websocketSubprotocol = $websocketSubprotocol;
     }
 
     /**

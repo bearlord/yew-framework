@@ -15,22 +15,24 @@ trait MessageTrait
 {
 
     /**
-     * @var array 存放headers的小写name
+     * @var array Map of normalized (lowercase) header names to their original,
+     *            case-preserved names. Used to look up headers case-insensitively.
      */
     protected array $headerNames = [];
 
     /**
-     * @var array
+     * @var array Message headers, keyed by the original (case-preserved) header name.
+     *            Each value is an array of strings.
      */
     protected array $headers = [];
 
     /**
-     * @var string
+     * @var string HTTP protocol version (e.g. "1.1", "1.0").
      */
     protected string $protocol = '1.1';
 
     /**
-     * @var StreamInterface|null
+     * @var StreamInterface|null The message body stream.
      */
     protected ?StreamInterface $stream = null;
 
@@ -131,6 +133,21 @@ trait MessageTrait
     }
 
     /**
+     * Retrieves the first value of a header by the given case-insensitive name.
+     * Returns null if the header does not appear in the message.
+     *
+     * @param string $name Case-insensitive header field name.
+     * @return string|null The first header value, or null if the header is absent.
+     */
+    public function getHeaderFirst(string $name): ?string
+    {
+        $values = $this->getHeader($name);
+
+        return !empty($values) ? $values[0] : null;
+    }
+
+
+    /**
      * Retrieves a comma-separated string of the values for a single header.
      * This method returns all the header values of the given
      * case-insensitive header name as a string concatenated together using
@@ -184,7 +201,11 @@ trait MessageTrait
     }
 
     /**
-     * @param array $headers
+     * Set multiple headers at once. Underscores in header names are normalized
+     * to hyphens before being applied (e.g. "content_type" => "content-type").
+     * Existing headers with the same name are replaced.
+     *
+     * @param array $headers Associative array of header name => value(s).
      * @return $this
      */
     public function withHeaders(array $headers): self
@@ -255,7 +276,11 @@ trait MessageTrait
     }
 
     /**
-     * @param array $headers
+     * Reset and set all headers at once. Any existing headers are cleared first,
+     * then replaced by the given set. Underscores in header names are normalized
+     * to hyphens; multiple values for the same header are merged.
+     *
+     * @param array $headers Associative array of header name => value(s).
      * @return $this
      */
     public function setHeaders(array $headers)
@@ -336,7 +361,9 @@ trait MessageTrait
     }
 
     /**
-     * @return string
+     * Get the value of the Content-Type header.
+     *
+     * @return string The Content-Type header line (empty string if not set).
      */
     public function getContentType(): string
     {
