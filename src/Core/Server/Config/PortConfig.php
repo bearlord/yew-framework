@@ -384,6 +384,7 @@ class PortConfig extends BaseConfig
                 $this->setOpenHttpProtocol(false);
                 $this->setOpenWebsocketProtocol(true);
                 $this->setWsOpcode(self::WEBSOCKET_OPCODE_BINARY);
+                $this->setWebsocketSubprotocol("mqtt");
                 break;
 
             // MQTT over secure WebSocket: enable WebSocket and SSL.
@@ -1125,7 +1126,7 @@ class PortConfig extends BaseConfig
      * Whether to automatically send the return value of the handler back to the remote port.
      * @var bool
      */
-    protected $autoSendReturnValue = false;
+    public bool $autoSendReturnValue = false;
 
     /**
      * @return bool
@@ -1143,5 +1144,28 @@ class PortConfig extends BaseConfig
         $this->autoSendReturnValue = (bool)$autoSendReturnValue;
     }
 
+    /**
+     * @var bool Whether to enable the receive buffer for the port.
+     *           When enabled, Swoole buffers incoming data so that large
+     *           packets can be assembled before being dispatched.
+     */
+    public bool $openRecvBuffer = false;
 
+    /**
+     * Check whether the receive buffer is enabled.
+     */
+    public function isOpenRecvBuffer(): bool
+    {
+        return $this->openRecvBuffer;
+    }
+
+    /**
+     * Enable or disable the receive buffer for the port.
+     *
+     * @param bool $openRecvBuffer True to enable, false to disable.
+     */
+    public function setOpenRecvBuffer(bool $openRecvBuffer): void
+    {
+        $this->openRecvBuffer = $openRecvBuffer;
+    }
 }
