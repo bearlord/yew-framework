@@ -103,10 +103,6 @@ class Topic
 	 */
 	public function addSubscription(string $topic, string $uid): bool
 	{
-        var_dump([
-            'step' => __FUNCTION__,
-
-        ]);
         try {
 		    Utility::checkTopicFilter($topic);
         } catch (\Exception $exception) {
@@ -215,15 +211,7 @@ class Topic
 	 */
 	public function publish(string $topic, $data, ?array $excludeUidList = null): bool
 	{
-        var_dump([
-            "step" => __FUNCTION__
-        ]);
-
 		$tree = $this->buildTrees($topic);
-
-        var_dump([
-            $this->subscriptions
-        ]);
 
 		foreach ($tree as $one) {
 			if (empty($this->subscriptions[$one])) {
@@ -234,12 +222,6 @@ class Topic
 				if (!empty($excludeUidList) && in_array($uid, $excludeUidList)) {
 					continue;
 				}
-
-                var_dump([
-                    "uid" => $uid,
-                    "data" => $data,
-                    "topic" => $topic
-                ]);
 				$this->publishToUid($uid, $data, $topic);
 			}
 		}
@@ -313,7 +295,8 @@ class Topic
 	private function publishToUid(string $uid, $data, string $topic): bool
 	{
 		$fd = $this->getUidFd($uid);
-		if (empty($uid)) {
+
+		if (empty($fd)) {
 			return false;
 		}
 
