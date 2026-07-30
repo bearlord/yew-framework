@@ -174,7 +174,6 @@ class RouteAspect extends OrderAspect
             return null;
         }
 
-
         if (!isset($this->controllers[$controllerName])) {
             if (class_exists($controllerName)) {
                 $controller = DIget($controllerName);
@@ -393,6 +392,11 @@ class RouteAspect extends OrderAspect
 			$_controllerName = $routeTool->getControllerName();
 			$_methodName = $routeTool->getMethodName();
 			$_params = $routeTool->getParams();
+
+            if (empty($_controllerName) || empty($_methodName)) {
+                $this->warn("Controller or method name is empty. Path:" . $clientData->getPath());
+                return;
+            }
 
             $controllerInstance = $this->getController($_controllerName);
 

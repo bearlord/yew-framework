@@ -108,7 +108,7 @@ class Controller extends RouteController
      */
     public function onExceptionHandle(\Throwable $exception)
     {
-        if ($this->clientData->getResponse() != null) {
+        if (!empty($this->clientData) && $this->clientData->getResponse() != null) {
             switch (true) {
                 case ($exception instanceof AccessDeniedException):
                     $status = 401;
