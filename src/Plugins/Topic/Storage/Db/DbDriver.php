@@ -249,9 +249,10 @@ class DbDriver implements DriverInterface
      * Retrieve a batch of items from the database
      *
      * @param int $limit The maximum number of items to retrieve
+     * @param int $offset The number of items to skip (for pagination)
      * @return array|null An array of items, or null if no items found
      */
-    public function batchItems(int $limit = 50): ?array
+    public function batchItems(int $limit = 50, int $offset = 0): ?array
     {
         $tableName = $this->tableName;
 
@@ -259,7 +260,7 @@ class DbDriver implements DriverInterface
             "uid", "topic"
         ])->orderBy([
             "id" => SORT_ASC
-        ])->limit($limit)->all($this->getDb());
+        ])->limit($limit)->offset($offset)->all($this->getDb());
 
         if (empty($items)) {
             return null;

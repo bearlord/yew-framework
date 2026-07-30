@@ -118,9 +118,9 @@ class CompositeDriver implements DriverInterface
      * @param int $limit The maximum number of items to retrieve
      * @return array|null A batch of items from the persistent driver
      */
-    public function batchItems(int $limit = 50): ?array
+    public function batchItems(int $limit = 50, int $offset = 0): ?array
     {
-        return $this->persistent()->batchItems($limit);
+        return $this->persistent()->batchItems($limit, $offset);
     }
 
     /**

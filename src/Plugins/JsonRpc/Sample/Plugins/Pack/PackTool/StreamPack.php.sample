@@ -39,7 +39,6 @@ class StreamPack extends AbstractPack
      */
     public function decode($buffer)
     {
-        var_dump($buffer);
         $data = str_replace($this->portConfig->getPackageEof(), "", $buffer);
         return $data;
     }

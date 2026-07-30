@@ -51,9 +51,10 @@ interface DriverInterface
      * Get a batch of items
      *
      * @param int $limit The number of items to retrieve
+     * @param int $offset The number of items to skip (for pagination)
      * @return array|null A batch of items or null if not available
      */
-    public function batchItems(int $limit = 50): ?array;
+    public function batchItems(int $limit = 50, int $offset = 0): ?array;
 
     /**
      * Get all subscriptions

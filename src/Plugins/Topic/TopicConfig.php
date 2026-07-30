@@ -26,7 +26,7 @@ class TopicConfig extends BaseConfig
      * In the helper process by default, other names can be set, and a new process will be created
      * @var string
      */
-    protected string $processName = "helper";
+    protected string $processName = "topic";
 
     /**
      * @var array
