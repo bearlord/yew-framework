@@ -499,9 +499,8 @@ class BaseYew
      */
     public static function t(string $category, string $message, array $params = [], string $language = null)
     {
-
         if (static::$app !== null) {
-            return Application::instance()->getI18n()->translate($category, $message, $params, $language ?: static::$app->getContextLanguage());
+            return static::$app->getI18n()->translate($category, $message, $params, $language ?: static::$app->getLanguage());
         }
 
         $placeholders = [];

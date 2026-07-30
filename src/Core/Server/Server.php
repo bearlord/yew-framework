@@ -984,6 +984,22 @@ abstract class Server extends BaseNode
     }
 
     /**
+     * Remove all in-memory state associated with a connection fd.
+     *
+     * Clears both the fd-keyed session properties ($fdSessions) and the
+     * per-connection receive buffer ($buffers). Safe to call even if the fd
+     * was never registered (unset on a missing key is a silent no-op).
+     * Intended to be called on connection close to avoid fd reuse leaking
+     * stale data and to free memory.
+     *
+     * @param int $fd Connection file descriptor.
+     */
+    public static function clearFdSession(int $fd)
+    {
+        unset(self::$fdSessions[$fd], self::$buffers[$fd]);
+    }
+
+    /**
      * @var array Generic, protocol-agnostic session properties keyed by
      *             client_id. Acts as the reverse map of $fdSessions so a
      *             logical connection (client_id) can be resolved back to its
@@ -1013,6 +1029,21 @@ abstract class Server extends BaseNode
     public static function getClientSession(string $clientId, string $key): mixed
     {
         return self::$connectionSessions[$clientId][$key] ?? null;
+    }
+
+    /**
+     * Remove all in-memory state associated with a logical connection (client_id).
+     *
+     * Clears the client_id-keyed session properties ($connectionSessions).
+     * Safe to call even if the client_id was never registered (unset on a
+     * missing key is a silent no-op). Intended to be called on connection
+     * close so the reverse map does not leak stale fd references.
+     *
+     * @param string $clientId Logical connection identifier (MQTT client_id).
+     */
+    public static function clearClientSession(string $clientId)
+    {
+        unset(self::$connectionSessions[$clientId]);
     }
 
 }

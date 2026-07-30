@@ -78,10 +78,10 @@ class MessageSource extends Component
      *
      * @param string $category the message category
      * @param string $message the message to be translated
-     * @param string $language the target language
+     * @param string|null $language the target language
      * @return string|bool the translated message or false if translation wasn't found or isn't required
      */
-    public function translate(string $category, string $message, string $language)
+    public function translate(string $category, string $message, ?string $language = null)
     {
         if ($this->forceTranslation || $language !== $this->sourceLanguage) {
             return $this->translateMessage($category, $message, $language);

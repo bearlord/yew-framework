@@ -92,7 +92,7 @@ class I18N extends Component
      * @param string $language the language code (e.g. `en-US`, `en`).
      * @return string the translated and formatted message.
      */
-    public function translate($category, $message, $params, $language)
+    public function translate($category, $message, $params, ?string $language = null)
     {
         $messageSource = $this->getMessageSource($category);
         $translation = $messageSource->translate($category, $message, $language);
