@@ -23,6 +23,7 @@ use Yew\Plugins\Aop\AopConfig;
 use Yew\Plugins\Aop\AopPlugin;
 use Yew\Plugins\Aop\OrderAspect;
 use Yew\Plugins\AutoReload\AutoReloadPlugin;
+use Yew\Plugins\Connection\ConnectionPlugin;
 use Yew\Plugins\Console\ConsolePlugin;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Plugins\Redis\RedisPlugin;
@@ -102,6 +103,8 @@ class Application extends Server
         $this->addPlugin(new UidPlugin());
 
         $this->addPlugin(new TopicPlugin());
+
+        $this->addPlugin(new ConnectionPlugin());
 
         $this->addPlugin(new AutoReloadPlugin());
 

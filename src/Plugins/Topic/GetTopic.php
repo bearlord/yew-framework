@@ -83,12 +83,12 @@ trait GetTopic
      * @param string $topic Topic to resolve subscribers for.
      * @return array List of subscriber uids (empty if none / proxy missing).
      */
-    public function getSubscribers(string $topic): array
+    public function getSubscribers(string $topic): ?array
     {
         /** @var Topic $ipcProxy */
-		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, false);
 		if (empty($ipcProxy)) {
-			return [];
+			return null;
 		}
         return $ipcProxy->getSubscribers($topic);
 
