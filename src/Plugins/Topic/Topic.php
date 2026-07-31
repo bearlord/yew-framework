@@ -13,6 +13,7 @@ use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Pack\GetBoostSend;
 use Yew\Plugins\Topic\Storage\DriverInterface;
+use Yew\Plugins\Topic\Tools\TopicValidator;
 use Yew\Plugins\Uid\GetUid;
 
 class Topic
@@ -21,15 +22,22 @@ class Topic
 	use GetUid;
 	use GetLogger;
 
+	/**
+	 * In-memory subscription index: topic => [uid => uid].
+	 * @var array
+	 */
 	protected array $subscriptions = [];
 
     /**
+     * Storage driver used to persist and load subscriptions.
      * @var DriverInterface
      */
     private DriverInterface $driver;
 
     /**
-     * @param DriverInterface $driver
+     * Topic constructor.
+     *
+     * @param DriverInterface $driver Storage driver used to persist/load subscriptions.
      */
 	public function __construct(DriverInterface $driver)
 	{
@@ -39,7 +47,12 @@ class Topic
 	}
 
     /**
-     * Recovery subscriptions
+     * Reload all persisted subscriptions from the storage driver into the
+     * in-memory index on process startup.
+     *
+     * Reads subscriptions in batches (paginated via $offset) until the driver
+     * returns no more items.
+     *
      * @return void
      */
     protected function recovery(): void
@@ -62,8 +75,10 @@ class Topic
     }
     
     /**
-     * @param string $topic
-     * @param string $uid
+     * Index a subscription in the in-memory map (topic => [uid => uid]).
+     *
+     * @param string $topic Subscription topic.
+     * @param string $uid Subscriber unique id.
      * @return void
      */
 	private function indexSubscription(string $topic, string $uid): void
@@ -80,9 +95,11 @@ class Topic
 	}
 
 	/**
-	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
+	 * Check whether a uid is subscribed to a given topic.
+	 *
+	 * @param string $topic Subscription topic.
+	 * @param string $uid Subscriber unique id.
+	 * @return bool True if the uid is subscribed to the topic.
 	 */
 	public function hasTopic(string $topic, string $uid): bool
 	{
@@ -95,24 +112,20 @@ class Topic
 	}
 
 	/**
-	 * Add subscription
+	 * Add a subscription for a uid to a topic.
 	 *
-	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
+	 * Validates the topic filter, updates the in-memory index and persists it
+	 * through the storage driver.
+	 *
+	 * @param string $topic Subscription topic.
+	 * @param string $uid Subscriber unique id.
+	 * @return bool True on success, false if the topic filter is invalid.
 	 */
 	public function addSubscription(string $topic, string $uid): bool
 	{
-        try {
-		    Utility::checkTopicFilter($topic);
-        } catch (\Exception $exception) {
-            $this->warn("Topic addSubscription error", [
-                "code" => $exception->getCode(),
-                "message" => $exception->getMessage(),
-                "file" => $exception->getFile(),
-                "line" => $exception->getLine(),
-                "trace" => $exception->getTraceAsString()
-            ]);
+        $topicValidator = new TopicValidator();
+        $validateResult = $topicValidator->validateFilter($topic);
+        if (!$validateResult) {
             return false;
         }
 
@@ -124,9 +137,10 @@ class Topic
 	}
 
 	/**
-	 * Clear fd subscription
+	 * Clear all subscriptions of the uid bound to the given connection fd.
 	 *
-	 * @param int $fd
+	 * @param int $fd Connection file descriptor.
+	 * @return bool True on success, false if the fd is empty/invalid.
 	 */
 	public function clearFdSubscription(int $fd): bool
 	{
@@ -140,10 +154,10 @@ class Topic
 	}
 
 	/**
-	 * Clear uid subscription
+	 * Clear (remove) all subscriptions of a given uid across every topic.
 	 *
-	 * @param string $uid
-	 * @return bool
+	 * @param string $uid Subscriber unique id.
+	 * @return bool True on success, false if the uid is empty.
 	 */
 	public function clearUidSubscription(string $uid): bool
 	{
@@ -159,10 +173,14 @@ class Topic
 	}
 
 	/**
-	 * Remove subscription
-	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
+	 * Remove a single uid's subscription from a topic.
+	 *
+	 * Cleans up the in-memory index (and prunes an empty topic entry) and
+	 * removes the record from the storage driver.
+	 *
+	 * @param string $topic Subscription topic.
+	 * @param string $uid Subscriber unique id.
+	 * @return bool True on success, false if the uid is empty.
 	 */
 	public function removeSubscription(string $topic, string $uid): bool
 	{
@@ -183,10 +201,10 @@ class Topic
 	}
 
 	/**
-	 * Delete subscription
+	 * Delete an entire topic and all of its subscriber records.
 	 *
-	 * @param string $topic
-	 * @return bool
+	 * @param string $topic Subscription topic to delete.
+	 * @return bool True on success.
 	 */
 	public function deleteTopic(string $topic): bool
 	{
@@ -202,12 +220,13 @@ class Topic
 	}
 
 	/**
-	 * Publish subscription
+	 * Publish data to every uid subscribed to the given topic (and its
+	 * matching wildcard patterns).
 	 *
-	 * @param string $topic
-	 * @param $data
-	 * @param array|null $excludeUidList
-	 * @return bool
+	 * @param string $topic Topic to publish to.
+	 * @param mixed $data Payload to deliver.
+	 * @param array|null $excludeUidList Uids to skip (e.g. the sender).
+	 * @return bool True when the publish dispatch finishes.
 	 */
 	public function publish(string $topic, $data, ?array $excludeUidList = null): bool
 	{
@@ -230,10 +249,15 @@ class Topic
 	}
 
 	/**
-	 * Build a subscription tree, allowing only 5 layers
+	 * Build the set of topic patterns (exact + wildcard) that a published
+	 * topic should be matched against.
 	 *
-	 * @param string $topic
-	 * @return array
+	 * Generates exact matches, prefix wildcards (#) and single-level
+	 * wildcards (+) via a bitmask over the topic segments. System topics
+	 * (starting with '$') are protected from wildcard replacement.
+	 *
+	 * @param string $topic Published topic.
+	 * @return array Map of pattern => pattern.
 	 */
 	private function buildTrees(string $topic): array
 	{
@@ -286,11 +310,12 @@ class Topic
 	}
 
 	/**
-	 * Publish subscription to uid
+	 * Deliver data to a single uid by resolving its connection fd.
 	 *
-	 * @param string $uid
-	 * @param $data
-	 * @param string $topic
+	 * @param string $uid Subscriber unique id.
+	 * @param mixed $data Payload to deliver.
+	 * @param string $topic Publishing topic (passed to the send helper).
+	 * @return bool True if the message was dispatched, false if no fd found.
 	 */
 	private function publishToUid(string $uid, $data, string $topic): bool
 	{
