@@ -111,6 +111,52 @@ class Topic
 		return isset($subs[$uid]);
 	}
 
+    /**
+     * Delete an entire topic and all of its subscriber records.
+     *
+     * @param string $topic Subscription topic to delete.
+     * @return bool True on success.
+     */
+    public function deleteTopic(string $topic): bool
+    {
+        $uidItems = !empty($this->subscriptions[$topic]) ? $this->subscriptions[$topic] : [];
+
+        unset($this->subscriptions[$topic]);
+
+        foreach ($uidItems as $uid) {
+            $this->driver->removeSubscription($topic, $uid);
+        }
+
+        return true;
+    }
+
+	/**
+	 * Get all subscriber uids for a given topic, including those subscribed
+	 * via matching wildcard patterns.
+	 *
+	 * Mirrors the resolution used by publish(): the topic is expanded into its
+	 * exact and wildcard patterns via buildTrees(), and the uids from every
+	 * matching pattern are collected and de-duplicated.
+	 *
+	 * @param string $topic Topic to resolve subscribers for.
+	 * @return array List of subscriber uids (empty if none).
+	 */
+	public function getSubscribers(string $topic): array
+	{
+		$subscribers = [];
+		foreach ($this->buildTrees($topic) as $pattern) {
+			if (empty($this->subscriptions[$pattern])) {
+				continue;
+			}
+
+			foreach ($this->subscriptions[$pattern] as $uid) {
+				$subscribers[$uid] = $uid;
+			}
+		}
+
+		return array_values($subscribers);
+	}
+
 	/**
 	 * Add a subscription for a uid to a topic.
 	 *
@@ -135,6 +181,34 @@ class Topic
 
 		return true;
 	}
+
+    /**
+     * Remove a single uid's subscription from a topic.
+     *
+     * Cleans up the in-memory index (and prunes an empty topic entry) and
+     * removes the record from the storage driver.
+     *
+     * @param string $topic Subscription topic.
+     * @param string $uid Subscriber unique id.
+     * @return bool True on success, false if the uid is empty.
+     */
+    public function removeSubscription(string $topic, string $uid): bool
+    {
+        if (empty($uid)) {
+            return false;
+        }
+        if (isset($this->subscriptions[$topic])) {
+            unset($this->subscriptions[$topic][$uid]);
+
+            if (empty($this->subscriptions[$topic])) {
+                unset($this->subscriptions[$topic]);
+            }
+        }
+
+        $this->driver->removeSubscription($topic, $uid);
+
+        return true;
+    }
 
 	/**
 	 * Clear all subscriptions of the uid bound to the given connection fd.
@@ -173,53 +247,6 @@ class Topic
 	}
 
 	/**
-	 * Remove a single uid's subscription from a topic.
-	 *
-	 * Cleans up the in-memory index (and prunes an empty topic entry) and
-	 * removes the record from the storage driver.
-	 *
-	 * @param string $topic Subscription topic.
-	 * @param string $uid Subscriber unique id.
-	 * @return bool True on success, false if the uid is empty.
-	 */
-	public function removeSubscription(string $topic, string $uid): bool
-	{
-		if (empty($uid)) {
-			return false;
-		}
-		if (isset($this->subscriptions[$topic])) {
-			unset($this->subscriptions[$topic][$uid]);
-
-			if (empty($this->subscriptions[$topic])) {
-				unset($this->subscriptions[$topic]);
-			}
-		}
-
-        $this->driver->removeSubscription($topic, $uid);
-
-		return true;
-	}
-
-	/**
-	 * Delete an entire topic and all of its subscriber records.
-	 *
-	 * @param string $topic Subscription topic to delete.
-	 * @return bool True on success.
-	 */
-	public function deleteTopic(string $topic): bool
-	{
-		$uidItems = !empty($this->subscriptions[$topic]) ? $this->subscriptions[$topic] : [];
-
-		unset($this->subscriptions[$topic]);
-
-		foreach ($uidItems as $uid) {
-            $this->driver->removeSubscription($topic, $uid);
-		}
-
-		return true;
-	}
-
-	/**
 	 * Publish data to every uid subscribed to the given topic (and its
 	 * matching wildcard patterns).
 	 *
@@ -230,14 +257,12 @@ class Topic
 	 */
 	public function publish(string $topic, $data, ?array $excludeUidList = null): bool
 	{
-		$tree = $this->buildTrees($topic);
-
-		foreach ($tree as $one) {
-			if (empty($this->subscriptions[$one])) {
+		foreach ($this->buildTrees($topic) as $pattern) {
+			if (empty($this->subscriptions[$pattern])) {
 				continue;
 			}
 
-			foreach ($this->subscriptions[$one] as $uid) {
+			foreach ($this->subscriptions[$pattern] as $uid) {
 				if (!empty($excludeUidList) && in_array($uid, $excludeUidList)) {
 					continue;
 				}

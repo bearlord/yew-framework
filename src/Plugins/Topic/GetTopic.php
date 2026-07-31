@@ -17,14 +17,32 @@ trait GetTopic
 	use GetIpc;
 
 	/**
+	 * Cached Topic plugin configuration (process name, etc.).
 	 * @var TopicConfig|null
 	 */
 	protected ?TopicConfig $topicConfig = null;
 
+    /**
+     * Lazily resolve and return the TopicConfig instance from the DI container.
+     *
+     * @return TopicConfig|null The resolved config, or null if not registered.
+     */
+    protected function getTopicConfig()
+    {
+        if ($this->topicConfig == null) {
+            $this->topicConfig = DIGet(TopicConfig::class);
+        }
+        return $this->topicConfig;
+    }
+
 	/**
-	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
+	 * Check whether a uid is subscribed to a given topic.
+	 *
+	 * Forwards the call to the remote Topic process via IPC.
+	 *
+	 * @param string $topic Subscription topic.
+	 * @param string $uid Subscriber unique id.
+	 * @return bool True if the uid is subscribed.
 	 */
 	public function hasTopic(string $topic, string $uid): bool
 	{
@@ -42,8 +60,10 @@ trait GetTopic
 	}
 
 	/**
-	 * @param string $topic
-	 * @return bool
+	 * Delete an entire topic (and all its subscriber records) on the Topic process.
+	 *
+	 * @param string $topic Topic to delete.
+	 * @return bool True on success.
 	 */
 	public function deleteTopic(string $topic): bool
 	{
@@ -56,21 +76,30 @@ trait GetTopic
 		return $ipcProxy->deleteTopic($topic);
 	}
 
-	/**
-	 * @return mixed|TopicConfig|null
-	 */
-	protected function getTopicConfig()
-	{
-		if ($this->topicConfig == null) {
-			$this->topicConfig = DIGet(TopicConfig::class);
+    /**
+     * Get all subscriber uids for a topic (including wildcard matches) from
+     * the remote Topic process.
+     *
+     * @param string $topic Topic to resolve subscribers for.
+     * @return array List of subscriber uids (empty if none / proxy missing).
+     */
+    public function getSubscribers(string $topic): array
+    {
+        /** @var Topic $ipcProxy */
+		$ipcProxy = $this->callProcessName($this->getTopicConfig()->getProcessName(), Topic::class, true);
+		if (empty($ipcProxy)) {
+			return [];
 		}
-		return $this->topicConfig;
-	}
+        return $ipcProxy->getSubscribers($topic);
+
+    }
 
 	/**
-	 * @param string $topic
-	 * @param string $uid
-	 * @return bool
+	 * Add a subscription for a uid to a topic on the remote Topic process.
+	 *
+	 * @param string $topic Subscription topic.
+	 * @param string $uid Subscriber unique id.
+	 * @return bool True when the request was dispatched to the Topic process.
 	 */
 	public function addSubscription(string $topic, string $uid): bool
 	{
@@ -91,8 +120,10 @@ trait GetTopic
 	}
 
 	/**
-	 * @param string $topic
-	 * @param string $uid
+	 * Remove a single uid's subscription from a topic on the remote Topic process.
+	 *
+	 * @param string $topic Subscription topic.
+	 * @param string $uid Subscriber unique id.
 	 * @return void
 	 */
 	public function removeSubscription(string $topic, string $uid)
@@ -107,7 +138,10 @@ trait GetTopic
 	}
 
 	/**
-	 * @param int $fd
+	 * Clear all subscriptions of the uid bound to the given connection fd on
+	 * the remote Topic process.
+	 *
+	 * @param int $fd Connection file descriptor.
 	 * @return void
 	 */
 	public function clearFdSubscription(int $fd)
@@ -122,7 +156,10 @@ trait GetTopic
 	}
 
 	/**
-	 * @param string $uid
+	 * Clear (remove) all subscriptions of a given uid across every topic on
+	 * the remote Topic process.
+	 *
+	 * @param string $uid Subscriber unique id.
 	 * @return void
 	 */
 	public function clearUidSubbscription(string $uid)
@@ -137,9 +174,11 @@ trait GetTopic
 	}
 
 	/**
-	 * @param string $topic
-	 * @param $data
-	 * @param array|null $excludeUidList
+	 * Publish data to every subscriber of a topic on the remote Topic process.
+	 *
+	 * @param string $topic Topic to publish to.
+	 * @param mixed $data Payload to deliver.
+	 * @param array|null $excludeUidList Uids to skip (e.g. the sender).
 	 * @return void
 	 */
 	public function publish(string $topic, $data, ?array $excludeUidList = null)
