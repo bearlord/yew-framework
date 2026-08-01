@@ -48,20 +48,47 @@ class Connection
     }
 
     /**
+     * Resolve a value stored for a connection fd by key.
+     */
+    public function getFdSession(int $fd, string $key = 'uid')
+    {
+        return $this->fdSession[$fd][$key] ?? null;
+    }
+
+    /**
+     * Store multiple key/value pairs for a connection fd,
+     * e.g. setFdSessionMulti($fd, ['uid' => $uid, 'session_start' => $flag]).
+     */
+    public function setFdSessionMulti(int $fd, array $data): void
+    {
+        foreach ($data as $key => $value) {
+            $this->setFdSession($fd, $key, $value);
+        }
+    }
+
+    /**
+     * Resolve all values stored for a connection fd.
+     */
+    public function getFdSessionMulti(int $fd): ?array
+    {
+        return $this->fdSession[$fd] ?? null;
+    }
+
+    /**
+     * Remove the entire session state for a connection fd.
+     */
+    public function clearFdSession(int $fd): void
+    {
+        unset($this->fdSession[$fd]);
+    }
+
+    /**
      * Store a key/value pair for a clientId, e.g. setClientSession($clientId, 'uid', $uid)
      * or setClientSession($clientId, 'session_start', $flag).
      */
     public function setClientSession(string $clientId, string $key, $value): void
     {
         $this->clientSession[$clientId][$key] = $value;
-    }
-
-    /**
-     * Resolve a value stored for a connection fd by key.
-     */
-    public function getFdSession(int $fd, string $key = 'uid')
-    {
-        return $this->fdSession[$fd][$key] ?? null;
     }
 
     /**
@@ -73,11 +100,23 @@ class Connection
     }
 
     /**
-     * Remove the entire session state for a connection fd.
+     * Store multiple key/value pairs for a clientId,
+     * e.g. setClientSessionMulti($clientId, ['uid' => $uid, 'session_start' => $flag]).
      */
-    public function clearFdSession(int $fd): void
+    public function setClientSessionMulti(string $clientId, array $data = []): void
     {
-        unset($this->fdSession[$fd]);
+        foreach ($data as $key => $value) {
+            $this->setClientSession($clientId, $key, $value);
+        }
+    }
+
+    /**
+     * @param string $clientId
+     * @return mixed[]|null
+     */
+    public function getClientSessionMulti(string $clientId): ?array
+    {
+        return $this->clientSession[$clientId] ?? null;
     }
 
     /**
