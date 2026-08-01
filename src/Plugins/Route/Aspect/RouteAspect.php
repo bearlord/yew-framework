@@ -281,6 +281,8 @@ class RouteAspect extends OrderAspect
     {
         list($fd, $reactorId) = $invocation->getArguments();
 
+        Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
+
         $clientInfo = Server::$instance->getClientInfo($fd);
         //Server port
         $serverPort = $clientInfo->getServerPort();
@@ -309,6 +311,8 @@ class RouteAspect extends OrderAspect
     protected function afterTcpClose(MethodInvocation $invocation)
     {
         list($fd, $reactorId) = $invocation->getArguments();
+
+        Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
 
         $clientInfo = Server::$instance->getClientInfo($fd);
         //Server port
@@ -437,6 +441,8 @@ class RouteAspect extends OrderAspect
     {
         list($fd, $reactorId) = $invocation->getArguments();
 
+        Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
+
         $clientInfo = Server::$instance->getClientInfo($fd);
         //Server port
         $serverPort = $clientInfo->getServerPort();
@@ -465,6 +471,8 @@ class RouteAspect extends OrderAspect
     protected function afterWSClose(MethodInvocation $invocation)
     {
         list($fd, $reactorId) = $invocation->getArguments();
+
+        Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
 
         $clientInfo = Server::$instance->getClientInfo($fd);
         //Server port
