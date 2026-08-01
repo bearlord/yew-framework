@@ -197,7 +197,6 @@ class DbDriver implements DriverInterface
     public function removeSubscription(string $topic, string $uid): bool
     {
         $tableName = $this->tableName;
-
         $this->getDb()->createCommand()->delete("{{%$tableName}}", [
             "uid" => $uid,
             "topic" => $topic

@@ -30,7 +30,7 @@ class ClientData
     /**
      * @var ClientInfo
      */
-    protected ClientInfo $clientInfo;
+    protected ?ClientInfo $clientInfo = null;
     /**
      * @var Request
      */
@@ -78,7 +78,11 @@ class ClientData
      * @param $path
      * @param $data
      */
-    public function __construct($fd, $requestMethod, $path, $data)
+    public function __construct(
+        int $fd,
+        string $requestMethod,
+        ?string $path,
+        $data =  null)
     {
         $this->setFd($fd);
         $this->setRequestMethod($requestMethod);
@@ -130,9 +134,9 @@ class ClientData
     }
 
     /**
-     * @param string $path
+     * @param string|null $path
      */
-    public function setPath(string $path): void
+    public function setPath(?string $path = null): void
     {
         $this->path = "/" . trim($path, "/");
     }
@@ -202,11 +206,20 @@ class ClientData
     }
 
     /**
-     * @return ClientInfo
+     * @return ClientInfo|null
      */
-    public function getClientInfo(): ClientInfo
+    public function getClientInfo(): ?ClientInfo
     {
         return $this->clientInfo;
+    }
+
+    /**
+     * @param ClientInfo|null $clientInfo
+     * @return void
+     */
+    public function setClientInfo(?ClientInfo $clientInfo): void
+    {
+        $this->clientInfo = $clientInfo;
     }
 
     /**
@@ -215,7 +228,8 @@ class ClientData
     public function setFd(int $fd): void
     {
         $this->fd = $fd;
-        if ($this->fd >= 0) {
+
+        if ($this->fd >= 0 && Server::$instance->existFd($fd)) {
             $this->clientInfo = Server::$instance->getClientInfo($fd);
         }
     }

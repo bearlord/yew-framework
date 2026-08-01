@@ -563,10 +563,13 @@ abstract class Server extends BaseNode
      * Get client info
      *
      * @param int $fd
-     * @return ClientInfo
+     * @return ClientInfo|null
      */
-    public function getClientInfo(int $fd): ClientInfo
+    public function getClientInfo(int $fd): ?ClientInfo
     {
+        if (!$this->server->exists($fd)) {
+            return null;
+        }
         return new ClientInfo($this->server->getClientInfo($fd));
     }
 
