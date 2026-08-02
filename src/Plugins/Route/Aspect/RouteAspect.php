@@ -35,33 +35,45 @@ class RouteAspect extends OrderAspect
     use GetBoostSend;
 
     /**
+     * Per-port route configuration, keyed by listening port.
      * @var routePortConfig[]
      */
     protected array $routePortConfigs;
+
     /**
+     * Resolved route tool instances, keyed by route tool class name.
+     * A route tool parses raw client data into a controller/method/params tuple.
      * @var IRoute[]
      */
     protected array $routeTools = [];
 
     /**
+     * Cached controller instances, keyed by controller class name.
      * @var IController[]
      */
     protected array $controllers = [];
 
     /**
+     * Global route configuration (e.g. error controller name).
      * @var RouteConfig
      */
     protected RouteConfig $routeConfig;
 
     /**
+     * Manager that runs the pre/route/post filter chains.
      * @var FilterManager
      */
     protected $filterManager;
 
     /**
      * RouteAspect constructor.
-     * @param $routePortConfigs
-     * @param RouteConfig $routeConfig
+     *
+     * Resolves and caches one route tool per port config, stores the global
+     * route config and filter manager, and registers this aspect to run after
+     * PackAspect (so the request is already unpacked).
+     *
+     * @param $routePortConfigs per-port route configurations
+     * @param RouteConfig $routeConfig global route configuration
      * @throws \Exception
      */
     public function __construct($routePortConfigs, RouteConfig $routeConfig)
@@ -82,6 +94,8 @@ class RouteAspect extends OrderAspect
     }
 
     /**
+     * Aspect name, used for ordering and debugging.
+     *
      * @return string
      */
     public function getName(): string
@@ -90,7 +104,11 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Around onHttpRequest
+     * Around advice for HTTP requests.
+     *
+     * Resolves the route, dispatches to the matched controller, serialises the
+     * result as JSON when needed and runs the filter chains. Any thrown
+     * exception is forwarded to the configured error controller.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -98,6 +116,7 @@ class RouteAspect extends OrderAspect
      */
     protected function aroundHttpRequest(MethodInvocation $invocation)
     {
+        // Pick the route config bound to this port.
         $abstractServerPort = $invocation->getThis();
         $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
         setContextValue("routePortConfig", $routePortConfig);
@@ -107,12 +126,14 @@ class RouteAspect extends OrderAspect
         if ($clientData == null) {
             return;
         }
+        // Run the pre-filter chain; a filter may stop routing early.
         if ($this->filterManager->filter(AbstractFilter::FILTER_PRE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
             return;
         }
         $routeTool = $this->routeTools[$routePortConfig->getRouteTool()];
 
         try {
+            // Parse raw data into controller/method/params; stop if it fails.
             if (!$routeTool->handleClientData($clientData, $routePortConfig)) {
                 return;
             }
@@ -131,10 +152,12 @@ class RouteAspect extends OrderAspect
                 $clientData->setResponseRaw($handleResult);
             }
 
+            // Run the route filter; it may stop before the response is sent.
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
             }
 
+            // Serialise array/object responses to JSON.
             $responseRaw = $clientData->getResponseRaw();
             if (is_array($responseRaw) || is_object($responseRaw)) {
                 $responseRaw = json_encode($responseRaw, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
@@ -142,10 +165,11 @@ class RouteAspect extends OrderAspect
 
             $clientData->getResponse()->append($responseRaw);
 
+            // Post-filter (e.g. finalise / log the response).
             $this->filterManager->filter(AbstractFilter::FILTER_PRO, $clientData);
 
         } catch (\Throwable $e) {
-            //The errors here will be handed over to the IndexController
+            // The errors here will be handed over to the IndexController
             $controllerInstance = $this->getController($this->routeConfig->getErrorControllerName());
             $controllerInstance->initialization($routeTool->getControllerName(), $routeTool->getMethodName());
 
@@ -158,11 +182,14 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Get controller
+     * Resolve and cache a controller instance by class name.
      *
-     * @param $controllerName
-     * @return IController
-     * @throws RouteException
+     * Returns null (instead of throwing) when the name is empty and debug mode
+     * is off, so a missing route degrades to a "not found" response.
+     *
+     * @param $controllerName fully-qualified controller class name
+     * @return IController|null
+     * @throws RouteException when the class is missing or not an IController
      */
     private function getController($controllerName): ?IController
     {
@@ -192,7 +219,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * After onTcpConnect
+     * After-advice for TCP connect.
+     *
+     * Dispatches to a controller mapped to the "/onConnect" TCP route so the
+     * application can run connection-start logic.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -203,13 +233,10 @@ class RouteAspect extends OrderAspect
         list($fd, $reactorId) = $invocation->getArguments();
 
         $clientInfo = Server::$instance->getClientInfo($fd);
-        //Server port
-        $serverPort = $clientInfo->getServerPort();
-        //Request method
-        $requestMethod = "TCP";
-        //Defined path
-        $onConnectPath = "/onConnect";
-        //Route info
+        $serverPort = $clientInfo->getServerPort();   // listening port
+        $requestMethod = "TCP";                        // virtual method for TCP
+        $onConnectPath = "/onConnect";                 // defined connect path
+        // Match the "/onConnect" route for this port + method.
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onConnectPath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
@@ -221,7 +248,11 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Around onTcpReceive
+     * Around-advice for TCP receive.
+     *
+     * Routes a TCP request the same way as HTTP: parse, dispatch to the
+     * controller, apply the route filter, and auto-send the response when the
+     * port is configured to do so.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -254,6 +285,7 @@ class RouteAspect extends OrderAspect
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
             }
+            // Auto-reply with the controller return value if the port allows it.
             if ($routePortConfig->getAutoSendReturnValue()) {
                 $this->autoBoostSend($clientData->getFd(), $clientData->getResponseRaw());
             }
@@ -271,7 +303,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Before onTcpClose
+     * Before-advice for TCP close.
+     *
+     * Caches the client info snapshot (so it survives the disconnect) and then
+     * dispatches to the "/beforeClose" TCP route for pre-close logic.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -281,16 +316,13 @@ class RouteAspect extends OrderAspect
     {
         list($fd, $reactorId) = $invocation->getArguments();
 
+        // Snapshot client info before Swoole releases the fd.
         Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
 
         $clientInfo = Server::$instance->getClientInfo($fd);
-        //Server port
-        $serverPort = $clientInfo->getServerPort();
-        //Request method
-        $requestMethod = "TCP";
-        //Defined path
-        $onClosePath = "/beforeClose";
-        //Route info
+        $serverPort = $clientInfo->getServerPort();   // listening port
+        $requestMethod = "TCP";                        // virtual method for TCP
+        $onClosePath = "/beforeClose";                 // defined pre-close path
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
@@ -302,7 +334,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * After onTcpClose
+     * After-advice for TCP close.
+     *
+     * Caches the client info snapshot and dispatches to the "/onClose" TCP
+     * route for post-close cleanup.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -312,16 +347,13 @@ class RouteAspect extends OrderAspect
     {
         list($fd, $reactorId) = $invocation->getArguments();
 
+        // Snapshot client info before Swoole releases the fd.
         Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
 
         $clientInfo = Server::$instance->getClientInfo($fd);
-        //Server port
-        $serverPort = $clientInfo->getServerPort();
-        //Request method
-        $requestMethod = "TCP";
-        //Defined path
-        $onClosePath = "/onClose";
-        //Route info
+        $serverPort = $clientInfo->getServerPort();   // listening port
+        $requestMethod = "TCP";                        // virtual method for TCP
+        $onClosePath = "/onClose";                     // defined close path
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
@@ -333,7 +365,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * After onWsOpen
+     * After-advice for WebSocket open.
+     *
+     * Dispatches to the "/onWsOpen" WS route so the application can handle a
+     * newly established WebSocket connection.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -342,19 +377,12 @@ class RouteAspect extends OrderAspect
     protected function afterWsOpen(MethodInvocation $invocation)
     {
         $request = $invocation->getArguments()[0];
-        //fd
-        $fd = $request->getFd();
-        //Client Info
+        $fd = $request->getFd();                       // connection fd
         $clientInfo = Server::$instance->getClientInfo($fd);
-        //ReactorId
-        $reactorId = $clientInfo->getReactorId();
-        //Server port
-        $serverPort = $clientInfo->getServerPort();
-        //Request method
-        $requestMethod = "WS";
-        //Defined path
-        $onConnectPath = "/onWsOpen";
-        //Route info
+        $reactorId = $clientInfo->getReactorId();      // worker reactor id
+        $serverPort = $clientInfo->getServerPort();    // listening port
+        $requestMethod = "WS";                         // virtual method for WS
+        $onConnectPath = "/onWsOpen";                  // defined open path
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onConnectPath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
@@ -366,7 +394,11 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Around onWsMessage
+     * Around-advice for WebSocket message.
+     *
+     * Routes an incoming WebSocket frame: parse, resolve controller/method,
+     * attach the ClientData, dispatch, apply the route filter and optionally
+     * auto-send the response.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -397,6 +429,7 @@ class RouteAspect extends OrderAspect
 			$_methodName = $routeTool->getMethodName();
 			$_params = $routeTool->getParams();
 
+            // Guard against empty route results to avoid a fatal dispatch.
             if (empty($_controllerName) || empty($_methodName)) {
                 $this->warn("Controller or method name is empty. Path:" . $clientData->getPath());
                 return;
@@ -404,7 +437,7 @@ class RouteAspect extends OrderAspect
 
             $controllerInstance = $this->getController($_controllerName);
 
-			//set clientData
+			// Inject the parsed request data into the controller.
 			$controllerInstance->setClientData($clientData);
 
             $controllerInstance->initialization($_controllerName, $_methodName);
@@ -414,6 +447,7 @@ class RouteAspect extends OrderAspect
             if ($this->filterManager->filter(AbstractFilter::FILTER_ROUTE, $clientData) == AbstractFilter::RETURN_END_ROUTE) {
                 return;
             }
+            // Auto-reply with the controller return value if the port allows it.
             if ($routePortConfig->getAutoSendReturnValue()) {
                 $this->autoBoostSend($clientData->getFd(), $clientData->getResponseRaw());
             }
@@ -431,7 +465,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Before onWsClose
+     * Before-advice for WebSocket close.
+     *
+     * Caches the client info snapshot (so it survives the disconnect) and then
+     * dispatches to the "/beforeWsClose" WS route for pre-close logic.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -441,16 +478,13 @@ class RouteAspect extends OrderAspect
     {
         list($fd, $reactorId) = $invocation->getArguments();
 
+        // Snapshot client info before Swoole releases the fd.
         Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
 
         $clientInfo = Server::$instance->getClientInfo($fd);
-        //Server port
-        $serverPort = $clientInfo->getServerPort();
-        //Request method
-        $requestMethod = "WS";
-        //Define path
-        $onClosePath = "/beforeWsClose";
-        //Route info
+        $serverPort = $clientInfo->getServerPort();   // listening port
+        $requestMethod = "WS";                         // virtual method for WS
+        $onClosePath = "/beforeWsClose";               // defined pre-close path
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
@@ -462,7 +496,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * After onWsClose
+     * After-advice for WebSocket close.
+     *
+     * Caches the client info snapshot and dispatches to the "/onWsClose" WS
+     * route for post-close cleanup.
      *
      * @param MethodInvocation $invocation Invocation
      * @throws \Throwable
@@ -472,16 +509,13 @@ class RouteAspect extends OrderAspect
     {
         list($fd, $reactorId) = $invocation->getArguments();
 
+        // Snapshot client info before Swoole releases the fd.
         Server::$instance->setClientInfoSnapshot(Server::$instance->getServer()->getClientInfo($fd));
 
         $clientInfo = Server::$instance->getClientInfo($fd);
-        //Server port
-        $serverPort = $clientInfo->getServerPort();
-        //Request method
-        $requestMethod = "WS";
-        //Define path
-        $onClosePath = "/onWsClose";
-        //Route info
+        $serverPort = $clientInfo->getServerPort();   // listening port
+        $requestMethod = "WS";                         // virtual method for WS
+        $onClosePath = "/onWsClose";                   // defined close path
         $routeInfo = RoutePlugin::$instance->getDispatcher()->dispatch(sprintf("%s:%s", $serverPort, $requestMethod), $onClosePath);
 
         if ($routeInfo[0] !== Dispatcher::FOUND) {
@@ -493,7 +527,10 @@ class RouteAspect extends OrderAspect
     }
 
     /**
-     * Around onUdpPacket
+     * Around-advice for UDP packet.
+     *
+     * Routes a UDP datagram to its controller. UDP is connectionless, so the
+     * response is normally sent back via sendto rather than auto-pushed.
      *
      * @param MethodInvocation $invocation Invocation
      * @Around("within(Yew\Core\Server\Port\IServerPort+) && execution(public **->onUdpPacket(*))")
