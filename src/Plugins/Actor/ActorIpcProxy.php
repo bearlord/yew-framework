@@ -7,12 +7,18 @@
 namespace Yew\Plugins\Actor;
 
 use Yew\Plugins\Actor\Exception\ActorException;
+use Yew\Plugins\Actor\Cluster\Location;
 use Yew\Plugins\Ipc\IpcProxy;
 use Yew\Plugins\Ipc\IpcCallMessage;
 use Yew\Coroutine\Server\Server;
 
 class ActorIpcProxy extends IpcProxy
 {
+    /**
+     * @var Location|null Resolved physical location (location transparency seam)
+     */
+    protected ?Location $location = null;
+
     /**
      * Proxy to a remote Actor. Method calls are routed to the actor process via IPC.
      *
@@ -31,12 +37,32 @@ class ActorIpcProxy extends IpcProxy
      */
     public function __construct(string $actorName, bool $oneWay, float $timeOut = 0)
     {
-        $actorInfo = ActorManager::getInstance()->getActorInfo($actorName);
+        $manager = ActorManager::getInstance();
+
+        // Location-transparent resolution: ask the shard router where the actor
+        // lives. In single-machine mode this returns the local process; a
+        // clustered router would return a remote node, and delivery would go
+        // through the remote transport instead of in-process IPC.
+        $location = $manager->getShardRouter()->locate($actorName);
+        if ($location === null) {
+            return;
+        }
+
+        $actorInfo = $manager->getActorInfo($actorName);
         if ($actorInfo == null) {
             return;
         }
 
-        parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneWay, $timeOut);
+        // Local actors are delivered via in-process IPC. Remote actors (when
+        // clustering lands) would be delivered via the remote transport and
+        // this branch would dispatch through $manager->getRemoteTransport().
+        if ($location->isLocal()) {
+            parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneWay, $timeOut);
+            return;
+        }
+
+        // Reserved for clustered delivery; no-op until a real transport exists.
+        $this->location = $location;
     }
 
     /**

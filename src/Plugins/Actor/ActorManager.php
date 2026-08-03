@@ -11,6 +11,12 @@ use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Exception\ActorException;
+use Yew\Plugins\Actor\Cluster\ClusterNode;
+use Yew\Plugins\Actor\Cluster\Location;
+use Yew\Plugins\Actor\Cluster\ShardRouter;
+use Yew\Plugins\Actor\Cluster\LocalShardRouter;
+use Yew\Plugins\Actor\Cluster\RemoteTransport;
+use Yew\Plugins\Actor\Cluster\LocalTransport;
 use Yew\Yew;
 
 class ActorManager
@@ -69,6 +75,21 @@ class ActorManager
     protected $loadTable;
 
     /**
+     * Shard router: resolves actor name -> physical location. The clustering
+     * seam; defaults to {@see LocalShardRouter} in single-machine mode.
+     *
+     * @var ShardRouter
+     */
+    protected ShardRouter $shardRouter;
+
+    /**
+     * Remote transport for cross-node delivery. No-op for local deployment.
+     *
+     * @var RemoteTransport
+     */
+    protected RemoteTransport $remoteTransport;
+
+    /**
      * @throws \Exception
      */
     public function __construct()
@@ -98,6 +119,11 @@ class ActorManager
         $this->loadTable = new Table(max($this->actorConfig->getWorkerCount(), 1));
         $this->loadTable->column("load", Table::TYPE_INT);
         $this->loadTable->create();
+
+        // Clustering seam: location-transparent addressing defaults to the
+        // single-machine implementation. Swap for a gossip-based router later.
+        $this->shardRouter = new LocalShardRouter('local');
+        $this->remoteTransport = new LocalTransport();
     }
 
     /**
@@ -130,6 +156,56 @@ class ActorManager
         $actorInfo->setProcess(Server::$instance->getProcessManager()->getProcessFromId($data["processId"]));
         $actorInfo->setCreateTime($data["createTime"]);
         return $actorInfo;
+    }
+
+    /**
+     * Raw shared-memory row for an actor (used by the shard router to build a
+     * {@see \Yew\Plugins\Actor\Cluster\Location} without constructing ActorInfo).
+     *
+     * @param string $actorName
+     * @return array|null
+     */
+    public function getActorRaw(string $actorName): ?array
+    {
+        $data = $this->actorTable->get($actorName);
+
+        return empty($data) ? null : $data;
+    }
+
+    /**
+     * @return ShardRouter
+     */
+    public function getShardRouter(): ShardRouter
+    {
+        return $this->shardRouter;
+    }
+
+    /**
+     * Replace the shard router (e.g. with a clustered/gossip implementation).
+     *
+     * @param ShardRouter $shardRouter
+     */
+    public function setShardRouter(ShardRouter $shardRouter): void
+    {
+        $this->shardRouter = $shardRouter;
+    }
+
+    /**
+     * @return RemoteTransport
+     */
+    public function getRemoteTransport(): RemoteTransport
+    {
+        return $this->remoteTransport;
+    }
+
+    /**
+     * Replace the remote transport (e.g. with a real network implementation).
+     *
+     * @param RemoteTransport $remoteTransport
+     */
+    public function setRemoteTransport(RemoteTransport $remoteTransport): void
+    {
+        $this->remoteTransport = $remoteTransport;
     }
 
     /**
@@ -176,6 +252,12 @@ class ActorManager
         DISet($className . ":" . $actorName, $actor);
 
         $this->incrLoad($this->indexOfProcess($currentProcessId));
+
+        // Clustering seam: publish the actor's location (no-op for local router).
+        $node = $this->shardRouter instanceof LocalShardRouter
+            ? $this->shardRouter->getLocalNode()
+            : new ClusterNode('local');
+        $this->shardRouter->register($actorName, new Location($node, $currentProcessId));
 
         if ($parentName !== null) {
             $this->addChild($parentName, $actorName);
@@ -264,6 +346,7 @@ class ActorManager
 
         DISet($className . ":" . $actorName, null);
         $this->decrLoad($this->indexOfProcess((int) $data["processId"]));
+        $this->shardRouter->unregister($actorName);
         $this->actorTable->del($actorName);
     }
 

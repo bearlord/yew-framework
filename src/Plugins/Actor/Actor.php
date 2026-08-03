@@ -33,6 +33,8 @@ use Yew\Plugins\Actor\Dispatcher\Dispatcher;
 use Yew\Plugins\Actor\Dispatcher\CoroutineDispatcher;
 use Yew\Plugins\Actor\Dispatcher\PinnedDispatcher;
 use Yew\Plugins\Actor\Dispatcher\ThreadPoolDispatcher;
+use Yew\Plugins\Actor\Message\Message;
+use Yew\Plugins\Actor\Message\MessageType;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 use Swoole\Timer;
@@ -122,6 +124,11 @@ abstract class Actor
      * @var Dispatcher Execution model for this actor (coroutine / pinned / thread-pool)
      */
     protected Dispatcher $dispatcher;
+
+    /**
+     * @var array<string, callable> Typed message routing table (MessageType name => handler)
+     */
+    protected array $messageHandlers = [];
 
     /**
      * @param string      $name
@@ -450,8 +457,57 @@ abstract class Actor
 
             case ActorMessage::TYPE_COMMON:
             default:
+                // Typed routing: if the payload is a Message carrying a
+                // MessageType, dispatch via the registered handler table.
+                $data = $message->getData();
+                if ($data instanceof Message) {
+                    $this->routeTypedMessage($data);
+                    return;
+                }
+                // Legacy weakly-typed path (data bag) — kept for compatibility.
                 $this->handleMessage($message);
         }
+    }
+
+    /**
+     * Route a typed message through the handler table registered via
+     * {@see registerHandler()}. Falls back to {@see handleTyped()} for
+     * unregistered types so subclasses can still override centrally.
+     *
+     * @param Message $message
+     */
+    protected function routeTypedMessage(Message $message): void
+    {
+        $key = $message->type()->getName();
+        if (isset($this->messageHandlers[$key])) {
+            ($this->messageHandlers[$key])($message, $this);
+            return;
+        }
+
+        // No registered handler: defer to the subclass hook (or no-op).
+        $this->handleTyped($message);
+    }
+
+    /**
+     * Register a handler for a specific typed message.
+     *
+     * @param MessageType $type
+     * @param callable    $handler Signature: (Message $message, static $actor): void
+     */
+    protected function registerHandler(MessageType $type, callable $handler): void
+    {
+        $this->messageHandlers[$type->getName()] = $handler;
+    }
+
+    /**
+     * Central hook for typed messages without a registered handler.
+     * Subclasses opt in; default is a no-op.
+     *
+     * @param Message $message
+     */
+    protected function handleTyped(Message $message): void
+    {
+        // Override in subclasses to handle typed messages centrally.
     }
 
     /**
