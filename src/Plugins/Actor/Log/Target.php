@@ -1,148 +1,111 @@
 <?php
-/**
- * Yew framework
- * @author bearlord <565364226@qq.com>
- */
+
+declare(strict_types=1);
 
 namespace Yew\Plugins\Actor\Log;
 
 use Yew\Framework\Base\Component;
-use Yew\Framework\Helpers\Json;
 
 /**
- * Target is the base class for all log target classes.
+ * Base class for log targets.
  *
- * A log target object will filter the messages logged by [[Logger]] according
- * to its [[levels]] and [[categories]] properties. It may also export the filtered
- * messages to specific destination defined by the target, such as emails, files.
- *
- * Level filter and category filter are combinatorial, i.e., only messages
- * satisfying both filter conditions will be handled. Additionally, you
- * may specify [[except]] to exclude messages of certain categories.
- *
- * @property bool $enabled Indicates whether this log target is enabled. Defaults to true. Note that the type
- * of this property differs in getter and setter. See [[getEnabled()]] and [[setEnabled()]] for details.
- * @property int $levels The message levels that this target is interested in. This is a bitmap of level
- * values. Defaults to 0, meaning all available levels. Note that the type of this property differs in getter and
- * setter. See [[getLevels()]] and [[setLevels()]] for details.
- *
- * For more details and usage information on Target, see the [guide article on logging & targets](guide:runtime-logging).
- *
- * @author Qiang Xue <qiang.xue@gmail.com>
- * @since 2.0
+ * A target filters the messages dispatched by the {@see Logger} (by level and
+ * enabled state) and exports the survivors to a destination (file, syslog, …).
+ * Subclasses implement {@see export()}.
  */
 abstract class Target extends Component
 {
     /**
-     * @var int how many messages should be accumulated before they are exported.
-     * Defaults to 1000. Note that messages will always be exported when the application terminates.
-     * Set this property to be 0 if you don"t want to export messages until the application terminates.
+     * @var int how many messages to accumulate before exporting (0 = only on flush)
      */
-    public $exportInterval = 1000;
+    public int $exportInterval = 1000;
 
     /**
-     * @var array the messages that are retrieved from the logger so far by this log target.
-     * Please refer to [[Logger::messages]] for the details about the message structure.
+     * @var Message[] messages collected from the logger, pending export
      */
-    public $messages = [];
+    public array $messages = [];
 
     /**
-     * @var bool whether to log time with microseconds.
-     * Defaults to false.
-     * @since 2.0.13
+     * @var bool whether to include microseconds in the timestamp
      */
-    public $microtime = false;
+    public bool $microtime = false;
+
+    private bool|callable $enabled = true;
 
     /**
-     * @var bool
+     * Re-entrancy guard: true while {@see export()} is running, so a flush
+     * triggered from within export() cannot recurse into another export.
      */
-    private $_enabled = true;
-
-
-    /**
-     * Exports log [[messages]] to a specific destination.
-     * Child classes must implement this method.
-     */
-    abstract public function export();
+    private bool $exporting = false;
 
     /**
-     * Processes the given log messages.
-     * This method will filter the given messages with [[levels]] and [[categories]].
-     * And if requested, it will also export the filtering result to specific medium (e.g. email).
-     * @param array $messages log messages to be processed. See [[Logger::messages]] for the structure
-     * of each message.
-     * @param bool $final whether this method is called at the end of the current application
+     * Export collected messages to the destination. Implemented by subclasses.
      */
-    public function collect($messages, $final)
+    abstract public function export(): void;
+
+    /**
+     * Collect dispatched messages and export them if the interval is reached
+     * (or this is the final flush).
+     *
+     * @param Message[] $messages
+     */
+    public function collect(array $messages, bool $final): void
     {
-        $this->messages = array_merge($this->messages, $messages);
+        if (!$this->getEnabled()) {
+            return;
+        }
+
+        foreach ($messages as $message) {
+            $this->messages[] = $message;
+        }
+
         $count = count($this->messages);
+        if ($count === 0 || (!$final && $count < $this->exportInterval)) {
+            return;
+        }
 
-        if ($count > 0 && ($final || $this->exportInterval > 0 && $count >= $this->exportInterval)) {
-            // set exportInterval to 0 to avoid triggering export again while exporting
-            $oldExportInterval = $this->exportInterval;
-            $this->exportInterval = 0;
+        if ($this->exporting) {
+            return;
+        }
+        $this->exporting = true;
+        try {
             $this->export();
-            $this->exportInterval = $oldExportInterval;
-
-            $this->messages = [];
+        } finally {
+            $this->exporting = false;
         }
+        $this->messages = [];
+    }
+
+    public function formatMessage(Message $message): string
+    {
+        return sprintf(
+            "%s %s %s",
+            $this->getTime($message->timestamp),
+            Level::tag($message->level),
+            $message->text()
+        );
+    }
+
+    public function setEnabled(bool|callable $value): void
+    {
+        $this->enabled = $value;
+    }
+
+    public function getEnabled(): bool
+    {
+        return is_callable($this->enabled)
+            ? (bool) call_user_func($this->enabled, $this)
+            : $this->enabled;
     }
 
     /**
-     * Formats a log message for display as a string.
-     * @param array $message the log message to be formatted.
-     * The message structure follows that in [[Logger::messages]].
-     * @return string the formatted message
+     * Format a timestamp as "Y-m-d H:i:s" (or "Y-m-d H:i:s.u" when microtime is on).
      */
-    public function formatMessage($message)
+    protected function getTime(float $timestamp): string
     {
-        list($text, $timestamp) = $message;
-        if (!is_string($text)) {
-            $text = Json::encode($text);
-        }
+        $parts = explode('.', sprintf('%F', $timestamp));
 
-        return sprintf("[%s] %s", $this->getTime($timestamp), $text);
-    }
-
-    /**
-     * Sets a value indicating whether this log target is enabled.
-     * @param bool|callable $value a boolean value or a callable to obtain the value from.
-     * The callable value is available since version 2.0.13.
-     *
-     * A callable may be used to determine whether the log target should be enabled in a dynamic way.
-     *
-     */
-    public function setEnabled($value)
-    {
-        $this->_enabled = $value;
-    }
-
-    /**
-     * Check whether the log target is enabled.
-     * @property bool Indicates whether this log target is enabled. Defaults to true.
-     * @return bool A value indicating whether this log target is enabled.
-     */
-    public function getEnabled()
-    {
-        if (is_callable($this->_enabled)) {
-            return call_user_func($this->_enabled, $this);
-        }
-
-        return $this->_enabled;
-    }
-
-    /**
-     * Returns formatted ("Y-m-d H:i:s") timestamp for message.
-     * If [[microtime]] is configured to true it will return format "Y-m-d H:i:s.u".
-     * @param float $timestamp
-     * @return string
-     * @since 2.0.13
-     */
-    protected function getTime($timestamp)
-    {
-        $parts = explode(".", sprintf("%F", $timestamp));
-
-        return date("Y-m-d H:i:s", $parts[0]) . ($this->microtime ? ("." . $parts[1]) : "");
+        return date('Y-m-d H:i:s', (int) $parts[0])
+            . ($this->microtime && isset($parts[1]) ? '.' . $parts[1] : '');
     }
 }
