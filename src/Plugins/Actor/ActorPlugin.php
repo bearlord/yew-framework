@@ -96,6 +96,10 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setSupervisorMode((string) ($config["supervisorMode"] ?? "one-for-one"));
 		$actorConfig->setPersistenceEnabled((bool) ($config["persistenceEnabled"] ?? false));
 		$actorConfig->setPersistenceDir((string) ($config["persistenceDir"] ?? "/tmp/yew-actor-store"));
+		$actorConfig->setRoutingStrategy((string) ($config["routingStrategy"] ?? "round-robin"));
+		$actorConfig->setRoutingReplicas((int) ($config["routingReplicas"] ?? 128));
+		$actorConfig->setDispatcher((string) ($config["dispatcher"] ?? "coroutine"));
+		$actorConfig->setDispatcherPoolSize((int) ($config["dispatcherPoolSize"] ?? 4));
 
 		$this->actorConfig = $actorConfig;
 	}

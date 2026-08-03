@@ -61,6 +61,14 @@ class ActorManager
     protected $atomic;
 
     /**
+     * Per worker-process actor load counter (index => count), used by the
+     * least-loaded routing strategy. Backed by shared memory (Table).
+     *
+     * @var Table
+     */
+    protected $loadTable;
+
+    /**
      * @throws \Exception
      */
     public function __construct()
@@ -86,6 +94,10 @@ class ActorManager
         $this->actorClassNameIdTable->create();
 
         $this->atomic = new Atomic();
+
+        $this->loadTable = new Table(max($this->actorConfig->getWorkerCount(), 1));
+        $this->loadTable->column("load", Table::TYPE_INT);
+        $this->loadTable->create();
     }
 
     /**
@@ -154,13 +166,16 @@ class ActorManager
             $id = $actorClassNameId["id"];
         }
 
+        $currentProcessId = Server::$instance->getProcessManager()->getCurrentProcessId();
         $this->actorTable->set($actorName, [
-            "processId" => Server::$instance->getProcessManager()->getCurrentProcessId(),
+            "processId" => $currentProcessId,
             "createTime" => time(),
             "classId" => $id,
             "parent" => $parentName ?? ""
         ]);
         DISet($className . ":" . $actorName, $actor);
+
+        $this->incrLoad($this->indexOfProcess($currentProcessId));
 
         if ($parentName !== null) {
             $this->addChild($parentName, $actorName);
@@ -248,6 +263,7 @@ class ActorManager
         $className = get_class($actor);
 
         DISet($className . ":" . $actorName, null);
+        $this->decrLoad($this->indexOfProcess((int) $data["processId"]));
         $this->actorTable->del($actorName);
     }
 
@@ -293,6 +309,73 @@ class ActorManager
     public function getAtomic(): Atomic
     {
         return $this->atomic;
+    }
+
+    /**
+     * @return ActorConfig
+     */
+    public function getActorConfig(): ActorConfig
+    {
+        return $this->actorConfig;
+    }
+
+    /**
+     * Increment the load counter for a worker process (called on actor creation).
+     *
+     * @param int $processIndex
+     */
+    public function incrLoad(int $processIndex): void
+    {
+        $row = $this->loadTable->get($processIndex);
+        $load = $row === false ? 0 : (int) $row["load"];
+        $this->loadTable->set($processIndex, ["load" => $load + 1]);
+    }
+
+    /**
+     * Decrement the load counter for a worker process (called on actor removal).
+     *
+     * @param int $processIndex
+     */
+    public function decrLoad(int $processIndex): void
+    {
+        $row = $this->loadTable->get($processIndex);
+        $load = $row === false ? 0 : (int) $row["load"];
+        $this->loadTable->set($processIndex, ["load" => max(0, $load - 1)]);
+    }
+
+    /**
+     * Current actor count hosted by a worker process.
+     *
+     * @param int $processIndex
+     * @return int
+     */
+    public function getLoad(int $processIndex): int
+    {
+        $row = $this->loadTable->get($processIndex);
+
+        return $row === false ? 0 : (int) $row["load"];
+    }
+
+    /**
+     * Resolve a process id to its index inside the actor process group.
+     *
+     * @param int $processId
+     * @return int Index in [0, processCount), defaults to 0 when not found
+     */
+    public function indexOfProcess(int $processId): int
+    {
+        $group = Server::$instance->getProcessManager()->getProcessGroup(ActorConfig::GROUP_NAME);
+        if ($group === null) {
+            return 0;
+        }
+
+        foreach ($group->getProcesses() as $index => $process) {
+            if ($process->getProcessId() === $processId) {
+                return $index;
+            }
+        }
+
+        return 0;
     }
 
     /**

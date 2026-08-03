@@ -4,6 +4,10 @@ namespace Yew\Plugins\Actor;
 
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
+use Yew\Plugins\Actor\Routing\ActorRoutingStrategy;
+use Yew\Plugins\Actor\Routing\RoundRobinStrategy;
+use Yew\Plugins\Actor\Routing\ConsistentHashStrategy;
+use Yew\Plugins\Actor\Routing\LeastLoadedStrategy;
 
 class ActorFactory
 {
@@ -17,6 +21,8 @@ class ActorFactory
      * @param float       $timeOut     Wait timeout in seconds
      * @param string|null $parentName  Parent actor name; when set the child is
      *                                 created in the parent's process (supervision tree)
+     * @param string|null $routingKey  Key for key-based routing (consistent hash);
+     *                                 defaults to $actorName when null
      * @return ActorIpcProxy|false
      * @throws ActorException
      */
@@ -26,7 +32,8 @@ class ActorFactory
         $data = null,
         bool $waitCreate = true,
         float $timeOut = 5,
-        ?string $parentName = null)
+        ?string $parentName = null,
+        ?string $routingKey = null)
     {
         if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
             return new ActorIpcProxy($actorName, false, $timeOut);
@@ -49,7 +56,7 @@ class ActorFactory
             }
             $targetProcess = $parentInfo->getProcess();
         } else {
-            $index = self::selectProcessIndex($processCount);
+            $index = self::selectProcessIndex($processCount, $routingKey ?? $actorName);
             $targetProcess = $processList[$index];
         }
 
@@ -73,17 +80,41 @@ class ActorFactory
     }
 
     /**
-     * Select the worker process index for a new actor.
-     * Round-robin strategy backed by a shared atomic counter
+     * Select the worker process index for a new actor using the configured
+     * routing strategy (round-robin / consistent-hash / least-loaded).
      *
-     * @param int $processCount
+     * @param int         $processCount
+     * @param string|null $routingKey   Key for key-based routing
      * @return int
      */
-    protected static function selectProcessIndex(int $processCount): int
+    protected static function selectProcessIndex(int $processCount, ?string $routingKey = null): int
     {
-        $now = ActorManager::getInstance()->getAtomic()->add();
+        $config = ActorManager::getInstance()->getActorConfig();
+        $strategy = self::resolveRoutingStrategy($config->getRoutingStrategy(), $config->getRoutingReplicas());
 
-        return $now % $processCount;
+        return $strategy->select($processCount, $routingKey);
+    }
+
+    /**
+     * Build the routing strategy instance for the given name.
+     *
+     * @param string $name
+     * @param int    $replicas
+     * @return ActorRoutingStrategy
+     */
+    protected static function resolveRoutingStrategy(string $name, int $replicas): ActorRoutingStrategy
+    {
+        $manager = ActorManager::getInstance();
+
+        switch ($name) {
+            case 'consistent-hash':
+                return new ConsistentHashStrategy($replicas);
+            case 'least-loaded':
+                return new LeastLoadedStrategy($manager);
+            case 'round-robin':
+            default:
+                return new RoundRobinStrategy($manager);
+        }
     }
 
     /**

@@ -72,6 +72,27 @@ class ActorConfig extends BaseConfig
      */
     protected string $persistenceDir = '/tmp/yew-actor-store';
 
+    /**
+     * @var string Process selection strategy for new actors:
+     *             "round-robin" | "consistent-hash" | "least-loaded"
+     */
+    protected string $routingStrategy = 'round-robin';
+
+    /**
+     * @var int Virtual replicas per node for consistent-hash routing
+     */
+    protected int $routingReplicas = 128;
+
+    /**
+     * @var string Execution model / dispatcher: "coroutine" | "pinned" | "thread-pool"
+     */
+    protected string $dispatcher = 'coroutine';
+
+    /**
+     * @var int Worker size for the thread-pool dispatcher (when thread support exists)
+     */
+    protected int $dispatcherPoolSize = 4;
+
 
     public function __construct()
     {
@@ -263,5 +284,73 @@ class ActorConfig extends BaseConfig
 	public function setPersistenceDir(string $persistenceDir): void
 	{
 		$this->persistenceDir = $persistenceDir;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getRoutingStrategy(): string
+	{
+		return $this->routingStrategy;
+	}
+
+	/**
+	 * @param string $routingStrategy
+	 * @return void
+	 */
+	public function setRoutingStrategy(string $routingStrategy): void
+	{
+		$this->routingStrategy = $routingStrategy;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getRoutingReplicas(): int
+	{
+		return $this->routingReplicas;
+	}
+
+	/**
+	 * @param int $routingReplicas
+	 * @return void
+	 */
+	public function setRoutingReplicas(int $routingReplicas): void
+	{
+		$this->routingReplicas = $routingReplicas;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getDispatcher(): string
+	{
+		return $this->dispatcher;
+	}
+
+	/**
+	 * @param string $dispatcher
+	 * @return void
+	 */
+	public function setDispatcher(string $dispatcher): void
+	{
+		$this->dispatcher = $dispatcher;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getDispatcherPoolSize(): int
+	{
+		return $this->dispatcherPoolSize;
+	}
+
+	/**
+	 * @param int $dispatcherPoolSize
+	 * @return void
+	 */
+	public function setDispatcherPoolSize(int $dispatcherPoolSize): void
+	{
+		$this->dispatcherPoolSize = $dispatcherPoolSize;
 	}
 }

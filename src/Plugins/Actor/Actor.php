@@ -29,6 +29,10 @@ use Yew\Plugins\Actor\Persistence\ActorStore;
 use Yew\Plugins\Actor\Persistence\ActorEvent;
 use Yew\Plugins\Actor\Persistence\Snapshot;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
+use Yew\Plugins\Actor\Dispatcher\Dispatcher;
+use Yew\Plugins\Actor\Dispatcher\CoroutineDispatcher;
+use Yew\Plugins\Actor\Dispatcher\PinnedDispatcher;
+use Yew\Plugins\Actor\Dispatcher\ThreadPoolDispatcher;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 use Swoole\Timer;
@@ -115,6 +119,11 @@ abstract class Actor
     protected ?string $parentName = null;
 
     /**
+     * @var Dispatcher Execution model for this actor (coroutine / pinned / thread-pool)
+     */
+    protected Dispatcher $dispatcher;
+
+    /**
      * @param string      $name
      * @param bool        $isCreated
      * @param string|null $parentName Parent actor name for the supervision tree
@@ -149,16 +158,21 @@ abstract class Actor
         $this->iniChannel();
 
         $this->supervisorStrategy = $this->resolveSupervisorStrategy($this->actorConfig->getSupervisorStrategy());
+        $this->dispatcher = $this->resolveDispatcher($this->actorConfig->getDispatcher());
 
         if ($this->actorConfig->isPersistenceEnabled()) {
             $this->store = new FileActorStore($this->actorConfig->getPersistenceDir());
         }
 
-        //Loop process the information in the mailbox
+        //Loop process the information in the mailbox. The dispatcher decides in
+        //which execution context each message is actually handled.
         goWithContext(function () {
             while (true) {
                 $message = $this->channel->pop();
-                $this->processWithSupervision($message);
+                if ($message === false) {
+                    break;
+                }
+                $this->dispatcher->dispatch($this, $message);
             }
         });
 
@@ -229,7 +243,7 @@ abstract class Actor
     protected function processWithSupervision($message): void
     {
         try {
-            $this->onHandleMessage($message);
+            $this->dispatchMessage($message);
             // A clean handling resets the consecutive-failure counter.
             $this->restartAttempts = 0;
         } catch (\Throwable $throwable) {
@@ -407,7 +421,25 @@ abstract class Actor
      * @param ActorMessage $message
      * @return void
      */
-    protected function onHandleMessage(ActorMessage $message)
+    /**
+     * Handle a single mailbox message under supervision. Public so a
+     * {@see \Yew\Plugins\Actor\Dispatcher\Dispatcher} can drive execution under a
+     * different execution model (pinned / thread-pool).
+     *
+     * @param ActorMessage $message
+     * @return void
+     */
+    public function onHandleMessage(ActorMessage $message)
+    {
+        $this->processWithSupervision($message);
+    }
+
+    /**
+     * Pure message type dispatch (no supervision wrapping).
+     *
+     * @param ActorMessage $message
+     */
+    protected function dispatchMessage(ActorMessage $message): void
     {
         $type = $message->getType();
 
@@ -420,6 +452,35 @@ abstract class Actor
             default:
                 $this->handleMessage($message);
         }
+    }
+
+    /**
+     * Resolve the configured execution-model dispatcher by name.
+     *
+     * @param string $name One of "coroutine", "pinned", "thread-pool"
+     */
+    protected function resolveDispatcher(string $name): Dispatcher
+    {
+        switch (strtolower($name)) {
+            case 'pinned':
+                return new PinnedDispatcher();
+            case 'thread-pool':
+            case 'threadpool':
+                return new ThreadPoolDispatcher($this->actorConfig->getDispatcherPoolSize());
+            case 'coroutine':
+            default:
+                return new CoroutineDispatcher();
+        }
+    }
+
+    /**
+     * Access the execution-model dispatcher (e.g. to offload CPU-bound work).
+     *
+     * @return Dispatcher
+     */
+    public function getDispatcher(): Dispatcher
+    {
+        return $this->dispatcher;
     }
 
     abstract protected function handleMulticastMessage(ActorMessage $message);
@@ -476,6 +537,9 @@ abstract class Actor
     public function destroy()
     {
         $this->clearAllTimer();
+        if ($this->dispatcher instanceof PinnedDispatcher) {
+            $this->dispatcher->shutdown();
+        }
         ActorManager::getInstance()->removeActor($this);
     }
 
