@@ -36,7 +36,7 @@ use Yew\Core\Plugins\Logger\GetLogger;
  * old key is dropped. A legacy shared-secret (HMAC) mode is kept for backward
  * compatibility when no key is configured.
  */
-class GossipClusterState
+class GossipClusterState implements ClusterStateInterface
 {
     use GetLogger;
 

@@ -478,6 +478,26 @@ class ActorManager
     }
 
     /**
+     * Names of actors whose real instance lives in THIS process (not proxies).
+     *
+     * Used by cluster rebalancing to find local actors that must be evicted
+     * when the consistent-hash ring no longer maps them to this node.
+     *
+     * @return string[]
+     */
+    public function getLocalActorNames(): array
+    {
+        $current = Server::$instance->getProcessManager()->getCurrentProcessId();
+        $names = [];
+        foreach ($this->actorTable as $name => $row) {
+            if ((int)($row['processId'] ?? -1) === $current) {
+                $names[] = $name;
+            }
+        }
+        return $names;
+    }
+
+    /**
      * Get a handle to an existing Actor by name.
      *
      * Returns null if no such actor exists.

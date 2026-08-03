@@ -19,6 +19,7 @@ use Yew\Plugins\Actor\Cluster\GossipShardRouter;
 use Yew\Plugins\Actor\Cluster\PooledTcpRemoteTransport;
 use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
+use Yew\Core\Log\Log;
 
 class ActorPlugin extends AbstractPlugin
 {
@@ -146,6 +147,34 @@ class ActorPlugin extends AbstractPlugin
                 $this->failoverFrom($deadNodeId, $router, $state);
             });
         }
+
+        // Topology rebalance: react to ring changes. The router invokes this hook
+        // as onRebalance(array $changedNodeIds, GossipShardRouter $router).
+        // When this node LOSES a shard, evict the local actor instances that no
+        // longer belong here (they will be served by their new owner via
+        // ActorIpcProxy). GAINED shards are logged; cross-node migration of
+        // non-persisted actors is not yet wired.
+        $router->onRebalance(function (array $changed, GossipShardRouter $router) {
+            $localNodeId = $router->getLocalNode()->getNodeId();
+            foreach ($this->actorManager->getLocalActorNames() as $name) {
+                $actor = $this->actorManager->getActor($name);
+                if (!$actor instanceof Actor) {
+                    continue; // remote proxy or not local
+                }
+                $owner = $router->ownerOf($name);
+                if ($owner === $localNodeId || $owner === null) {
+                    continue; // still ours or unrouted
+                }
+                $this->actorManager->removeActor($actor);
+                Log::info("cluster: evicted local actor [$name] (now owned by [$owner])");
+            }
+            if ($changed !== []) {
+                Log::warning(
+                    "cluster: ring changed for nodes [" . implode(',', $changed) . "]; "
+                    . "cross-node migration of non-persisted actors is not wired yet"
+                );
+            }
+        });
 
         // Pooled TCP transport for cross-node actor calls.
         $transport = new PooledTcpRemoteTransport(

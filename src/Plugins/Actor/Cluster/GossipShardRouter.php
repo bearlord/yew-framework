@@ -26,16 +26,17 @@ use Yew\Plugins\Actor\ActorManager;
  */
 class GossipShardRouter implements ShardRouter
 {
-    private ClusterState $cluster;
+    private ClusterStateInterface $cluster;
     private ClusterNode $localNode;
     private int $replicas;
     private array $ring = [];          // hash => nodeId
     private array $tokens = [];        // nodeId => [hashes]
     private ?array $aliveCache = null;
-    private ?callable $rebalanceHook = null;
+    /** @var callable|null */
+    private $rebalanceHook = null;
 
     public function __construct(
-        ClusterState $cluster,
+        ClusterStateInterface $cluster,
         ClusterNode $localNode,
         int $replicas = 128
     ) {

@@ -25,7 +25,7 @@ use Yew\Core\Plugins\Logger\GetLogger;
  * read/write with broadcast + merge; the public surface (aliveNodes, tick,
  * registerListener) stays identical.
  */
-class ClusterState
+class ClusterState implements ClusterStateInterface
 {
     use GetLogger;
 
