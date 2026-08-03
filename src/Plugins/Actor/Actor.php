@@ -433,6 +433,14 @@ abstract class Actor
     }
 
     /**
+     * Get the actor's durable state snapshot.
+     *
+     * This array is the single source of truth that gets persisted (snapshot /
+     * event payload), replicated across nodes, and carried over on a supervisor
+     * restart. Keep it serializable and small: store big payloads in an external
+     * store (Swoole Table / Redis / …) and keep only a reference key here, so
+     * IPC and replication stay cheap.
+     *
      * @return array
      */
     public function getData(): array
@@ -441,11 +449,46 @@ abstract class Actor
     }
 
     /**
-     * @param array $data
+     * Restore the actor's durable state (recovery / supervision restart).
+     *
+     * @param array $data Lightweight, serializable state — see {@see getData()}.
      */
     public function setData(array $data): void
     {
         $this->data = $data;
+    }
+
+    /**
+     * Serialize only what is needed to reconstruct the actor elsewhere.
+     *
+     * Runtime dependencies (dispatcher, logger, channel, message handlers,
+     * timer ids, …) are intentionally excluded — they are rebuilt by init()
+     * on the target side and, more importantly, hold closures/callables that
+     * cannot be serialized at all. This keeps the payload equal to the actor's
+     * business state instead of the whole object graph.
+     */
+    public function __serialize(): array
+    {
+        return [
+            'name'       => $this->name,
+            'parentName' => $this->parentName,
+            'state'      => $this->state,
+            'data'       => $this->data,
+        ];
+    }
+
+    /**
+     * Restore the serializable fields.
+     *
+     * Runtime dependencies are left for init() to (re)inject; we only revive
+     * the identifying and stateful fields here.
+     */
+    public function __unserialize(array $data): void
+    {
+        $this->name       = $data['name'];
+        $this->parentName = $data['parentName'];
+        $this->state      = $data['state'];
+        $this->data       = $data['data'];
     }
 
     /**

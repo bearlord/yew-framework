@@ -143,4 +143,31 @@ class ActorMessage
 
         $this->type = self::TYPE_COMMON;
     }
+
+    /**
+     * Carry only the envelope fields across the wire.
+     *
+     * The payload ($data) is the only potentially large field; everything else
+     * is tiny. Defining this keeps the message serializable even if future
+     * fields are added, and mirrors Actor's own (de)serialization contract.
+     */
+    public function __serialize(): array
+    {
+        return [
+            'msgId' => $this->msgId,
+            'from'  => $this->from,
+            'to'    => $this->to,
+            'type'  => $this->type,
+            'data'  => $this->data,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->msgId = $data['msgId'];
+        $this->from  = $data['from'];
+        $this->to    = $data['to'];
+        $this->type  = $data['type'];
+        $this->data  = $data['data'];
+    }
 }

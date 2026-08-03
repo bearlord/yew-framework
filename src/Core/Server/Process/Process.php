@@ -104,9 +104,15 @@ abstract class Process
     protected array $waitChannel = [];
 
     /**
-     * @var int \Coroutine\Socket->recv length
+     * @var int \Coroutine\Socket->recv length (also the max per-frame payload size hint)
      */
     protected int $coroutineSocketRecvLength = 65535;
+
+    /**
+     * @var int Max bytes written per Swoole\Process::write call. Swoole caps a
+     *          single write on the UnixSocket pipe, so large frames are chunked.
+     */
+    protected int $writeChunkSize = 65535;
 
     /**
      * Process constructor.
@@ -294,15 +300,31 @@ abstract class Process
                 Process::signal(SIGTERM, [$this, '_onProcessStop']);
                 $this->socket = $this->swooleProcess->exportSocket();
                 \Swoole\Coroutine::create(function () {
+                    // Frames are streamed over the UnixSocket without message
+                    // boundaries, so we accumulate bytes and reassemble complete
+                    // frames ourselves. Layout: [4B srcProcessId][4B payloadLen][payload].
+                    $buffer = '';
                     while (true) {
                         $recv = $this->socket->recv($this->coroutineSocketRecvLength);
-                        if (!empty($recv)) {
-                            //Get process id
-                            $unpackData = unpack("N", $recv);
-                            $processId = $unpackData[1];
+                        if ($recv === '' || $recv === false) {
+                            break;
+                        }
+
+                        $buffer .= $recv;
+                        while (strlen($buffer) >= 8) {
+                            $header = unpack("Nid/Nlen", substr($buffer, 0, 8));
+                            $frameSize = 8 + $header['len'];
+                            if (strlen($buffer) < $frameSize) {
+                                break; // frame not fully arrived yet
+                            }
+
+                            $processId = $header['id'];
+                            $payload = substr($buffer, 8, $header['len']);
+                            $buffer = substr($buffer, $frameSize);
+
                             $fromProcess = $this->server->getProcessManager()->getProcessFromId($processId);
-                            \Swoole\Coroutine::create(function () use ($recv, $fromProcess) {
-                                $this->_onPipeMessage(serverUnSerialize(substr($recv, 4)), $fromProcess);
+                            \Swoole\Coroutine::create(function () use ($payload, $fromProcess) {
+                                $this->_onPipeMessage(serverUnSerialize($payload), $fromProcess);
                             });
                         }
                     }
@@ -370,13 +392,18 @@ abstract class Process
             return;
         }
         if ($toProcess->getProcessType() == self::PROCESS_TYPE_CUSTOM) {
-            if (!is_string($message)) {
-                $message = serverSerialize($message);
+            // Always serialize so the receiver can reliably unserialize, then
+            // wrap in a length-prefixed frame: [4B srcProcessId][4B payloadLen][payload].
+            // The receiver reassembles by length, so a single write() need not
+            // carry the whole frame — we chunk it to honour Swoole's pipe limit.
+            $payload = serverSerialize($message);
+            $frame = pack("N", $this->getProcessId()) . pack("N", strlen($payload)) . $payload;
+            $offset = 0;
+            $len = strlen($frame);
+            while ($offset < $len) {
+                $toProcess->swooleProcess->write(substr($frame, $offset, $this->writeChunkSize));
+                $offset += $this->writeChunkSize;
             }
-
-            //Add source process id
-            $message = pack("N", $this->getProcessId()) . $message;
-            $toProcess->swooleProcess->write($message);
         } else {
             //If process is worker or task
             $this->server->getServer()->sendMessage($message, $toProcess->getProcessId());
