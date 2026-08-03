@@ -14,6 +14,10 @@ use Yew\Plugins\Actor\Event\ActorCreateEvent;
 use Yew\Plugins\Actor\Exception\ActorException;
 use Yew\Plugins\Actor\Log\LogFactory;
 use Yew\Plugins\Actor\Log\Logger;
+use Yew\Plugins\Actor\Mailbox\BlockStrategy;
+use Yew\Plugins\Actor\Mailbox\DropStrategy;
+use Yew\Plugins\Actor\Mailbox\FailStrategy;
+use Yew\Plugins\Actor\Mailbox\MailboxOverflowStrategy;
 use Yew\Plugins\Actor\Multicast\Multicast;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
@@ -27,6 +31,11 @@ abstract class Actor
      * @var Multicast
      */
     protected Multicast $multicast;
+
+    /**
+     * @var MailboxOverflowStrategy Strategy applied when the mailbox is full
+     */
+    protected MailboxOverflowStrategy $mailboxOverflowStrategy;
 
     /**
      * @var Channel
@@ -121,6 +130,25 @@ abstract class Actor
     protected function iniChannel()
     {
         $this->channel = DIGet(Channel::class, [$this->actorConfig->getMailboxCapacity()]);
+        $this->mailboxOverflowStrategy = $this->resolveOverflowStrategy($this->actorConfig->getMailboxOverflow());
+    }
+
+    /**
+     * Resolve the configured overflow strategy by name.
+     *
+     * @param string $name One of "block", "drop", "fail"
+     */
+    protected function resolveOverflowStrategy(string $name): MailboxOverflowStrategy
+    {
+        switch (strtolower($name)) {
+            case 'drop':
+                return new DropStrategy();
+            case 'fail':
+                return new FailStrategy();
+            case 'block':
+            default:
+                return new BlockStrategy();
+        }
     }
 
     /**
@@ -223,14 +251,14 @@ abstract class Actor
     /**
      * Get proxy
      * @param string $actorName
-     * @param bool $oneway
+     * @param bool $oneWay
      * @param float|null $timeOut
      * @return \Yew\Plugins\Actor\ActorIpcProxy|false
      */
-    public static function getProxy(string $actorName, ?bool $oneway = false, ?float $timeOut = 5)
+    public static function getProxy(string $actorName, ?bool $oneWay = false, ?float $timeOut = 5)
     {
         try {
-            return new ActorIpcProxy($actorName, $oneway, $timeOut);
+            return new ActorIpcProxy($actorName, $oneWay, $timeOut);
         } catch (ActorException $exception) {
             return false;
         }
@@ -239,12 +267,29 @@ abstract class Actor
     
 
     /**
-     * Proxy receive a message, throw it in the mailbox
+     * Enqueue a message into the mailbox, applying the configured overflow strategy.
+     *
      * @param ActorMessage $message
+     * @return bool True if enqueued, false if dropped (drop strategy) or rejected.
      */
-    public function sendMessage(ActorMessage $message)
+    public function sendMessage(ActorMessage $message): bool
     {
-        $this->channel->push($message);
+        try {
+            $pushed = $this->mailboxOverflowStrategy->enqueue(
+                $this->channel,
+                $message,
+                $this->actorConfig->getMailboxPushTimeout()
+            );
+        } catch (ActorException $exception) {
+            $this->error(sprintf("Actor %s mailbox rejected message: %s", $this->name, $exception->getMessage()));
+            return false;
+        }
+
+        if ($pushed === false) {
+            $this->warning(sprintf("Actor %s mailbox full, message dropped", $this->name));
+        }
+
+        return $pushed;
     }
 
     /**

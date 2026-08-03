@@ -89,6 +89,8 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setWorkerCount((int) ($config["workerCount"] ?? 1));
 		$actorConfig->setMaxClassCount((int) ($config["maxClassCount"] ?? 100));
 		$actorConfig->setMailboxCapacity((int) ($config["mailboxCapacity"] ?? 100));
+		$actorConfig->setMailboxOverflow((string) ($config["mailboxOverflow"] ?? "block"));
+		$actorConfig->setMailboxPushTimeout((float) ($config["mailboxPushTimeout"] ?? 1.0));
 
 		$this->actorConfig = $actorConfig;
 	}

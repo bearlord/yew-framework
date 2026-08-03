@@ -15,18 +15,18 @@ class ActorIpcProxy extends IpcProxy
 {
     /**
      * @param string $actorName
-     * @param bool $oneway
+     * @param bool $oneWay
      * @param float $timeOut
      * @throws ActorException
      */
-    public function __construct(string $actorName, bool $oneway, float $timeOut = 0)
+    public function __construct(string $actorName, bool $oneWay, float $timeOut = 0)
     {
         $actorInfo = ActorManager::getInstance()->getActorInfo($actorName);
         if ($actorInfo == null) {
             return;
         }
 
-        parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneway, $timeOut);
+        parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneWay, $timeOut);
     }
 
     /**

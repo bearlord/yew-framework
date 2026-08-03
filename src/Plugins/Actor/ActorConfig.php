@@ -35,6 +35,16 @@ class ActorConfig extends BaseConfig
      */
     protected int $mailboxCapacity = 100;
 
+    /**
+     * @var string Mailbox overflow strategy: "block" | "drop" | "fail"
+     */
+    protected string $mailboxOverflow = 'block';
+
+    /**
+     * @var float Max seconds a blocking push waits for free mailbox space (block strategy only)
+     */
+    protected float $mailboxPushTimeout = 1.0;
+
 
     public function __construct()
     {
@@ -107,5 +117,39 @@ class ActorConfig extends BaseConfig
 	public function setMailboxCapacity(int $mailboxCapacity): void
 	{
 		$this->mailboxCapacity = $mailboxCapacity;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getMailboxOverflow(): string
+	{
+		return $this->mailboxOverflow;
+	}
+
+	/**
+	 * @param string $mailboxOverflow
+	 * @return void
+	 */
+	public function setMailboxOverflow(string $mailboxOverflow): void
+	{
+		$this->mailboxOverflow = $mailboxOverflow;
+	}
+
+	/**
+	 * @return float
+	 */
+	public function getMailboxPushTimeout(): float
+	{
+		return $this->mailboxPushTimeout;
+	}
+
+	/**
+	 * @param float $mailboxPushTimeout
+	 * @return void
+	 */
+	public function setMailboxPushTimeout(float $mailboxPushTimeout): void
+	{
+		$this->mailboxPushTimeout = $mailboxPushTimeout;
 	}
 }
