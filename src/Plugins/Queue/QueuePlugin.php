@@ -68,7 +68,7 @@ class QueuePlugin extends AbstractPlugin
     {
         $this->config = Server::$instance->getConfigContext()->get("yii.queue");
         if (empty($this->config)) {
-	        $this->warn("Queue configuration not found");
+            $this->warn("Queue configuration not found");
             return false;
         }
         

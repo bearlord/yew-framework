@@ -100,21 +100,27 @@ class QueuePool
     }
 
     /**
-     * @return mixed
+     * Borrow a queue connection for the current coroutine context, returning it
+     * to the pool when the coroutine finishes.
+     *
+     * @return \Yew\Framework\Queue\Cli\Queue
      */
     public function handle()
     {
         $contextKey = sprintf("Queue:%s", $this->name);
-        $handle = getContextValue($contextKey);
+        $handle = getDeepContextValue($contextKey);
 
-        if ($handle == null) {
+        if ($handle === null) {
             /** @var \Yew\Framework\Queue\Cli\Queue $handle */
             $handle = $this->pool->pop();
 
-            \Swoole\Coroutine::defer(function () use ($handle) {
-                $this->pool->push($handle);
-            });
-            setContextValue($contextKey, $handle);
+            // Only cache a real connection; never memoize a failed pop.
+            if ($handle !== null) {
+                \Swoole\Coroutine::defer(function () use ($handle) {
+                    $this->pool->push($handle);
+                });
+                setContextValue($contextKey, $handle);
+            }
         }
         return $handle;
     }

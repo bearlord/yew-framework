@@ -13,8 +13,6 @@ class QueueTask extends BaseConfig
 {
     const KEY = "queue.task";
 
-    const PROCESS_GROUP_ALL = "all";
-
     const GROUP_NAME = "QueueGroup";
 
     /**
@@ -26,7 +24,7 @@ class QueueTask extends BaseConfig
      * QueueTask constructor.
      * @param string $processGroup
      */
-    public function __construct($processGroup = QueueTask::GROUP_NAME)
+    public function __construct(string $processGroup = QueueTask::GROUP_NAME)
     {
         parent::__construct(self::KEY);
         $this->processGroup = $processGroup;

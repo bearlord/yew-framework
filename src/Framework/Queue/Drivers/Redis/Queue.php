@@ -172,6 +172,10 @@ class Queue extends CliQueue
         }
 
         $payload = $this->redis->hget("$this->channel.messages", $id);
+        if ($payload === false) {
+            // The message may have been removed/clear-ed between rpop and hget.
+            return null;
+        }
         list($ttr, $message) = explode(';', $payload, 2);
         $this->redis->zadd("$this->channel.reserved", time() + $ttr, $id);
         $attempt = $this->redis->hincrby("$this->channel.attempts", $id, 1);
