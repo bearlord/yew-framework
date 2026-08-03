@@ -8,6 +8,7 @@ namespace Yew\Plugins\Actor;
 
 use Yew\Plugins\Actor\Exception\ActorException;
 use Yew\Plugins\Actor\Cluster\Location;
+use Yew\Plugins\Actor\Telemetry\Tracer;
 use Yew\Plugins\Ipc\IpcProxy;
 use Yew\Plugins\Ipc\IpcCallMessage;
 use Yew\Coroutine\Server\Server;
@@ -74,6 +75,7 @@ class ActorIpcProxy extends IpcProxy
      */
     public function tell(string $method, array $arguments = []): bool
     {
+        $arguments['__traceId'] = Tracer::currentTraceId();
         $savedOneWay = $this->oneway;
         $this->oneway = true;
         try {
@@ -94,6 +96,7 @@ class ActorIpcProxy extends IpcProxy
      */
     public function ask(string $method, array $arguments = [], float $timeOut = 0)
     {
+        $arguments['__traceId'] = Tracer::currentTraceId();
         $savedOneWay = $this->oneway;
         $savedTimeOut = $this->timeOut;
         $this->oneway = false;
@@ -123,6 +126,7 @@ class ActorIpcProxy extends IpcProxy
         $savedTimeOut = $this->timeOut;
 
         goWithContext(function () use ($method, $arguments, $timeOut, $future, $savedOneWay, $savedTimeOut) {
+            $arguments['__traceId'] = Tracer::currentTraceId();
             $this->oneway = false;
             if ($timeOut > 0) {
                 $this->timeOut = $timeOut;

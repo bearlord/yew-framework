@@ -100,6 +100,8 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setRoutingReplicas((int) ($config["routingReplicas"] ?? 128));
 		$actorConfig->setDispatcher((string) ($config["dispatcher"] ?? "coroutine"));
 		$actorConfig->setDispatcherPoolSize((int) ($config["dispatcherPoolSize"] ?? 4));
+		$actorConfig->setTelemetryEnabled((bool) ($config["telemetryEnabled"] ?? false));
+		\Yew\Plugins\Actor\Telemetry\ActorTelemetry::enable($actorConfig->isTelemetryEnabled());
 
 		$this->actorConfig = $actorConfig;
 	}

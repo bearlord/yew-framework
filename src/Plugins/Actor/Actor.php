@@ -35,6 +35,8 @@ use Yew\Plugins\Actor\Dispatcher\PinnedDispatcher;
 use Yew\Plugins\Actor\Dispatcher\ThreadPoolDispatcher;
 use Yew\Plugins\Actor\Message\Message;
 use Yew\Plugins\Actor\Message\MessageType;
+use Yew\Plugins\Actor\Telemetry\ActorTelemetry;
+use Yew\Plugins\Actor\Telemetry\Tracer;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 use Swoole\Timer;
@@ -175,11 +177,14 @@ abstract class Actor
         //which execution context each message is actually handled.
         goWithContext(function () {
             while (true) {
+                $mailboxDepth = $this->channel->length();
                 $message = $this->channel->pop();
                 if ($message === false) {
                     break;
                 }
+                $start = microtime(true);
                 $this->dispatcher->dispatch($this, $message);
+                ActorTelemetry::record($this->name, microtime(true) - $start, $mailboxDepth);
             }
         });
 
@@ -249,6 +254,14 @@ abstract class Actor
      */
     protected function processWithSupervision($message): void
     {
+        // Distributed tracing: a caller may have propagated a trace id through
+        // the IPC message (see ActorIpcProxy). Continue that trace here so the
+        // handler runs inside a child span of the same end-to-end trace.
+        $incomingTraceId = $this->extractTraceId($message);
+        $span = $incomingTraceId !== null
+            ? Tracer::continue($incomingTraceId, 'actor.handle:' . $this->name)
+            : Tracer::start('actor.handle:' . $this->name);
+
         try {
             $this->dispatchMessage($message);
             // A clean handling resets the consecutive-failure counter.
@@ -286,7 +299,31 @@ abstract class Actor
 
             // No parent: rethrow to break the mailbox loop.
             throw $throwable;
+        } finally {
+            $span->end();
+            Tracer::clear();
         }
+    }
+
+    /**
+     * Extract a propagated trace id from an incoming message, if present.
+     *
+     * The IPC proxy injects the active trace id under the "__traceId" key so
+     * the remote actor can continue the same distributed trace.
+     *
+     * @param mixed $message
+     */
+    protected function extractTraceId($message): ?string
+    {
+        if (!$message instanceof ActorMessage) {
+            return null;
+        }
+        $data = $message->getData();
+        if (is_array($data) && isset($data['__traceId']) && is_string($data['__traceId'])) {
+            return $data['__traceId'];
+        }
+
+        return null;
     }
 
     /**

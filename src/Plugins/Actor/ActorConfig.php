@@ -93,6 +93,11 @@ class ActorConfig extends BaseConfig
      */
     protected int $dispatcherPoolSize = 4;
 
+    /**
+     * @var bool Whether to collect per-actor telemetry (metrics + tracing)
+     */
+    protected bool $telemetryEnabled = false;
+
 
     public function __construct()
     {
@@ -352,5 +357,22 @@ class ActorConfig extends BaseConfig
 	public function setDispatcherPoolSize(int $dispatcherPoolSize): void
 	{
 		$this->dispatcherPoolSize = $dispatcherPoolSize;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isTelemetryEnabled(): bool
+	{
+		return $this->telemetryEnabled;
+	}
+
+	/**
+	 * @param bool $telemetryEnabled
+	 * @return void
+	 */
+	public function setTelemetryEnabled(bool $telemetryEnabled): void
+	{
+		$this->telemetryEnabled = $telemetryEnabled;
 	}
 }
