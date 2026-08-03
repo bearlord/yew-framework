@@ -91,6 +91,11 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setMailboxCapacity((int) ($config["mailboxCapacity"] ?? 100));
 		$actorConfig->setMailboxOverflow((string) ($config["mailboxOverflow"] ?? "block"));
 		$actorConfig->setMailboxPushTimeout((float) ($config["mailboxPushTimeout"] ?? 1.0));
+		$actorConfig->setSupervisorStrategy((string) ($config["supervisorStrategy"] ?? "restart"));
+		$actorConfig->setSupervisorMaxRetries((int) ($config["supervisorMaxRetries"] ?? 3));
+		$actorConfig->setSupervisorMode((string) ($config["supervisorMode"] ?? "one-for-one"));
+		$actorConfig->setPersistenceEnabled((bool) ($config["persistenceEnabled"] ?? false));
+		$actorConfig->setPersistenceDir((string) ($config["persistenceDir"] ?? "/tmp/yew-actor-store"));
 
 		$this->actorConfig = $actorConfig;
 	}

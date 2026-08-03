@@ -45,6 +45,33 @@ class ActorConfig extends BaseConfig
      */
     protected float $mailboxPushTimeout = 1.0;
 
+    /**
+     * @var string Supervisor strategy on actor failure: "restart" | "resume" | "stop" | "escalate"
+     */
+    protected string $supervisorStrategy = 'restart';
+
+    /**
+     * @var int Max consecutive restarts before escalating (restart strategy only)
+     */
+    protected int $supervisorMaxRetries = 3;
+
+    /**
+     * @var string Supervision scope: "one-for-one" | "all-for-one"
+     *  - one-for-one: only the failing child is affected
+     *  - all-for-one:  all siblings restart/stop together when one fails
+     */
+    protected string $supervisorMode = 'one-for-one';
+
+    /**
+     * @var bool Whether event-sourcing persistence is enabled for actors
+     */
+    protected bool $persistenceEnabled = false;
+
+    /**
+     * @var string Directory used by the file-based persistence backend
+     */
+    protected string $persistenceDir = '/tmp/yew-actor-store';
+
 
     public function __construct()
     {
@@ -151,5 +178,90 @@ class ActorConfig extends BaseConfig
 	public function setMailboxPushTimeout(float $mailboxPushTimeout): void
 	{
 		$this->mailboxPushTimeout = $mailboxPushTimeout;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getSupervisorStrategy(): string
+	{
+		return $this->supervisorStrategy;
+	}
+
+	/**
+	 * @param string $supervisorStrategy
+	 * @return void
+	 */
+	public function setSupervisorStrategy(string $supervisorStrategy): void
+	{
+		$this->supervisorStrategy = $supervisorStrategy;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getSupervisorMaxRetries(): int
+	{
+		return $this->supervisorMaxRetries;
+	}
+
+	/**
+	 * @param int $supervisorMaxRetries
+	 * @return void
+	 */
+	public function setSupervisorMaxRetries(int $supervisorMaxRetries): void
+	{
+		$this->supervisorMaxRetries = $supervisorMaxRetries;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getSupervisorMode(): string
+	{
+		return $this->supervisorMode;
+	}
+
+	/**
+	 * @param string $supervisorMode
+	 * @return void
+	 */
+	public function setSupervisorMode(string $supervisorMode): void
+	{
+		$this->supervisorMode = $supervisorMode;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isPersistenceEnabled(): bool
+	{
+		return $this->persistenceEnabled;
+	}
+
+	/**
+	 * @param bool $persistenceEnabled
+	 * @return void
+	 */
+	public function setPersistenceEnabled(bool $persistenceEnabled): void
+	{
+		$this->persistenceEnabled = $persistenceEnabled;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getPersistenceDir(): string
+	{
+		return $this->persistenceDir;
+	}
+
+	/**
+	 * @param string $persistenceDir
+	 * @return void
+	 */
+	public function setPersistenceDir(string $persistenceDir): void
+	{
+		$this->persistenceDir = $persistenceDir;
 	}
 }

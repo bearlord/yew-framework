@@ -34,11 +34,12 @@ class ActorProcess extends Process
         $call->call(function (ActorCreateEvent $event) {
             $_data = $event->getData();
 
-            $class     = $_data[0];
-            $name      = $_data[1];
-            $data      = $_data[2] ?? null;
-            $isCreated = $_data[3] ?? false;
-            $actor     = new $class($name, $isCreated);
+            $class      = $_data[0];
+            $name       = $_data[1];
+            $data       = $_data[2] ?? null;
+            $isCreated  = $_data[3] ?? false;
+            $parentName = $_data[4] ?? null;
+            $actor      = new $class($name, $isCreated, $parentName);
 
             if ($actor instanceof Actor) {
                 $actor->initData($data);
