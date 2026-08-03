@@ -252,6 +252,33 @@ class ActorPlugin extends AbstractPlugin
     public function beforeProcessStart(Context $context)
     {
         $this->ready();
+
+        // Optional lifecycle-hook smoke test. Off by default; enable with:
+        //   YEW_RUN_LIFECYCLE_SMOKE=1 php server.php
+        // Runs once inside the actor-0 process after startup.
+        if (getenv('YEW_RUN_LIFECYCLE_SMOKE') !== false
+            && Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() === "actor-0"
+        ) {
+            \Swoole\Coroutine::create(function () {
+                $candidates = [];
+                if (defined('ROOT_DIR')) {
+                    $candidates[] = ROOT_DIR . 'test/Actor/LifecycleHookSmoke.php';
+                }
+                $candidates[] = (getcwd() ?: __DIR__) . '/test/Actor/LifecycleHookSmoke.php';
+                foreach ($candidates as $file) {
+                    // cygwin shells expose /cygdrive/d/... paths that the native
+                    // swoole-cli binary cannot stat; map them back to Windows form.
+                    if (str_starts_with($file, '/cygdrive/')) {
+                        $file = preg_replace('#^/cygdrive/([a-z])/#i', '$1:/', $file);
+                    }
+                    if (is_file($file)) {
+                        require_once $file;
+                        \App\Test\runLifecycleHookSmoke();
+                        return;
+                    }
+                }
+            });
+        }
     }
 
 	/**

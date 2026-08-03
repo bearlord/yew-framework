@@ -690,7 +690,31 @@ abstract class Actor
         if ($this->dispatcher instanceof PinnedDispatcher) {
             $this->dispatcher->shutdown();
         }
+        $this->postStop();
         ActorManager::getInstance()->removeActor($this);
+    }
+
+    /**
+     * Hook invoked right before this actor is torn down (explicit stop, parent
+     * STOP directive, or process shutdown). Override to release resources that
+     * live outside the mailbox (sockets, files, external locks). The actor is
+     * still registered at this point, so you can safely read its state.
+     *
+     * @return void
+     */
+    protected function postStop(): void
+    {
+    }
+
+    /**
+     * Hook invoked just before a supervised restart replaces this instance.
+     * Override to save off transient state or release resources that must not
+     * survive the restart. The fresh instance will run init()/onRestart() next.
+     *
+     * @return void
+     */
+    protected function preRestart(): void
+    {
     }
 
     /**

@@ -375,6 +375,9 @@ class ActorManager
         $actorData = $old instanceof Actor ? $old->getData() : [];
 
         // Tear down the old instance without cascading to children.
+        if ($old instanceof Actor) {
+            $old->preRestart();
+        }
         DISet($className . ":" . $actorName, null);
         $this->actorTable->del($actorName);
 
