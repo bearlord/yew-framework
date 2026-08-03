@@ -61,56 +61,57 @@ class QueuePlugin extends AbstractPlugin
     }
 
     /**
+     * 注册队列相关进程(helper 进程 + 每个队列一个消费者进程)
+     *
      * @param Context $context
-     * @return mixed|void
+     * @return void
      */
-    public function beforeServerStart(Context $context)
+    public function beforeServerStart(Context $context): void
     {
         $this->config = Server::$instance->getConfigContext()->get("yii.queue");
         if (empty($this->config)) {
             $this->warn("Queue configuration not found");
-            return false;
+            return;
         }
-        
+
         Server::$instance->addProcess(self::PROCESS_NAME, HelperQueueProcess::class, self::PROCESS_GROUP_NAME);
 
-        //Add custom queue process
-        $index = 0;
-        foreach ($this->config as $key => $config) {
-            Server::$instance->addProcess(self::PROCESS_QUEUE_PREFIX . $index, QueueProcess::class, QueueTask::GROUP_NAME);
-            $index++;
+        foreach (array_keys($this->config) as $index => $key) {
+            Server::$instance->addProcess(
+                self::PROCESS_QUEUE_PREFIX . $index,
+                QueueProcess::class,
+                QueueTask::GROUP_NAME
+            );
         }
     }
 
     /**
+     * 构建连接池,并在当前进程对应的队列上启动监听
+     *
      * @param Context $context
-     * @return mixed|void
+     * @return void
      */
-    public function beforeProcessStart(Context $context)
+    public function beforeProcessStart(Context $context): void
     {
-        $pools = new QueuePools();
-
         if (empty($this->config)) {
-            return false;
+            return;
         }
 
-        $index = 0;
-        foreach ($this->config as $key => $config) {
-            if (empty($config["minIntervalTime"]) || $config["minIntervalTime"] < 1000) {
-                $config["minIntervalTime"] = 1000;
-            }
+        $pools = new QueuePools();
+        $currentProcessName = Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName();
 
-            $pool = new QueuePool($key, $config);
-            $pools->addPool($key, $pool);
+        foreach ($this->config as $name => $config) {
+            $config["minIntervalTime"] = max((int) ($config["minIntervalTime"] ?? 0), 1000);
 
-            /** @var Queue $queue */
-            $queue = $pool->handle();
+            $pool = new QueuePool((string) $name, $config);
+            $pools->addPool((string) $name, $pool);
 
-            //Custom process
-            if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() === self::PROCESS_QUEUE_PREFIX . $index) {
+            // 仅在当前进程负责该队列时占用连接并监听,避免无谓消耗池容量
+            if ($currentProcessName === self::PROCESS_QUEUE_PREFIX . $name) {
+                /** @var Queue $queue */
+                $queue = $pool->handle();
                 $queue->listen();
             }
-            $index++;
         }
 
         $context->add("QueuePools", $pools);

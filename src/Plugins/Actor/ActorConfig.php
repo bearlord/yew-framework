@@ -21,7 +21,7 @@ class ActorConfig extends BaseConfig
     protected int $maxCount = 10000;
 
     /**
-     * @var int Actor mx class count
+     * @var int Actor max class count
      */
     protected int $maxClassCount = 100;
 

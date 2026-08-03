@@ -10,7 +10,6 @@ use Yew\Core\Memory\CrossProcess\Atomic;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
-use Yew\Plugins\Actor\Event\ActorDeleteEvent;
 use Yew\Plugins\Actor\Exception\ActorException;
 use Yew\Yew;
 
@@ -82,7 +81,7 @@ class ActorManager
      */
     public static function getInstance(): ActorManager
     {
-        if (self::$instance == null) {
+        if (self::$instance === null) {
             self::$instance = new ActorManager();
         }
         return self::$instance;
@@ -154,16 +153,13 @@ class ActorManager
         $className = get_class($actor);
 
         DISet($className . ":" . $actorName, null);
-        $this->actorTable->del($actor->getName());
+        $this->actorTable->del($actorName);
 
-        //Dispatch ActorDeleteEvent to actor-cache process, do not need reply
-        Server::$instance->getEventDispatcher()->dispatchProcessEvent(new ActorDeleteEvent(
-            ActorDeleteEvent::ActorDeleteEvent,
-            [
-                $actorName,
-            ]), Server::$instance->getProcessManager()->getProcessFromName(ActorCacheProcess::PROCESS_NAME));
+        // Note: the Actor persistent cache process (ActorCacheProcess) is not implemented yet,
+        // so the delete event is not dispatched for now.
+        // If cross-process cache cleanup is needed, dispatch ActorDeleteEvent to the relevant process here.
 
-        $this->debug(sprintf("Actor %s removed"), $actor->getName());
+        $this->debug(sprintf("Actor %s removed", $actorName));
     }
 
     /**

@@ -11,7 +11,6 @@ use Yew\Core\Message\Message;
 use Yew\Core\Server\Process\Process;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
-use Yew\Plugins\Actor\Event\ActorSaveEvent;
 use Yew\Yew;
 
 class ActorProcess extends Process
@@ -50,15 +49,6 @@ class ActorProcess extends Process
 			$this->eventDispatcher->dispatchProcessEvent(new ActorCreateEvent(ActorCreateEvent::ActorCreateReadyEvent . ":" . $actor->getName(), null),
 				Server::$instance->getProcessManager()->getProcessFromId($event->getProcessId())
 			);
-
-			//Dispatch ActorSaveEvent to actor-cache process, do not need reply
-			/*
-			Server::$instance->getEventDispatcher()->dispatchProcessEvent(new ActorSaveEvent(
-				ActorSaveEvent::ActorSaveEvent,
-				[
-					$class, $name, $data,
-				]), Server::$instance->getProcessManager()->getProcessFromName(ActorCacheProcess::PROCESS_NAME));
-			*/
 
 		});
 

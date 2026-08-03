@@ -12,13 +12,8 @@ use Yew\Plugins\Actor\Event\ActorCreateEvent;
 trait GetActorIpc
 {
     /**
-     * @param string $actorName
-     * @param bool $oneway
-     * @param float $timeOut
-     * @return ActorIpcProxy
-     * @throws Exception\ActorException
-     */
-    /**
+     * Get the IPC proxy for calling the specified Actor.
+     *
      * @param string $actorName
      * @param bool $oneway
      * @param float $timeOut
@@ -30,10 +25,12 @@ trait GetActorIpc
     }
 
     /**
+     * Block until the specified Actor has been created.
+     *
      * @param string $actorName
      * @param float $timeOut
      * @return void
-     * @throws \Exception
+     * @throws ActorException
      */
     public function waitActorCreate(string $actorName, float $timeOut = 5)
     {

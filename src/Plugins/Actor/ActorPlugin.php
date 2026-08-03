@@ -10,7 +10,6 @@ use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Coroutine\Server\Server;
-use Yew\Plugins\Actor\ActorCacheProcess;
 use Yew\Plugins\Ipc\IpcPlugin;
 
 class ActorPlugin extends AbstractPlugin
@@ -82,17 +81,14 @@ class ActorPlugin extends AbstractPlugin
 	 */
 	protected function initConfig()
 	{
-		$config = Server::$instance->getConfigContext()->get("yew.actor");
+		$config = Server::$instance->getConfigContext()->get("yew.actor") ?? [];
 
 		$actorConfig = new ActorConfig();
 
-		$actorConfig->setMaxCount($config["maxCount"]);
-
-		$actorConfig->setMailboxCapacity($config["maxClassCount"]);
-
-		$actorConfig->setWorkerCount($config["workerCount"]);
-
-		$actorConfig->setMaxClassCount($config["maxClassCount"]);
+		$actorConfig->setMaxCount((int) ($config["maxCount"] ?? 10000));
+		$actorConfig->setWorkerCount((int) ($config["workerCount"] ?? 1));
+		$actorConfig->setMaxClassCount((int) ($config["maxClassCount"] ?? 100));
+		$actorConfig->setMailboxCapacity((int) ($config["mailboxCapacity"] ?? 100));
 
 		$this->actorConfig = $actorConfig;
 	}

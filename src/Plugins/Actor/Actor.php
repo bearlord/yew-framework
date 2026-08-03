@@ -11,11 +11,10 @@ use Yew\Core\Channel\Channel;
 use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
+use Yew\Plugins\Actor\Exception\ActorException;
 use Yew\Plugins\Actor\Log\LogFactory;
 use Yew\Plugins\Actor\Log\Logger;
-use Yew\Plugins\Actor\Multicast\MulticastConfig;
-use Yew\Plugins\Actor\Multicast\Channel as MulticastChannel;
-use Yew\Plugins\Ipc\GetIpc;
+use Yew\Plugins\Actor\Multicast\Multicast;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
 use Swoole\Timer;
@@ -24,12 +23,10 @@ abstract class Actor
 {
     use GetLogger;
 
-    use GetIpc;
-
     /**
-     * @var MulticastConfig
+     * @var Multicast
      */
-    protected $multicastConfig;
+    protected Multicast $multicast;
 
     /**
      * @var Channel
@@ -56,7 +53,7 @@ abstract class Actor
     /**
      * @var array data
      */
-    protected array $data;
+    protected array $data = [];
 
     /**
      * @var array timer ids
@@ -69,17 +66,23 @@ abstract class Actor
     protected Logger $logHandle;
 
     /**
-     * @var int boot state 0,1,2
+     * @var int Lifecycle state: 0=initial, 2=recovered/ready
      */
-    protected int $bootState = 0;
+    protected int $state = 0;
 
     /**
-     * @param string|null $name
+     * @param string $name
      * @param bool $isCreated
      * @throws \DI\DependencyException
      */
-    final public function __construct(?string $name = "", bool $isCreated = false)
+    final public function __construct(string $name, bool $isCreated = false)
     {
+        // Actors must be created only inside an actor process
+        $processName = Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName();
+        if (stripos($processName, 'actor') === false) {
+            throw new ActorException(sprintf("Actor can only be created in an actor process, current process is '%s'", $processName));
+        }
+
         $this->name = $name;
 
         Server::$instance->getContainer()->injectOn($this);
@@ -100,14 +103,16 @@ abstract class Actor
         $this->iniChannel();
 
         //Loop process the information in the mailbox
-        goWithContext(function () use ($name) {
+        goWithContext(function () {
             while (true) {
                 $message = $this->channel->pop();
                 $this->onHandleMessage($message);
             }
         });
 
-        $this->logHandle = LogFactory::create($name);
+        $this->logHandle = LogFactory::create($this->name);
+
+        $this->multicast = new Multicast($this->name, DIGet(\Yew\Plugins\Actor\Multicast\MulticastConfig::class));
 
         $saveContextTime = Server::$instance->getConfigContext()->get("actor.saveContextTime", 10);
         $this->tick($saveContextTime * 1000, [$this, "saveContext"]);
@@ -127,9 +132,9 @@ abstract class Actor
     }
 
     /**
-     * @param mixed $data
+     * @param array $data
      */
-    public function setData($data): void
+    public function setData(array $data): void
     {
         $this->data = $data;
     }
@@ -198,7 +203,6 @@ abstract class Actor
 
     /**
      * Destroy
-     * @throws \Exception
      */
     public function destroy()
     {
@@ -241,15 +245,6 @@ abstract class Actor
     public function sendMessage(ActorMessage $message)
     {
         $this->channel->push($message);
-    }
-
-    /**
-     * Start transaction
-     * @param callable $call
-     */
-    public function startTransaction(callable $call)
-    {
-
     }
 
     /**
@@ -320,119 +315,5 @@ abstract class Actor
         $this->logHandle->log($this->data);
 
         return;
-    }
-
-
-    /**
-     * @return MulticastConfig|mixed
-     * @throws \Exception
-     */
-    protected function getMulticastConfig(): MulticastConfig
-    {
-        if ($this->multicastConfig == null) {
-            $this->multicastConfig = DIGet(MulticastConfig::class);
-        }
-
-        return $this->multicastConfig;
-    }
-
-
-    /**
-     * @param string $channel
-     * @return void
-     * @throws \Yew\Plugins\Ipc\IpcException
-     */
-    public function subscribe(string $channel)
-    {
-        $actor = $this->getName();
-
-        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-
-        $ipcProxy->subscribe($channel, $actor);
-    }
-
-    /**
-     * Unsubscribe
-     *
-     * @param string $channel
-     * @throws \Exception
-     */
-    public function unsubscribe(string $channel)
-    {
-        $actor = $this->getName();
-
-        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $ipcProxy->unsubscribe($channel, $actor);
-    }
-
-    /**
-     * Unsubscribe all
-     * @return void
-     * @throws \Exception
-     */
-    public function unsubscribeAll(): void
-    {
-        $actor = $this->getName();
-
-        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $ipcProxy->unsubscribeAll($actor);
-    }
-
-    /**
-     * @param string $channel
-     * @param string $message
-     * @param array|null $excludeActorList
-     * @return void
-     * @throws \Yew\Plugins\Ipc\IpcException
-     */
-    public function publish(string $channel, string $message, ?array $excludeActorList = []): void
-    {
-        $from = $this->getName();
-
-        if (empty($excludeActorList)) {
-            $excludeActorList = [$from];
-        }
-
-        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-
-        $ipcProxy->publish($channel, $message, $excludeActorList, $from);
-    }
-    
-    /**
-     * @param string $channel
-     * @param string $message
-     * @return void
-     * @throws \Yew\Plugins\Ipc\IpcException
-     */
-    public function publishTo(string $channel, string $message): void
-    {
-        $from = $this->getName();
-
-        $excludeActorList = [$from];
-
-        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $ipcProxy->publish($channel, $message, $excludeActorList, $from);
-    }
-
-    /**
-     * @param string $channel
-     * @param string $message
-     * @return void
-     * @throws \Yew\Plugins\Ipc\IpcException
-     */
-    public function publishIn(string $channel, string $message)
-    {
-        $from = $this->getName();
-
-        $excludeActorList = [];
-
-        /** @var \Yew\Plugins\Actor\Multicast\Channel $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), MulticastChannel::class, true);
-        $ipcProxy->publish($channel, $message, $excludeActorList, $from);
     }
 }

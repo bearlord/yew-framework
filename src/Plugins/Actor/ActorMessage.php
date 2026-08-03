@@ -41,7 +41,7 @@ class ActorMessage
     /**
      * @param $data
      * @param string|null $type
-     * @param int|null $msgId
+     * @param string|null $msgId
      * @param string|null $from
      * @param string|null $to
      */
@@ -83,9 +83,9 @@ class ActorMessage
     }
 
     /**
-     * @param int $msgId
+     * @param string|null $msgId
      */
-    public function setMsgId(?int $msgId = null): void
+    public function setMsgId(?string $msgId = null): void
     {
         $this->msgId = $msgId;
     }
