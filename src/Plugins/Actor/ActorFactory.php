@@ -18,7 +18,12 @@ class ActorFactory
      * @return ActorIpcProxy|false
      * @throws ActorException
      */
-    public static function create(string $actionClass, string $actorName, $data = null, bool $waitCreate = true, float $timeOut = 5)
+    public static function create(
+        string $actionClass,
+        string $actorName,
+        $data = null,
+        bool $waitCreate = true, 
+        float $timeOut = 5)
     {
         if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
             return new ActorIpcProxy($actorName, false, $timeOut);
@@ -65,5 +70,27 @@ class ActorFactory
         $now = ActorManager::getInstance()->getAtomic()->add();
 
         return $now % $processCount;
+    }
+
+    /**
+     * Whether an actor with the given name already exists.
+     *
+     * @param string $actorName
+     * @return bool
+     */
+    public static function has(string $actorName): bool
+    {
+        return ActorManager::getInstance()->hasActor($actorName);
+    }
+
+    /**
+     * Get a handle to an existing Actor by name.
+     *
+     * @param string $actorName
+     * @return Actor|ActorIpcProxy|null
+     */
+    public static function get(string $actorName, bool $oneWay = false, float $timeOut = 5)
+    {
+        return ActorManager::getInstance()->getActor($actorName, $oneWay, $timeOut);
     }
 }

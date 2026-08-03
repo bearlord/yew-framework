@@ -62,7 +62,7 @@ class ActorPlugin extends AbstractPlugin
         for ($i = 0; $i < $this->actorConfig->getWorkerCount(); $i++) {
             Server::$instance->addProcess("actor-$i", ActorProcess::class, ActorConfig::GROUP_NAME);
         }
-		
+        
         $this->actorManager = ActorManager::getInstance();
         return;
     }

@@ -16,6 +16,7 @@ use Yew\Yew;
 class ActorManager
 {
     use GetLogger;
+
     /**
      * @var ActorManager
      */
@@ -58,7 +59,7 @@ class ActorManager
     public function __construct()
     {
         $this->actorConfig = DIGet(ActorConfig::class);
-        $this->actorTable = new Table($this->actorConfig->getMaxCount());
+        $this->actorTable  = new Table($this->actorConfig->getMaxCount());
         $this->actorTable->column("processId", Table::TYPE_INT);
         $this->actorTable->column("createTime", Table::TYPE_INT);
         $this->actorTable->column("classId", Table::TYPE_INT);
@@ -114,7 +115,7 @@ class ActorManager
     public function addActor(Actor $actor)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getGroupName() != ActorConfig::GROUP_NAME) {
-            throw new ActorException("Do not new a actor, use Actor::create()");
+            throw new ActorException("Do not new a actor, use ActorFactory::create()");
         }
 
         $actorName = $actor->getName();
@@ -123,7 +124,7 @@ class ActorManager
             throw new ActorException("Has same actor name :{$actorName}");
         }
 
-        $className = get_class($actor);
+        $className        = get_class($actor);
         $actorClassNameId = $this->actorClassNameIdTable->get($className);
         if (empty($actorClassNameId)) {
             $id = $this->actorIdClassNameTable->count();
@@ -139,8 +140,6 @@ class ActorManager
             "classId" => $id
         ]);
         DISet($className . ":" . $actorName, $actor);
-
-        $this->debug(sprintf("Actor %s created", $actor->getName()));
     }
 
     /**
@@ -154,12 +153,6 @@ class ActorManager
 
         DISet($className . ":" . $actorName, null);
         $this->actorTable->del($actorName);
-
-        // Note: the Actor persistent cache process (ActorCacheProcess) is not implemented yet,
-        // so the delete event is not dispatched for now.
-        // If cross-process cache cleanup is needed, dispatch ActorDeleteEvent to the relevant process here.
-
-        $this->debug(sprintf("Actor %s removed", $actorName));
     }
 
     /**
@@ -182,5 +175,36 @@ class ActorManager
         }
 
         return true;
+    }
+
+    /**
+     * Get a handle to an existing Actor by name.
+     *
+     * Returns null if no such actor exists.
+     *
+     * @param string     $actorName
+     * @param bool|null  $oneWay  Whether the proxy call is one-way (no reply expected)
+     * @param float|null $timeOut IPC wait timeout in seconds
+     * @return Actor|ActorIpcProxy|null
+     */
+    public function getActor(string $actorName, ?bool $oneWay = false, ?float $timeOut = 0)
+    {
+        if (!$this->hasActor($actorName)) {
+            return null;
+        }
+
+        // Only resolve the real instance when THIS process is the one that owns the actor.
+        $data = $this->actorTable->get($actorName);
+        if ((int)$data["processId"] === Server::$instance->getProcessManager()->getCurrentProcessId()) {
+            $className = $this->actorIdClassNameTable->get($data["classId"], "className");
+
+            /** @var Actor|null $actor */
+            $actor = DIGet($className . ":" . $actorName);
+
+            return $actor;
+        }
+
+        // From a worker: return an IPC proxy to the actor process.
+        return new ActorIpcProxy($actorName, $oneWay, $timeOut);
     }
 }

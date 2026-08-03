@@ -15,13 +15,13 @@ trait GetActorIpc
      * Get the IPC proxy for calling the specified Actor.
      *
      * @param string $actorName
-     * @param bool $oneway
+     * @param bool $oneWay
      * @param float $timeOut
      * @return ActorIpcProxy
      */
-    public function callActor(string $actorName, bool $oneway = false, float $timeOut = 5): ActorIpcProxy
+    public function callActor(string $actorName, bool $oneWay = false, float $timeOut = 5): ActorIpcProxy
     {
-        return new ActorIpcProxy($actorName, $oneway, $timeOut);
+        return new ActorIpcProxy($actorName, $oneWay, $timeOut);
     }
 
     /**
