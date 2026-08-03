@@ -18,7 +18,8 @@ class Location
 {
     public function __construct(
         private ClusterNode $node,
-        private int $processId
+        private int $processId,
+        private ?string $actorName = null
     ) {
     }
 
@@ -30,6 +31,16 @@ class Location
     public function getProcessId(): int
     {
         return $this->processId;
+    }
+
+    public function getActorName(): ?string
+    {
+        return $this->actorName;
+    }
+
+    public function setActorName(?string $actorName): void
+    {
+        $this->actorName = $actorName;
     }
 
     public function isLocal(): bool

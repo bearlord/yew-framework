@@ -18,6 +18,12 @@ namespace Yew\Plugins\Actor\Cluster;
 interface ShardRouter
 {
     /**
+     * The node this router instance belongs to (used to know which shards are
+     * "local" and therefore hostable by this process).
+     */
+    public function getLocalNode(): ClusterNode;
+
+    /**
      * Locate an actor by name.
      *
      * @param string $actorName

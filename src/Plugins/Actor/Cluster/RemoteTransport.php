@@ -20,16 +20,37 @@ use Yew\Plugins\Actor\ActorMessage;
 interface RemoteTransport
 {
     /**
-     * Send a message to an actor located on a (possibly remote) node.
-     *
-     * @param Location     $location Target actor location
-     * @param ActorMessage $message  Message to deliver
-     * @return mixed Reply payload for ask-style calls, null for tell
+     * Start listening for inbound actor messages (server side). No-op for
+     * transports that do not bind a socket (e.g. in-process).
      */
-    public function send(Location $location, ActorMessage $message);
+    public function start(): void;
 
     /**
-     * Whether this transport can reach the given location.
+     * Fire-and-forget delivery to a remote actor.
+     *
+     * @param Location $location Target actor location (remote node)
+     * @param string   $method   Actor method to invoke
+     * @param array    $arguments Method arguments
+     * @param string   $traceId  Current trace id for cross-node propagation
+     * @return bool True if the envelope was dispatched
+     */
+    public function tell(Location $location, string $method, array $arguments, ?string $traceId): bool;
+
+    /**
+     * Request-response delivery to a remote actor. Blocks until a reply with the
+     * same msgId arrives (or the timeout elapses).
+     *
+     * @param Location $location Target actor location (remote node)
+     * @param string   $method   Actor method to invoke
+     * @param array    $arguments Method arguments
+     * @param string   $traceId  Current trace id for cross-node propagation
+     * @param float    $timeOut  Seconds to wait for the reply
+     * @return mixed The remote actor's return value, or null on timeout
+     */
+    public function ask(Location $location, string $method, array $arguments, ?string $traceId, float $timeOut);
+
+    /**
+     * Whether this transport can reach the given (remote) location.
      */
     public function supports(Location $location): bool;
 }

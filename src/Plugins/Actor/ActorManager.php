@@ -253,8 +253,9 @@ class ActorManager
 
         $this->incrLoad($this->indexOfProcess($currentProcessId));
 
-        // Clustering seam: publish the actor's location (no-op for local router).
-        $node = $this->shardRouter instanceof LocalShardRouter
+        // Clustering seam: publish the actor's location (derived from ring for
+        // the gossip router; no-op for the local router).
+        $node = method_exists($this->shardRouter, 'getLocalNode')
             ? $this->shardRouter->getLocalNode()
             : new ClusterNode('local');
         $this->shardRouter->register($actorName, new Location($node, $currentProcessId));
@@ -345,7 +346,8 @@ class ActorManager
         $className = get_class($actor);
 
         DISet($className . ":" . $actorName, null);
-        $this->decrLoad($this->indexOfProcess((int) $data["processId"]));
+        $row = $this->actorTable->get($actorName);
+        $this->decrLoad($this->indexOfProcess((int) ($row["processId"] ?? 0)));
         $this->shardRouter->unregister($actorName);
         $this->actorTable->del($actorName);
     }

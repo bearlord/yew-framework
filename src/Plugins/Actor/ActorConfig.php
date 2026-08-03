@@ -98,6 +98,110 @@ class ActorConfig extends BaseConfig
      */
     protected bool $telemetryEnabled = false;
 
+    /**
+     * @var bool Whether cluster sharding (gossip membership + rebalance) is on
+     */
+    protected bool $clusterEnabled = false;
+
+    /**
+     * @var string Stable node id for this process in the cluster
+     */
+    protected string $clusterNodeId = 'local';
+
+    /**
+     * @var string Bind host advertised to peers
+     */
+    protected string $clusterHost = '127.0.0.1';
+
+    /**
+     * @var int Bind port advertised to peers
+     */
+    protected int $clusterPort = 0;
+
+    /**
+     * @var int Weighted capacity of this node (more shards the higher)
+     */
+    protected int $clusterWeight = 1;
+
+    /**
+     * @var int Seconds of missed heartbeat before a node is suspected
+     */
+    protected int $clusterSuspectAfter = 3;
+
+    /**
+     * @var int Seconds of missed heartbeat before a node is marked down
+     */
+    protected int $clusterDownAfter = 8;
+
+    /**
+     * @var float Seconds between membership heartbeats / failure-detection ticks
+     */
+    protected float $clusterHeartbeatInterval = 1.0;
+
+    /**
+     * @var string UDP bind address for gossip (host)
+     */
+    protected string $clusterGossipHost = '0.0.0.0';
+
+    /**
+     * @var int UDP bind port for gossip
+     */
+    protected int $clusterGossipPort = 0;
+
+    /**
+     * @var string UDP broadcast/multicast target ("host:port")
+     */
+    protected string $clusterGossipBroadcast = '239.0.0.1:49999';
+
+    /**
+     * @var array<int,string> Seed peers ("host:port") for first contact
+     */
+    protected array $clusterSeeds = [];
+
+    /**
+     * @var int Remote transport TCP connection pool size per node
+     */
+    protected int $clusterPoolSize = 16;
+
+    /**
+     * @var string Shared HMAC secret for gossip message signing (anti-spoofing)
+     */
+    protected string $clusterSecret = '';
+
+    /**
+     * @var int Allowed clock skew (seconds) for gossip message freshness
+     */
+    protected int $clusterClockSkew = 30;
+
+    /**
+     * @var string This node's private key PEM (asymmetric, per-node certificate).
+     *             When set, gossip switches from shared HMAC to per-node signing.
+     */
+    protected string $clusterPrivateKey = '';
+
+    /**
+     * @var string This node's public key PEM (paired with clusterPrivateKey).
+     */
+    protected string $clusterPublicKey = '';
+
+    /**
+     * @var array<string,string> Pinned trust store: nodeId => public-key PEM.
+     *             When non-empty, only nodes whose pubkey is pinned are accepted.
+     */
+    protected array $clusterTrustStore = [];
+
+    /**
+     * @var bool Whether actor persistence is replicated across cluster nodes
+     *           (cross-node durability). Requires clusterEnabled + persistenceEnabled.
+     */
+    protected bool $clusterStoreEnabled = false;
+
+    /**
+     * @var int Number of replicas an actor's events/snapshots are replicated to
+     *          (besides the owning node). Quorum for a read = 1 replica present.
+     */
+    protected int $clusterReplicationFactor = 2;
+
 
     public function __construct()
     {
@@ -374,5 +478,345 @@ class ActorConfig extends BaseConfig
 	public function setTelemetryEnabled(bool $telemetryEnabled): void
 	{
 		$this->telemetryEnabled = $telemetryEnabled;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isClusterEnabled(): bool
+	{
+		return $this->clusterEnabled;
+	}
+
+	/**
+	 * @param bool $clusterEnabled
+	 * @return void
+	 */
+	public function setClusterEnabled(bool $clusterEnabled): void
+	{
+		$this->clusterEnabled = $clusterEnabled;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterNodeId(): string
+	{
+		return $this->clusterNodeId;
+	}
+
+	/**
+	 * @param string $clusterNodeId
+	 * @return void
+	 */
+	public function setClusterNodeId(string $clusterNodeId): void
+	{
+		$this->clusterNodeId = $clusterNodeId;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterHost(): string
+	{
+		return $this->clusterHost;
+	}
+
+	/**
+	 * @param string $clusterHost
+	 * @return void
+	 */
+	public function setClusterHost(string $clusterHost): void
+	{
+		$this->clusterHost = $clusterHost;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterPort(): int
+	{
+		return $this->clusterPort;
+	}
+
+	/**
+	 * @param int $clusterPort
+	 * @return void
+	 */
+	public function setClusterPort(int $clusterPort): void
+	{
+		$this->clusterPort = $clusterPort;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterWeight(): int
+	{
+		return $this->clusterWeight;
+	}
+
+	/**
+	 * @param int $clusterWeight
+	 * @return void
+	 */
+	public function setClusterWeight(int $clusterWeight): void
+	{
+		$this->clusterWeight = $clusterWeight;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterSuspectAfter(): int
+	{
+		return $this->clusterSuspectAfter;
+	}
+
+	/**
+	 * @param int $clusterSuspectAfter
+	 * @return void
+	 */
+	public function setClusterSuspectAfter(int $clusterSuspectAfter): void
+	{
+		$this->clusterSuspectAfter = $clusterSuspectAfter;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterDownAfter(): int
+	{
+		return $this->clusterDownAfter;
+	}
+
+	/**
+	 * @param int $clusterDownAfter
+	 * @return void
+	 */
+	public function setClusterDownAfter(int $clusterDownAfter): void
+	{
+		$this->clusterDownAfter = $clusterDownAfter;
+	}
+
+	/**
+	 * @return float
+	 */
+	public function getClusterHeartbeatInterval(): float
+	{
+		return $this->clusterHeartbeatInterval;
+	}
+
+	/**
+	 * @param float $clusterHeartbeatInterval
+	 * @return void
+	 */
+	public function setClusterHeartbeatInterval(float $clusterHeartbeatInterval): void
+	{
+		$this->clusterHeartbeatInterval = $clusterHeartbeatInterval;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterGossipHost(): string
+	{
+		return $this->clusterGossipHost;
+	}
+
+	/**
+	 * @param string $clusterGossipHost
+	 * @return void
+	 */
+	public function setClusterGossipHost(string $clusterGossipHost): void
+	{
+		$this->clusterGossipHost = $clusterGossipHost;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterGossipPort(): int
+	{
+		return $this->clusterGossipPort;
+	}
+
+	/**
+	 * @param int $clusterGossipPort
+	 * @return void
+	 */
+	public function setClusterGossipPort(int $clusterGossipPort): void
+	{
+		$this->clusterGossipPort = $clusterGossipPort;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterGossipBroadcast(): string
+	{
+		return $this->clusterGossipBroadcast;
+	}
+
+	/**
+	 * @param string $clusterGossipBroadcast
+	 * @return void
+	 */
+	public function setClusterGossipBroadcast(string $clusterGossipBroadcast): void
+	{
+		$this->clusterGossipBroadcast = $clusterGossipBroadcast;
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	public function getClusterSeeds(): array
+	{
+		return $this->clusterSeeds;
+	}
+
+	/**
+	 * @param array<int,string> $clusterSeeds
+	 * @return void
+	 */
+	public function setClusterSeeds(array $clusterSeeds): void
+	{
+		$this->clusterSeeds = $clusterSeeds;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterPoolSize(): int
+	{
+		return $this->clusterPoolSize;
+	}
+
+	/**
+	 * @param int $clusterPoolSize
+	 * @return void
+	 */
+	public function setClusterPoolSize(int $clusterPoolSize): void
+	{
+		$this->clusterPoolSize = $clusterPoolSize;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterSecret(): string
+	{
+		return $this->clusterSecret;
+	}
+
+	/**
+	 * @param string $clusterSecret
+	 * @return void
+	 */
+	public function setClusterSecret(string $clusterSecret): void
+	{
+		$this->clusterSecret = $clusterSecret;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterClockSkew(): int
+	{
+		return $this->clusterClockSkew;
+	}
+
+	/**
+	 * @param int $clusterClockSkew
+	 * @return void
+	 */
+	public function setClusterClockSkew(int $clusterClockSkew): void
+	{
+		$this->clusterClockSkew = $clusterClockSkew;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterPrivateKey(): string
+	{
+		return $this->clusterPrivateKey;
+	}
+
+	/**
+	 * @param string $clusterPrivateKey
+	 * @return void
+	 */
+	public function setClusterPrivateKey(string $clusterPrivateKey): void
+	{
+		$this->clusterPrivateKey = $clusterPrivateKey;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getClusterPublicKey(): string
+	{
+		return $this->clusterPublicKey;
+	}
+
+	/**
+	 * @param string $clusterPublicKey
+	 * @return void
+	 */
+	public function setClusterPublicKey(string $clusterPublicKey): void
+	{
+		$this->clusterPublicKey = $clusterPublicKey;
+	}
+
+	/**
+	 * @return array<string,string>
+	 */
+	public function getClusterTrustStore(): array
+	{
+		return $this->clusterTrustStore;
+	}
+
+	/**
+	 * @param array<string,string> $clusterTrustStore
+	 * @return void
+	 */
+	public function setClusterTrustStore(array $clusterTrustStore): void
+	{
+		$this->clusterTrustStore = $clusterTrustStore;
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function isClusterStoreEnabled(): bool
+	{
+		return $this->clusterStoreEnabled;
+	}
+
+	/**
+	 * @param bool $clusterStoreEnabled
+	 * @return void
+	 */
+	public function setClusterStoreEnabled(bool $clusterStoreEnabled): void
+	{
+		$this->clusterStoreEnabled = $clusterStoreEnabled;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getClusterReplicationFactor(): int
+	{
+		return $this->clusterReplicationFactor;
+	}
+
+	/**
+	 * @param int $clusterReplicationFactor
+	 * @return void
+	 */
+	public function setClusterReplicationFactor(int $clusterReplicationFactor): void
+	{
+		$this->clusterReplicationFactor = $clusterReplicationFactor;
 	}
 }

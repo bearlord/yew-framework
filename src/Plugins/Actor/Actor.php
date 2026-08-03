@@ -29,6 +29,7 @@ use Yew\Plugins\Actor\Persistence\ActorStore;
 use Yew\Plugins\Actor\Persistence\ActorEvent;
 use Yew\Plugins\Actor\Persistence\Snapshot;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
+use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Dispatcher\Dispatcher;
 use Yew\Plugins\Actor\Dispatcher\CoroutineDispatcher;
 use Yew\Plugins\Actor\Dispatcher\PinnedDispatcher;
@@ -69,6 +70,14 @@ abstract class Actor
      * @var ActorStore|null Persistence backend (null when persistence disabled)
      */
     protected ?ActorStore $store = null;
+
+    /**
+     * @Inject()
+     * @var ClusterActorStore|null Cluster-aware store injected by the framework
+     *      when cross-node durability is enabled. Takes precedence over the
+     *      local-only FileActorStore in init().
+     */
+    protected ?ClusterActorStore $injectedStore = null;
 
     /**
      * @var int Monotonic event sequence for this actor (event sourcing)
@@ -170,7 +179,12 @@ abstract class Actor
         $this->dispatcher = $this->resolveDispatcher($this->actorConfig->getDispatcher());
 
         if ($this->actorConfig->isPersistenceEnabled()) {
-            $this->store = new FileActorStore($this->actorConfig->getPersistenceDir());
+            // Use the cluster-aware store when the framework injected one
+            // (cross-node durability); otherwise fall back to local-only files.
+            $this->store = $this->injectedStore
+                ?? (new FileActorStore($this->actorConfig->getPersistenceDir()));
+            // Bind this actor's name so the store can address/ replicate it.
+            $this->store->setActorName($this->name)->init();
         }
 
         //Loop process the information in the mailbox. The dispatcher decides in

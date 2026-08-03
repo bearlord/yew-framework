@@ -26,6 +26,23 @@ class FileActorStore implements ActorStore
         }
     }
 
+    /**
+     * Bind the owning actor name before use. Provided for parity with
+     * ClusterActorStore; FileActorStore addresses actors via explicit method
+     * arguments, so this is a no-op beyond returning $this.
+     */
+    public function setActorName(string $actorName): self
+    {
+        return $this;
+    }
+
+    /**
+     * Optional initialization hook (parity with ClusterActorStore).
+     */
+    public function init(): void
+    {
+    }
+
     private function eventsFile(string $actorName): string
     {
         return $this->dir . DIRECTORY_SEPARATOR . $this->sanitize($actorName) . '.events.json';

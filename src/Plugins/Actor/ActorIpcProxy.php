@@ -54,17 +54,24 @@ class ActorIpcProxy extends IpcProxy
             return;
         }
 
-        // Local actors are delivered via in-process IPC. Remote actors (when
-        // clustering lands) would be delivered via the remote transport and
-        // this branch would dispatch through $manager->getRemoteTransport().
+        // Local actors are delivered via in-process IPC. Remote actors are
+        // delivered through the cluster remote transport (TCP remoting).
         if ($location->isLocal()) {
             parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneWay, $timeOut);
             return;
         }
 
-        // Reserved for clustered delivery; no-op until a real transport exists.
+        // Location-transparent remote delivery seam.
+        $location->setActorName($actorName);
         $this->location = $location;
+        $this->remote = $manager->getRemoteTransport();
     }
+
+    /**
+     * @var \Yew\Plugins\Actor\Cluster\RemoteTransport|null Transport used when the
+     *      target actor lives on another cluster node.
+     */
+    protected $remote = null;
 
     /**
      * Fire-and-forget: invoke a method on the actor without waiting for a reply.
@@ -76,6 +83,9 @@ class ActorIpcProxy extends IpcProxy
     public function tell(string $method, array $arguments = []): bool
     {
         $arguments['__traceId'] = Tracer::currentTraceId();
+        if ($this->isRemote()) {
+            return $this->remote->tell($this->location, $method, $arguments, Tracer::currentTraceId());
+        }
         $savedOneWay = $this->oneway;
         $this->oneway = true;
         try {
@@ -97,6 +107,9 @@ class ActorIpcProxy extends IpcProxy
     public function ask(string $method, array $arguments = [], float $timeOut = 0)
     {
         $arguments['__traceId'] = Tracer::currentTraceId();
+        if ($this->isRemote()) {
+            return $this->remote->ask($this->location, $method, $arguments, Tracer::currentTraceId(), $timeOut > 0 ? $timeOut : $this->timeOut);
+        }
         $savedOneWay = $this->oneway;
         $savedTimeOut = $this->timeOut;
         $this->oneway = false;
@@ -127,6 +140,15 @@ class ActorIpcProxy extends IpcProxy
 
         goWithContext(function () use ($method, $arguments, $timeOut, $future, $savedOneWay, $savedTimeOut) {
             $arguments['__traceId'] = Tracer::currentTraceId();
+            if ($this->isRemote()) {
+                try {
+                    $result = $this->remote->ask($this->location, $method, $arguments, Tracer::currentTraceId(), $timeOut > 0 ? $timeOut : $this->timeOut);
+                    $future->resolve($result);
+                } catch (\Throwable $e) {
+                    $future->reject($e);
+                }
+                return;
+            }
             $this->oneway = false;
             if ($timeOut > 0) {
                 $this->timeOut = $timeOut;
@@ -143,6 +165,14 @@ class ActorIpcProxy extends IpcProxy
         });
 
         return $future;
+    }
+
+    /**
+     * True when this proxy targets a remote cluster node.
+     */
+    private function isRemote(): bool
+    {
+        return $this->remote !== null && $this->location !== null && !$this->location->isLocal();
     }
 
     /**
