@@ -104,11 +104,6 @@ abstract class Process
     protected array $waitChannel = [];
 
     /**
-     * @var int \Coroutine\Socket->recv length (also the max per-frame payload size hint)
-     */
-    protected int $coroutineSocketRecvLength = 65535;
-
-    /**
      * @var int Max bytes written per Swoole\Process::write call. Swoole caps a
      *          single write on the UnixSocket pipe, so large frames are chunked.
      */
@@ -141,11 +136,6 @@ abstract class Process
                 return new ProcessContextBuilder($this);
             });
         $this->context = $contextBuilder->build();
-
-        $coroutineSocketRecvLength = $server->getConfigContext()->get('yew.server.coroutineSocketRecvLength');
-        if ($coroutineSocketRecvLength > $this->coroutineSocketRecvLength) {
-            $this->coroutineSocketRecvLength = $coroutineSocketRecvLength;
-        }
     }
 
     /**
@@ -305,7 +295,7 @@ abstract class Process
                     // frames ourselves. Layout: [4B srcProcessId][4B payloadLen][payload].
                     $buffer = '';
                     while (true) {
-                        $recv = $this->socket->recv($this->coroutineSocketRecvLength);
+                        $recv = $this->socket->recv();
                         if ($recv === '' || $recv === false) {
                             break;
                         }
