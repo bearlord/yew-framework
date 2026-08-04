@@ -203,6 +203,9 @@ class ActorConfig extends BaseConfig
     protected int $clusterReplicationFactor = 2;
 
 
+    /**
+     * Build the actor config from the "actor" config key.
+     */
     public function __construct()
     {
         parent::__construct(self::KEY);

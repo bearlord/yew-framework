@@ -188,17 +188,34 @@ class ClusterState implements ClusterStateInterface
         return $out;
     }
 
+    /**
+     * Look up a single member by node id.
+     *
+     * @param string $nodeId
+     * @return ClusterMember|null
+     */
     public function getNode(string $nodeId): ?ClusterMember
     {
         $row = $this->memberTable->get($nodeId);
         return $row === false ? null : ClusterMember::fromRow($row);
     }
 
+    /**
+     * Whether the given node id is this node.
+     *
+     * @param string $nodeId
+     * @return bool
+     */
     public function isLocal(string $nodeId): bool
     {
         return $nodeId === $this->localNodeId;
     }
 
+    /**
+     * This node's id.
+     *
+     * @return string
+     */
     public function getLocalNodeId(): string
     {
         return $this->localNodeId;

@@ -22,6 +22,11 @@ class LocalShardRouter implements ShardRouter
 {
     private ClusterNode $localNode;
 
+    /**
+     * Build a local-only router for one node.
+     *
+     * @param string $nodeId Id of the single local node
+     */
     public function __construct(string $nodeId = 'local')
     {
         $this->localNode = new ClusterNode($nodeId, '127.0.0.1', 0, true);

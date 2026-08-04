@@ -16,6 +16,13 @@ namespace Yew\Plugins\Actor\Cluster;
  */
 class Location
 {
+    /**
+     * Create an actor location.
+     *
+     * @param ClusterNode $node Owning node
+     * @param int $processId Worker process id hosting the actor
+     * @param string|null $actorName Optional actor name (used by the remote proxy)
+     */
     public function __construct(
         private ClusterNode $node,
         private int $processId,
@@ -23,26 +30,51 @@ class Location
     ) {
     }
 
+    /**
+     * Owning node.
+     *
+     * @return ClusterNode
+     */
     public function getNode(): ClusterNode
     {
         return $this->node;
     }
 
+    /**
+     * Worker process id hosting the actor.
+     *
+     * @return int
+     */
     public function getProcessId(): int
     {
         return $this->processId;
     }
 
+    /**
+     * Actor name carried on this location.
+     *
+     * @return string|null
+     */
     public function getActorName(): ?string
     {
         return $this->actorName;
     }
 
+    /**
+     * Attach the actor name (called by the remote proxy).
+     *
+     * @param string|null $actorName
+     */
     public function setActorName(?string $actorName): void
     {
         $this->actorName = $actorName;
     }
 
+    /**
+     * Whether the location is on the local node.
+     *
+     * @return bool
+     */
     public function isLocal(): bool
     {
         return $this->node->isLocal();

@@ -4,12 +4,13 @@ namespace Yew\Plugins\Actor;
 
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
+use Yew\Plugins\Actor\Event\ActorDestroyEvent;
 use Yew\Plugins\Actor\Routing\ActorRoutingStrategy;
 use Yew\Plugins\Actor\Routing\RoundRobinStrategy;
 use Yew\Plugins\Actor\Routing\ConsistentHashStrategy;
 use Yew\Plugins\Actor\Routing\LeastLoadedStrategy;
 
-class ActorFactory
+class ActorSystem
 {
     /**
      * Create an actor and return its IPC proxy
@@ -77,6 +78,53 @@ class ActorFactory
         }
 
         return new ActorIpcProxy($actorName, false, $timeOut);
+    }
+
+    /**
+     * Destroy an existing actor (by name) from any process.
+     *
+     * The teardown runs inside the actor's owning process (where the real
+     * instance lives), so this mirrors create() and works cross-process.
+     * When $waitDelete is true the call blocks until the actor process
+     * confirms the removal (or $timeOut elapses).
+     *
+     * @param string $actorName  Actor name (globally unique)
+     * @param bool   $waitDelete Whether to wait for the destroy confirmation
+     * @param float  $timeOut    Wait timeout in seconds
+     * @return bool   true when the request was dispatched (and, if $waitDelete,
+     *                the actor was confirmed gone); false when it does not exist
+     *                or the wait timed out
+     * @throws ActorException
+     */
+    public static function destroy(string $actorName, bool $waitDelete = true, float $timeOut = 5): bool
+    {
+        $manager = ActorManager::getInstance();
+        if (!$manager->hasActor($actorName)) {
+            return false;
+        }
+
+        $actorInfo = $manager->getActorInfo($actorName);
+        if ($actorInfo === null || $actorInfo->getProcess() === null) {
+            throw new ActorException("Cannot resolve owning process for actor: {$actorName}");
+        }
+
+        Server::$instance->getEventDispatcher()->dispatchProcessEvent(
+            new ActorDestroyEvent(ActorDestroyEvent::ActorDestroyEvent, $actorName),
+            $actorInfo->getProcess()
+        );
+
+        if (!$waitDelete) {
+            return true;
+        }
+
+        $call   = Server::$instance->getEventDispatcher()->listen(
+            ActorDestroyEvent::ActorDestroyReadyEvent . ":" . $actorName,
+            null,
+            true
+        );
+        $result = $call->wait($timeOut);
+
+        return $result !== null;
     }
 
     /**

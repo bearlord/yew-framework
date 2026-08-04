@@ -106,6 +106,13 @@ class TcpRemoteTransport implements RemoteTransport
         }
     }
 
+    /**
+     * Build the reply envelope for a request (result under arguments['__reply']).
+     *
+     * @param RemoteEnvelope $req The original request
+     * @param mixed $result The actor's return value
+     * @return RemoteEnvelope
+     */
     private function replyEnvelope(RemoteEnvelope $req, $result): RemoteEnvelope
     {
         return new RemoteEnvelope(
@@ -119,6 +126,15 @@ class TcpRemoteTransport implements RemoteTransport
         );
     }
 
+    /**
+     * Fire-and-forget delivery to a remote actor.
+     *
+     * @param Location $location Target location (remote node)
+     * @param string $method Actor method to invoke
+     * @param array $arguments Method arguments
+     * @param string|null $traceId Trace id for cross-node propagation
+     * @return bool True if the envelope was dispatched
+     */
     public function tell(Location $location, string $method, array $arguments, ?string $traceId): bool
     {
         $env = new RemoteEnvelope(
@@ -128,6 +144,16 @@ class TcpRemoteTransport implements RemoteTransport
         return $this->sendOnce($location, $env) !== null;
     }
 
+    /**
+     * Request-response delivery to a remote actor; blocks for the reply.
+     *
+     * @param Location $location Target location (remote node)
+     * @param string $method Actor method to invoke
+     * @param array $arguments Method arguments
+     * @param string|null $traceId Trace id for cross-node propagation
+     * @param float $timeOut Seconds to wait for the reply
+     * @return mixed The remote return value, or null on timeout/error
+     */
     public function ask(Location $location, string $method, array $arguments, ?string $traceId, float $timeOut)
     {
         $env = new RemoteEnvelope(
@@ -172,18 +198,35 @@ class TcpRemoteTransport implements RemoteTransport
         return $reply;
     }
 
+    /**
+     * Whether this transport can reach the given (remote) location.
+     *
+     * @param Location $location Target location
+     * @return bool
+     */
     public function supports(Location $location): bool
     {
         $node = $location->getNode();
         return $node !== null && !$node->isLocal();
     }
 
+    /**
+     * Read the actor name carried on the location.
+     *
+     * @param Location $location
+     * @return string
+     */
     private function actorNameFrom(Location $location): string
     {
         // The remote proxy stores the actor name on the Location via setActorName.
         return $location->getActorName() ?? '';
     }
 
+    /**
+     * Generate a unique message id for request/reply correlation.
+     *
+     * @return string
+     */
     private function newMsgId(): string
     {
         return uniqid('am-', true);

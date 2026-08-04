@@ -19,6 +19,18 @@ class ClusterMember
     public const STATUS_DOWN = 'down';
     public const STATUS_SUSPECT = 'suspect';
 
+    /**
+     * Create a cluster member record.
+     *
+     * @param string $nodeId Stable node identifier
+     * @param string $host Host or ip
+     * @param int $port Listening port
+     * @param int $weight Relative scheduling weight
+     * @param string $status One of STATUS_* constants
+     * @param int $lastHeartbeat Unix time of last heartbeat
+     * @param int $incarnation Bump-on-conflict counter
+     * @param string $publicKey PEM public key for signature verification
+     */
     public function __construct(
         public string $nodeId,
         public string $host,
@@ -36,11 +48,21 @@ class ClusterMember
     ) {
     }
 
+    /**
+     * Whether the member is currently reachable (UP).
+     *
+     * @return bool
+     */
     public function isAlive(): bool
     {
         return $this->status === self::STATUS_UP;
     }
 
+    /**
+     * Human-readable endpoint "nodeId@host:port".
+     *
+     * @return string
+     */
     public function endpoint(): string
     {
         return sprintf('%s@%s:%d', $this->nodeId, $this->host, $this->port);

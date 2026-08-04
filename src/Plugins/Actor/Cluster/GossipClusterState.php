@@ -1051,7 +1051,11 @@ class GossipClusterState implements ClusterStateInterface
         $this->members[$member->nodeId] = $member;
     }
 
-    /** @return ClusterMember[] */
+    /**
+     * All members currently considered alive (UP/SUSPECT).
+     *
+     * @return ClusterMember[]
+     */
     public function aliveNodes(): array
     {
         $out = [];
@@ -1063,27 +1067,53 @@ class GossipClusterState implements ClusterStateInterface
         return $out;
     }
 
-    /** @return ClusterMember[] */
+    /**
+     * Every known member, alive or not.
+     *
+     * @return ClusterMember[]
+     */
     public function allNodes(): array
     {
         return $this->members;
     }
 
+    /**
+     * Look up a single member by node id.
+     *
+     * @param string $nodeId
+     * @return ClusterMember|null
+     */
     public function getNode(string $nodeId): ?ClusterMember
     {
         return $this->members[$nodeId] ?? null;
     }
 
+    /**
+     * Whether the given node id is this node.
+     *
+     * @param string $nodeId
+     * @return bool
+     */
     public function isLocal(string $nodeId): bool
     {
         return $nodeId === $this->localNodeId;
     }
 
+    /**
+     * This node's id.
+     *
+     * @return string
+     */
     public function getLocalNodeId(): string
     {
         return $this->localNodeId;
     }
 
+    /**
+     * Register a callback invoked when membership changes.
+     *
+     * @param callable $cb
+     */
     public function registerListener(callable $cb): void
     {
         $this->listeners[] = $cb;

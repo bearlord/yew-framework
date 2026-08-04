@@ -41,6 +41,9 @@ class ActorFuture
      */
     private ?\Throwable $error = null;
 
+    /**
+     * Create a future backed by a single-slot coroutine channel.
+     */
     public function __construct()
     {
         $this->channel = new ChannelImpl(1);

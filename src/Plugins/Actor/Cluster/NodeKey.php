@@ -56,6 +56,12 @@ class NodeKey
         return new self($privateKeyPem, $publicKeyPem);
     }
 
+    /**
+     * Build a key from PEM strings (used by generate()/fromPem()).
+     *
+     * @param string $privateKeyPem PEM private key
+     * @param string $publicKeyPem PEM public key
+     */
     public function __construct(string $privateKeyPem, string $publicKeyPem)
     {
         $this->privateKeyPem = $privateKeyPem;
@@ -92,16 +98,31 @@ class NodeKey
         return $r === 1;
     }
 
+    /**
+     * PEM-encoded public key.
+     *
+     * @return string
+     */
     public function getPublicKeyPem(): string
     {
         return $this->publicKeyPem;
     }
 
+    /**
+     * PEM-encoded private key.
+     *
+     * @return string
+     */
     public function getPrivateKeyPem(): string
     {
         return $this->privateKeyPem;
     }
 
+    /**
+     * Short stable fingerprint of the public key.
+     *
+     * @return string
+     */
     public function getKeyId(): string
     {
         return $this->keyId;

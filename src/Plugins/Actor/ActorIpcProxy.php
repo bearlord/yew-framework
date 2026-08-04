@@ -46,12 +46,12 @@ class ActorIpcProxy extends IpcProxy
         // through the remote transport instead of in-process IPC.
         $location = $manager->getShardRouter()->locate($actorName);
         if ($location === null) {
-            return;
+            throw new ActorException(sprintf("Actor '%s' location not found, cannot build proxy", $actorName));
         }
 
         $actorInfo = $manager->getActorInfo($actorName);
         if ($actorInfo == null) {
-            return;
+            throw new ActorException(sprintf("Actor '%s' info not found, cannot build proxy", $actorName));
         }
 
         // Local actors are delivered via in-process IPC. Remote actors are

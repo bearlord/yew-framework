@@ -19,6 +19,17 @@ class RemoteEnvelope
     public const KIND_TELL = 'tell';
     public const KIND_ASK = 'ask';
 
+    /**
+     * Create a cross-node actor message envelope.
+     *
+     * @param string $msgId Unique message id (matched against the ask reply)
+     * @param string $kind One of KIND_TELL / KIND_ASK
+     * @param string $actorName Target actor name
+     * @param string $method Actor method to invoke
+     * @param array $arguments Method arguments
+     * @param string|null $traceId Trace id for cross-node propagation
+     * @param string|null $fromNode Originating node id
+     */
     public function __construct(
         public string $msgId,
         public string $kind,
@@ -30,6 +41,11 @@ class RemoteEnvelope
     ) {
     }
 
+    /**
+     * Serialise to a single-line JSON string.
+     *
+     * @return string
+     */
     public function toJson(): string
     {
         return json_encode([
@@ -43,6 +59,13 @@ class RemoteEnvelope
         ], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Decode a JSON string into an envelope.
+     *
+     * @param string $json
+     * @return self
+     * @throws \InvalidArgumentException When the payload is not valid JSON
+     */
     public static function fromJson(string $json): self
     {
         $d = json_decode($json, true);

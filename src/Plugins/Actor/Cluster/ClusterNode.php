@@ -35,6 +35,14 @@ class ClusterNode
      */
     private bool $local;
 
+    /**
+     * Create a cluster node descriptor.
+     *
+     * @param string $nodeId Stable node id
+     * @param string $host Host or ip ("127.0.0.1" for local)
+     * @param int $port Listening port (0 when not network-reachable)
+     * @param bool $local True for the node this process owns
+     */
     public function __construct(string $nodeId, string $host = '127.0.0.1', int $port = 0, bool $local = true)
     {
         $this->nodeId = $nodeId;
@@ -43,21 +51,41 @@ class ClusterNode
         $this->local = $local;
     }
 
+    /**
+     * Stable node id.
+     *
+     * @return string
+     */
     public function getNodeId(): string
     {
         return $this->nodeId;
     }
 
+    /**
+     * Host or ip.
+     *
+     * @return string
+     */
     public function getHost(): string
     {
         return $this->host;
     }
 
+    /**
+     * Listening port.
+     *
+     * @return int
+     */
     public function getPort(): int
     {
         return $this->port;
     }
 
+    /**
+     * Whether this is the local node.
+     *
+     * @return bool
+     */
     public function isLocal(): bool
     {
         return $this->local;

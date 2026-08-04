@@ -217,6 +217,9 @@ abstract class Actor
         $this->tick($saveContextTime * 1000, [$this, "saveContext"]);
     }
     
+    /**
+     * Create the mailbox channel and resolve the overflow strategy.
+     */
     protected function iniChannel()
     {
         $this->channel = DIGet(Channel::class, [$this->actorConfig->getMailboxCapacity()]);

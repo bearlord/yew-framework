@@ -218,7 +218,7 @@ class ActorManager
     public function addActor(Actor $actor, ?string $parentName = null)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getGroupName() != ActorConfig::GROUP_NAME) {
-            throw new ActorException("Do not new a actor, use ActorFactory::create()");
+            throw new ActorException("Do not new a actor, use ActorSystem::create()");
         }
 
         $actorName = $actor->getName();
@@ -528,6 +528,9 @@ class ActorManager
         }
 
         // From a worker: return an IPC proxy to the actor process.
-        return new ActorIpcProxy($actorName, $oneWay, $timeOut);
+        // Use getProxy() so a missing/ unresolvable actor yields false instead
+        // of an uncaught exception (the proxy constructor throws ActorException
+        // when the actor's location or info cannot be resolved).
+        return Actor::getProxy($actorName, $oneWay, $timeOut);
     }
 }

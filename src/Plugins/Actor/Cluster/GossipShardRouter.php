@@ -35,6 +35,13 @@ class GossipShardRouter implements ShardRouter
     /** @var callable|null */
     private $rebalanceHook = null;
 
+    /**
+     * Build a consistent-hash router over the live cluster membership.
+     *
+     * @param ClusterStateInterface $cluster Cluster membership service
+     * @param ClusterNode $localNode The node this process owns
+     * @param int $replicas Virtual replicas per node (ring density)
+     */
     public function __construct(
         ClusterStateInterface $cluster,
         ClusterNode $localNode,
