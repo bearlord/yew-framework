@@ -4,7 +4,7 @@ namespace Yew\Plugins\Actor\Cluster;
 
 use Yew\Core\Server\Port\ServerPort;
 use Yew\Core\Server\Server;
-use Yew\Core\Server\Port\PortConfig;
+use Yew\Core\Server\Config\PortConfig;
 
 /**
  * Framework-managed TCP listener for cross-node actor calls.
