@@ -45,7 +45,7 @@ class Channel
         }
 
         $config = Server::$instance->getConfigContext()->get("actor");
-        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config["actorMulticastChannelCapacity"]]);
+        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config["multicastChannelCapacity"]]);
 
         //Iterate to publish messages to the actor
         goWithContext(function () {
