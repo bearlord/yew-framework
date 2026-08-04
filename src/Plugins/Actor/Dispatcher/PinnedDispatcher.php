@@ -38,6 +38,15 @@ class PinnedDispatcher implements Dispatcher
      */
     private bool $running = false;
 
+    /**
+     * Enqueue a message onto the actor's private pinned channel.
+     *
+     * Lazily creates the channel and starts the dedicated consumer coroutine
+     * on the first message for this actor.
+     *
+     * @param Actor $actor The owning actor
+     * @param ActorMessage $message The message to process
+     */
     public function dispatch(Actor $actor, ActorMessage $message): void
     {
         if ($this->actor === null) {
@@ -74,6 +83,13 @@ class PinnedDispatcher implements Dispatcher
         });
     }
 
+    /**
+     * Run CPU-bound work in the event loop (no real thread pool for pinned actors).
+     *
+     * @param callable $task Pure computation
+     * @param mixed $input Input value
+     * @return mixed Result of the computation
+     */
     public function scheduleCpuBound(callable $task, $input)
     {
         // Pinned actors still have no thread pool; run in the event loop.

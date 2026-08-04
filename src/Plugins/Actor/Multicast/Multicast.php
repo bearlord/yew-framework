@@ -18,8 +18,10 @@ class Multicast
     use GetIpc;
 
     /**
-     * @param string $actorName
-     * @param MulticastConfig $config
+     * Create a multicast facade for one actor.
+     *
+     * @param string $actorName Owning actor name
+     * @param MulticastConfig $config Multicast plugin config
      */
     public function __construct(
         private string $actorName,

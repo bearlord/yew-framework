@@ -28,6 +28,12 @@ class Logger extends Component
 
     public Dispatcher $dispatcher;
 
+    /**
+     * Build a Logger bound to a dispatcher.
+     *
+     * @param Dispatcher $dispatcher Target dispatcher for flushed messages
+     * @param int $flushInterval Messages to buffer before auto-flush (1 = immediate)
+     */
     public function __construct(Dispatcher $dispatcher, int $flushInterval = 1)
     {
         $this->dispatcher = $dispatcher;
@@ -73,6 +79,11 @@ class Logger extends Component
         $this->log($message, Level::ERROR, $context);
     }
 
+    /**
+     * Flush buffered messages to the dispatcher and clear the buffer.
+     *
+     * @param bool|null $final True when flushing at shutdown
+     */
     public function flush(?bool $final = false): void
     {
         if ($this->messages === []) {

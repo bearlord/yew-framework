@@ -18,6 +18,11 @@ class ActorTelemetry
     private static ?ActorMetrics $metrics = null;
     private static bool $enabled = false;
 
+    /**
+     * Enable or disable telemetry collection.
+     *
+     * @param bool $enabled True to enable (lazy-creates the metrics table)
+     */
     public static function enable(bool $enabled = true): void
     {
         self::$enabled = $enabled;
@@ -26,11 +31,21 @@ class ActorTelemetry
         }
     }
 
+    /**
+     * Whether telemetry is currently enabled.
+     *
+     * @return bool
+     */
     public static function isEnabled(): bool
     {
         return self::$enabled;
     }
 
+    /**
+     * The shared metrics instance, or null when disabled.
+     *
+     * @return ActorMetrics|null
+     */
     public static function metrics(): ?ActorMetrics
     {
         return self::$metrics;

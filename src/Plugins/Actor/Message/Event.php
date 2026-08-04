@@ -21,12 +21,19 @@ abstract class Event implements Message
      */
     protected $payload;
 
+    /**
+     * 构造事件，可携带任意类型载荷。
+     *
+     * @param mixed $payload 事件载荷
+     */
     public function __construct($payload = null)
     {
         $this->payload = $payload;
     }
 
     /**
+     * 获取事件携带的载荷。
+     *
      * @return mixed
      */
     public function getPayload()

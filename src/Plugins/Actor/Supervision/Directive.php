@@ -24,36 +24,72 @@ final class Directive
 
     private string $value;
 
+    /**
+     * Private constructor; use the named factory methods below.
+     *
+     * @param string $value One of the Directive constants
+     */
     private function __construct(string $value)
     {
         $this->value = $value;
     }
 
+    /**
+     * Resume the actor, keeping its state.
+     *
+     * @return self
+     */
     public static function resume(): self
     {
         return new self(self::RESUME);
     }
 
+    /**
+     * Restart the actor, rebuilding its volatile state.
+     *
+     * @return self
+     */
     public static function restart(): self
     {
         return new self(self::RESTART);
     }
 
+    /**
+     * Stop the actor permanently.
+     *
+     * @return self
+     */
     public static function stop(): self
     {
         return new self(self::STOP);
     }
 
+    /**
+     * Escalate the failure to a higher-level supervisor.
+     *
+     * @return self
+     */
     public static function escalate(): self
     {
         return new self(self::ESCALATE);
     }
 
+    /**
+     * Get the underlying directive value.
+     *
+     * @return string
+     */
     public function getValue(): string
     {
         return $this->value;
     }
 
+    /**
+     * Compare this directive against a value.
+     *
+     * @param string $value Value to compare with
+     * @return bool True when equal
+     */
     public function is(string $value): bool
     {
         return $this->value === $value;

@@ -149,6 +149,17 @@ class ActorPlugin extends AbstractPlugin
         return $ref->newInstanceArgs($positional);
     }
 
+    /**
+     * Assemble and start the cluster subsystem from declarative config.
+     *
+     * Builds the gossip state, UDP transport, shard router, cross-node TCP
+     * transport (and optional cluster actor store) via {@see buildService}, then
+     * wires them into the framework-managed multi-port listeners declared under
+     * `yew.port` (cluster-gossip / cluster-tcp) so the framework owns the
+     * sockets. Finally starts the failure-detection + gossip ticker.
+     *
+     * @return void
+     */
     private function startCluster(): void
     {
         $cfg = $this->actorConfig;

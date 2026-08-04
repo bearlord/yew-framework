@@ -19,12 +19,19 @@ abstract class Query implements Message
      */
     protected $payload;
 
+    /**
+     * 构造查询请求，可携带任意类型载荷。
+     *
+     * @param mixed $payload 请求载荷
+     */
     public function __construct($payload = null)
     {
         $this->payload = $payload;
     }
 
     /**
+     * 获取查询携带的载荷。
+     *
      * @return mixed
      */
     public function getPayload()

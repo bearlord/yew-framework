@@ -42,6 +42,13 @@ class FileTarget extends Target
      */
     public bool $rotateByCopy = true;
 
+    /**
+     * Build a file target for a given actor log file.
+     *
+     * @param string $logFileName Base file name (without extension)
+     * @param string|null $logDir Absolute directory, or null for the runtime path
+     * @param int $exportInterval Flush batch size
+     */
     public function __construct(string $logFileName = '', ?string $logDir = null, int $exportInterval = 2)
     {
         $this->logFileName = $logFileName;
@@ -69,6 +76,9 @@ class FileTarget extends Target
         }
     }
 
+    /**
+     * Finalise configuration: re-resolve the log path and clamp rotation limits.
+     */
     public function init(): void
     {
         parent::init();
@@ -109,12 +119,23 @@ class FileTarget extends Target
         }
     }
 
+    /**
+     * Whether the active log file has grown past the rotation threshold.
+     *
+     * @return bool
+     */
     private function fileExceedsMaxSize(): bool
     {
         clearstatcache();
         return @filesize($this->logFile) > $this->maxFileSize * 1024;
     }
 
+    /**
+     * Open the log file for appending.
+     *
+     * @return resource|false
+     * @throws InvalidConfigException When the file cannot be opened
+     */
     private function open()
     {
         $fp = @fopen($this->logFile, 'a');
@@ -160,6 +181,9 @@ class FileTarget extends Target
         }
     }
 
+    /**
+     * Shift rotated copies up by one and truncate the active file.
+     */
     protected function rotateFiles(): void
     {
         $file = $this->logFile;
@@ -182,6 +206,12 @@ class FileTarget extends Target
         }
     }
 
+    /**
+     * Copy $from to $to then truncate $from (windows-friendly rotation).
+     *
+     * @param string $from Source file
+     * @param string $to Destination file
+     */
     private function copyTruncate(string $from, string $to): void
     {
         @copy($from, $to);
@@ -191,6 +221,11 @@ class FileTarget extends Target
         $this->truncate($from);
     }
 
+    /**
+     * Truncate a file to zero length.
+     *
+     * @param string $file File path
+     */
     private function truncate(string $file): void
     {
         if ($fp = @fopen($file, 'a')) {

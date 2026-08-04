@@ -22,11 +22,23 @@ class LeastLoadedStrategy implements ActorRoutingStrategy
      */
     private ActorManager $manager;
 
+    /**
+     * Build a least-loaded strategy.
+     *
+     * @param ActorManager $manager Source of the per-worker load counter
+     */
     public function __construct(ActorManager $manager)
     {
         $this->manager = $manager;
     }
 
+    /**
+     * Pick the worker process currently hosting the fewest actors.
+     *
+     * @param int $processCount Total number of worker processes
+     * @param string|null $routingKey Unused by this strategy
+     * @return int Selected worker index
+     */
     public function select(int $processCount, ?string $routingKey = null): int
     {
         $bestIndex = 0;

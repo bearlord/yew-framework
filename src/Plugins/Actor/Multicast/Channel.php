@@ -32,8 +32,9 @@ class Channel
     protected $channelTable;
 
     /**
-     * Channel constructor.
-     * @param Table $channelTable
+     * Build the multicast channel manager and start the publish loop.
+     *
+     * @param Table $channelTable Cross-process table of channel/actor pairs
      */
     public function __construct(Table $channelTable)
     {

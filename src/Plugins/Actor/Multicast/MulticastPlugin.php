@@ -35,7 +35,9 @@ class MulticastPlugin extends AbstractPlugin
     protected $channel;
 
     /**
-     * @param MulticastConfig|null $multicastConfig
+     * Register the multicast plugin, after ActorPlugin.
+     *
+     * @param MulticastConfig|null $multicastConfig Optional explicit config
      */
     public function __construct(?MulticastConfig $multicastConfig = null)
     {
@@ -50,10 +52,9 @@ class MulticastPlugin extends AbstractPlugin
     }
 
     /**
-     * @inheritDoc
-     * @param Context $context
-     * @return mixed|void
-     * @throws \Exception
+     * Plugin init hook (no-op beyond parent); kept for lifecycle parity.
+     *
+     * @param Context $context Framework context
      */
     public function init(Context $context)
     {

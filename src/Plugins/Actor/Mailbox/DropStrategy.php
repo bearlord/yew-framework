@@ -14,6 +14,14 @@ use Yew\Core\Channel\Channel;
  */
 class DropStrategy implements MailboxOverflowStrategy
 {
+    /**
+     * 丢弃策略：信箱已满时静默丢弃消息，否则立即入队。
+     *
+     * @param Channel $channel 有界信箱通道
+     * @param mixed $message 待入队的消息
+     * @param float $timeout 预留参数（本策略不阻塞）
+     * @return bool 入队成功返回 true，信箱满返回 false
+     */
     public function enqueue(Channel $channel, $message, float $timeout): bool
     {
         if ($channel->isFull()) {

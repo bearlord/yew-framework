@@ -34,11 +34,23 @@ class ThreadPoolDispatcher implements Dispatcher
      */
     private int $poolSize;
 
+    /**
+     * Build a thread-pool dispatcher.
+     *
+     * @param int $poolSize Size of the real thread pool (used when supported)
+     */
     public function __construct(int $poolSize = 4)
     {
         $this->poolSize = $poolSize;
     }
 
+    /**
+     * Handle the message in the actor's mailbox coroutine; only the heavy
+     * compute payload is offloaded via {@see scheduleCpuBound()}.
+     *
+     * @param Actor $actor The owning actor
+     * @param ActorMessage $message The message to process
+     */
     public function dispatch(Actor $actor, ActorMessage $message): void
     {
         // Message handling stays in the actor's mailbox coroutine to preserve

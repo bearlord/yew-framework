@@ -21,6 +21,15 @@ final class ActorEvent
     private float $timestamp;
     private int $sequence;
 
+    /**
+     * Create an immutable actor event.
+     *
+     * @param string $actorName Owning actor name
+     * @param string $type Event type / discriminator
+     * @param mixed $payload Event payload
+     * @param float $timestamp Event time (seconds)
+     * @param int $sequence Monotonic sequence number within the actor
+     */
     public function __construct(
         string $actorName,
         string $type,
@@ -35,26 +44,51 @@ final class ActorEvent
         $this->sequence = $sequence;
     }
 
+    /**
+     * Owning actor name.
+     *
+     * @return string
+     */
     public function getActorName(): string
     {
         return $this->actorName;
     }
 
+    /**
+     * Event type / discriminator.
+     *
+     * @return string
+     */
     public function getType(): string
     {
         return $this->type;
     }
 
+    /**
+     * Event payload.
+     *
+     * @return mixed
+     */
     public function getPayload()
     {
         return $this->payload;
     }
 
+    /**
+     * Event timestamp (seconds).
+     *
+     * @return float
+     */
     public function getTimestamp(): float
     {
         return $this->timestamp;
     }
 
+    /**
+     * Monotonic sequence number.
+     *
+     * @return int
+     */
     public function getSequence(): int
     {
         return $this->sequence;

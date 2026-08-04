@@ -152,6 +152,9 @@ class PooledTcpRemoteTransport implements RemoteTransport
     /**
      * Inbound data from the framework multi-port TCP listener. Buffers per fd
      * and processes newline-delimited JSON envelopes.
+     *
+     * @param int $fd The Swoole connection file descriptor
+     * @param string $data Raw bytes just received on that connection
      */
     public function handleReceive(int $fd, string $data): void
     {
@@ -174,6 +177,8 @@ class PooledTcpRemoteTransport implements RemoteTransport
 
     /**
      * A fd was closed; drop its partial buffer.
+     *
+     * @param int $fd The Swoole connection file descriptor that closed
      */
     public function handleClose(int $fd): void
     {
@@ -183,6 +188,9 @@ class PooledTcpRemoteTransport implements RemoteTransport
     /**
      * Deliver an inbound envelope to the locally-resident actor and, for ask,
      * write the reply back over the same fd (the framework-managed connection).
+     *
+     * @param int $fd The connection fd to reply on (ask only)
+     * @param RemoteEnvelope $env The decoded request envelope
      */
     private function handleInbound(int $fd, RemoteEnvelope $env): void
     {
@@ -216,6 +224,12 @@ class PooledTcpRemoteTransport implements RemoteTransport
         }
     }
 
+    /**
+     * Write a reply envelope back to the connection that asked.
+     *
+     * @param int $fd The connection fd to send the reply on
+     * @param RemoteEnvelope $reply The reply envelope (newline-terminated JSON)
+     */
     private function sendReply(int $fd, RemoteEnvelope $reply): void
     {
         $swoole = Server::getInstance()->getServer();
@@ -224,6 +238,14 @@ class PooledTcpRemoteTransport implements RemoteTransport
         }
     }
 
+    /**
+     * Build the reply envelope for a request, carrying the result under
+     * arguments['__reply'] and matched to the request by msgId.
+     *
+     * @param RemoteEnvelope $req The original request envelope
+     * @param mixed $result The actor call result (or null if actor is absent)
+     * @return RemoteEnvelope The reply envelope
+     */
     private function replyEnvelope(RemoteEnvelope $req, $result): RemoteEnvelope
     {
         return new RemoteEnvelope(

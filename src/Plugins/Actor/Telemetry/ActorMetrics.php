@@ -20,6 +20,11 @@ class ActorMetrics
 {
     private Table $table;
 
+    /**
+     * Create the shared-memory metrics table.
+     *
+     * @param int $maxActors Max number of actors tracked concurrently
+     */
     public function __construct(int $maxActors = 4096)
     {
         $this->table = new Table($maxActors);
@@ -31,6 +36,14 @@ class ActorMetrics
         $this->table->create();
     }
 
+    /**
+     * Accumulate one processed message's counters for an actor.
+     *
+     * @param string $actorName Actor name (table key)
+     * @param float $seconds Processing latency in seconds
+     * @param int $mailboxDepth Mailbox depth observed during handling
+     * @param bool $errored Whether the handler threw
+     */
     public function recordProcess(string $actorName, float $seconds, int $mailboxDepth, bool $errored = false): void
     {
         $row = $this->table->get($actorName) ?: [

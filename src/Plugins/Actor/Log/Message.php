@@ -15,6 +15,14 @@ use Yew\Framework\Helpers\Json;
  */
 final class Message
 {
+    /**
+     * Create an immutable log message.
+     *
+     * @param string $level One of the Level::* constants
+     * @param mixed $body Message body (string, array, or Stringable)
+     * @param float $timestamp Capture time (seconds)
+     * @param array $context Optional structured context
+     */
     public function __construct(
         public readonly string $level,
         public readonly mixed $body,
@@ -23,6 +31,11 @@ final class Message
     ) {
     }
 
+    /**
+     * Render the body as a string for output.
+     *
+     * @return string
+     */
     public function text(): string
     {
         if (is_string($this->body)) {

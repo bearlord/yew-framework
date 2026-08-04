@@ -25,11 +25,23 @@ class ConsistentHashStrategy implements ActorRoutingStrategy
      */
     private int $replicas;
 
+    /**
+     * Build a consistent-hash strategy.
+     *
+     * @param int $replicas Number of virtual nodes per worker process
+     */
     public function __construct(int $replicas = 128)
     {
         $this->replicas = $replicas;
     }
 
+    /**
+     * Pick the worker index that should own the given routing key.
+     *
+     * @param int $processCount Total number of worker processes
+     * @param string|null $routingKey Stable key (actor name / tenant id); null => random
+     * @return int Selected worker index
+     */
     public function select(int $processCount, ?string $routingKey = null): int
     {
         // Without a key we fall back to a hash of a random value so the
@@ -65,6 +77,12 @@ class ConsistentHashStrategy implements ActorRoutingStrategy
      *
      * @param string $value
      * @return int
+     */
+    /**
+     * 32-bit FNV-1a style hash mapped to the unsigned int range.
+     *
+     * @param string $value Value to hash
+     * @return int Unsigned 32-bit hash
      */
     private function hash(string $value): int
     {

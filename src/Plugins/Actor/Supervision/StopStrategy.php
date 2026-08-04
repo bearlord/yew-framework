@@ -13,6 +13,14 @@ namespace Yew\Plugins\Actor\Supervision;
  */
 class StopStrategy implements SupervisorStrategy
 {
+    /**
+     * Stop the actor permanently on the first failure.
+     *
+     * @param \Throwable $throwable The failure that occurred
+     * @param string $actorName Name of the failed actor
+     * @param int $attempt Consecutive failure count (unused)
+     * @return Directive STOP directive
+     */
     public function decide(\Throwable $throwable, string $actorName, int $attempt): Directive
     {
         return Directive::stop();

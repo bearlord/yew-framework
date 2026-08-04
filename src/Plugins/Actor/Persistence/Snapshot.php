@@ -19,6 +19,14 @@ final class Snapshot
     private int $lastSequence;
     private float $timestamp;
 
+    /**
+     * Create a snapshot of an actor's state.
+     *
+     * @param string $actorName Owning actor name
+     * @param mixed $state Captured actor state
+     * @param int $lastSequence Sequence of the last event included in the state
+     * @param float $timestamp Snapshot time (seconds)
+     */
     public function __construct(string $actorName, $state, int $lastSequence, float $timestamp)
     {
         $this->actorName = $actorName;
@@ -27,21 +35,41 @@ final class Snapshot
         $this->timestamp = $timestamp;
     }
 
+    /**
+     * Owning actor name.
+     *
+     * @return string
+     */
     public function getActorName(): string
     {
         return $this->actorName;
     }
 
+    /**
+     * Captured actor state.
+     *
+     * @return mixed
+     */
     public function getState()
     {
         return $this->state;
     }
 
+    /**
+     * Sequence of the last event included in this snapshot.
+     *
+     * @return int
+     */
     public function getLastSequence(): int
     {
         return $this->lastSequence;
     }
 
+    /**
+     * Snapshot timestamp (seconds).
+     *
+     * @return float
+     */
     public function getTimestamp(): float
     {
         return $this->timestamp;

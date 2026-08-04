@@ -38,6 +38,9 @@ class MulticastConfig extends BaseConfig
     protected string $processName = "multicast";
 
     
+    /**
+     * Construct the multicast config using the "multicast" config key.
+     */
     public function __construct()
     {
         parent::__construct(self::KEY);

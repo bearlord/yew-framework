@@ -27,12 +27,24 @@ class ClusterActorStore implements ActorStore
 
     private ?GossipClusterState $cluster = null;
 
+    /**
+     * Build a cluster-backed store wrapping a local FileActorStore.
+     *
+     * @param FileActorStore $local Local store for fast read/write
+     * @param int $replicationFactor Number of peer replicas per mutation
+     */
     public function __construct(
         private FileActorStore $local,
         private int $replicationFactor = 2
     ) {
     }
 
+    /**
+     * Bind the owning actor name before access (single-threaded model).
+     *
+     * @param string $actorName Actor name
+     * @return self
+     */
     public function setActorName(string $actorName): self
     {
         $this->actorName = $actorName;
@@ -40,6 +52,11 @@ class ClusterActorStore implements ActorStore
         return $this;
     }
 
+    /**
+     * Attach the cluster state used for cross-node replication/lookup.
+     *
+     * @param GossipClusterState $cluster Cluster membership/transport
+     */
     public function setCluster(GossipClusterState $cluster): void
     {
         $this->cluster = $cluster;
@@ -53,11 +70,21 @@ class ClusterActorStore implements ActorStore
         $this->local->init();
     }
 
+    /**
+     * Adjust how many peer nodes each mutation is replicated to.
+     *
+     * @param int $factor Desired replication factor (minimum 1)
+     */
     public function setReplicationFactor(int $factor): void
     {
         $this->replicationFactor = max(1, $factor);
     }
 
+    /**
+     * Persist an event locally and replicate it to peers.
+     *
+     * @param ActorEvent $event Event to persist
+     */
     public function appendEvent(ActorEvent $event): void
     {
         $this->local->appendEvent($event);
@@ -67,6 +94,12 @@ class ClusterActorStore implements ActorStore
         $this->replicate($event->getActorName(), 'events', json_encode($event->toArray(), JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * Load events, falling back to a peer replica when the local copy is gone.
+     *
+     * @param string $actorName Actor name
+     * @return ActorEvent[]
+     */
     public function loadEvents(string $actorName): array
     {
         $events = $this->local->loadEvents($actorName);
@@ -100,12 +133,23 @@ class ClusterActorStore implements ActorStore
         return $out;
     }
 
+    /**
+     * Persist a snapshot locally and replicate it to peers.
+     *
+     * @param Snapshot $snapshot Snapshot to persist
+     */
     public function saveSnapshot(Snapshot $snapshot): void
     {
         $this->local->saveSnapshot($snapshot);
         $this->replicate($snapshot->getActorName(), 'snapshots', json_encode($snapshot->toArray(), JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * Load a snapshot, falling back to a peer replica when the local copy is gone.
+     *
+     * @param string $actorName Actor name
+     * @return Snapshot|null
+     */
     public function loadSnapshot(string $actorName): ?Snapshot
     {
         $snap = $this->local->loadSnapshot($actorName);
@@ -130,6 +174,11 @@ class ClusterActorStore implements ActorStore
         return $snap;
     }
 
+    /**
+     * Delete an actor's persisted state locally and on peers.
+     *
+     * @param string $actorName Actor name
+     */
     public function delete(string $actorName): void
     {
         $this->local->delete($actorName);
@@ -201,6 +250,13 @@ class ClusterActorStore implements ActorStore
         return null;
     }
 
+    /**
+     * Replicate a store entry to peer nodes via the gossip transport.
+     *
+     * @param string $actorName Actor name
+     * @param string $kind Entry kind: events | snapshots | clear
+     * @param string $payload JSON-encoded payload
+     */
     private function replicate(string $actorName, string $kind, string $payload): void
     {
         if ($this->cluster !== null) {

@@ -87,6 +87,11 @@ class UdpGossipTransport implements GossipTransport
         });
     }
 
+    /**
+     * Broadcast a gossip payload to the configured broadcast/multicast target.
+     *
+     * @param string $payload Serialized gossip message (JSON digest envelope)
+     */
     public function broadcast(string $payload): void
     {
         if ($this->sender !== null) {
@@ -101,6 +106,12 @@ class UdpGossipTransport implements GossipTransport
         $this->socket->sendto($host, (int) $port, $payload);
     }
 
+    /**
+     * Send a gossip payload to a single peer.
+     *
+     * @param string $peer Target as "host:port"
+     * @param string $payload Serialized gossip message (JSON digest envelope)
+     */
     public function sendTo(string $peer, string $payload): void
     {
         if ($this->sender !== null) {
@@ -115,6 +126,12 @@ class UdpGossipTransport implements GossipTransport
         $this->socket->sendto($host, (int) $port, $payload);
     }
 
+    /**
+     * Pop the next inbound datagram from the inbox, blocking up to $timeout seconds.
+     *
+     * @param float $timeout Max seconds to wait for a datagram
+     * @return string|null The datagram, or null on timeout/empty
+     */
     public function receive(float $timeout): ?string
     {
         $pop = $this->inbox->pop($timeout);
