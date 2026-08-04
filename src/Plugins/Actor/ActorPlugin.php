@@ -225,11 +225,19 @@ class ActorPlugin extends AbstractPlugin
         }
 
         // If the UDP gossip port is declared in yew.port, run the transport in
-        // framework-managed mode (the framework binds the socket via Swoole
-        // multi-port and feeds datagrams to the state through the port).
+        // framework-managed mode: the framework binds the socket (Swoole
+        // multi-port) and feeds datagrams to the state through the port. Managed
+        // mode MUST be enabled BEFORE $udp->start() so it does not self-bind a
+        // socket that would collide with the framework listener on the same port.
         $gossipPort = Server::$instance->getPortManager()->getPortFromName(ClusterGossipUdpPort::NAME);
         if ($gossipPort instanceof ClusterGossipUdpPort) {
-            $gossipPort->setClusterState($state);
+            $udp->setManaged(true);
+            $udp->setSender(function (string $host, int $port, string $payload) {
+                $swoole = Server::$instance->getServer();
+                if ($swoole !== null) {
+                    $swoole->sendto($host, $port, $payload);
+                }
+            });
         } else {
             Log::warning(
                 "cluster: UDP port '" . ClusterGossipUdpPort::NAME
@@ -237,6 +245,12 @@ class ActorPlugin extends AbstractPlugin
             );
         }
         $state->start($udp, $cfg->getClusterSeeds());
+
+        // Now that the state owns the (managed) transport, link the framework
+        // port so inbound datagrams are routed into the state.
+        if ($gossipPort instanceof ClusterGossipUdpPort) {
+            $gossipPort->setClusterState($state);
+        }
 
         $localNode = new ClusterNode(
             $cfg->getClusterNodeId(),
