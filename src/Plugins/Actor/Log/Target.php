@@ -30,7 +30,8 @@ abstract class Target extends Component
      */
     public bool $microtime = false;
 
-    private bool|callable $enabled = true;
+    /** @var bool|callable */
+    private $enabled = true;
 
     /**
      * Re-entrancy guard: true while {@see export()} is running, so a flush
@@ -86,7 +87,8 @@ abstract class Target extends Component
         );
     }
 
-    public function setEnabled(bool|callable $value): void
+    /** @param bool|callable $value */
+    public function setEnabled($value): void
     {
         $this->enabled = $value;
     }

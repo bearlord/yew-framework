@@ -18,6 +18,25 @@ use Yew\Plugins\Actor\ActorMessage;
  */
 class LocalTransport implements RemoteTransport
 {
+    public function start(): void
+    {
+        // No socket to bind for single-machine deployment.
+    }
+
+    public function tell(Location $location, string $method, array $arguments, ?string $traceId): bool
+    {
+        // Local placement is delivered via in-process IPC (ActorIpcProxy +
+        // IpcProxy), not this transport. isRemote() is always false locally.
+        return true;
+    }
+
+    public function ask(Location $location, string $method, array $arguments, ?string $traceId, float $timeOut)
+    {
+        // Local placement is delivered via in-process IPC; never reached when
+        // the target actor is on the same node.
+        return null;
+    }
+
     public function send(Location $location, ActorMessage $message)
     {
         // Local placement is delivered via in-process IPC (ActorIpcProxy +

@@ -99,7 +99,7 @@ abstract class Actor
      * @Inject()
      * @var ActorConfig
      */
-    protected ActorConfig $actorConfig;
+    protected ?ActorConfig $actorConfig = null;
 
     /**
      * @var string
@@ -161,6 +161,13 @@ abstract class Actor
         Server::$instance->getContainer()->injectOn($this);
         if ($isCreated) {
             ActorManager::getInstance()->addActor($this, $parentName);
+        }
+
+        // Defensive: injectOn may not populate the typed ActorConfig property
+        // (e.g. when the annotation reader is disabled). Fall back to the
+        // container-resolved instance so it is never left uninitialized.
+        if (!isset($this->actorConfig)) {
+            $this->actorConfig = ActorManager::getInstance()->getActorConfig();
         }
 
         $this->init();

@@ -327,5 +327,9 @@ class ActorPlugin extends AbstractPlugin
 		\Yew\Plugins\Actor\Telemetry\ActorTelemetry::enable($actorConfig->isTelemetryEnabled());
 
 		$this->actorConfig = $actorConfig;
+		// Register as a container singleton so Actor::injectOn() and
+		// ActorManager::DIGet(ActorConfig::class) resolve the configured instance
+		// instead of leaving Actor::$actorConfig uninitialized (typed property).
+		DISet(ActorConfig::class, $actorConfig);
 	}
 }
