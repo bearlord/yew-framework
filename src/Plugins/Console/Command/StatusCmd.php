@@ -82,30 +82,7 @@ class StatusCmd extends Command
 
         foreach (Server::$instance->getPortManager()->getPortConfigs() as $key => $portConfig) {
             $protocol = $portConfig->getProtocolType();
-            $ssl = $portConfig->isEnableSsl() ? "true" : "false";
-            /*
-            $protocol = "http";
-            $ssl = "";
-            if ($portConfig->isOpenHttpProtocol()) {
-                $protocol = "http";
-                $ssl = "false";
-                if ($portConfig->isEnableSsl()) {
-                    $protocol = "https";
-                    $ssl = "true";
-                }
-            } elseif ($portConfig->isOpenWebsocketProtocol()) {
-                $protocol = "ws";
-                $ssl = "false";
-                if ($portConfig->isEnableSsl()) {
-                    $protocol = "wss";
-                    $ssl = "true";
-                }
-            } elseif ($portConfig->isOpenMqttProtocol()) {
-                $protocol = "mqtt";
-            } elseif ($portConfig->getSockType() == PortConfig::SWOOLE_SOCK_TCP || $portConfig->getSockType() == PortConfig::SWOOLE_SOCK_TCP6) {
-                $protocol = "tcp";
-            }
-            */
+            $ssl = $portConfig->isEnableSsl() ? "YES" : "";
 
             $show[] = [
                 $protocol,

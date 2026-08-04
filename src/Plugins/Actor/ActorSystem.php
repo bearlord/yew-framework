@@ -186,4 +186,33 @@ class ActorSystem
     {
         return ActorManager::getInstance()->getActor($actorName, $oneWay, $timeOut);
     }
+
+    /**
+     * Block until the named actor has been created (or the timeout elapses).
+     *
+     * Useful when an actor must wait for a dependency actor to come up before
+     * talking to it. Returns the actor handle on success, or false on timeout.
+     *
+     * @param string $actorName
+     * @param float  $timeOut Wait timeout in seconds
+     * @return Actor|ActorIpcProxy|false
+     */
+    public static function wait(string $actorName, float $timeOut = 5)
+    {
+        if (ActorManager::getInstance()->hasActor($actorName)) {
+            return self::get($actorName, false, $timeOut);
+        }
+
+        $call = Server::$instance->getEventDispatcher()->listen(
+            ActorCreateEvent::ActorCreateReadyEvent . ":" . $actorName,
+            null,
+            true
+        );
+        $result = $call->wait($timeOut);
+        if ($result === null) {
+            return false;
+        }
+
+        return self::get($actorName, false, $timeOut);
+    }
 }
