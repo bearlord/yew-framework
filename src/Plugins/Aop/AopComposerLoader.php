@@ -154,7 +154,11 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
     protected function loadClassPHP8(string $class, string $file)
     {
         if (strpos($class, "App\\") !== false) {
-            include $file;
+            try {
+                include $file;
+            } catch (\Throwable $e) {
+                throw new \Exception($e->getMessage());
+            }
             return;
         }
 
