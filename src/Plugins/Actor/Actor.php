@@ -948,7 +948,6 @@ abstract class Actor
             return;
         }
 
-        Server::$instance->getLog()->debug(__METHOD__);
         $this->logHandle->log($this->data);
     }
 }

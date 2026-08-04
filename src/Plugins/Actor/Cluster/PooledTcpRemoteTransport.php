@@ -6,6 +6,9 @@
 
 namespace Yew\Plugins\Actor\Cluster;
 
+use Yew\Core\Server\Server;
+use Yew\Plugins\Actor\ActorIpcProxy;
+use Yew\Plugins\Actor\ActorManager;
 use Yew\Plugins\Actor\Telemetry\Tracer;
 
 /**
@@ -30,6 +33,9 @@ class PooledTcpRemoteTransport implements RemoteTransport
 
     /** @var array<string,\Swoole\Coroutine\Channel> host:port => pooled clients */
     private array $pools = [];
+
+    /** @var array<int,string> per-connection inbound buffer, keyed by fd */
+    private array $recvBuf = [];
 
     public function __construct(
         string $host,
@@ -141,6 +147,94 @@ class PooledTcpRemoteTransport implements RemoteTransport
     {
         $node = $location->getNode();
         return $node !== null && !$node->isLocal();
+    }
+
+    /**
+     * Inbound data from the framework multi-port TCP listener. Buffers per fd
+     * and processes newline-delimited JSON envelopes.
+     */
+    public function handleReceive(int $fd, string $data): void
+    {
+        $this->recvBuf[$fd] = ($this->recvBuf[$fd] ?? '') . $data;
+        while (($pos = strpos($this->recvBuf[$fd], "\n")) !== false) {
+            $line = substr($this->recvBuf[$fd], 0, $pos);
+            $this->recvBuf[$fd] = substr($this->recvBuf[$fd], $pos + 1);
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            try {
+                $envelope = RemoteEnvelope::fromJson($line);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            $this->handleInbound($fd, $envelope);
+        }
+    }
+
+    /**
+     * A fd was closed; drop its partial buffer.
+     */
+    public function handleClose(int $fd): void
+    {
+        unset($this->recvBuf[$fd]);
+    }
+
+    /**
+     * Deliver an inbound envelope to the locally-resident actor and, for ask,
+     * write the reply back over the same fd (the framework-managed connection).
+     */
+    private function handleInbound(int $fd, RemoteEnvelope $env): void
+    {
+        $manager = ActorManager::getInstance();
+        $info = $manager->getActorInfo($env->actorName);
+        if ($info === null) {
+            if ($env->kind === RemoteEnvelope::KIND_ASK) {
+                $this->sendReply($fd, $this->replyEnvelope($env, null));
+            }
+            return;
+        }
+
+        if ($env->traceId !== null) {
+            Tracer::continue($env->traceId);
+        }
+
+        $proxy = new ActorIpcProxy($env->actorName, true, 0);
+        $result = null;
+        if ($env->kind === RemoteEnvelope::KIND_ASK) {
+            try {
+                $result = $proxy->ask($env->method, $env->arguments, 55);
+            } catch (\Throwable $e) {
+                $result = ['__error' => $e->getMessage()];
+            }
+        } else {
+            $proxy->tell($env->method, $env->arguments);
+        }
+
+        if ($env->kind === RemoteEnvelope::KIND_ASK) {
+            $this->sendReply($fd, $this->replyEnvelope($env, $result));
+        }
+    }
+
+    private function sendReply(int $fd, RemoteEnvelope $reply): void
+    {
+        $swoole = Server::getInstance()->getServer();
+        if ($swoole !== null) {
+            $swoole->send($fd, $reply->toJson() . "\n");
+        }
+    }
+
+    private function replyEnvelope(RemoteEnvelope $req, $result): RemoteEnvelope
+    {
+        return new RemoteEnvelope(
+            $req->msgId,
+            RemoteEnvelope::KIND_ASK, // reuse kind; client distinguishes by msgId
+            $req->actorName,
+            $req->method,
+            ['__reply' => $result],
+            $req->traceId,
+            $this->localNodeId
+        );
     }
 
     private function newMsgId(): string

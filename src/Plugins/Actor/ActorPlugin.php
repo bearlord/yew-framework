@@ -12,14 +12,20 @@ use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Plugins\Actor\Cluster\ClusterNode;
+use Yew\Plugins\Actor\Cluster\ClusterGossipUdpPort;
+use Yew\Plugins\Actor\Cluster\ClusterTcpPort;
 use Yew\Plugins\Actor\Cluster\GossipClusterState;
 use Yew\Plugins\Actor\Cluster\NodeKey;
 use Yew\Plugins\Actor\Cluster\UdpGossipTransport;
 use Yew\Plugins\Actor\Cluster\GossipShardRouter;
+use Yew\Plugins\Actor\Cluster\GossipTransport;
 use Yew\Plugins\Actor\Cluster\PooledTcpRemoteTransport;
+use Yew\Plugins\Actor\Cluster\RemoteTransport;
 use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
 use Yew\Core\Log\Log;
+use ReflectionClass;
+use ReflectionParameter;
 
 class ActorPlugin extends AbstractPlugin
 {
@@ -88,14 +94,82 @@ class ActorPlugin extends AbstractPlugin
      * gossip across physical machines; actor calls cross nodes over a pooled
      * TCP transport.
      */
+    /**
+     * Resolve a "%token%" placeholder against the cluster config subtree.
+     */
+    private function resolvePlaceholders($value, array $clusterCfg)
+    {
+        if (is_string($value) && str_starts_with($value, '%') && str_ends_with($value, '%')) {
+            $key = substr($value, 1, -1);
+            return $clusterCfg[$key] ?? $value;
+        }
+        return $value;
+    }
+
+    /**
+     * Build a cluster service from a declarative definition.
+     *
+     * Expected shape (all keys optional; falls back to $defaults):
+     *   [ "class" => FQCN, "args" => [ paramName => value, ... ] ]
+     *
+     * Named args are matched to the constructor parameters by name (so the YAML
+     * author does not need to care about parameter order) and "%token%" strings
+     * are resolved against the `yew.actor.cluster` config subtree.
+     *
+     * @param array $definition  user-provided definition from yml
+     * @param array $defaults     [ "class" => FQCN, "args" => [...] ]
+     * @param array $clusterCfg  the `yew.actor.cluster` config (for placeholders)
+     * @return object
+     */
+    private function buildService(array $definition, array $defaults, array $clusterCfg): object
+    {
+        $class = (string) ($definition["class"] ?? $defaults["class"]);
+        $namedArgs = array_merge($defaults["args"] ?? [], $definition["args"] ?? []);
+
+        $ref = new ReflectionClass($class);
+        $ctor = $ref->getConstructor();
+        $positional = [];
+        if ($ctor !== null) {
+            foreach ($ctor->getParameters() as $param) {
+                /** @var ReflectionParameter $param */
+                $name = $param->getName();
+                if (array_key_exists($name, $namedArgs)) {
+                    $positional[] = $this->resolvePlaceholders($namedArgs[$name], $clusterCfg);
+                } elseif ($param->isVariadic()) {
+                    // skip
+                } elseif ($param->isOptional()) {
+                    $positional[] = $param->getDefaultValue();
+                } else {
+                    throw new \RuntimeException(
+                        "Cluster service [$class] requires constructor arg '\$$name' but it was not provided"
+                    );
+                }
+            }
+        }
+        return $ref->newInstanceArgs($positional);
+    }
+
     private function startCluster(): void
     {
         $cfg = $this->actorConfig;
-        $state = new GossipClusterState(
-            $cfg->getClusterNodeId(),
-            $cfg->getClusterSuspectAfter(),
-            $cfg->getClusterDownAfter()
+        $clusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.actor.cluster") ?? []);
+        $services = (array) ($clusterCfg["services"] ?? []);
+
+        $state = $this->buildService(
+            (array) ($services["state"] ?? []),
+            [
+                "class" => GossipClusterState::class,
+                "args" => [
+                    "nodeId" => $cfg->getClusterNodeId(),
+                    "suspectAfter" => $cfg->getClusterSuspectAfter(),
+                    "downAfter" => $cfg->getClusterDownAfter(),
+                ],
+            ],
+            $clusterCfg
         );
+        if (!$state instanceof GossipClusterState) {
+            throw new \RuntimeException("cluster.state must be an instance of " . GossipClusterState::class);
+        }
         // Prefer per-node asymmetric keys; fall back to the shared HMAC secret.
         $priv = $cfg->getClusterPrivateKey();
         $pub = $cfg->getClusterPublicKey();
@@ -113,10 +187,20 @@ class ActorPlugin extends AbstractPlugin
         // inject this store via DI and transparently gain cross-node durability.
         $clusterStore = null;
         if ($cfg->isClusterEnabled() && $cfg->isPersistenceEnabled() && $cfg->isClusterStoreEnabled()) {
-            $clusterStore = new ClusterActorStore(
-                new FileActorStore($cfg->getPersistenceDir()),
-                $cfg->getClusterReplicationFactor()
+            $clusterStore = $this->buildService(
+                (array) ($services["store"] ?? []),
+                [
+                    "class" => ClusterActorStore::class,
+                    "args" => [
+                        "local" => new FileActorStore($cfg->getPersistenceDir()),
+                        "replicationFactor" => $cfg->getClusterReplicationFactor(),
+                    ],
+                ],
+                $clusterCfg
             );
+            if (!$clusterStore instanceof ClusterActorStore) {
+                throw new \RuntimeException("cluster.store must be an instance of " . ClusterActorStore::class);
+            }
             $clusterStore->setCluster($state);
             $state->setActorStore($clusterStore);
             // Register as a container singleton so Actor::injectedStore is DI-injected.
@@ -124,11 +208,34 @@ class ActorPlugin extends AbstractPlugin
         }
 
         // Real UDP gossip wire layer.
-        $udp = new UdpGossipTransport(
-            $cfg->getClusterGossipHost(),
-            $cfg->getClusterGossipPort() ?: ($cfg->getClusterPort() + 1000),
-            $cfg->getClusterGossipBroadcast()
+        $udp = $this->buildService(
+            (array) ($services["gossip"] ?? []),
+            [
+                "class" => UdpGossipTransport::class,
+                "args" => [
+                    "bindHost" => $cfg->getClusterGossipHost(),
+                    "bindPort" => $cfg->getClusterGossipPort() ?: ($cfg->getClusterPort() + 1000),
+                    "broadcastTarget" => $cfg->getClusterGossipBroadcast(),
+                ],
+            ],
+            $clusterCfg
         );
+        if (!$udp instanceof GossipTransport) {
+            throw new \RuntimeException("cluster.gossip must implement " . GossipTransport::class);
+        }
+
+        // If the UDP gossip port is declared in yew.port, run the transport in
+        // framework-managed mode (the framework binds the socket via Swoole
+        // multi-port and feeds datagrams to the state through the port).
+        $gossipPort = Server::$instance->getPortManager()->getPortFromName(ClusterGossipUdpPort::NAME);
+        if ($gossipPort instanceof ClusterGossipUdpPort) {
+            $gossipPort->setClusterState($state);
+        } else {
+            Log::warning(
+                "cluster: UDP port '" . ClusterGossipUdpPort::NAME
+                . "' not declared in yew.port; falling back to self-bound gossip socket"
+            );
+        }
         $state->start($udp, $cfg->getClusterSeeds());
 
         $localNode = new ClusterNode(
@@ -137,7 +244,22 @@ class ActorPlugin extends AbstractPlugin
             $cfg->getClusterPort(),
             true
         );
-        $router = new GossipShardRouter($state, $localNode, $cfg->getRoutingReplicas());
+        /** @var GossipShardRouter $router */
+        $router = $this->buildService(
+            (array) ($services["router"] ?? []),
+            [
+                "class" => GossipShardRouter::class,
+                "args" => [
+                    "cluster" => $state,
+                    "localNode" => $localNode,
+                    "replicas" => $cfg->getRoutingReplicas(),
+                ],
+            ],
+            $clusterCfg
+        );
+        if (!$router instanceof GossipShardRouter) {
+            throw new \RuntimeException("cluster.router must be an instance of " . GossipShardRouter::class);
+        }
         $this->actorManager->setShardRouter($router);
 
         // Cross-node supervision: when a peer node goes DOWN, fail over the
@@ -177,12 +299,36 @@ class ActorPlugin extends AbstractPlugin
         });
 
         // Pooled TCP transport for cross-node actor calls.
-        $transport = new PooledTcpRemoteTransport(
-            $cfg->getClusterHost(),
-            $cfg->getClusterPort(),
-            $cfg->getClusterNodeId(),
-            $cfg->getClusterPoolSize()
+        /** @var PooledTcpRemoteTransport $transport */
+        $transport = $this->buildService(
+            (array) ($services["transport"] ?? []),
+            [
+                "class" => PooledTcpRemoteTransport::class,
+                "args" => [
+                    "host" => $cfg->getClusterHost(),
+                    "port" => $cfg->getClusterPort(),
+                    "localNodeId" => $cfg->getClusterNodeId(),
+                    "poolSize" => $cfg->getClusterPoolSize(),
+                ],
+            ],
+            $clusterCfg
         );
+        if (!$transport instanceof RemoteTransport) {
+            throw new \RuntimeException("cluster.transport must implement " . RemoteTransport::class);
+        }
+
+        // If the TCP cluster port is declared in yew.port, the framework binds
+        // the socket (Swoole multi-port) and forwards inbound connections to the
+        // transport; the transport no longer starts its own server.
+        $tcpPort = Server::$instance->getPortManager()->getPortFromName(ClusterTcpPort::NAME);
+        if ($tcpPort instanceof ClusterTcpPort) {
+            $tcpPort->setTransport($transport);
+        } else {
+            Log::warning(
+                "cluster: TCP port '" . ClusterTcpPort::NAME
+                . "' not declared in yew.port; cross-node inbound actor calls will not be served"
+            );
+        }
         $transport->start();
         $this->actorManager->setRemoteTransport($transport);
 

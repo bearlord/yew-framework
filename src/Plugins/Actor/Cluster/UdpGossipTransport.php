@@ -10,10 +10,12 @@ namespace Yew\Plugins\Actor\Cluster;
  * Real UDP gossip transport. Binds a UDP socket for inbound digests and
  * broadcasts / unicasts outbound digests to the cluster subnet.
  *
- * Uses a Swoole coroutine UDP server so it coexists with the rest of the
- * event loop. Broadcasts go to the configured gossip address (e.g.
- * 239.0.0.1 multicast or a directed-broadcast subnet); pushes/pulls target a
- * single peer address.
+ * Two operating modes:
+ *  - self-managed (default): binds its own Swoole coroutine UDP socket.
+ *  - framework-managed: when {@see setManaged}(true) is called, the socket is
+ *    NOT bound. Inbound datagrams are pushed via {@see handlePacket()} (fed by
+ *    the framework's multi-port UDP listener) and outbound traffic is sent via
+ *    the {@see setSender()} callback (the master Swoole server's sendto).
  */
 class UdpGossipTransport implements GossipTransport
 {
@@ -22,6 +24,10 @@ class UdpGossipTransport implements GossipTransport
     private string $broadcastTarget; // "host:port" or multicast group
     private ?\Swoole\Coroutine\Socket $socket = null;
     private \Swoole\Channel $inbox;
+
+    private bool $managed = false;
+    /** @var callable|null (string $host, int $port, string $payload): void */
+    private $sender = null;
 
     public function __construct(string $bindHost, int $bindPort, string $broadcastTarget)
     {
@@ -32,10 +38,39 @@ class UdpGossipTransport implements GossipTransport
     }
 
     /**
-     * Start the receiver coroutine. Call once from the event loop.
+     * Switch to framework-managed mode (no self-bound socket).
+     */
+    public function setManaged(bool $managed): void
+    {
+        $this->managed = $managed;
+    }
+
+    /**
+     * Set the outbound sender used in framework-managed mode.
+     * Signature: (string $host, int $port, string $payload): void
+     */
+    public function setSender(callable $sender): void
+    {
+        $this->sender = $sender;
+    }
+
+    /**
+     * Feed an inbound datagram (called by the framework multi-port UDP listener).
+     */
+    public function handlePacket(string $data, array $clientInfo): void
+    {
+        $this->inbox->push($data);
+    }
+
+    /**
+     * Start the receiver. In framework-managed mode this is a no-op because the
+     * framework's multi-port UDP listener owns the socket.
      */
     public function start(): void
     {
+        if ($this->managed) {
+            return;
+        }
         $this->socket = new \Swoole\Coroutine\Socket(AF_INET, SOCK_DGRAM, 0);
         if (!$this->socket->bind($this->bindHost, $this->bindPort)) {
             return;
@@ -54,6 +89,11 @@ class UdpGossipTransport implements GossipTransport
 
     public function broadcast(string $payload): void
     {
+        if ($this->sender !== null) {
+            [$host, $port] = explode(':', $this->broadcastTarget);
+            ($this->sender)($host, (int) $port, $payload);
+            return;
+        }
         if ($this->socket === null) {
             return;
         }
@@ -63,6 +103,11 @@ class UdpGossipTransport implements GossipTransport
 
     public function sendTo(string $peer, string $payload): void
     {
+        if ($this->sender !== null) {
+            [$host, $port] = explode(':', $peer);
+            ($this->sender)($host, (int) $port, $payload);
+            return;
+        }
         if ($this->socket === null) {
             return;
         }
