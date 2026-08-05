@@ -2,7 +2,7 @@
 
 namespace Yew\Plugins\Actor\test;
 
-use Yew\Cluster\GossipTransport;
+use Yew\Cluster\Transport\GossipTransport;
 
 /**
  * In-memory GossipTransport used by offline tests.

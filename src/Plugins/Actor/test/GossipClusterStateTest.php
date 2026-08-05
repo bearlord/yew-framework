@@ -3,8 +3,8 @@
 namespace Yew\Plugins\Actor\test;
 
 use PHPUnit\Framework\TestCase;
-use Yew\Cluster\ClusterMember;
-use Yew\Cluster\GossipClusterState;
+use Yew\Cluster\State\ClusterMember;
+use Yew\Cluster\State\GossipClusterState;
 
 /**
  * Offline tests for GossipClusterState membership bookkeeping.

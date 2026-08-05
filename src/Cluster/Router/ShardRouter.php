@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\Router;
 
 /**
  * Resolves an actor name to its physical {@see Location}.

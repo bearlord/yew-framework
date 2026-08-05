@@ -3,7 +3,7 @@
 namespace Yew\Plugins\Actor\test;
 
 use PHPUnit\Framework\TestCase;
-use Yew\Cluster\UdpGossipTransport;
+use Yew\Cluster\Transport\UdpGossipTransport;
 
 /**
  * Tests for the framework-managed (socket-less) path of UdpGossipTransport.

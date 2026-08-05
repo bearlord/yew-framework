@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\Transport;
 
 /**
  * Wire format for a cross-node actor message (Akka remoting envelope /

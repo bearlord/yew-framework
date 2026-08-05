@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\State;
 
 /**
  * Mutable runtime state of a single cluster node, mirrored in the shared-memory

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Yew\Plugins\Actor\Persistence;
 
-use Yew\Cluster\GossipClusterState;
+use Yew\Cluster\State\GossipClusterState;
 
 /**
  * Cross-node durable ActorStore.

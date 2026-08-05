@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\Broadcaster;
 
 /**
  * Fan-out contract for publishing a message to every node in the cluster.

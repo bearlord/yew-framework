@@ -6,7 +6,7 @@
 
 namespace Yew\Plugins\Actor\Multicast;
 
-use Yew\Cluster\ClusterBroadcaster;
+use Yew\Cluster\Broadcaster\ClusterBroadcaster;
 use Yew\Core\Plugins\Config\BaseConfig;
 
 class MulticastConfig extends BaseConfig

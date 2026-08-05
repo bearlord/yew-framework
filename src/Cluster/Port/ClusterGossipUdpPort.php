@@ -1,6 +1,6 @@
 <?php
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\Port;
 
 use Yew\Core\Server\Port\ServerPort;
 use Yew\Core\Server\Server;

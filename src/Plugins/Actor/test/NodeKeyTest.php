@@ -3,7 +3,7 @@
 namespace Yew\Plugins\Actor\test;
 
 use PHPUnit\Framework\TestCase;
-use Yew\Cluster\NodeKey;
+use Yew\Cluster\State\NodeKey;
 
 /**
  * Offline tests for NodeKey (RSA signature / verification) without Swoole.

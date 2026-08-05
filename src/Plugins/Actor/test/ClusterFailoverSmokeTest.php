@@ -3,10 +3,10 @@
 namespace Yew\Plugins\Actor\test;
 
 use PHPUnit\Framework\TestCase;
-use Yew\Cluster\ClusterMember;
-use Yew\Cluster\ClusterNode;
-use Yew\Cluster\GossipClusterState;
-use Yew\Cluster\GossipShardRouter;
+use Yew\Cluster\State\ClusterMember;
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\Router\GossipShardRouter;
 
 /**
  * End-to-end-ish cluster smoke test: create -> locate -> cross-node ask ->

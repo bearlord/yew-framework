@@ -11,12 +11,12 @@ use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Exception\ActorException;
-use Yew\Cluster\ClusterNode;
-use Yew\Cluster\Location;
-use Yew\Cluster\ShardRouter;
-use Yew\Cluster\LocalShardRouter;
-use Yew\Cluster\RemoteTransport;
-use Yew\Cluster\LocalTransport;
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\State\Location;
+use Yew\Cluster\Router\ShardRouter;
+use Yew\Cluster\Router\LocalShardRouter;
+use Yew\Cluster\Transport\RemoteTransport;
+use Yew\Cluster\Transport\LocalTransport;
 use Yew\Yew;
 
 class ActorManager
@@ -160,7 +160,7 @@ class ActorManager
 
     /**
      * Raw shared-memory row for an actor (used by the shard router to build a
-     * {@see \Yew\Cluster\Location} without constructing ActorInfo).
+     * {@see \Yew\Cluster\State\Location} without constructing ActorInfo).
      *
      * @param string $actorName
      * @return array|null

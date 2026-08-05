@@ -6,10 +6,10 @@
 
 namespace Yew\Plugins\Actor\Multicast;
 
-use Yew\Cluster\GossipClusterBroadcaster;
-use Yew\Cluster\GossipClusterState;
-use Yew\Cluster\GossipTransport;
-use Yew\Cluster\UdpGossipTransport;
+use Yew\Cluster\Broadcaster\GossipClusterBroadcaster;
+use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\Transport\GossipTransport;
+use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Core\Context\Context;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugin\AbstractPlugin;

@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\Transport;
 
 /**
  * Real UDP gossip transport. Binds a UDP socket for inbound digests and

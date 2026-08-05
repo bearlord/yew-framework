@@ -3,7 +3,7 @@
 namespace Yew\Plugins\Actor\test;
 
 use PHPUnit\Framework\TestCase;
-use Yew\Cluster\ClusterMember;
+use Yew\Cluster\State\ClusterMember;
 
 /**
  * Offline tests for ClusterMember projection (row <-> object) and helpers.

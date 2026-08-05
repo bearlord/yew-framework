@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Cluster;
+namespace Yew\Cluster\State;
 
 use Yew\Core\Plugins\Logger\GetLogger;
 

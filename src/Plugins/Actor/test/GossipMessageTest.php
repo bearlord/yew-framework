@@ -3,8 +3,8 @@
 namespace Yew\Plugins\Actor\test;
 
 use PHPUnit\Framework\TestCase;
-use Yew\Cluster\ClusterMember;
-use Yew\Cluster\GossipMessage;
+use Yew\Cluster\State\ClusterMember;
+use Yew\Cluster\State\GossipMessage;
 
 /**
  * Offline tests for GossipMessage wire-format (de)serialization.
