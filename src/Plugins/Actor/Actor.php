@@ -556,7 +556,7 @@ abstract class Actor
 
         switch ($type) {
             case ActorMessage::TYPE_MULTICAST:
-                $this->handleMulticastMessage($message);
+                $this->handleMulticast($message);
                 break;
 
             case ActorMessage::TYPE_COMMON:
@@ -643,7 +643,7 @@ abstract class Actor
         return $this->dispatcher;
     }
 
-    abstract protected function handleMulticastMessage(ActorMessage $message);
+    abstract protected function handleMulticast(ActorMessage $message);
     
     /**
      * @param ActorMessage $message

@@ -16,7 +16,7 @@ interface GossipTransport
     /**
      * Broadcast a gossip digest to the cluster (fire-and-forget).
      *
-     * @param string $payload Serialised {@see GossipDigest}
+     * @param string $payload Serialised gossip digest payload
      * @return void
      */
     public function broadcast(string $payload): void;
@@ -26,7 +26,7 @@ interface GossipTransport
      * randomly chosen node).
      *
      * @param string $peer "host:port" of the target seed/peer
-     * @param string $payload Serialised {@see GossipDigest}
+     * @param string $payload Serialised gossip digest payload
      * @return void
      */
     public function sendTo(string $peer, string $payload): void;
