@@ -6,6 +6,7 @@
 
 namespace Yew\Plugins\Actor\Multicast;
 
+use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Ipc\GetIpc;
 
 /**
@@ -16,6 +17,7 @@ use Yew\Plugins\Ipc\GetIpc;
 class Multicast
 {
     use GetIpc;
+    use GetLogger;
 
     /**
      * Create a multicast facade for one actor.
@@ -102,6 +104,7 @@ class Multicast
         }
 
         $this->channel()->publish($channel, $message, $excludeActorList, $this->actorName);
+        $this->broadcastToCluster($channel, $message);
     }
 
     /**
@@ -115,6 +118,7 @@ class Multicast
     public function publishTo(string $channel, string $message): void
     {
         $this->channel()->publish($channel, $message, [$this->actorName], $this->actorName);
+        $this->broadcastToCluster($channel, $message);
     }
 
     /**
@@ -128,6 +132,29 @@ class Multicast
     public function publishIn(string $channel, string $message)
     {
         $this->channel()->publish($channel, $message, [], $this->actorName);
+        $this->broadcastToCluster($channel, $message);
+    }
+
+    /**
+     * Fan the message out to the other cluster nodes (no-op unless cluster mode is enabled and a
+     * broadcaster has been injected by MulticastPlugin).
+     *
+     * @param string $channel
+     * @param string $message
+     * @return void
+     */
+    protected function broadcastToCluster(string $channel, string $message): void
+    {
+        $broadcaster = $this->config->getBroadcaster();
+        if ($broadcaster === null) {
+            return;
+        }
+        try {
+            $broadcaster->broadcast($channel, $message);
+        } catch (\Throwable $e) {
+            // Never let a cluster fan-out failure break local publishing.
+            $this->error(sprintf('[Multicast] cluster broadcast failed: %s', $e->getMessage()));
+        }
     }
 
     /**

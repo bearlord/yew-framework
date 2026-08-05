@@ -6,11 +6,28 @@
 
 namespace Yew\Plugins\Actor\Multicast;
 
+use Yew\Cluster\ClusterBroadcaster;
 use Yew\Core\Plugins\Config\BaseConfig;
 
 class MulticastConfig extends BaseConfig
 {
     const KEY = "multicast";
+
+    /**
+     * @var bool Whether multicast should also fan out to every other cluster node.
+     */
+    protected bool $clusterEnabled = false;
+
+    /**
+     * @var int UDP port used for the cluster-wide multicast transport.
+     * Only used when clusterEnabled is true. 0 means "use gossipPort + 1".
+     */
+    protected int $clusterPort = 0;
+
+    /**
+     * @var ClusterBroadcaster|null Injected broadcaster (null when clusterEnabled is false).
+     */
+    protected ?ClusterBroadcaster $broadcaster = null;
 
     /**
      * @var int
@@ -44,6 +61,54 @@ class MulticastConfig extends BaseConfig
     public function __construct()
     {
         parent::__construct(self::KEY);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isClusterEnabled(): bool
+    {
+        return $this->clusterEnabled;
+    }
+
+    /**
+     * @param bool $clusterEnabled
+     */
+    public function setClusterEnabled(bool $clusterEnabled): void
+    {
+        $this->clusterEnabled = $clusterEnabled;
+    }
+
+    /**
+     * @return int
+     */
+    public function getClusterPort(): int
+    {
+        return $this->clusterPort;
+    }
+
+    /**
+     * @param int $clusterPort
+     */
+    public function setClusterPort(int $clusterPort): void
+    {
+        $this->clusterPort = $clusterPort;
+    }
+
+    /**
+     * @return ClusterBroadcaster|null
+     */
+    public function getBroadcaster(): ?ClusterBroadcaster
+    {
+        return $this->broadcaster;
+    }
+
+    /**
+     * @param ClusterBroadcaster|null $broadcaster
+     */
+    public function setBroadcaster(?ClusterBroadcaster $broadcaster): void
+    {
+        $this->broadcaster = $broadcaster;
     }
 
     /**
