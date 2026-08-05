@@ -97,10 +97,15 @@ class GossipClusterState implements ClusterStateInterface
      */
     private array $storeReplica = [];
     /**
-     * The local cluster-aware actor store. When set, inbound STORE_PUT replicas
-     * are ingested into it (so a dead peer's actors can be recovered locally).
+     * The local replicated store. When set, inbound STORE_PUT replicas are
+     * ingested into it (so a dead peer's actors can be recovered locally).
+     *
+     * Untyped against any concrete class on purpose: the cluster package must
+     * not depend on the actor package. Only ingestReplica() is invoked.
+     *
+     * @var object|null
      */
-    private ?\Yew\Plugins\Actor\Persistence\ClusterActorStore $actorStore = null;
+    private ?object $actorStore = null;
     /**
      * How many peers an entry is replicated to (besides the owning node).
      */
@@ -659,10 +664,16 @@ class GossipClusterState implements ClusterStateInterface
     }
 
     /**
-     * Bind the local cluster-aware actor store so inbound replicas can be
-     * ingested and queried during failover recovery.
+     * Bind the local replicated store so inbound replicas can be ingested and
+     * queried during failover recovery.
+     *
+     * Intentionally untyped against any concrete class: the cluster package
+     * must not reference the actor package. The actor layer passes its
+     * ClusterActorStore here; only the replica-ingest contract is used.
+     *
+     * @param object $store
      */
-    public function setActorStore(\Yew\Plugins\Actor\Persistence\ClusterActorStore $store): void
+    public function setActorStore(object $store): void
     {
         $this->actorStore = $store;
     }

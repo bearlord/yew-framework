@@ -6,21 +6,23 @@
 
 namespace Yew\Cluster\Router;
 
-use Yew\Plugins\Actor\ActorManager;
-
 /**
  * Single-machine shard router.
  *
- * Reads actor locations from the local shared-memory table kept by
- * {@see ActorManager}. Every actor is considered to live on the local node;
- * the worker process id is taken from the actor table. This keeps the exact
- * behaviour the framework had before clustering, but behind the
- * {@see ShardRouter} interface so a distributed implementation can be swapped
- * in later without changing call sites.
+ * Treats every actor as living on the local node. The worker process id for a
+ * located actor is supplied through an injected locator callback (set by the
+ * actor layer, which owns the actor table) so this router stays free of any
+ * actor-package dependency. Exposes the {@see ShardRouter} interface so a
+ * distributed implementation can be swapped in without changing call sites.
  */
 class LocalShardRouter implements ShardRouter
 {
     private ClusterNode $localNode;
+
+    /**
+     * @var callable(string):?array|null Injected actor-row lookup.
+     */
+    private $actorLocator = null;
 
     /**
      * Build a local-only router for one node.
@@ -32,15 +34,29 @@ class LocalShardRouter implements ShardRouter
         $this->localNode = new ClusterNode($nodeId, '127.0.0.1', 0, true);
     }
 
+    /**
+     * Inject the actor-row lookup used by {@see locate()}. The callback receives
+     * an actor name and returns the actor table row (with a "processId" key) or
+     * null. Owned by the actor layer; defaults to "not found".
+     *
+     * @param callable(string):?array $fn
+     */
+    public function setActorLocator(callable $fn): void
+    {
+        $this->actorLocator = $fn;
+    }
+
     public function locate(string $actorName): ?Location
     {
-        $manager = ActorManager::getInstance();
-        $data = $manager->getActorRaw($actorName);
+        if ($this->actorLocator === null) {
+            return null;
+        }
+        $data = ($this->actorLocator)($actorName);
         if (empty($data)) {
             return null;
         }
 
-        return new Location($this->localNode, (int) $data['processId']);
+        return new Location($this->localNode, (int) ($data['processId'] ?? 0));
     }
 
     public function register(string $actorName, Location $location): void

@@ -6,8 +6,6 @@
 
 namespace Yew\Cluster\Transport;
 
-use Yew\Plugins\Actor\ActorMessage;
-
 /**
  * No-op transport for the single-machine deployment.
  *
@@ -34,13 +32,6 @@ class LocalTransport implements RemoteTransport
     {
         // Local placement is delivered via in-process IPC; never reached when
         // the target actor is on the same node.
-        return null;
-    }
-
-    public function send(Location $location, ActorMessage $message)
-    {
-        // Local placement is delivered via in-process IPC (ActorIpcProxy +
-        // IpcProxy), not this transport.
         return null;
     }
 

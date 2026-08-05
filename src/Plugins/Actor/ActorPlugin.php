@@ -9,11 +9,21 @@ namespace Yew\Plugins\Actor;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
+use Yew\Core\Log\Log;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Cluster\ClusterConfig;
-use Yew\Cluster\ClusterPlugin;
+use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\Router\ShardRouter;
+use Yew\Cluster\Router\GossipShardRouter;
+use Yew\Cluster\Transport\RemoteTransport;
+use Yew\Cluster\Transport\RemoteEnvelope;
+use Yew\Plugins\Actor\Actor;
+use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\ActorManager;
+use Yew\Plugins\Actor\Persistence\ClusterActorStore;
+use Yew\Plugins\Actor\Persistence\FileActorStore;
+use Yew\Plugins\Actor\Telemetry\Tracer;
 
 class ActorPlugin extends AbstractPlugin
 {
@@ -61,6 +71,21 @@ class ActorPlugin extends AbstractPlugin
      */
     public function beforeServerStart(Context $context)
     {
+        // Cluster seam: ClusterPlugin (configured from the top-level "yew.cluster"
+        // subtree) already published the cluster primitives through the container.
+        // Because ClusterPlugin's beforeServerStart runs before this one (see
+        // Application), we can now pull ShardRouter / RemoteTransport /
+        // GossipClusterState and wire them into the actor runtime. This keeps the
+        // dependency direction strictly actor -> cluster.
+        $clusterConfig = DIGet(ClusterConfig::class);
+
+        // Mirror cluster.* onto ActorConfig for legacy call-sites that read via
+        // ActorConfig getters. MUST happen before merge(), otherwise the mirrored
+        // values are not part of the merged/published config.
+        if ($clusterConfig instanceof ClusterConfig) {
+            $this->actorConfig->applyClusterCompat($clusterConfig);
+        }
+
         $this->actorConfig->merge();
         for ($i = 0; $i < $this->actorConfig->getWorkerCount(); $i++) {
             Server::$instance->addProcess("actor-$i", ActorProcess::class, ActorConfig::GROUP_NAME);
@@ -68,16 +93,79 @@ class ActorPlugin extends AbstractPlugin
         
         $this->actorManager = ActorManager::getInstance();
 
-        // Cluster seam: the dedicated ClusterPlugin (configured from the
-        // top-level "yew.cluster" subtree) owns gossip membership, the
-        // consistent-hash shard router and the cross-node transport. ActorPlugin
-        // only registers the cross-node supervision handler here; actual cluster
-        // assembly happens in ClusterPlugin::beforeServerStart.
-        $clusterPlugin = DIGet(ClusterPlugin::class);
-        if ($clusterPlugin instanceof ClusterPlugin) {
-            $clusterPlugin->onNodeDown(function (string $actorName) {
-                $this->failoverFrom($actorName);
-            });
+        if ($clusterConfig instanceof ClusterConfig && $clusterConfig->isEnabled()) {
+            $router = DIGet(ShardRouter::class);
+            $transport = DIGet(RemoteTransport::class);
+            $state = DIGet(GossipClusterState::class);
+
+            if ($router instanceof ShardRouter && $transport instanceof RemoteTransport) {
+                // Local actor lookup is owned by the actor layer; inject it so the
+                // router stays cluster-only.
+                if (method_exists($router, 'setActorLocator')) {
+                    $router->setActorLocator(function (string $name) {
+                        return ActorManager::getInstance()->getActorRaw($name);
+                    });
+                }
+
+                $this->actorManager->setShardRouter($router);
+                $this->actorManager->setRemoteTransport($transport);
+
+                // The transport is actor-agnostic; it delegates every inbound
+                // (cross-node) request to this handler, which lives in the actor
+                // layer.
+                if (method_exists($transport, 'setInboundHandler')) {
+                    $transport->setInboundHandler([$this, 'handleRemoteEnvelope']);
+                }
+
+                // Cluster-aware durable store: when persistence + replication are
+                // both on, wrap the local FileActorStore so every actor's
+                // events/snapshots are replicated to peer nodes.
+                if ($this->actorConfig->isPersistenceEnabled()
+                    && $clusterConfig->getReplicationFactor() > 0
+                    && $state instanceof GossipClusterState) {
+                    $store = new ClusterActorStore(
+                        new FileActorStore($this->actorConfig->getPersistenceDir()),
+                        $clusterConfig->getReplicationFactor()
+                    );
+                    $store->setCluster($state);
+                    $state->setActorStore($store);
+                    DISet(ClusterActorStore::class, $store);
+                }
+
+                if ($router instanceof GossipShardRouter) {
+                    // Topology rebalance: evict local actors that no longer belong
+                    // to this node after a ring change.
+                    $router->onRebalance(function (array $changed, GossipShardRouter $r) {
+                        $localNodeId = $r->getLocalNode()->getNodeId();
+                        foreach ($this->actorManager->getLocalActorNames() as $name) {
+                            $actor = $this->actorManager->getActor($name);
+                            if (!$actor instanceof Actor) {
+                                continue;
+                            }
+                            $owner = $r->ownerOf($name);
+                            if ($owner === $localNodeId || $owner === null) {
+                                continue;
+                            }
+                            $this->actorManager->removeActor($actor);
+                            Log::info("cluster: evicted local actor [$name] (now owned by [$owner])");
+                        }
+                        if ($changed !== []) {
+                            Log::warning(
+                                "cluster: ring changed for nodes [" . implode(',', $changed) . "]; "
+                                . "cross-node migration of non-persisted actors is not wired yet"
+                            );
+                        }
+                    });
+
+                    // Cross-node supervision: resurrect persisted actors that now
+                    // hash to this node after a peer node fails.
+                    if ($state instanceof GossipClusterState) {
+                        $state->onNodeDown(function (string $deadNodeId) use ($router, $state) {
+                            $this->failoverFrom($deadNodeId, $router, $state);
+                        });
+                    }
+                }
+            }
         }
         return;
     }
@@ -105,18 +193,66 @@ class ActorPlugin extends AbstractPlugin
     }
 
     /**
-     * Cross-node supervision: a peer node died and the dedicated ClusterPlugin
-     * already filtered the replicated actors that now hash to this node and are
-     * not already alive here. Invoke the user-registered handler so it can
-     * resurrect the actor (rebuilt from the replicated event log, so no state is
-     * lost across the failure).
+     * Cross-node supervision: a peer node died. For every actor whose replicated
+     * store this node holds and that now hashes to this node (per the consistent
+     * hash ring) and is not already alive here, invoke the user-registered
+     * handler so it can resurrect the actor (rebuilt from the replicated event
+     * log, so no state is lost across the failure).
      */
-    private function failoverFrom(string $actorName): void
-    {
+    private function failoverFrom(
+        string $deadNodeId,
+        GossipShardRouter $router,
+        GossipClusterState $state
+    ): void {
         if ($this->failoverHandler === null) {
             return;
         }
-        ($this->failoverHandler)($actorName);
+        $localNodeId = $state->getLocalNodeId();
+        foreach ($state->getReplicatedActorNames($deadNodeId) as $actorName) {
+            // ownerOf() maps an actor name onto the consistent-hash ring; only
+            // actors that now hash to this node are resurrected here.
+            if ($router->ownerOf($actorName) !== $localNodeId) {
+                continue;
+            }
+            if (ActorManager::getInstance()->getActorRaw($actorName) !== null) {
+                continue;
+            }
+            ($this->failoverHandler)($actorName);
+        }
+    }
+
+    /**
+     * Inbound cross-node request handler, injected into the (actor-agnostic)
+     * RemoteTransport. Resolves the target actor locally and delivers the call
+     * via the in-process IPC proxy, returning the ask result (or null for tell /
+     * not-found) so the transport can frame the reply.
+     *
+     * @param RemoteEnvelope $env
+     * @return mixed
+     */
+    public function handleRemoteEnvelope(RemoteEnvelope $env)
+    {
+        $manager = ActorManager::getInstance();
+        $info = $manager->getActorInfo($env->actorName);
+        if ($info === null) {
+            return null;
+        }
+
+        if ($env->traceId !== null) {
+            Tracer::continue($env->traceId);
+        }
+
+        $proxy = new ActorIpcProxy($env->actorName, true, 0);
+        if ($env->kind === RemoteEnvelope::KIND_ASK) {
+            try {
+                return $proxy->ask($env->method, $env->arguments, 55);
+            } catch (\Throwable $e) {
+                return ['__error' => $e->getMessage()];
+            }
+        }
+
+        $proxy->tell($env->method, $env->arguments);
+        return null;
     }
 
     /**
@@ -181,14 +317,13 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setDispatcherPoolSize((int) ($config["dispatcherPoolSize"] ?? 4));
 		$actorConfig->setTelemetryEnabled((bool) ($config["telemetryEnabled"] ?? false));
 
-		// Cluster settings now live under the top-level "yew.cluster" subtree
-		// (decoupled from yew.actor). Build a dedicated ClusterConfig and mirror
-		// it onto ActorConfig for code that still reads via ActorConfig getters.
-		$clusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
-		$clusterConfig = DIGet(ClusterConfig::class) ?? new ClusterConfig();
-		$clusterConfig->buildFromArray($clusterCfg);
-		DISet(ClusterConfig::class, $clusterConfig);
-		$actorConfig->applyClusterCompat($clusterConfig);
+		// NOTE: cluster compatibility values are intentionally NOT read here.
+		// This method runs from the constructor, i.e. during addPlugin(), so it
+		// would depend on ClusterPlugin having been registered first (its
+		// onAdded() is what publishes ClusterConfig). Relying on registration
+		// order fails silently -- every cluster.* getter would quietly fall back
+		// to its default. The mirroring is done in beforeServerStart() instead,
+		// where the container is guaranteed to be populated.
 
 		\Yew\Plugins\Actor\Telemetry\ActorTelemetry::enable($actorConfig->isTelemetryEnabled());
 

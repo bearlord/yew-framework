@@ -7,9 +7,6 @@
 namespace Yew\Cluster\Transport;
 
 use Yew\Core\Server\Server;
-use Yew\Plugins\Actor\ActorIpcProxy;
-use Yew\Plugins\Actor\ActorManager;
-use Yew\Plugins\Actor\Telemetry\Tracer;
 
 /**
  * Connection-pooled variant of {@see TcpRemoteTransport}.
@@ -36,6 +33,8 @@ class PooledTcpRemoteTransport implements RemoteTransport
 
     /** @var array<int,string> per-connection inbound buffer, keyed by fd */
     private array $recvBuf = [];
+    /** @var callable(RemoteEnvelope):mixed|null Injected request handler (actor layer). */
+    private $inboundHandler = null;
 
     public function __construct(
         string $host,
@@ -49,6 +48,19 @@ class PooledTcpRemoteTransport implements RemoteTransport
         $this->localNodeId = $localNodeId;
         $this->poolSize = $poolSize;
         $this->idleTimeout = $idleTimeout;
+    }
+
+    /**
+     * Inject the handler for inbound (cross-node) requests. The callback
+     * receives the decoded {@see RemoteEnvelope} and returns the actor's result
+     * (for ask) or null (for tell / not-found). Owned by the actor layer so this
+     * transport stays free of any actor-package dependency.
+     *
+     * @param callable(RemoteEnvelope):mixed $handler
+     */
+    public function setInboundHandler(callable $handler): void
+    {
+        $this->inboundHandler = $handler;
     }
 
     public function start(): void
@@ -194,30 +206,16 @@ class PooledTcpRemoteTransport implements RemoteTransport
      */
     private function handleInbound(int $fd, RemoteEnvelope $env): void
     {
-        $manager = ActorManager::getInstance();
-        $info = $manager->getActorInfo($env->actorName);
-        if ($info === null) {
+        if ($this->inboundHandler === null) {
+            // No actor layer attached: answer asks with an empty result so the
+            // remote caller does not hang.
             if ($env->kind === RemoteEnvelope::KIND_ASK) {
                 $this->sendReply($fd, $this->replyEnvelope($env, null));
             }
             return;
         }
 
-        if ($env->traceId !== null) {
-            Tracer::continue($env->traceId);
-        }
-
-        $proxy = new ActorIpcProxy($env->actorName, true, 0);
-        $result = null;
-        if ($env->kind === RemoteEnvelope::KIND_ASK) {
-            try {
-                $result = $proxy->ask($env->method, $env->arguments, 55);
-            } catch (\Throwable $e) {
-                $result = ['__error' => $e->getMessage()];
-            }
-        } else {
-            $proxy->tell($env->method, $env->arguments);
-        }
+        $result = ($this->inboundHandler)($env);
 
         if ($env->kind === RemoteEnvelope::KIND_ASK) {
             $this->sendReply($fd, $this->replyEnvelope($env, $result));

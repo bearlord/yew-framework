@@ -116,6 +116,12 @@ class ClusterConfig extends BaseConfig
     protected int $replicationFactor = 2;
 
     /**
+     * @var int Virtual replicas (ring points) per node in the consistent-hash
+     *          shard router. Higher = more even distribution.
+     */
+    protected int $replicas = 128;
+
+    /**
      * @var array Declarative service overrides (class + args per role).
      *            Roles: state / gossip / router / transport / store.
      */
@@ -153,6 +159,7 @@ class ClusterConfig extends BaseConfig
         $this->publicKey = (string) ($cfg["publicKey"] ?? '');
         $this->trustStore = (array) ($cfg["trustStore"] ?? []);
         $this->replicationFactor = (int) ($cfg["replicationFactor"] ?? 2);
+        $this->replicas = (int) ($cfg["replicas"] ?? 128);
         $this->services = (array) ($cfg["services"] ?? []);
     }
 
@@ -356,6 +363,16 @@ class ClusterConfig extends BaseConfig
     public function setReplicationFactor(int $replicationFactor): void
     {
         $this->replicationFactor = $replicationFactor;
+    }
+
+    public function getReplicas(): int
+    {
+        return $this->replicas;
+    }
+
+    public function setReplicas(int $replicas): void
+    {
+        $this->replicas = $replicas;
     }
 
     /**

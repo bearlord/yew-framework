@@ -6,8 +6,6 @@
 
 namespace Yew\Cluster\Router;
 
-use Yew\Plugins\Actor\ActorManager;
-
 /**
  * Location-transparent shard router backed by consistent hashing over the
  * live cluster membership.
@@ -34,6 +32,20 @@ class GossipShardRouter implements ShardRouter
     private ?array $aliveCache = null;
     /** @var callable|null */
     private $rebalanceHook = null;
+    /** @var callable(string):?array|null Injected actor-row lookup (owned by actor layer). */
+    private $actorLocator = null;
+
+    /**
+     * Inject the actor-row lookup used by {@see locate()} for local actors.
+     * The callback receives an actor name and returns the actor table row
+     * (with a "processId" key) or null. Defaults to "not found".
+     *
+     * @param callable(string):?array $fn
+     */
+    public function setActorLocator(callable $fn): void
+    {
+        $this->actorLocator = $fn;
+    }
 
     /**
      * Build a consistent-hash router over the live cluster membership.
@@ -98,12 +110,13 @@ class GossipShardRouter implements ShardRouter
             $member->nodeId, $member->host, $member->port,
             $this->cluster->isLocal($member->nodeId)
         );
-        // Process id is still resolved from the local actor table when the
-        // owning node is this one; remote placement needs a real transport.
+        // Process id for a locally-owned actor is resolved through the injected
+        // locator (owned by the actor layer). Remote placement needs a real
+        // transport and carries no meaningful local process id here.
         $processId = 0;
-        if ($node->isLocal()) {
-            $data = ActorManager::getInstance()->getActorRaw($actorName);
-            $processId = $data !== null ? (int) $data['processId'] : 0;
+        if ($node->isLocal() && $this->actorLocator !== null) {
+            $data = ($this->actorLocator)($actorName);
+            $processId = $data !== null ? (int) ($data['processId'] ?? 0) : 0;
         }
         return new Location($node, $processId);
     }

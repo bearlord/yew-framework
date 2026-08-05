@@ -6,10 +6,6 @@
 
 namespace Yew\Cluster\Transport;
 
-use Yew\Plugins\Actor\ActorIpcProxy;
-use Yew\Plugins\Actor\ActorManager;
-use Yew\Plugins\Actor\Telemetry\Tracer;
-
 /**
  * Real cross-node transport over TCP (Akka remoting / Orleans silo-to-silo
  * equivalent for this framework).
@@ -28,12 +24,27 @@ class TcpRemoteTransport implements RemoteTransport
     private int $port;
     private string $localNodeId;
     private ?\Swoole\Coroutine\Server $server = null;
+    /** @var callable(RemoteEnvelope):mixed|null Injected request handler (actor layer). */
+    private $inboundHandler = null;
 
     public function __construct(string $host, int $port, string $localNodeId)
     {
         $this->host = $host;
         $this->port = $port;
         $this->localNodeId = $localNodeId;
+    }
+
+    /**
+     * Inject the handler for inbound (cross-node) requests. The callback
+     * receives the decoded {@see RemoteEnvelope} and returns the actor's result
+     * (for ask) or null (for tell / not-found). Owned by the actor layer so this
+     * transport stays free of any actor-package dependency.
+     *
+     * @param callable(RemoteEnvelope):mixed $handler
+     */
+    public function setInboundHandler(callable $handler): void
+    {
+        $this->inboundHandler = $handler;
     }
 
     /**
@@ -71,35 +82,22 @@ class TcpRemoteTransport implements RemoteTransport
 
     /**
      * Deliver an inbound envelope to the locally-resident actor and, for ask,
-     * write the reply back over the same connection.
+     * write the reply back over the same connection. The actual actor delivery
+     * is delegated to the injected handler (actor layer); this method only
+     * owns the network framing.
      */
     private function handleInbound(\Swoole\Coroutine\Server\Connection $conn, RemoteEnvelope $env): void
     {
-        $manager = ActorManager::getInstance();
-        $info = $manager->getActorInfo($env->actorName);
-        if ($info === null) {
+        if ($this->inboundHandler === null) {
+            // No actor layer attached: answer asks with an empty result so the
+            // remote caller does not hang.
             if ($env->kind === RemoteEnvelope::KIND_ASK) {
                 $conn->send($this->replyEnvelope($env, null)->toJson() . "\n");
             }
             return;
         }
 
-        if ($env->traceId !== null) {
-            Tracer::continue($env->traceId);
-        }
-
-        // Local delivery via the in-process IPC proxy.
-        $proxy = new ActorIpcProxy($env->actorName, true, 0);
-        $result = null;
-        if ($env->kind === RemoteEnvelope::KIND_ASK) {
-            try {
-                $result = $proxy->ask($env->method, $env->arguments, 55);
-            } catch (\Throwable $e) {
-                $result = ['__error' => $e->getMessage()];
-            }
-        } else {
-            $proxy->tell($env->method, $env->arguments);
-        }
+        $result = ($this->inboundHandler)($env);
 
         if ($env->kind === RemoteEnvelope::KIND_ASK) {
             $conn->send($this->replyEnvelope($env, $result)->toJson() . "\n");

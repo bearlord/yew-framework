@@ -6,8 +6,6 @@
 
 namespace Yew\Cluster\Transport;
 
-use Yew\Plugins\Actor\ActorMessage;
-
 /**
  * Network transport for cross-node actor messaging (Akka remoting / Orleans
  * silo-to-silo equivalent).

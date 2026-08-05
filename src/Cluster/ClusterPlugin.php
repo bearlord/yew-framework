@@ -20,43 +20,37 @@ use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Cluster\Transport\GossipTransport;
 use Yew\Cluster\Transport\PooledTcpRemoteTransport;
 use Yew\Cluster\Transport\RemoteTransport;
+use Yew\Cluster\Router\ShardRouter;
 use Yew\Cluster\Router\GossipShardRouter;
-use Yew\Plugins\Actor\Actor;
-use Yew\Plugins\Actor\ActorConfig;
-use Yew\Plugins\Actor\ActorManager;
-use Yew\Plugins\Actor\Persistence\ClusterActorStore;
-use Yew\Plugins\Actor\Persistence\FileActorStore;
 use ReflectionClass;
 use ReflectionParameter;
 
 /**
  * Standalone cluster plugin. Owns the gossip membership service, the
- * consistent-hash shard router and the cross-node TCP transport. It is fed by
- * the top-level {@see ClusterConfig} (decoupled from the actor config) but
- * still collaborates with {@see ActorConfig} for the persistence-backed
- * cross-node store (ClusterActorStore wraps the actor's FileActorStore).
+ * consistent-hash shard router and the cross-node TCP transport.
+ *
+ * This plugin is deliberately actor-agnostic: it only assembles the cluster
+ * primitives and publishes them through the DI container as the
+ * {@see ShardRouter}, {@see RemoteTransport} and {@see GossipClusterState}
+ * interfaces. The actor layer (ActorPlugin) later pulls these from the container
+ * and wires them into the actor runtime. The dependency direction is strictly
+ * actor -> cluster; cluster never references the actor package.
  */
 class ClusterPlugin extends AbstractPlugin
 {
     /**
      * @var ClusterConfig|null
      */
-    private ?ClusterConfig $clusterConfig;
+    private ?ClusterConfig $clusterConfig = null;
 
     /**
-     * @var ActorConfig|null
+     * Raw `yew.cluster` subtree, captured once at onAdded() and reused for
+     * "%token%" placeholder resolution so the config is not re-read (and cannot
+     * drift) between registration and server start.
+     *
+     * @var array
      */
-    private ?ActorConfig $actorConfig;
-
-    /**
-     * @var ActorManager|null
-     */
-    private ?ActorManager $actorManager = null;
-
-    /**
-     * @var callable(string):void|null User-registered failover handler.
-     */
-    private $failoverHandler = null;
+    private array $rawClusterCfg = [];
 
     public function __construct()
     {
@@ -71,6 +65,14 @@ class ClusterPlugin extends AbstractPlugin
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
+        // Build the top-level cluster config from the "yew.cluster" subtree and
+        // publish it. Done here (not in ActorPlugin) so the cluster package is
+        // fully self-contained. ActorPlugin only consumes it via DI.
+        $this->rawClusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
+        $clusterConfig = DIGet(ClusterConfig::class) ?? new ClusterConfig();
+        $clusterConfig->buildFromArray($this->rawClusterCfg);
+        DISet(ClusterConfig::class, $clusterConfig);
+        $this->clusterConfig = $clusterConfig;
     }
 
     /**
@@ -79,25 +81,14 @@ class ClusterPlugin extends AbstractPlugin
      */
     public function beforeServerStart(Context $context)
     {
-        $this->clusterConfig = DIGet(ClusterConfig::class);
-        $this->actorConfig = DIGet(ActorConfig::class);
+        // Prefer the container (an integrator may have replaced the instance),
+        // but fall back to the one built in onAdded() so a bypassed/reset
+        // container cannot silently disable clustering.
+        $this->clusterConfig = DIGet(ClusterConfig::class) ?? $this->clusterConfig;
         if ($this->clusterConfig === null || !$this->clusterConfig->isEnabled()) {
             return;
         }
-        $this->actorManager = ActorManager::getInstance();
         $this->start();
-    }
-
-    /**
-     * Register a handler called when a peer node fails and one of its persisted
-     * actors now hashes to this node. Signature: (string $actorName) => void.
-     *
-     * @param callable(string):void $cb
-     * @return void
-     */
-    public function onNodeDown(callable $cb): void
-    {
-        $this->failoverHandler = $cb;
     }
 
     /**
@@ -154,18 +145,27 @@ class ClusterPlugin extends AbstractPlugin
     /**
      * Assemble and start the cluster subsystem from declarative config.
      *
-     * Builds the gossip state, UDP transport, shard router, cross-node TCP
-     * transport (and optional cluster actor store) via {@see buildService},
-     * wires them into the framework-managed multi-port listeners, and starts
-     * the failure-detection ticker.
+     * Builds the gossip state, UDP transport, shard router and cross-node TCP
+     * transport via {@see buildService}, wires them into the framework-managed
+     * multi-port listeners, publishes the three primitives through the DI
+     * container, and starts the failure-detection ticker.
+     *
+     * It deliberately does NOT touch the actor runtime; the actor layer pulls
+     * {@see ShardRouter}, {@see RemoteTransport} and {@see GossipClusterState}
+     * from the container and wires them in itself.
      *
      * @return void
      */
     private function start(): void
     {
         $cfg = $this->clusterConfig;
-        $actorCfg = $this->actorConfig;
-        $clusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
+        // Reuse the subtree captured at onAdded() (see $rawClusterCfg) instead of
+        // re-reading it here, so placeholder resolution always matches the values
+        // that ClusterConfig was actually built from. Fall back to a fresh read
+        // only if onAdded() never ran (e.g. plugin constructed manually).
+        $clusterCfg = $this->rawClusterCfg !== []
+            ? $this->rawClusterCfg
+            : (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
         $services = $cfg->getServices();
 
         $state = $this->buildService(
@@ -193,30 +193,6 @@ class ClusterPlugin extends AbstractPlugin
             $state->setSecret($cfg->getSecret(), $cfg->getClockSkew());
         }
         $state->join($cfg->getHost(), $cfg->getPort(), $cfg->getWeight());
-
-        // Cross-node durable store: when cluster + persistence + storeEnabled are
-        // all on, wrap the local FileActorStore in a cluster-aware one that
-        // replicates every actor's events/snapshots to peer nodes.
-        $clusterStore = null;
-        if ($actorCfg !== null && $actorCfg->isPersistenceEnabled() && $cfg->getReplicationFactor() > 0) {
-            $clusterStore = $this->buildService(
-                (array) ($services["store"] ?? []),
-                [
-                    "class" => ClusterActorStore::class,
-                    "args" => [
-                        "local" => new FileActorStore($actorCfg->getPersistenceDir()),
-                        "replicationFactor" => $cfg->getReplicationFactor(),
-                    ],
-                ],
-                $clusterCfg
-            );
-            if (!$clusterStore instanceof ClusterActorStore) {
-                throw new \RuntimeException("cluster.store must be an instance of " . ClusterActorStore::class);
-            }
-            $clusterStore->setCluster($state);
-            $state->setActorStore($clusterStore);
-            DISet(ClusterActorStore::class, $clusterStore);
-        }
 
         // Real UDP gossip wire layer.
         $udp = $this->buildService(
@@ -270,7 +246,7 @@ class ClusterPlugin extends AbstractPlugin
                 "args" => [
                     "cluster" => $state,
                     "localNode" => $localNode,
-                    "replicas" => $actorCfg !== null ? $actorCfg->getRoutingReplicas() : 128,
+                    "replicas" => $cfg->getReplicas(),
                 ],
             ],
             $clusterCfg
@@ -278,37 +254,8 @@ class ClusterPlugin extends AbstractPlugin
         if (!$router instanceof GossipShardRouter) {
             throw new \RuntimeException("cluster.router must be an instance of " . GossipShardRouter::class);
         }
-        $this->actorManager->setShardRouter($router);
 
-        if ($clusterStore !== null) {
-            $state->onNodeDown(function (string $deadNodeId) use ($router, $state) {
-                $this->failoverFrom($deadNodeId, $router, $state);
-            });
-        }
-
-        $router->onRebalance(function (array $changed, GossipShardRouter $router) {
-            $localNodeId = $router->getLocalNode()->getNodeId();
-            foreach ($this->actorManager->getLocalActorNames() as $name) {
-                $actor = $this->actorManager->getActor($name);
-                if (!$actor instanceof Actor) {
-                    continue; // remote proxy or not local
-                }
-                $owner = $router->ownerOf($name);
-                if ($owner === $localNodeId || $owner === null) {
-                    continue; // still ours or unrouted
-                }
-                $this->actorManager->removeActor($actor);
-                Log::info("cluster: evicted local actor [$name] (now owned by [$owner])");
-            }
-            if ($changed !== []) {
-                Log::warning(
-                    "cluster: ring changed for nodes [" . implode(',', $changed) . "]; "
-                    . "cross-node migration of non-persisted actors is not wired yet"
-                );
-            }
-        });
-
-        // Pooled TCP transport for cross-node actor calls.
+        // Pooled TCP transport for cross-node calls.
         /** @var PooledTcpRemoteTransport $transport */
         $transport = $this->buildService(
             (array) ($services["transport"] ?? []),
@@ -337,39 +284,17 @@ class ClusterPlugin extends AbstractPlugin
             );
         }
         $transport->start();
-        $this->actorManager->setRemoteTransport($transport);
 
-        // Keep a handle so external code (debug endpoints) can inspect it.
+        // Publish the three cluster primitives. The actor layer pulls these from
+        // the container and wires them into the actor runtime (setShardRouter,
+        // setRemoteTransport, cluster store, rebalance/failover hooks).
+        DISet(ShardRouter::class, $router);
+        DISet(RemoteTransport::class, $transport);
         DISet(GossipClusterState::class, $state);
 
         // Failure-detection + gossip ticker.
         \Swoole\Timer::tick((int) ($cfg->getHeartbeatInterval() * 1000), function () use ($state) {
             $state->tick();
         });
-    }
-
-    /**
-     * Cross-node supervision: a peer node died. For every actor whose replicated
-     * store this node holds and that now hashes to this node (per the consistent
-     * hash ring), ask the registered handler to resurrect it.
-     */
-    private function failoverFrom(
-        string $deadNodeId,
-        GossipShardRouter $router,
-        GossipClusterState $state
-    ): void {
-        if ($this->failoverHandler === null) {
-            return;
-        }
-        $localNodeId = $state->getLocalNodeId();
-        foreach ($state->getReplicatedActorNames($deadNodeId) as $actorName) {
-            if ($router->getNode($actorName) !== $localNodeId) {
-                continue;
-            }
-            if (ActorManager::getInstance()->getActorRaw($actorName) !== null) {
-                continue;
-            }
-            ($this->failoverHandler)($actorName);
-        }
     }
 }
