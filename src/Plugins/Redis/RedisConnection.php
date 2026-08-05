@@ -2,12 +2,12 @@
 
 namespace Yew\Plugins\Redis;
 
+use Redis;
+use RedisCluster;
 use RedisSentinel;
 use Yew\Core\Pool\Exception\ConnectionException;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Redis\Exception\InvalidRedisConnectionException;
-use Redis;
-use RedisCluster;
 
 class RedisConnection
 {
@@ -141,7 +141,7 @@ class RedisConnection
     protected function formatOptionName(?string $name = null): ?int
     {
         if (empty($name)) {
-            return "";
+            return null;
         }
 
         switch ($name) {

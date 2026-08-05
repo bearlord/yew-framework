@@ -23,7 +23,7 @@ class RedisPools extends Pools
     public function db(): RedisConnection
     {
         $pool = $this->getPool();
-        if ($pool == null) {
+        if ($pool === null) {
             throw new RedisException("No default redis configuration is set");
         }
 
