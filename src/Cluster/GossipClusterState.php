@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 use Yew\Core\Plugins\Logger\GetLogger;
 
@@ -242,7 +242,7 @@ class GossipClusterState implements ClusterStateInterface
 
     /**
      * Resolve the public key PEM to verify a message from $fromNode.
-     * Order: pinned trust store â†’ learned key by keyId â†’ message-embedded pub.
+     * Order: pinned trust store â†?learned key by keyId â†?message-embedded pub.
      */
     private function resolvePubKey(GossipMessage $msg): ?string
     {
@@ -525,7 +525,7 @@ class GossipClusterState implements ClusterStateInterface
                 $this->handleStorePut($msg);
                 break;
             case GossipMessage::ACK:
-                // standalone ACK (peer confirm) â€” nothing to store
+                // standalone ACK (peer confirm) â€?nothing to store
                 break;
             case GossipMessage::DIGEST:
             default:
@@ -912,7 +912,7 @@ class GossipClusterState implements ClusterStateInterface
             if ($id === $this->localNodeId || $m->host !== 'unknown' || $m->port <= 0) {
                 continue;
             }
-            // We have a port but unknown host â€” cannot probe; skip.
+            // We have a port but unknown host â€?cannot probe; skip.
         }
         // Re-SYN seeds if handshake still incomplete (pending SYNC not ACKed).
         foreach ($this->pendingOut as $mid => $p) {

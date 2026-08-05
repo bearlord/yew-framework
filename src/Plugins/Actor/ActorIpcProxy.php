@@ -7,7 +7,7 @@
 namespace Yew\Plugins\Actor;
 
 use Yew\Plugins\Actor\Exception\ActorException;
-use Yew\Plugins\Actor\Cluster\Location;
+use Yew\Cluster\Location;
 use Yew\Plugins\Actor\Telemetry\Tracer;
 use Yew\Plugins\Ipc\IpcProxy;
 use Yew\Plugins\Ipc\IpcCallMessage;
@@ -68,7 +68,7 @@ class ActorIpcProxy extends IpcProxy
     }
 
     /**
-     * @var \Yew\Plugins\Actor\Cluster\RemoteTransport|null Transport used when the
+     * @var \Yew\Cluster\RemoteTransport|null Transport used when the
      *      target actor lives on another cluster node.
      */
     protected $remote = null;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Yew\Plugins\Actor\Persistence;
 
-use Yew\Plugins\Actor\Cluster\GossipClusterState;
+use Yew\Cluster\GossipClusterState;
 
 /**
  * Cross-node durable ActorStore.
@@ -14,7 +14,7 @@ use Yew\Plugins\Actor\Cluster\GossipClusterState;
  * (fire-and-forget; gossip cadence re-delivers any lost replica, identical to
  * the fragment retransmission design). Reads are served from the local copy
  * first, and only fall back to a replicated copy buffered from peers when the
- * owning node is down and the local copy is missing â€” enabling cross-node
+ * owning node is down and the local copy is missing â€?enabling cross-node
  * actor resurrection (failover / migration).
  *
  * A single ClusterActorStore instance is injected into every actor on a node;
@@ -88,10 +88,14 @@ class ClusterActorStore implements ActorStore
     public function appendEvent(ActorEvent $event): void
     {
         $this->local->appendEvent($event);
-        // Replicate under the event's own actor name (ClusterActorStore is a
-        // shared singleton, so we must NOT rely on a stored $this->actorName
-        // that could be clobbered by a concurrent actor's setActorName()).
-        $this->replicate($event->getActorName(), 'events', json_encode($event->toArray(), JSON_UNESCAPED_UNICODE));
+        // Replicate the full event list under the event's own actor name as a
+        // JSON array (matching toRow() and what ingestReplica()/loadEvents()
+        // expect). ClusterActorStore is a shared singleton, so we must NOT rely
+        // on a stored $this->actorName that could be clobbered by a concurrent
+        // actor's setActorName().
+        $events = $this->local->loadEvents($event->getActorName());
+        $rows = array_map(static fn(ActorEvent $e) => $e->toArray(), $events);
+        $this->replicate($event->getActorName(), 'events', json_encode($rows, JSON_UNESCAPED_UNICODE));
     }
 
     /**

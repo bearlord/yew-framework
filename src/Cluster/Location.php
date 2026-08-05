@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 /**
  * Physical location of an actor: which node + which worker process.

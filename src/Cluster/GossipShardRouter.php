@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 use Yew\Plugins\Actor\ActorManager;
 
@@ -16,7 +16,7 @@ use Yew\Plugins\Actor\ActorManager;
  * owned by the alive node whose token is the first clockwise match. When the
  * membership changes (node up/down detected by {@see ClusterState}), the set of
  * owned shards changes and {@see onMembershipChange} reconstructs the ring and
- * notifies a rebalance callback â€” this is exactly the "rebalance" half of
+ * notifies a rebalance callback â€?this is exactly the "rebalance" half of
  * cluster sharding (Akka: coordinator + shard allocation; Orleans: silo
  * activation + grain placement).
  *

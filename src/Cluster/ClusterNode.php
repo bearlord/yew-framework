@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 /**
  * A single node in the actor cluster.

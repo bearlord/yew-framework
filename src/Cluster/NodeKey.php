@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 /**
  * Per-node asymmetric key (node "certificate").
@@ -13,7 +13,7 @@ namespace Yew\Plugins\Actor\Cluster;
  * private key and publishes its public key to peers (carried inside the gossip
  * SYNC/SYN-ACK `self` member record). Peers verify inbound messages with the
  * sender's public key, so a single leaked node private key only compromises
- * that node â€” not the whole cluster.
+ * that node â€?not the whole cluster.
  *
  *  - sign():  produce a detached signature over a canonical body with the
  *             node's private key (SHA256 + RSA or EC, whatever openssl loaded).

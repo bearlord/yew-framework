@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 /**
  * Unified gossip wire envelope carrying one of three phases of the
@@ -89,7 +89,7 @@ class GossipMessage
          */
         public ?string $storeActor = null,
         /**
-         * For STORE_PUT: entry kind â€” 'events' | 'snapshots' | 'clear'.
+         * For STORE_PUT: entry kind â€?'events' | 'snapshots' | 'clear'.
          */
         public ?string $storeKind = null,
         /**
@@ -161,7 +161,7 @@ class GossipMessage
     }
 
     /**
-     * Receiver â†’ sender: "I got fragments of message $of but I'm missing these
+     * Receiver â†?sender: "I got fragments of message $of but I'm missing these
      * sequence numbers; please resend just those." Per-packet retransmission.
      */
     public static function fragNack(string $fromNode, string $of, array $missing): self
@@ -173,7 +173,7 @@ class GossipMessage
     }
 
     /**
-     * Receiver â†’ sender: "I just received fragment $seq of message $of." Per-packet
+     * Receiver â†?sender: "I just received fragment $seq of message $of." Per-packet
      * acknowledgement so the sender can stop retransmitting that fragment.
      */
     public static function fragAck(string $fromNode, string $of, int $seq): self

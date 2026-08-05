@@ -4,7 +4,7 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Plugins\Actor\Cluster;
+namespace Yew\Cluster;
 
 use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\ActorManager;
@@ -20,7 +20,7 @@ use Yew\Plugins\Actor\Telemetry\Tracer;
  * connection to deliver tell/ask to a remote node).
  *
  * ask() is implemented with a request/reply envelope over one connection, so it
- * is a genuine request-response across the network â€” not emulated locally.
+ * is a genuine request-response across the network â€?not emulated locally.
  */
 class TcpRemoteTransport implements RemoteTransport
 {
