@@ -26,6 +26,11 @@ class RedisConnection
      */
     protected $driver;
 
+    /**
+     * @var int|null
+     */
+    protected ?int $database = null;
+
 
     /**
      * @param array $config
@@ -82,6 +87,16 @@ class RedisConnection
         $this->driver = $driver;
     }
 
+    public function getDatabase(): ?int
+    {
+        return $this->database;
+    }
+
+    public function setDatabase(?int $database): void
+    {
+        $this->database = $database;
+    }
+
     /**
      * @return Redis|RedisCluster
      * @throws ConnectionException
@@ -126,8 +141,8 @@ class RedisConnection
             $redis->auth($auth);
         }
 
-        $databaseSelect = $this->database ?? $database;
-        if ($database > 0) {
+        $databaseSelect = $this->getDatabase() ?? $database;
+        if ($databaseSelect > 0) {
             $redis->select($databaseSelect);
         }
 
