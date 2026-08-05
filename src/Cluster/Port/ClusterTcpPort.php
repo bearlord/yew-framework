@@ -18,29 +18,40 @@ class ClusterTcpPort extends ServerPort
 {
     public const NAME = 'cluster-tcp';
 
-    /** @var PooledTcpRemoteTransport|null */
-    private ?PooledTcpRemoteTransport $transport = null;
+    /**
+     * The transport serving inbound envelopes. Typed as object rather than a
+     * concrete class so a custom `cluster.services.transport` implementation is
+     * accepted; it only needs handleReceive()/handleClose() (fd-based framing).
+     *
+     * @var object|null
+     */
+    private ?object $transport = null;
 
     public function __construct(Server $server, PortConfig $portConfig)
     {
         parent::__construct($server, $portConfig);
     }
 
-    public function setTransport(PooledTcpRemoteTransport $transport): void
+    /**
+     * @param object $transport Must expose handleReceive(int,string) and
+     *                          handleClose(int). Transports without them are
+     *                          ignored (see the method_exists guards below).
+     */
+    public function setTransport(object $transport): void
     {
         $this->transport = $transport;
     }
 
     public function onTcpReceive(int $fd, int $reactorId, string $data): void
     {
-        if ($this->transport !== null) {
+        if ($this->transport !== null && method_exists($this->transport, 'handleReceive')) {
             $this->transport->handleReceive($fd, $data);
         }
     }
 
     public function onTcpClose(int $fd, int $reactorId): void
     {
-        if ($this->transport !== null) {
+        if ($this->transport !== null && method_exists($this->transport, 'handleClose')) {
             $this->transport->handleClose($fd);
         }
     }

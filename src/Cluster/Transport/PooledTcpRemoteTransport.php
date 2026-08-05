@@ -124,9 +124,13 @@ class PooledTcpRemoteTransport implements RemoteTransport
         if ($client === null) {
             return false;
         }
-        $ok = (bool) $client->send($env->toJson() . "\n");
-        $this->release($node->getHost(), $node->getPort(), $client);
-        return $ok;
+        try {
+            return (bool) $client->send($env->toJson() . "\n");
+        } finally {
+            // Release even if send() throws, otherwise the pooled connection
+            // leaks and the pool eventually starves.
+            $this->release($node->getHost(), $node->getPort(), $client);
+        }
     }
 
     public function ask(Location $location, string $method, array $arguments, ?string $traceId, float $timeOut)
@@ -140,6 +144,12 @@ class PooledTcpRemoteTransport implements RemoteTransport
         if ($client === null) {
             return null;
         }
+        // A connection may only go back into the pool when the exchange ended
+        // cleanly. On timeout, malformed JSON or a msgId mismatch the socket may
+        // still hold unread/late bytes; reusing it would hand those leftovers to
+        // the next caller and desync every subsequent request on it. Such
+        // connections are closed instead.
+        $reusable = false;
         try {
             if (!$client->send($env->toJson() . "\n")) {
                 return null;
@@ -148,10 +158,22 @@ class PooledTcpRemoteTransport implements RemoteTransport
             if (!is_string($line) || trim($line) === '') {
                 return null;
             }
-            $reply = RemoteEnvelope::fromJson(trim($line));
-            return $reply->msgId === $env->msgId ? ($reply->arguments['__reply'] ?? null) : null;
+            try {
+                $reply = RemoteEnvelope::fromJson(trim($line));
+            } catch (\Throwable $e) {
+                return null;
+            }
+            if ($reply->msgId !== $env->msgId) {
+                return null;
+            }
+            $reusable = true;
+            return $reply->arguments['__reply'] ?? null;
         } finally {
-            $this->release($node->getHost(), $node->getPort(), $client);
+            if ($reusable) {
+                $this->release($node->getHost(), $node->getPort(), $client);
+            } else {
+                $client->close();
+            }
         }
     }
 
