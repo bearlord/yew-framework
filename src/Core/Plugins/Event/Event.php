@@ -76,19 +76,19 @@ class Event
     }
 
     /**
-     * @param $type
+     * @param string $type
      * @return mixed
      */
-    public function getSourceInfo($type)
+    public function getSourceInfo(string $type)
     {
         return $this->sourceInfo[$type] ?? null;
     }
 
     /**
-     * @param $type
+     * @param string $type
      * @param $data
      */
-    public function setSourceInfo($type, $data): void
+    public function setSourceInfo(string $type, $data): void
     {
         $this->sourceInfo[$type] = $data;
     }
