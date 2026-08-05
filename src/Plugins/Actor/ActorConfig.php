@@ -7,6 +7,7 @@
 namespace Yew\Plugins\Actor;
 
 use Yew\Core\Plugins\Config\BaseConfig;
+use Yew\Cluster\ClusterConfig;
 
 
 class ActorConfig extends BaseConfig
@@ -821,5 +822,39 @@ class ActorConfig extends BaseConfig
 	public function setClusterReplicationFactor(int $clusterReplicationFactor): void
 	{
 		$this->clusterReplicationFactor = $clusterReplicationFactor;
+	}
+
+	/**
+	 * Mirror a top-level {@see ClusterConfig} onto this actor config so legacy
+	 * call-sites that read via the `getClusterXxx()` accessors keep working now
+	 * that cluster settings live under the `yew.cluster` subtree instead of
+	 * `yew.actor.cluster`.
+	 */
+	public function applyClusterCompat(ClusterConfig $cluster): void
+	{
+		$this->setClusterEnabled($cluster->isEnabled());
+		$this->setClusterNodeId($cluster->getNodeId());
+		$this->setClusterHost($cluster->getHost());
+		$this->setClusterPort($cluster->getPort());
+		$this->setClusterWeight($cluster->getWeight());
+		$this->setClusterSuspectAfter($cluster->getSuspectAfter());
+		$this->setClusterDownAfter($cluster->getDownAfter());
+		$this->setClusterHeartbeatInterval($cluster->getHeartbeatInterval());
+		$this->setClusterGossipHost($cluster->getGossipHost());
+		$this->setClusterGossipPort($cluster->getGossipPort());
+		$this->setClusterGossipBroadcast($cluster->getGossipBroadcast());
+		$this->setClusterSeeds($cluster->getSeeds());
+		$this->setClusterPoolSize($cluster->getPoolSize());
+		$this->setClusterSecret($cluster->getSecret());
+		$this->setClusterClockSkew($cluster->getClockSkew());
+		$this->setClusterPrivateKey($cluster->getPrivateKey());
+		$this->setClusterPublicKey($cluster->getPublicKey());
+		$this->setClusterTrustStore($cluster->getTrustStore());
+		$this->setClusterReplicationFactor($cluster->getReplicationFactor());
+		// storeEnabled is derived from persistence + replication in the
+		// ClusterPlugin; keep the legacy flag in sync for any reader.
+		$this->setClusterStoreEnabled(
+			$this->isPersistenceEnabled() && $cluster->getReplicationFactor() > 0
+		);
 	}
 }
