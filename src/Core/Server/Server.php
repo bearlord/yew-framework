@@ -355,8 +355,7 @@ abstract class Server extends BaseNode
      */
     public function _onStart()
     {
-        Server::$isStart = true;
-        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+        $this->markStarted();
 
         $startTimeFile = ROOT_DIR . '/runtime/start_time';
         file_put_contents($startTimeFile, Server::$serverStartTime);
@@ -430,8 +429,7 @@ abstract class Server extends BaseNode
      */
     public function _onManagerStart()
     {
-        Server::$isStart = true;
-        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+        $this->markStarted();
 
         $this->processManager->getManagerProcess()->onProcessStart();
         try {
@@ -467,11 +465,24 @@ abstract class Server extends BaseNode
      */
     public function _onWorkerStart($server, int $workerId)
     {
-        Server::$isStart = true;
-        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+        $this->markStarted();
 
         $process = $this->processManager->getProcessFromId($workerId);
         $process->_onProcessStart();
+    }
+
+    /**
+     * Mark the server as started and record the start timestamp.
+     *
+     * Shared by the start / managerStart / workerStart Swoole callbacks so the
+     * "server is up" signal and timing are set consistently in one place.
+     *
+     * @return void
+     */
+    private function markStarted(): void
+    {
+        Server::$isStart = true;
+        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
     }
 
     /**
@@ -701,15 +712,15 @@ abstract class Server extends BaseNode
     /**
      * Send a UDP datagram to a remote host.
      *
-     * @param string $ip            target IP address
-     * @param int    $port          target port
-     * @param string $data          payload to send
-     * @param int    $server_socket local socket to send from (-1 = default)
+     * @param string $ip           target IP address
+     * @param int    $port         target port
+     * @param string $data         payload to send
+     * @param int    $serverSocket local socket to send from (-1 = default)
      * @return bool
      */
-    public function sendToUpd(string $ip, int $port, string $data, int $server_socket = -1): bool
+    public function sendToUdp(string $ip, int $port, string $data, int $serverSocket = -1): bool
     {
-        return $this->server->sendto($ip, $port, $data, $server_socket);
+        return $this->server->sendto($ip, $port, $data, $serverSocket);
     }
 
     /**
@@ -718,7 +729,7 @@ abstract class Server extends BaseNode
      * @param int $fd
      * @return bool true if the connection exists, false once it is closed
      */
-    public function existFd($fd): bool
+    public function existFd(int $fd): bool
     {
         return $this->server->exist($fd);
     }
@@ -1013,9 +1024,7 @@ abstract class Server extends BaseNode
      */
     public function setExceptionHandler()
     {
-        set_exception_handler(function ($e) {
-            $this->getLog()->error($e);
-        });
+        set_exception_handler(fn($e) => $this->getLog()->error($e));
     }
 
     /**
