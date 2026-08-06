@@ -15,7 +15,7 @@ namespace Yew\Framework\Web;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class Cookie extends \yii\base\BaseObject
+class Cookie extends \Yew\Framework\Base\BaseObject
 {
     /**
      * SameSite policy Lax will prevent the cookie from being sent by the browser in all cross-site browsing context
