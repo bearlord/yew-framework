@@ -8,20 +8,11 @@ namespace Yew\Plugins\Security\Beans;
 
 class Principal
 {
-    /**
-     * @var string[]
-     */
-    protected $roles = [];
+    protected array $roles = [];
 
-    /**
-     * @var string[]
-     */
-    protected $permissions = [];
+    protected array $permissions = [];
 
-    /**
-     * @var string
-     */
-    protected $username;
+    protected ?string $username = null;
 
     public function setUsername(string $username): void
     {
