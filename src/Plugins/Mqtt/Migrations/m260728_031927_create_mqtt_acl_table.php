@@ -9,6 +9,7 @@ class m260728_031927_create_mqtt_acl_table extends Migration
 {
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeUp(): bool
@@ -30,6 +31,9 @@ class m260728_031927_create_mqtt_acl_table extends Migration
 
             // Record creation timestamp
             'created_at' => $this->dateTime()->defaultExpression('CURRENT_TIMESTAMP')->comment('Record creation time'),
+
+            // Record update timestamp
+            'updated_at' => $this->dateTime()->defaultExpression('CURRENT_TIMESTAMP')->comment('Record update time'),
         ]);
 
         // Create a composite index to accelerate ACL queries based on user and topic
@@ -43,6 +47,7 @@ class m260728_031927_create_mqtt_acl_table extends Migration
 
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeDown(): bool

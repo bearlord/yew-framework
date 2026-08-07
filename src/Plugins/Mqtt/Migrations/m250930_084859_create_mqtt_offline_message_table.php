@@ -9,6 +9,7 @@ class m250930_084859_create_mqtt_offline_message_table extends Migration
 {
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeUp(): bool
@@ -23,11 +24,11 @@ class m250930_084859_create_mqtt_offline_message_table extends Migration
             // Offline message topic
             'topic' => $this->string(240)->notNull()->comment('Offline message topic'),
 
-            // QoS level (0, 1, 2) of the offline message
-            'qos' => $this->smallInteger()->notNull()->defaultValue(0)->comment('Offline message QoS level (0, 1, 2)'),
-
             // Offline message payload (binary)
             'payload' => $this->binary()->notNull()->comment('Offline message payload'),
+
+            // QoS level (0, 1, 2) of the offline message
+            'qos' => $this->smallInteger()->notNull()->defaultValue(0)->comment('Offline message QoS level (0, 1, 2)'),
 
             // Delivery status: 0 = not delivered, 1 = delivered
             'delivered' => $this->smallInteger()->notNull()->defaultValue(0)->comment('Delivery status: 0 = not delivered, 1 = delivered'),
@@ -56,6 +57,7 @@ class m250930_084859_create_mqtt_offline_message_table extends Migration
 
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeDown(): bool

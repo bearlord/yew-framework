@@ -9,6 +9,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
 {
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeUp(): bool
@@ -61,6 +62,7 @@ class m260727_073850_create_mqtt_will_message_table extends Migration
 
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeDown(): bool

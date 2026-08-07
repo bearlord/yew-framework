@@ -9,6 +9,7 @@ class m250930_071343_create_mqtt_client_table extends Migration
 {
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeUp(): bool
@@ -19,16 +20,16 @@ class m250930_071343_create_mqtt_client_table extends Migration
             'client_id' => $this->string(128)->notNull()
                 ->comment('MQTT client identifier'),
 
-            'username' => $this->string(64)->null()
+            'user_name' => $this->string(64)->null()
                 ->comment('Authentication username'),
 
-            'protocol_version' => $this->string(8)->notNull()->defaultValue('3.1.1')
-                ->comment('MQTT protocol version (3.1, 3.1.1, 5.0)'),
+            'protocol_level' => $this->string(8)->notNull()->defaultValue('3.1.1')
+                ->comment('MQTT protocol level (3.1, 3.1.1, 5.0)'),
 
             'clean_start' => $this->tinyInteger(1)->notNull()->defaultValue(1)
                 ->comment('MQTT v5 clean start flag (1: clean session, 0: resume session)'),
 
-            'session_expiry' => $this->integer()->unsigned()->notNull()->defaultValue(0)
+            'session_expiry_interval' => $this->integer()->unsigned()->null()->defaultValue(0)
                 ->comment('Session expiry interval in seconds (0 = never expire)'),
 
             'is_active' => $this->tinyInteger(1)->notNull()->defaultValue(1)
@@ -60,7 +61,6 @@ class m250930_071343_create_mqtt_client_table extends Migration
 
         // Indexes
         $this->createIndex('uk_client_id', '{{%mqtt_client}}', 'client_id', true);
-        $this->createIndex('idx_protocol_version', '{{%mqtt_client}}', 'protocol_version');
         $this->createIndex('idx_last_connected', '{{%mqtt_client}}', 'last_connected_time');
 
         return true;
@@ -68,6 +68,7 @@ class m250930_071343_create_mqtt_client_table extends Migration
 
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeDown(): bool

@@ -9,6 +9,7 @@ class m250930_081922_create_mqtt_retained_message_table extends Migration
 {
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeUp(): bool
@@ -20,14 +21,14 @@ class m250930_081922_create_mqtt_retained_message_table extends Migration
             // Retained message topic. Supports standard MQTT wildcards when querying
             'topic' => $this->string(240)->notNull()->comment('Retained message topic'),
 
+            // Retained message payload (binary)
+            'payload' => $this->binary()->notNull()->comment('Retained message payload'),
+
             // QoS level (0, 1, 2) of the retained message
             'qos' => $this->smallInteger()->notNull()->defaultValue(0)->comment('Retained message QoS level (0, 1, 2)'),
 
             // Retain flag: 1 = retained, 0 = not retained
             'retain' => $this->smallInteger()->notNull()->defaultValue(0)->comment('Retain flag: 1 = retained, 0 = not retained'),
-
-            // Retained message payload (binary)
-            'payload' => $this->binary()->notNull()->comment('Retained message payload'),
 
             // Record creation timestamp
             'created_at' => $this->dateTime(6)->null()->comment('Record creation time'),
@@ -44,6 +45,7 @@ class m250930_081922_create_mqtt_retained_message_table extends Migration
 
     /**
      * {@inheritdoc}
+     *
      * @return bool
      */
     public function safeDown(): bool
