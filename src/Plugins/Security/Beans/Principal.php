@@ -9,105 +9,72 @@ namespace Yew\Plugins\Security\Beans;
 class Principal
 {
     /**
-     * Roles
      * @var string[]
      */
-    private $roles = [];
+    protected $roles = [];
 
     /**
-     * Permissions
      * @var string[]
      */
-    private $permissions = [];
+    protected $permissions = [];
 
     /**
-     * username
      * @var string
      */
-    private $username = "";
+    protected $username;
 
-    /**
-     * Add role
-     * @param string $role
-     */
-    public function addRole(string $role)
-    {
-        $this->roles[] = $role;
-    }
-
-    /**
-     * Get roles
-     * @return string[]
-     */
-    public function getRoles(): array
-    {
-        return $this->roles;
-    }
-
-    /**
-     * Has role
-     * @param string $role
-     * @return bool
-     */
-    public function hasRole(string $role)
-    {
-        return in_array($role, $this->roles);
-    }
-
-    /**
-     * Has any role
-     * @param array $roles
-     * @return bool
-     */
-    public function hasAnyRole(array $roles)
-    {
-        foreach ($roles as $role) {
-            if (in_array($role, $this->roles)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Add permissions
-     * @param string $permissions
-     */
-    public function addPermissions(string $permissions)
-    {
-        $this->permissions[] = $permissions;
-    }
-
-    /**
-     * Get permissions
-     * @return string[]
-     */
-    public function getPermissions(): array
-    {
-        return $this->permissions;
-    }
-
-    public function hasPermission(string $permission)
-    {
-        return in_array($permission, $this->permissions);
-    }
-
-    /**
-     * Get username
-     * @return string
-     */
-    public function getUsername(): string
-    {
-        return $this->username;
-    }
-
-    /**
-     * Set username
-     * @param string $username
-     */
     public function setUsername(string $username): void
     {
         $this->username = $username;
     }
 
+    public function getUsername(): ?string
+    {
+        return $this->username;
+    }
+
+    public function addRole(string $role): void
+    {
+        $this->roles[] = $role;
+    }
+
+    public function addRoles(array $roles): void
+    {
+        $this->roles = array_merge($this->roles, $roles);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return in_array($role, $this->roles);
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return !empty(array_intersect($roles, $this->roles));
+    }
+
+    public function getRoles(): array
+    {
+        return $this->roles;
+    }
+
+    public function addPermission(string $permission): void
+    {
+        $this->permissions[] = $permission;
+    }
+
+    public function addPermissions(array $permissions): void
+    {
+        $this->permissions = array_merge($this->permissions, $permissions);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        return in_array($permission, $this->permissions);
+    }
+
+    public function getPermissions(): array
+    {
+        return $this->permissions;
+    }
 }

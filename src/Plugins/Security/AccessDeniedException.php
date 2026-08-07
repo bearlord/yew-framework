@@ -6,13 +6,12 @@
 
 namespace Yew\Plugins\Security;
 
-use Yew\Core\Exception\Exception;
+use Exception;
 
 class AccessDeniedException extends Exception
 {
-    public function __construct()
+    public function __construct($message = "No corresponding permissions", $code = 0, Exception $previous = null)
     {
-        parent::__construct("No corresponding permissions", 0, null);
-        $this->setTrace(false);
+        parent::__construct($message, $code, $previous);
     }
 }

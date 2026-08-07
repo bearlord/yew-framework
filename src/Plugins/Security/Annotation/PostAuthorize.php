@@ -16,7 +16,14 @@ use Doctrine\Common\Annotations\Annotation;
 class PostAuthorize extends Annotation
 {
     /**
+     * Checker class (must implement Yew\Plugins\Security\SecurityChecker).
      * @var string
      */
-    public $value;
+    public $class;
+
+    /**
+     * Optional value passed through to the checker.
+     * @var string
+     */
+    public $value = '';
 }

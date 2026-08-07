@@ -10,10 +10,6 @@ use Yew\Core\Server\Beans\Request;
 use Yew\Plugins\Security\Beans\Principal;
 use Yew\Plugins\Session\HttpSession;
 
-/**
- * @param string $role
- * @return bool
- */
 function hasRole(string $role): bool
 {
     $session = getDeepContextValueByClassName(HttpSession::class);
@@ -28,10 +24,6 @@ function hasRole(string $role): bool
     }
 }
 
-/**
- * @param array $roles
- * @return bool
- */
 function hasAnyRole(array $roles): bool
 {
     $session = getDeepContextValueByClassName(HttpSession::class);
@@ -46,28 +38,16 @@ function hasAnyRole(array $roles): bool
     }
 }
 
-/**
- *
- * @return bool
- */
 function permitAll(): bool
 {
     return true;
 }
 
-/**
- *
- * @return bool
- */
 function denyAll(): bool
 {
     return false;
 }
 
-
-/**
- * @return bool
- */
 function isAuthenticated(): bool
 {
     $session = getDeepContextValueByClassName(HttpSession::class);
@@ -82,10 +62,6 @@ function isAuthenticated(): bool
     }
 }
 
-/**
- * @param string $permission
- * @return bool
- */
 function hasPermission(string $permission)
 {
     $session = getDeepContextValueByClassName(HttpSession::class);
@@ -100,10 +76,6 @@ function hasPermission(string $permission)
     }
 }
 
-/**
- * @param $ips
- * @return bool
- */
 function hasIpAddress($ips): bool
 {
     $request = getDeepContextValueByClassName(Request::class);
