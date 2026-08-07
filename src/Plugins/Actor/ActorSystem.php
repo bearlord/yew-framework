@@ -9,6 +9,7 @@ use Yew\Plugins\Actor\Routing\ActorRoutingStrategy;
 use Yew\Plugins\Actor\Routing\RoundRobinStrategy;
 use Yew\Plugins\Actor\Routing\ConsistentHashStrategy;
 use Yew\Plugins\Actor\Routing\LeastLoadedStrategy;
+use Yew\Plugins\Actor\Props;
 
 class ActorSystem
 {
@@ -78,6 +79,87 @@ class ActorSystem
         }
 
         return new ActorIpcProxy($actorName, false, $timeOut);
+    }
+
+    /**
+     * Akka-style actor factory.
+     *
+     * Mirrors `ActorSystem.actorOf(Props, name?)`: creates an actor of the given
+     * class and returns its IPC proxy. Unlike {@see create()} this method lets
+     * the system auto-generate a globally unique name when $actorName is omitted,
+     * and bundles the class + init data behind a single $props argument (Props).
+     *
+     * @param string              $actionClass Actor class name
+     * @param array|Props|null    $props       Optional Props object (recommended,
+     *                                         Akka-style) or an associative array.
+     *                                         When a Props is given, $actorName is
+     *                                         ignored and Props::getName() wins.
+     *                                         Array keys:
+     *                                 - 'data'        : init data passed to the actor
+     *                                 - 'name'        : explicit actor name (overrides $actorName)
+     *                                 - 'parentName'  : supervision parent (child shares its process)
+     *                                 - 'routingKey'  : consistent-hash routing key
+     *                                 - 'waitCreate'  : block until created (default true)
+     *                                 - 'timeOut'     : wait timeout in seconds (default 5)
+     * @param string|null $actorName   Explicit actor name; when null a name is
+     *                                 auto-generated (akka-<pid>-<seq>)
+     * @return ActorIpcProxy|false
+     * @throws ActorException
+     */
+    public static function actorOf(string $actionClass, $props = null, ?string $actorName = null)
+    {
+        if ($props instanceof Props) {
+            $actorName  = $props->getName() ?? $actorName;
+            $data       = $props->getData();
+            $parentName = $props->getParentName();
+            $routingKey = $props->getRoutingKey();
+            $waitCreate = $props->isWaitCreate();
+            $timeOut    = $props->getTimeOut();
+        } else {
+            $props = $props ?? [];
+            if ($actorName === null) {
+                $actorName = $props['name'] ?? null;
+            }
+            $data       = $props['data'] ?? null;
+            $parentName = $props['parentName'] ?? null;
+            $routingKey = $props['routingKey'] ?? null;
+            $waitCreate = $props['waitCreate'] ?? true;
+            $timeOut    = $props['timeOut'] ?? 5;
+        }
+
+        if ($actorName === null) {
+            $actorName = self::generateActorName();
+        }
+
+        return self::create(
+            $actionClass,
+            $actorName,
+            $data,
+            $waitCreate,
+            $timeOut,
+            $parentName,
+            $routingKey
+        );
+    }
+
+    /**
+     * Generate a process-unique, collision-resistant actor name following the
+     * Akka convention ("akka-<pid>-<seq>"). Retries until the name is not
+     * already registered in the ActorManager.
+     *
+     * @return string
+     */
+    protected static function generateActorName(): string
+    {
+        $pid  = getmypid() ?: 0;
+        $seq  = 0;
+        $manager = ActorManager::getInstance();
+
+        do {
+            $name = sprintf('akka-%d-%d', $pid, ++$seq);
+        } while ($manager->hasActor($name));
+
+        return $name;
     }
 
     /**
