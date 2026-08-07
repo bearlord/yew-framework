@@ -6,6 +6,9 @@
 
 namespace Yew\Cluster\Router;
 
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\State\Location;
+
 /**
  * Single-machine shard router.
  *

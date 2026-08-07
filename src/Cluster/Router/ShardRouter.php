@@ -6,6 +6,9 @@
 
 namespace Yew\Cluster\Router;
 
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\State\Location;
+
 /**
  * Resolves an actor name to its physical {@see Location}.
  *

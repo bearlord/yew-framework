@@ -17,7 +17,6 @@ class MulticastProcess extends Process
      */
     public function init()
     {
-        // TODO: Implement init() method.
     }
 
     /**
@@ -25,7 +24,6 @@ class MulticastProcess extends Process
      */
     public function onProcessStart()
     {
-        // TODO: Implement onProcessStart() method.
     }
 
     /**
@@ -33,7 +31,6 @@ class MulticastProcess extends Process
      */
     public function onProcessStop()
     {
-        // TODO: Implement onProcessStop() method.
     }
 
     /**
@@ -44,6 +41,5 @@ class MulticastProcess extends Process
      */
     public function onPipeMessage(Message $message, Process $fromProcess)
     {
-        // TODO: Implement onPipeMessage() method.
     }
 }

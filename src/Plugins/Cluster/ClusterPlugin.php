@@ -77,7 +77,14 @@ class ClusterPlugin extends AbstractPlugin
         // publish it. Done here (not in ActorPlugin) so the cluster package is
         // fully self-contained. ActorPlugin only consumes it via DI.
         $this->rawClusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
-        $clusterConfig = DIGet(ClusterConfig::class) ?? new ClusterConfig();
+        // PHP-DI throws NotFoundException when the entry is absent (it does not
+        // return null), so the `??` fallback below cannot catch it. Guard with
+        // try/catch and fall back to a fresh instance.
+        try {
+            $clusterConfig = DIGet(ClusterConfig::class);
+        } catch (\Throwable $e) {
+            $clusterConfig = new ClusterConfig();
+        }
         $clusterConfig->buildFromArray($this->rawClusterCfg);
         DISet(ClusterConfig::class, $clusterConfig);
         $this->clusterConfig = $clusterConfig;
@@ -97,6 +104,17 @@ class ClusterPlugin extends AbstractPlugin
             return;
         }
         $this->start();
+    }
+
+    /**
+     * @param Context $context
+     * @return void
+     */
+    public function beforeProcessStart(Context $context)
+    {
+        // Cluster wiring is fully assembled in beforeServerStart(); no
+        // per-process work is needed here. Mark the plugin ready.
+        $this->ready();
     }
 
     /**

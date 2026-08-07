@@ -6,6 +6,11 @@
 
 namespace Yew\Cluster\Router;
 
+use Yew\Cluster\State\ClusterMember;
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\State\ClusterStateInterface;
+use Yew\Cluster\State\Location;
+
 /**
  * Location-transparent shard router backed by consistent hashing over the
  * live cluster membership.
