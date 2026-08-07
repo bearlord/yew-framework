@@ -11,95 +11,83 @@ use Yew\Core\Server\Process\Process;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\AutoReload\AutoReloadConfig;
 
-
+/**
+ * Watches PHP files in a directory and reloads the server on change.
+ * Prefers the inotify extension; falls back to directory polling when absent.
+ */
 class InotifyReload
 {
     use GetLogger;
 
-    public string $monitorDirectory;
+    private string $monitorDirectory;
 
-    public $inotifyFd;
+    private $inotifyFd;
 
-    /**
-     * InotifyReload constructor.
-     * @param AutoReloadConfig $autoReloadConfig
-     * @throws \Exception
-     */
+    /** watch-descriptor => watched file path */
+    private array $monitorFiles = [];
+
+    /** mtime recorded at the previous scan, used to detect changes */
+    private int $lastScannedMtime = 0;
+
     public function __construct(AutoReloadConfig $autoReloadConfig)
     {
         $this->prepareInit($autoReloadConfig);
     }
 
-    /**
-     * @param AutoReloadConfig $autoReloadConfig
-     * @throws \Exception
-     */
     public function prepareInit(AutoReloadConfig $autoReloadConfig)
     {
-        if ($autoReloadConfig->isEnable()) {
-            $this->info("Hot reload is enabled");
+        if (!$autoReloadConfig->isEnable()) {
+            return;
+        }
 
-            $this->monitorDirectory = realpath($autoReloadConfig->getMonitorDir());
-            if (!extension_loaded("inotify")) {
-                addTimerAfter(1000, [$this, "unUseInotify"]);
-            } else {
-                $this->useInotify();
-            }
+        $this->info("Hot reload is enabled");
+
+        $this->monitorDirectory = realpath($autoReloadConfig->getMonitorDir());
+        if (!extension_loaded("inotify")) {
+            addTimerAfter(1000, [$this, "unUseInotify"]);
+        } else {
+            $this->useInotify();
         }
     }
 
-    /**
-     * Use inotify
-     */
     public function useInotify()
     {
-        global $monitorFiles;
-
         $this->inotifyFd = inotify_init();
         stream_set_blocking($this->inotifyFd, 0);
 
-        $dirIterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
-        $iterator = new \RecursiveIteratorIterator($dirIterator);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->monitorDirectory)
+        );
         foreach ($iterator as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) != "php") {
+            if (pathinfo($file, PATHINFO_EXTENSION) !== "php") {
                 continue;
             }
-
             $wd = inotify_add_watch($this->inotifyFd, $file, IN_MODIFY);
-            $monitorFiles[$wd] = $file;
+            $this->monitorFiles[$wd] = $file;
         }
 
         swoole_event_add($this->inotifyFd, function ($inotifyFd) {
-            global $monitorFiles;
-
             $events = inotify_read($inotifyFd);
-            if ($events) {
-                foreach ($events as $ev) {
-                    if (!array_key_exists($ev["wd"], $monitorFiles)) {
-                        continue;
-                    }
-
-                    $file = $monitorFiles[$ev["wd"]];
-                    $this->deleteCache($file);
-
-                    $this->info("RELOAD $file update");
-
-                    unset($monitorFiles[$ev["wd"]]);
-                    if (is_file($file)) {
-                        $wd = inotify_add_watch($inotifyFd, $file, IN_MODIFY);
-                        $monitorFiles[$wd] = $file;
-                    }
-                }
-                Server::$instance->reload();
+            if (!$events) {
+                return;
             }
+            foreach ($events as $ev) {
+                if (!array_key_exists($ev["wd"], $this->monitorFiles)) {
+                    continue;
+                }
+                $file = $this->monitorFiles[$ev["wd"]];
+                $this->deleteCache($file);
+                $this->info("RELOAD $file update");
+                unset($this->monitorFiles[$ev["wd"]]);
+                if (is_file($file)) {
+                    $wd = inotify_add_watch($inotifyFd, $file, IN_MODIFY);
+                    $this->monitorFiles[$wd] = $file;
+                }
+            }
+            Server::$instance->reload();
         }, null, SWOOLE_EVENT_READ);
     }
 
-    /**
-     * Unuse inotify
-     *
-     * @throws \Exception
-     */
     public function unUseInotify()
     {
         $this->warn("Non-inotify mode, performance is extremely low, it is not recommended to enable it in a formal environment. Please install inotify extension");
@@ -107,50 +95,38 @@ class InotifyReload
             $this->warn("Mac auto_reload may cause excessive CPU usage");
         }
         addTimerTick(1, function () {
-            global $lastMtime;
-            // recursive traversal directory
             $dirIterator = new \RecursiveDirectoryIterator($this->monitorDirectory);
-
             $iterator = new \RecursiveIteratorIterator($dirIterator);
 
+            $maxMtime = $this->lastScannedMtime;
+            $changed = null;
             foreach ($iterator as $file) {
-                //Only check php files
-                if (pathinfo($file, PATHINFO_EXTENSION) != "php") {
+                if (pathinfo($file, PATHINFO_EXTENSION) !== "php") {
                     continue;
                 }
-
-                if (!isset($lastMtime)) {
-                    $lastMtime = $file->getMTime();
+                $mtime = $file->getMTime();
+                if ($mtime > $maxMtime) {
+                    $maxMtime = $mtime;
+                    $changed = $file;
                 }
-
-                //Check mtime
-                if ($lastMtime < $file->getMTime()) {
-                    $this->deleteCache($file);
-                    $this->info("Reload $file update");
-
-                    //reload
-                    Server::$instance->reload();
-
-                    $lastMtime = $file->getMTime();
-                    break;
-                }
+            }
+            if ($changed !== null && $maxMtime > $this->lastScannedMtime) {
+                $this->lastScannedMtime = $maxMtime;
+                $this->deleteCache($changed);
+                $this->info("Reload $changed update");
+                Server::$instance->reload();
             }
         });
     }
 
-    /**
-     * Delete cache
-     *
-     * @param $file
-     * @throws \Yew\Core\Exception\Exception
-     */
     private function deleteCache($file)
     {
         $cacheDir = Server::$instance->getServerConfig()->getCacheDir() . "/aop";
-
         $rootDir = realpath(Server::$instance->getServerConfig()->getRootDir());
+        if ($rootDir === false || $file === null) {
+            return;
+        }
         $aopFile = str_replace($rootDir, $cacheDir, $file);
-
         if (is_file($aopFile)) {
             unlink($aopFile);
         }
