@@ -15,25 +15,17 @@ use Yew\Nikic\FastRoute\Dispatcher;
 use Yew\Goaop\Aop\Intercept\MethodInvocation;
 use Yew\Goaop\Lang\Annotation\Around;
 
+/**
+ * Routes /actuator/* requests to ActuatorController, before the normal router.
+ */
 class ActuatorAspect extends OrderAspect
 {
     use GetLogger;
 
-    /**
-     * @var ActuatorController
-     */
-    private $actuatorController;
+    private ActuatorController $actuatorController;
 
-    /**
-     * @var Dispatcher
-     */
-    private $dispatcher;
+    private Dispatcher $dispatcher;
 
-    /**
-     * ActuatorAspect constructor.
-     * @param ActuatorController $actuatorController
-     * @param Dispatcher $dispatcher
-     */
     public function __construct(ActuatorController $actuatorController, Dispatcher $dispatcher)
     {
         $this->actuatorController = $actuatorController;
@@ -42,10 +34,6 @@ class ActuatorAspect extends OrderAspect
     }
 
     /**
-     * Around onHttpRequest
-     *
-     * @param MethodInvocation $invocation Invocation
-     * @return mixed|null
      * @Around("within(Yew\Core\Server\Port\IServerPort+) && execution(public **->onHttpRequest(*))")
      */
     protected function aroundRequest(MethodInvocation $invocation)
@@ -63,20 +51,17 @@ class ActuatorAspect extends OrderAspect
                 $response->withContent("不支持的请求方法");
                 return null;
 
-            case Dispatcher::FOUND: // 找到对应的方法
-                $className = $routeInfo[1];
-                $vars = $routeInfo[2]; // 获取请求参数
+            case Dispatcher::FOUND:
+                $method = $routeInfo[1];
+                $vars = $routeInfo[2];
                 $response->withHeader("Content-Type", "application/json; charset=utf-8");
-                $response->withContent(call_user_func([$this->actuatorController, $className], $vars));
+                $response->withContent(call_user_func([$this->actuatorController, $method], $vars));
                 return null;
         }
 
         return null;
     }
 
-    /**
-     * @return string
-     */
     public function getName(): string
     {
         return "ActuatorAspect";

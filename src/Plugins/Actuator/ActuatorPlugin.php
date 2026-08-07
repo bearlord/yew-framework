@@ -22,57 +22,36 @@ use Yew\Yew;
 use Yew\Nikic\FastRoute\RouteCollector;
 use function Yew\Nikic\FastRoute\simpleDispatcher;
 
-
+/**
+ * Adds /actuator endpoints and per-route request counters.
+ */
 class ActuatorPlugin extends AbstractPlugin
 {
     use GetLogger;
 
-    /**
-     * @var Table Table
-     */
-    protected $table;
-
+    protected ?Table $table = null;
 
     public function __construct()
     {
         parent::__construct();
-
-        //Need aop support, so load after aop
         $this->atAfter(AopPlugin::class);
-
-        //Due to Aspect sorting issues need to be loaded before EasyRoutePlugin
         $this->atBefore(EasyRoutePlugin::class);
     }
 
-    /**
-     * @param PluginInterfaceManager $pluginInterfaceManager
-     * @return void
-     */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
         $aopPlugin = $pluginInterfaceManager->getPlug(AopPlugin::class);
         if ($aopPlugin == null) {
-            $aopPlugin = new AopPlugin();
-            $pluginInterfaceManager->addPlugin($aopPlugin);
+            $pluginInterfaceManager->addPlugin(new AopPlugin());
         }
     }
 
-    /**
-     * Get name
-     *
-     * @return string
-     */
     public function getName(): string
     {
         return "Actuator";
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \Yew\Core\Exception\Exception
-     */
     public function init(Context $context)
     {
         parent::init($context);
@@ -91,20 +70,8 @@ class ActuatorPlugin extends AbstractPlugin
         $aopConfig->addAspect(new CountAspect());
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \Exception
-     */
     public function beforeServerStart(Context $context)
     {
-        /**
-         *
-         * 1byte(int8)：-127 ~ 127
-         * 2byte(int16)：-32767 ~ 32767
-         * 4byte(int32)：-2147483647 ~ 2147483647
-         * 8byte(int64)：不会溢出
-         */
         $table = new Table(1024);
         $table->column("num_60", Table::TYPE_INT, 4);
         $table->column("num_3600", Table::TYPE_INT, 4);
@@ -114,16 +81,9 @@ class ActuatorPlugin extends AbstractPlugin
         }
 
         $this->table = $table;
-
         $this->setToDIContainer("RouteCountTable", $table);
-        return;
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \Exception
-     */
     public function beforeProcessStart(Context $context)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessType() != Process::PROCESS_TYPE_WORKER) {
@@ -131,30 +91,21 @@ class ActuatorPlugin extends AbstractPlugin
             return;
         }
 
-        addTimerTick(60 * 1000, function () {
-            $this->updateCount("num_60");
-        });
-
-        addTimerTick(3600 * 1000, function () {
-            $this->updateCount("num_3600");
-        });
-
-        addTimerTick(86400 * 1000, function () {
-            $this->updateCount("num_86400");
-        });
+        addTimerTick(60 * 1000, fn() => $this->updateCount("num_60"));
+        addTimerTick(3600 * 1000, fn() => $this->updateCount("num_3600"));
+        addTimerTick(86400 * 1000, fn() => $this->updateCount("num_86400"));
 
         $this->ready();
     }
 
     /**
-     * @param string $column
-     * @return void
+     * Reset a counter column to 0 for every route (sliding window reset).
      */
-    public function updateCount(string $column)
+    public function updateCount(string $column): void
     {
         foreach ($this->table as $key => $num) {
             $this->table->set($key, [$column => 0]);
-            $this->debug(sprintf("%s %s:%s -> 0", "Update count", $key, $column));
+            $this->debug(sprintf("Update count %s:%s -> 0", $key, $column));
         }
     }
 }
