@@ -45,8 +45,8 @@ class Channel
             $this->addSubscribeFormTable($value["channel"], $value["actor"]);
         }
 
-        $config = Server::$instance->getConfigContext()->get("actor");
-        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config["multicastChannelCapacity"]]);
+        $capacity = Server::$instance->getConfigContext()->get("actor.multicastChannelCapacity", 10000);
+        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$capacity]);
 
         //Iterate to publish messages to the actor
         goWithContext(function () {
