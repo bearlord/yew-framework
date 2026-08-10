@@ -9,7 +9,7 @@ namespace Yew\Cluster\Transport;
 use Yew\Core\Server\Server;
 
 /**
- * Connection-pooled variant of {@see TcpRemoteTransport}.
+ * Connection-pooled TCP transport for cross-node actor calls.
  *
  * Reuses established TCP connections per remote node instead of opening a new
  * one per call, which matters for high-frequency ask traffic across the
