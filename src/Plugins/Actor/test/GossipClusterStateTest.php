@@ -5,6 +5,7 @@ namespace Yew\Plugins\Actor\test;
 use PHPUnit\Framework\TestCase;
 use Yew\Cluster\State\ClusterMember;
 use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\State\Test\GossipClusterStateTestHelper;
 
 /**
  * Offline tests for GossipClusterState membership bookkeeping.
@@ -21,7 +22,7 @@ class GossipClusterStateTest extends TestCase
     protected function setUp(): void
     {
         $this->state = new GossipClusterState('node-a');
-        $this->state->setTransportForTest(new FakeGossipTransport());
+        GossipClusterStateTestHelper::setTransport($this->state, new FakeGossipTransport());
     }
 
     public function testJoinRegistersLocalNodeAndIsAlive(): void

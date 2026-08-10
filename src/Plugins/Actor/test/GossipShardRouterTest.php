@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Yew\Cluster\State\ClusterMember;
 use Yew\Cluster\State\ClusterNode;
 use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\State\Test\GossipClusterStateTestHelper;
 use Yew\Cluster\Router\GossipShardRouter;
 
 /**
@@ -22,7 +23,7 @@ class GossipShardRouterTest extends TestCase
     protected function setUp(): void
     {
         $this->state = new GossipClusterState('node-a');
-        $this->state->setTransportForTest(new FakeGossipTransport());
+        GossipClusterStateTestHelper::setTransport($this->state, new FakeGossipTransport());
         $this->state->join('10.0.0.1', 9600, 1);
         // Seed a second node up-front so the router builds a 2-node ring.
         $this->state->observe(new ClusterMember(

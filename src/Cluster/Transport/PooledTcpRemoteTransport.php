@@ -6,6 +6,8 @@
 
 namespace Yew\Cluster\Transport;
 
+use Yew\Cluster\State\Location;
+use Yew\Cluster\State\ClusterNode;
 use Yew\Core\Server\Server;
 
 /**
@@ -27,6 +29,11 @@ class PooledTcpRemoteTransport implements RemoteTransport
     private string $localNodeId;
     private int $poolSize;
     private float $idleTimeout;
+
+    /** Extra seconds waited on recv beyond the caller's timeout, so a slow-but-live reply is not mistaken for a dead connection. */
+    private float $recvGrace = 5.0;
+    /** Cap on buffered inbound bytes per fd; above this the connection is dropped to avoid memory exhaustion. */
+    private int $maxRecvBuf = 1048576;
 
     /** @var array<string,\Swoole\Coroutine\Channel> host:port => pooled clients */
     private array $pools = [];
@@ -88,7 +95,7 @@ class PooledTcpRemoteTransport implements RemoteTransport
             }
         } else {
             /** @var \Swoole\Coroutine\Client $client */
-            $client = $pool->pop(0.1);
+            $client = $pool->pop(0);
             if ($client === false || !$client->isConnected()) {
                 $client = new \Swoole\Coroutine\Client(SWOOLE_SOCK_TCP);
                 if (!$client->connect($host, $port, 5.0)) {
@@ -125,11 +132,18 @@ class PooledTcpRemoteTransport implements RemoteTransport
             return false;
         }
         try {
-            return (bool) $client->send($env->toJson() . "\n");
+            if (!$client->send($env->toJson() . "\n")) {
+                // Send failed mid-flight: the connection is dead, close it rather
+                // than returning a broken client to the pool.
+                $client->close();
+                return false;
+            }
+            return true;
         } finally {
-            // Release even if send() throws, otherwise the pooled connection
-            // leaks and the pool eventually starves.
-            $this->release($node->getHost(), $node->getPort(), $client);
+            // Release a healthy connection so the pool never starves.
+            if ($client->isConnected()) {
+                $this->release($node->getHost(), $node->getPort(), $client);
+            }
         }
     }
 
@@ -154,7 +168,7 @@ class PooledTcpRemoteTransport implements RemoteTransport
             if (!$client->send($env->toJson() . "\n")) {
                 return null;
             }
-            $line = $client->recv(max(1.0, $timeOut + 5));
+            $line = $client->recv(max(1.0, $timeOut + $this->recvGrace));
             if (!is_string($line) || trim($line) === '') {
                 return null;
             }
@@ -193,6 +207,14 @@ class PooledTcpRemoteTransport implements RemoteTransport
     public function handleReceive(int $fd, string $data): void
     {
         $this->recvBuf[$fd] = ($this->recvBuf[$fd] ?? '') . $data;
+        if (strlen($this->recvBuf[$fd]) > $this->maxRecvBuf) {
+            // Peer is not sending a newline (or is flooding); drop it before the
+            // per-fd buffer grows unbounded and exhausts memory.
+            $swoole = Server::getInstance()->getServer();
+            $swoole?->close($fd);
+            unset($this->recvBuf[$fd]);
+            return;
+        }
         while (($pos = strpos($this->recvBuf[$fd], "\n")) !== false) {
             $line = substr($this->recvBuf[$fd], 0, $pos);
             $this->recvBuf[$fd] = substr($this->recvBuf[$fd], $pos + 1);
@@ -253,8 +275,12 @@ class PooledTcpRemoteTransport implements RemoteTransport
     private function sendReply(int $fd, RemoteEnvelope $reply): void
     {
         $swoole = Server::getInstance()->getServer();
-        if ($swoole !== null) {
-            $swoole->send($fd, $reply->toJson() . "\n");
+        if ($swoole === null) {
+            return;
+        }
+        if ($swoole->send($fd, $reply->toJson() . "\n") === false) {
+            // Peer already gone; nothing to reply to, just drop its buffer.
+            unset($this->recvBuf[$fd]);
         }
     }
 

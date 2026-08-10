@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Yew\Cluster\State\ClusterMember;
 use Yew\Cluster\State\ClusterNode;
 use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\State\Test\GossipClusterStateTestHelper;
 use Yew\Cluster\Router\GossipShardRouter;
 
 /**
@@ -46,11 +47,11 @@ class ClusterFailoverSmokeTest extends TestCase
         $this->transportB->register('node-b', $this->transportB);
 
         $this->nodeA = new GossipClusterState('node-a');
-        $this->nodeA->setTransportForTest($this->transportA);
+        GossipClusterStateTestHelper::setTransport($this->nodeA, $this->transportA);
         $this->nodeA->join('10.0.0.1', 9600, 1);
 
         $this->nodeB = new GossipClusterState('node-b');
-        $this->nodeB->setTransportForTest($this->transportB);
+        GossipClusterStateTestHelper::setTransport($this->nodeB, $this->transportB);
         $this->nodeB->join('10.0.0.2', 9600, 1);
 
         // Failover hook: record which node went DOWN so the test can assert
