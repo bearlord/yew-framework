@@ -27,22 +27,8 @@ use ReflectionClass;
 use ReflectionParameter;
 
 /**
- * Standalone cluster plugin. Owns the gossip membership service, the
- * consistent-hash shard router and the cross-node TCP transport.
- *
- * This is the wiring layer only: the cluster capability itself lives in the
- * self-contained {@see \Yew\Cluster} package (state, routers, transports,
- * ports, persistence), mirroring how Yew\Plugins\Mqtt wires up Yew\Mqtt.
- * The configuration model stays with the capability as
- * {@see \Yew\Cluster\ClusterConfig}, because its KEY ("cluster") maps directly
- * onto the top-level `yew.cluster` config subtree.
- *
- * This plugin is deliberately actor-agnostic: it only assembles the cluster
- * primitives and publishes them through the DI container as the
- * {@see ShardRouter}, {@see RemoteTransport} and {@see GossipClusterState}
- * interfaces. The actor layer (ActorPlugin) later pulls these from the container
- * and wires them into the actor runtime. The dependency direction is strictly
- * actor -> cluster; cluster never references the actor package.
+ * Wires the cluster capability (gossip membership, shard router and cross-node
+ * transport) into the DI container; the actor layer picks them up later.
  */
 class ClusterPlugin extends AbstractPlugin
 {
