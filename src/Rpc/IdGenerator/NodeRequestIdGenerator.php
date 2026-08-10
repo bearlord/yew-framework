@@ -19,9 +19,13 @@ class NodeRequestIdGenerator implements IdGeneratorInterface
      */
     private $node;
 
+    /** Fixed width of the Base62-encoded millisecond timestamp, so decode() can split the id without guessing lengths. */
+    private const TIME_WIDTH = 8;
+
     public function generate(): string
     {
-        return $this->getNode() . Base62::encode(intval(microtime(true) * 1000));
+        $time = Base62::encode(intval(microtime(true) * 1000));
+        return $this->getNode() . str_pad($time, self::TIME_WIDTH, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -29,9 +33,8 @@ class NodeRequestIdGenerator implements IdGeneratorInterface
      */
     public function decode(string $id): array
     {
-        $len = strlen(Base62::encode(intval(microtime(true) * 1000)));
-        $macStr = substr($id, 0, -$len);
-        $microtime = Base62::decode(substr($id, -$len)) / 1000;
+        $macStr = substr($id, 0, -self::TIME_WIDTH);
+        $microtime = Base62::decode(substr($id, -self::TIME_WIDTH)) / 1000;
         $node = str_pad(sprintf('%x', Base62::decode($macStr)), 12, '0', STR_PAD_LEFT);
         return [
             'node' => trim(preg_replace('/(..)/', '\1:', $node), ':'),
