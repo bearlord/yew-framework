@@ -2,6 +2,7 @@
 
 namespace Yew\Cluster\Port;
 
+use Yew\Cluster\Transport\Transfer;
 use Yew\Core\Server\Port\ServerPort;
 use Yew\Core\Server\Server;
 use Yew\Core\Server\Config\PortConfig;
@@ -19,13 +20,11 @@ class ClusterTcpPort extends ServerPort
     public const NAME = 'cluster-tcp';
 
     /**
-     * The transport serving inbound envelopes. Typed as object rather than a
-     * concrete class so a custom `cluster.services.transport` implementation is
-     * accepted; it only needs handleReceive()/handleClose() (fd-based framing).
-     *
-     * @var object|null
+     * The transport serving inbound envelopes. Typed as Transfer so only
+     * transports that actually support fd-based framing (e.g.
+     * PooledTcpRemoteTransport) are accepted; LocalTransport does not qualify.
      */
-    private ?object $transport = null;
+    private ?Transfer $transport = null;
 
     public function __construct(Server $server, PortConfig $portConfig)
     {
@@ -33,27 +32,21 @@ class ClusterTcpPort extends ServerPort
     }
 
     /**
-     * @param object $transport Must expose handleReceive(int,string) and
-     *                          handleClose(int). Transports without them are
-     *                          ignored (see the method_exists guards below).
+     * @param Transfer $transport Transport implementing fd-based framing.
      */
-    public function setTransport(object $transport): void
+    public function setTransport(Transfer $transport): void
     {
         $this->transport = $transport;
     }
 
     public function onTcpReceive(int $fd, int $reactorId, string $data): void
     {
-        if ($this->transport !== null && method_exists($this->transport, 'handleReceive')) {
-            $this->transport->handleReceive($fd, $data);
-        }
+        $this->transport?->handleReceive($fd, $data);
     }
 
     public function onTcpClose(int $fd, int $reactorId): void
     {
-        if ($this->transport !== null && method_exists($this->transport, 'handleClose')) {
-            $this->transport->handleClose($fd);
-        }
+        $this->transport?->handleClose($fd);
     }
 
     public function onTcpConnect(int $fd, int $reactorId): void
