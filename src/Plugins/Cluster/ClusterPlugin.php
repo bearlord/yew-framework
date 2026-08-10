@@ -21,6 +21,7 @@ use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Cluster\Transport\GossipTransport;
 use Yew\Cluster\Transport\PooledTcpRemoteTransport;
 use Yew\Cluster\Transport\RemoteTransport;
+use Yew\Cluster\Transport\Transfer;
 use Yew\Cluster\Router\ShardRouter;
 use Yew\Cluster\Router\GossipShardRouter;
 use ReflectionClass;
@@ -282,8 +283,10 @@ class ClusterPlugin extends AbstractPlugin
             ],
             $clusterCfg
         );
-        if (!$transport instanceof RemoteTransport) {
-            throw new \RuntimeException("cluster.transport must implement " . RemoteTransport::class);
+        if (!$transport instanceof RemoteTransport || !$transport instanceof InboundHandler) {
+            throw new \RuntimeException(
+                "cluster.transport must implement " . RemoteTransport::class . " and " . InboundHandler::class
+            );
         }
 
         $tcpPort = Server::$instance->getPortManager()->getPortFromName(ClusterTcpPort::NAME);

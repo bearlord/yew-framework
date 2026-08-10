@@ -8,7 +8,7 @@ namespace Yew\Cluster\Transport;
 
 use Yew\Cluster\State\Location;
 use Yew\Cluster\State\ClusterNode;
-use Yew\Core\Server\Server;
+use Yew\Coroutine\Server\Server;
 
 /**
  * Connection-pooled TCP transport for cross-node actor calls.
@@ -210,7 +210,7 @@ class PooledTcpRemoteTransport implements RemoteTransport
         if (strlen($this->recvBuf[$fd]) > $this->maxRecvBuf) {
             // Peer is not sending a newline (or is flooding); drop it before the
             // per-fd buffer grows unbounded and exhausts memory.
-            $swoole = Server::getInstance()->getServer();
+            $swoole = Server::$instance->getServer();
             $swoole?->close($fd);
             unset($this->recvBuf[$fd]);
             return;
@@ -274,7 +274,7 @@ class PooledTcpRemoteTransport implements RemoteTransport
      */
     private function sendReply(int $fd, RemoteEnvelope $reply): void
     {
-        $swoole = Server::getInstance()->getServer();
+        $swoole = Server::$instance->getServer();
         if ($swoole === null) {
             return;
         }
