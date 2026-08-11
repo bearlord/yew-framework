@@ -7,15 +7,14 @@
 namespace Yew\Cluster\Transport;
 
 /**
- * Real UDP gossip transport. Binds a UDP socket for inbound digests and
- * broadcasts / unicasts outbound digests to the cluster subnet.
+ * Real UDP gossip transport: binds a UDP socket for inbound digests and
+ * unicasts/broadcasts outbound digests.
  *
- * Two operating modes:
+ * Modes:
  *  - self-managed (default): binds its own Swoole coroutine UDP socket.
- *  - framework-managed: when {@see setManaged}(true) is called, the socket is
- *    NOT bound. Inbound datagrams are pushed via {@see handlePacket()} (fed by
- *    the framework's multi-port UDP listener) and outbound traffic is sent via
- *    the {@see setSender()} callback (the master Swoole server's sendto).
+ *  - framework-managed: setManaged(true) skips binding; inbound datagrams come
+ *    via handlePacket() (framework multi-port UDP listener) and outbound via the
+ *    setSender() callback (master Swoole server's sendto).
  */
 class UdpGossipTransport implements GossipTransport
 {
@@ -23,7 +22,9 @@ class UdpGossipTransport implements GossipTransport
     private int $bindPort;
     private string $broadcastTarget; // "host:port" or multicast group
     private ?\Swoole\Coroutine\Socket $socket = null;
-    private \Swoole\Coroutine\Channel $inbox;
+    // Lazily created in start() (worker process) so constructing this in the
+    // master process does not activate the coroutine runtime / event loop.
+    private ?\Swoole\Coroutine\Channel $inbox = null;
 
     private bool $managed = false;
     /** @var callable|null (string $host, int $port, string $payload): void */
@@ -34,7 +35,6 @@ class UdpGossipTransport implements GossipTransport
         $this->bindHost = $bindHost;
         $this->bindPort = $bindPort;
         $this->broadcastTarget = $broadcastTarget;
-        $this->inbox = new \Swoole\Coroutine\Channel(1024);
     }
 
     /**
@@ -68,6 +68,10 @@ class UdpGossipTransport implements GossipTransport
      */
     public function start(): void
     {
+        // Lazily create the inbox channel now (worker process, event loop up).
+        if ($this->inbox === null) {
+            $this->inbox = new \Swoole\Coroutine\Channel(1024);
+        }
         if ($this->managed) {
             return;
         }
@@ -76,9 +80,9 @@ class UdpGossipTransport implements GossipTransport
             return;
         }
         goWithContext(function () {
-            $peer = '';
             while ($this->socket !== null) {
-                $data = $this->socket->recvfrom($peer, 65535, 1.0);
+                $peer = [];
+                $data = $this->socket->recvfrom($peer, 1.0);
                 if ($data === false || $data === '') {
                     continue;
                 }

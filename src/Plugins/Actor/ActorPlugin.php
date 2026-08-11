@@ -9,7 +9,6 @@ namespace Yew\Plugins\Actor;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
-use Yew\Core\Log\Log;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Cluster\ClusterConfig;
@@ -147,10 +146,10 @@ class ActorPlugin extends AbstractPlugin
                                 continue;
                             }
                             $this->actorManager->removeActor($actor);
-                            Log::info("cluster: evicted local actor [$name] (now owned by [$owner])");
+                            Server::$instance->getLog()->info("cluster: evicted local actor [$name] (now owned by [$owner])");
                         }
                         if ($changed !== []) {
-                            Log::warning(
+                            Server::$instance->getLog()->warning(
                                 "cluster: ring changed for nodes [" . implode(',', $changed) . "]; "
                                 . "cross-node migration of non-persisted actors is not wired yet"
                             );
