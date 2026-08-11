@@ -33,19 +33,17 @@ use ReflectionParameter;
  */
 class ClusterPlugin extends AbstractPlugin
 {
-    /**
-     * @var ClusterConfig|null
-     */
     private ?ClusterConfig $clusterConfig = null;
 
-    /**
-     * Raw `yew.cluster` subtree, captured once at onAdded() and reused for
-     * "%token%" placeholder resolution so the config is not re-read (and cannot
-     * drift) between registration and server start.
-     *
-     * @var array
-     */
+    // Snapshot of `yew.cluster` taken at onAdded(); reused for "%token%"
+    // resolution so config isn't re-read (or drift) before server start.
     private array $rawClusterCfg = [];
+
+    // Gossip bootstrap deferred until the worker process (beforeProcessStart),
+    // where the Swoole event loop is already running. Must NOT be started in
+    // beforeServerStart(): that activates the coroutine runtime first and makes
+    // Swoole\Http\Server::start() fail with "The event-loop has already been created".
+    private ?array $deferredGossip = null;
 
     public function __construct()
     {
@@ -60,12 +58,10 @@ class ClusterPlugin extends AbstractPlugin
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
-        // Capture the raw yew.cluster subtree once; the cluster package builds
-        // its own config here so it stays independent of ActorPlugin, which just
-        // reads it back from the container later.
+        // Snapshot yew.cluster; the cluster package builds its own config here
+        // so it stays independent of ActorPlugin.
         $this->rawClusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
-        // DIGet throws when the entry is missing (no null to fall back on), so
-        // fall back to a fresh instance via try/catch.
+        // DIGet throws on a missing entry, so fall back to a fresh instance.
         try {
             $clusterConfig = DIGet(ClusterConfig::class);
         } catch (\Throwable $e) {
@@ -82,9 +78,8 @@ class ClusterPlugin extends AbstractPlugin
      */
     public function beforeServerStart(Context $context)
     {
-        // Prefer the container (an integrator may have replaced the instance),
-        // but fall back to the one built in onAdded() so a bypassed/reset
-        // container cannot silently disable clustering.
+        // Prefer a container instance an integrator may have replaced; fall back
+        // to the one built in onAdded() so a reset container can't disable clustering.
         $this->clusterConfig = DIGet(ClusterConfig::class) ?? $this->clusterConfig;
         if ($this->clusterConfig === null || !$this->clusterConfig->isEnabled()) {
             return;
@@ -92,20 +87,58 @@ class ClusterPlugin extends AbstractPlugin
         $this->start();
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     */
     public function beforeProcessStart(Context $context)
     {
-        // Cluster wiring is fully assembled in beforeServerStart(); no
-        // per-process work is needed here. Mark the plugin ready.
+        // Attach multi-port listeners BEFORE booting gossip, so the UDP transport
+        // is flagged managed and doesn't open a self-bound socket. Both run here
+        // (worker process) where the event loop is live.
+        $this->wirePorts();
+        $this->bootstrapGossip();
         $this->ready();
     }
 
-    /**
-     * Resolve a "%token%" placeholder against the cluster config subtree.
-     */
+    // Attach the gossip state / transport to the framework-managed multi-port
+    // listeners (cluster-gossip UDP, cluster-tcp TCP). Runs in the worker process
+    // because PortManager::$namePorts is populated only after beforeServerStart().
+    private function wirePorts(): void
+    {
+        if ($this->deferredGossip === null) {
+            return;
+        }
+        /** @var GossipClusterState $state */
+        $state = $this->deferredGossip["state"];
+        /** @var UdpGossipTransport $udp */
+        $udp = $this->deferredGossip["udp"];
+
+        $gossipPort = Server::$instance->getPortManager()->getPortFromName(ClusterGossipUdpPort::NAME);
+        if ($gossipPort instanceof ClusterGossipUdpPort) {
+            $udp->setManaged(true);
+            $udp->setSender(function (string $host, int $port, string $payload) {
+                $swoole = Server::$instance->getServer();
+                if ($swoole !== null) {
+                    $swoole->sendto($host, $port, $payload);
+                }
+            });
+            $gossipPort->setClusterState($state);
+        } else {
+            Server::$instance->getLog()->warning(
+                "cluster: UDP port '" . ClusterGossipUdpPort::NAME
+                . "' not declared in yew.port; falling back to self-bound gossip socket"
+            );
+        }
+
+        $tcpPort = Server::$instance->getPortManager()->getPortFromName(ClusterTcpPort::NAME);
+        if ($tcpPort instanceof ClusterTcpPort) {
+            $tcpPort->setTransport(DIGet(RemoteTransport::class));
+        } else {
+            Server::$instance->getLog()->warning(
+                "cluster: TCP port '" . ClusterTcpPort::NAME
+                . "' not declared in yew.port; cross-node inbound actor calls will not be served"
+            );
+        }
+    }
+
+    // Resolve a "%token%" placeholder against the cluster config subtree.
     private function resolvePlaceholders($value, array $clusterCfg)
     {
         if (is_string($value) && str_starts_with($value, '%') && str_ends_with($value, '%')) {
@@ -115,17 +148,9 @@ class ClusterPlugin extends AbstractPlugin
         return $value;
     }
 
-    /**
-     * Build a cluster service from a declarative definition.
-     *
-     * Named args are matched to the constructor parameters by name and
-     * "%token%" strings are resolved against the `yew.cluster` config subtree.
-     *
-     * @param array $definition  user-provided definition from yml
-     * @param array $defaults     [ "class" => FQCN, "args" => [...] ]
-     * @param array $clusterCfg  the `yew.cluster` config (for placeholders)
-     * @return object
-     */
+    // Build a cluster service from a declarative definition: named args are
+    // matched to constructor parameters by name, and "%token%" strings are
+    // resolved against the `yew.cluster` config subtree.
     private function buildService(array $definition, array $defaults, array $clusterCfg): object
     {
         $class = (string) ($definition["class"] ?? $defaults["class"]);
@@ -154,27 +179,15 @@ class ClusterPlugin extends AbstractPlugin
         return $ref->newInstanceArgs($positional);
     }
 
-    /**
-     * Assemble and start the cluster subsystem from declarative config.
-     *
-     * Builds the gossip state, UDP transport, shard router and cross-node TCP
-     * transport via {@see buildService}, wires them into the framework-managed
-     * multi-port listeners, publishes the three primitives through the DI
-     * container, and starts the failure-detection ticker.
-     *
-     * It deliberately does NOT touch the actor runtime; the actor layer pulls
-     * {@see ShardRouter}, {@see RemoteTransport} and {@see GossipClusterState}
-     * from the container and wires them in itself.
-     *
-     * @return void
-     */
+    // Assemble the cluster subsystem from declarative config and publish its
+    // three primitives (ShardRouter, RemoteTransport, GossipClusterState) to the
+    // DI container. Does not touch the actor runtime — the actor layer pulls
+    // these and wires them in itself.
     private function start(): void
     {
         $cfg = $this->clusterConfig;
-        // Reuse the subtree captured at onAdded() (see $rawClusterCfg) instead of
-        // re-reading it here, so placeholder resolution always matches the values
-        // that ClusterConfig was actually built from. Fall back to a fresh read
-        // only if onAdded() never ran (e.g. plugin constructed manually).
+        // Reuse the subtree captured at onAdded() so placeholder resolution
+        // matches the values ClusterConfig was built from.
         $clusterCfg = $this->rawClusterCfg !== []
             ? $this->rawClusterCfg
             : (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
@@ -223,26 +236,14 @@ class ClusterPlugin extends AbstractPlugin
             throw new \RuntimeException("cluster.gossip must implement " . GossipTransport::class);
         }
 
-        $gossipPort = Server::$instance->getPortManager()->getPortFromName(ClusterGossipUdpPort::NAME);
-        if ($gossipPort instanceof ClusterGossipUdpPort) {
-            $udp->setManaged(true);
-            $udp->setSender(function (string $host, int $port, string $payload) {
-                $swoole = Server::$instance->getServer();
-                if ($swoole !== null) {
-                    $swoole->sendto($host, $port, $payload);
-                }
-            });
-        } else {
-            Server::$instance->getLog()->warning(
-                "cluster: UDP port '" . ClusterGossipUdpPort::NAME
-                . "' not declared in yew.port; falling back to self-bound gossip socket"
-            );
-        }
-        $state->start($udp, $cfg->getSeeds());
-
-        if ($gossipPort instanceof ClusterGossipUdpPort) {
-            $gossipPort->setClusterState($state);
-        }
+        // Ports aren't registered yet (namePorts is populated only after
+        // beforeServerStart), so defer the wiring to wirePorts() in the worker.
+        $this->deferredGossip = [
+            "state" => $state,
+            "udp" => $udp,
+            "seeds" => $cfg->getSeeds(),
+            "heartbeat" => $cfg->getHeartbeatInterval(),
+        ];
 
         $localNode = new ClusterNode(
             $cfg->getNodeId(),
@@ -268,7 +269,6 @@ class ClusterPlugin extends AbstractPlugin
         }
 
         // Pooled TCP transport for cross-node calls.
-        /** @var PooledTcpRemoteTransport $transport */
         $transport = $this->buildService(
             (array) ($services["transport"] ?? []),
             [
@@ -288,26 +288,37 @@ class ClusterPlugin extends AbstractPlugin
             );
         }
 
-        $tcpPort = Server::$instance->getPortManager()->getPortFromName(ClusterTcpPort::NAME);
-        if ($tcpPort instanceof ClusterTcpPort) {
-            $tcpPort->setTransport($transport);
-        } else {
-            Server::$instance->getLog()->warning(
-                "cluster: TCP port '" . ClusterTcpPort::NAME
-                . "' not declared in yew.port; cross-node inbound actor calls will not be served"
-            );
-        }
+        // cluster-tcp wiring (setTransport) is deferred to wirePorts() for the
+        // same reason as the gossip port: namePorts isn't ready in beforeServerStart.
         $transport->start();
 
-        // Publish the three cluster primitives. The actor layer pulls these from
-        // the container and wires them into the actor runtime (setShardRouter,
-        // setRemoteTransport, cluster store, rebalance/failover hooks).
+        // Publish the three primitives; the actor layer pulls them from the
+        // container and wires them into the actor runtime.
         DISet(ShardRouter::class, $router);
         DISet(RemoteTransport::class, $transport);
         DISet(GossipClusterState::class, $state);
+    }
 
-        // Failure-detection + gossip ticker.
-        \Swoole\Timer::tick((int) ($cfg->getHeartbeatInterval() * 1000), function () use ($state) {
+    // Boot the gossip receiver coroutine + failure-detection ticker. Runs once
+    // in the worker process after the event loop is up. Idempotent.
+    private function bootstrapGossip(): void
+    {
+        if ($this->deferredGossip === null) {
+            return;
+        }
+        $deferred = $this->deferredGossip;
+        $this->deferredGossip = null;
+
+        /** @var GossipClusterState $state */
+        $state = $deferred["state"];
+        /** @var GossipTransport $udp */
+        $udp = $deferred["udp"];
+        $seeds = $deferred["seeds"];
+        $heartbeat = $deferred["heartbeat"];
+
+        $state->start($udp, $seeds);
+
+        \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
             $state->tick();
         });
     }
