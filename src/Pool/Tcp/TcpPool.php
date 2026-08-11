@@ -6,15 +6,15 @@
 
 namespace Yew\Pool\Tcp;
 
-use Swoole\Coroutine\Client;
+use Yew\Pool\Client\TcpClient;
 use Yew\Pool\ConnectionPool;
 
 /**
- * Coroutine pool of plain TCP (optionally TLS) connections.
+ * Coroutine pool of TCP connections (optionally TLS), wrapping TcpClient.
  *
  * Usage:
  *   $pool = new TcpPool('127.0.0.1', 9000, ['ssl' => true]);
- *   $pool->withConnection(fn (Client $c) => $c->send($bytes) && $c->recv());
+ *   $pool->withConnection(fn (TcpClient $c) => $c->send($bytes) && $c->recv());
  */
 class TcpPool extends ConnectionPool
 {
@@ -31,37 +31,20 @@ class TcpPool extends ConnectionPool
 
     protected function make(): object
     {
-        $ssl = (bool) ($this->options['ssl'] ?? false);
-        $sockType = $ssl ? SWOOLE_SOCK_TCP | SWOOLE_SSL : SWOOLE_SOCK_TCP;
-
-        $client = new Client($sockType);
-        $client->set([
-            'connect_timeout' => $this->connectTimeout,
-            'ssl_verify_peer' => $this->options['sslVerifyPeer'] ?? false,
-            'ssl_allow_self_signed' => $this->options['sslAllowSelfSigned'] ?? false,
-            'ssl_cert_file' => $this->options['sslCertFile'] ?? null,
-            'ssl_key_file' => $this->options['sslKeyFile'] ?? null,
-        ]);
-
-        if (!$client->connect($this->host, $this->port, $this->connectTimeout)) {
-            $code = $client->errCode;
-            $client->close();
-            throw new \RuntimeException(
-                "TcpPool connect {$this->host}:{$this->port} failed (code $code)"
-            );
-        }
-
-        return $client;
+        return new TcpClient($this->host, $this->port, array_merge(
+            $this->options,
+            ['connectTimeout' => $this->connectTimeout]
+        ));
     }
 
     protected function isAlive(object $client): bool
     {
-        return $client instanceof Client && $client->isConnected();
+        return $client instanceof TcpClient && $client->isConnected();
     }
 
     protected function destroy(object $client): void
     {
-        if ($client instanceof Client && $client->isConnected()) {
+        if ($client instanceof TcpClient) {
             $client->close();
         }
     }
