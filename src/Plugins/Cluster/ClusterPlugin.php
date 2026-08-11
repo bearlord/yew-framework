@@ -9,7 +9,6 @@ namespace Yew\Plugins\Cluster;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
-use Yew\Core\Log\Log;
 use Yew\Coroutine\Server\Server;
 use Yew\Cluster\ClusterConfig;
 use Yew\Cluster\State\ClusterNode;
@@ -234,7 +233,7 @@ class ClusterPlugin extends AbstractPlugin
                 }
             });
         } else {
-            Log::warning(
+            Server::$instance->getLog()->warning(
                 "cluster: UDP port '" . ClusterGossipUdpPort::NAME
                 . "' not declared in yew.port; falling back to self-bound gossip socket"
             );
@@ -293,7 +292,7 @@ class ClusterPlugin extends AbstractPlugin
         if ($tcpPort instanceof ClusterTcpPort) {
             $tcpPort->setTransport($transport);
         } else {
-            Log::warning(
+            Server::$instance->getLog()->warning(
                 "cluster: TCP port '" . ClusterTcpPort::NAME
                 . "' not declared in yew.port; cross-node inbound actor calls will not be served"
             );
