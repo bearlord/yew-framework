@@ -22,6 +22,7 @@ use Yew\Cluster\Transport\GossipTransport;
 use Yew\Cluster\Transport\PooledTcpRemoteTransport;
 use Yew\Cluster\Transport\RemoteTransport;
 use Yew\Cluster\Transport\Transfer;
+
 use Yew\Cluster\Router\ShardRouter;
 use Yew\Cluster\Router\GossipShardRouter;
 use ReflectionClass;
@@ -185,7 +186,7 @@ class ClusterPlugin extends AbstractPlugin
             [
                 "class" => GossipClusterState::class,
                 "args" => [
-                    "nodeId" => $cfg->getNodeId(),
+                    "localNodeId" => $cfg->getNodeId(),
                     "suspectAfter" => $cfg->getSuspectAfter(),
                     "downAfter" => $cfg->getDownAfter(),
                 ],
@@ -282,9 +283,9 @@ class ClusterPlugin extends AbstractPlugin
             ],
             $clusterCfg
         );
-        if (!$transport instanceof RemoteTransport || !$transport instanceof InboundHandler) {
+        if (!$transport instanceof RemoteTransport || !$transport instanceof Transfer) {
             throw new \RuntimeException(
-                "cluster.transport must implement " . RemoteTransport::class . " and " . InboundHandler::class
+                "cluster.transport must implement " . RemoteTransport::class . " and " . Transfer::class
             );
         }
 

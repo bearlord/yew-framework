@@ -9,6 +9,7 @@ namespace Yew\Cluster\Transport;
 use Yew\Cluster\State\Location;
 use Yew\Cluster\State\ClusterNode;
 use Yew\Coroutine\Server\Server;
+use Yew\Cluster\Transport\Transfer;
 
 /**
  * Connection-pooled TCP transport for cross-node actor calls.
@@ -22,7 +23,7 @@ use Yew\Coroutine\Server\Server;
  * reply read); ask borrows a connection, reads the reply envelope, then returns
  * it to the pool.
  */
-class PooledTcpRemoteTransport implements RemoteTransport
+class PooledTcpRemoteTransport implements RemoteTransport, Transfer
 {
     private string $host;
     private int $port;
