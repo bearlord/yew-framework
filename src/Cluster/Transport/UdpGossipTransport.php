@@ -76,9 +76,9 @@ class UdpGossipTransport implements GossipTransport
             return;
         }
         goWithContext(function () {
+            $peer = '';
             while ($this->socket !== null) {
-                $peer = null;
-                $data = $this->socket->recvfrom(65535, 0, $peer);
+                $data = $this->socket->recvfrom($peer, 65535, 1.0);
                 if ($data === false || $data === '') {
                     continue;
                 }

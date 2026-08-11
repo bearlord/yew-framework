@@ -6,6 +6,7 @@
 
 namespace Yew\Cluster\State;
 
+use Yew\Cluster\Transport\GossipTransport;
 use Yew\Core\Plugins\Logger\GetLogger;
 
 /**

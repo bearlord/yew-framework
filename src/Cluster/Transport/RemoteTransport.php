@@ -6,6 +6,8 @@
 
 namespace Yew\Cluster\Transport;
 
+use Yew\Cluster\State\Location;
+
 /**
  * Network transport for cross-node actor messaging (Akka remoting / Orleans
  * silo-to-silo equivalent).

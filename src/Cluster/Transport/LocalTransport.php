@@ -6,6 +6,8 @@
 
 namespace Yew\Cluster\Transport;
 
+use Yew\Cluster\State\Location;
+
 /**
  * No-op transport for the single-machine deployment.
  *
