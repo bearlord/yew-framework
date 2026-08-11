@@ -8,7 +8,7 @@ use Yew\Cluster\Transport\UdpGossipTransport;
 /**
  * Tests for the framework-managed (socket-less) path of UdpGossipTransport.
  *
- * The constructor allocates a \Swoole\Channel inbox; when the real Swoole
+ * The constructor allocates a \Swoole\Coroutine\Channel inbox; when the real Swoole
  * extension is absent the test bootstrap installs an in-memory stand-in, so
  * this test runs everywhere (Windows CLI and Linux CI alike).
  */

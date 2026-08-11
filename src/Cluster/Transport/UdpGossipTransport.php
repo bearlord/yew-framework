@@ -23,7 +23,7 @@ class UdpGossipTransport implements GossipTransport
     private int $bindPort;
     private string $broadcastTarget; // "host:port" or multicast group
     private ?\Swoole\Coroutine\Socket $socket = null;
-    private \Swoole\Channel $inbox;
+    private \Swoole\Coroutine\Channel $inbox;
 
     private bool $managed = false;
     /** @var callable|null (string $host, int $port, string $payload): void */
@@ -34,7 +34,7 @@ class UdpGossipTransport implements GossipTransport
         $this->bindHost = $bindHost;
         $this->bindPort = $bindPort;
         $this->broadcastTarget = $broadcastTarget;
-        $this->inbox = new \Swoole\Channel(1024);
+        $this->inbox = new \Swoole\Coroutine\Channel(1024);
     }
 
     /**

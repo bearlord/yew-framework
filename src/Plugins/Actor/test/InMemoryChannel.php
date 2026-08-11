@@ -3,7 +3,7 @@
 namespace Yew\Plugins\Actor\test;
 
 /**
- * Stand-in for \Swoole\Channel used by offline tests when the Swoole extension
+ * Stand-in for \Swoole\Coroutine\Channel used by offline tests when the Swoole extension
  * is not installed. Provides the subset of the API (constructor + push/pop)
  * that UdpGossipTransport relies on for its inbox.
  */
