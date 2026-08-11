@@ -4,14 +4,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool;
+namespace Yew\Client\Pool;
 
 use Swoole\Coroutine\Channel;
 
 /**
  * Generic coroutine connection pool, modelled after the pooling pattern used by
  * Cluster's PooledTcpRemoteTransport but kept free of cluster concerns so any
- * Swoole client (TCP, HTTP/HTTPS) can reuse it.
+ * Yew\Client\HttpClient, TcpClient, WebSocketClient can reuse it.
  *
  * Borrowed connections MUST be returned via release(); prefer the scoped
  * withConnection() helper so the connection goes back even on exception.
@@ -24,7 +24,7 @@ abstract class ConnectionPool
     protected Channel $pool;
 
     /**
-     * Live connections currently handed out (fd/object => true) so we can spot
+     * Live connections currently handed out (object id => true) so we can spot
      * leaks and skip them when checking health.
      *
      * @var array<int, object>
@@ -52,9 +52,7 @@ abstract class ConnectionPool
     }
 
     /**
-     * Build a fresh, connected client. Implemented per transport.
-     *
-     * @return object The underlying Swoole client (Coroutine\Client or Http\Client).
+     * Build a fresh, connected Yew\Client instance. Implemented per transport.
      */
     abstract protected function make(): object;
 

@@ -4,13 +4,12 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool\WebSocket;
+namespace Yew\Client\Pool;
 
-use Yew\Pool\Client\WebSocketClient;
-use Yew\Pool\ConnectionPool;
+use Yew\Client\WebSocketClient;
 
 /**
- * Coroutine pool of WebSocket connections, wrapping WebSocketClient.
+ * Coroutine pool of WebSocket connections, wrapping Yew\Client\WebSocketClient.
  *
  * Usage:
  *   $pool = new WebSocketPool('wss://echo.example.com', 'wss', '/ws');

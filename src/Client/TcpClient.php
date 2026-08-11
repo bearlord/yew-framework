@@ -4,14 +4,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool\Client;
+namespace Yew\Client;
 
 use Swoole\Coroutine\Client;
 
 /**
  * A single TCP connection (optionally TLS). Thin wrapper over
  * Swoole\Coroutine\Client that encapsulates connect/ssl settings so the same
- * object can be used standalone or pooled by TcpPool.
+ * object can be used standalone or pooled by Yew\Client\Pool\TcpClient.
  */
 class TcpClient
 {
@@ -39,7 +39,7 @@ class TcpClient
             $code = $this->client->errCode;
             $this->client->close();
             throw new \RuntimeException(
-                "TcpClient connect {$this->host}:{$this->port} failed (code $code)"
+                "Tcp connect {$this->host}:{$this->port} failed (code $code)"
             );
         }
     }

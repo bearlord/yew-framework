@@ -4,13 +4,12 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool\Tcp;
+namespace Yew\Client\Pool;
 
-use Yew\Pool\Client\TcpClient;
-use Yew\Pool\ConnectionPool;
+use Yew\Client\TcpClient;
 
 /**
- * Coroutine pool of TCP connections (optionally TLS), wrapping TcpClient.
+ * Coroutine pool of TCP connections (optionally TLS), wrapping Yew\Client\TcpClient.
  *
  * Usage:
  *   $pool = new TcpPool('127.0.0.1', 9000, ['ssl' => true]);

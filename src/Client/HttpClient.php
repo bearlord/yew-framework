@@ -4,13 +4,13 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool\Client;
+namespace Yew\Client;
 
 use Swoole\Coroutine\Http\Client;
 
 /**
  * A single HTTP/HTTPS connection. Thin wrapper over Swoole\Coroutine\Http\Client
- * so the same object can be used standalone or pooled by HttpClientPool.
+ * so the same object can be used standalone or pooled by Yew\Client\Pool\HttpClient.
  */
 class HttpClient
 {

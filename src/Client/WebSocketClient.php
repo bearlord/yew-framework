@@ -4,14 +4,14 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool\Client;
+namespace Yew\Client;
 
 use Swoole\Coroutine\Http\Client;
 
 /**
  * A single WebSocket connection. Thin wrapper over Swoole\Coroutine\Http\Client
  * (after upgrade()) so the same object can be used standalone or pooled by
- * WebSocketPool.
+ * Yew\Client\Pool\WebSocketClient.
  */
 class WebSocketClient
 {
@@ -43,7 +43,7 @@ class WebSocketClient
         if (!$this->client->upgrade($this->path)) {
             $this->client->close();
             throw new \RuntimeException(
-                "WebSocketClient upgrade {$this->host}:{$this->port}{$this->path} failed"
+                "WebSocket upgrade {$this->host}:{$this->port}{$this->path} failed"
             );
         }
     }

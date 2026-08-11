@@ -4,25 +4,24 @@
  * @author bearlord <565364226@qq.com>
  */
 
-namespace Yew\Pool\Http;
+namespace Yew\Client\Pool;
 
-use Yew\Pool\Client\HttpClient;
-use Yew\Pool\ConnectionPool;
+use Yew\Client\HttpClient;
 
 /**
- * Coroutine pool of HTTP/HTTPS connections, wrapping HttpClient.
+ * Coroutine pool of HTTP/HTTPS connections, wrapping Yew\Client\HttpClient.
  *
  * Scheme is taken from $host ('https://...' or the $ssl option); the port
  * defaults to 80 / 443 accordingly when not given.
  *
  * Usage:
- *   $pool = new HttpClientPool('https://api.example.com');
+ *   $pool = new HttpPool('https://api.example.com');
  *   $pool->withConnection(function (HttpClient $c) {
  *       $c->get('/v1/ping');
  *       return $c->getBody();
  *   });
  */
-class HttpClientPool extends ConnectionPool
+class HttpPool extends ConnectionPool
 {
     protected string $host;
     protected int $port;
