@@ -60,13 +60,12 @@ class ClusterPlugin extends AbstractPlugin
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
-        // Build the top-level cluster config from the "yew.cluster" subtree and
-        // publish it. Done here (not in ActorPlugin) so the cluster package is
-        // fully self-contained. ActorPlugin only consumes it via DI.
+        // Capture the raw yew.cluster subtree once; the cluster package builds
+        // its own config here so it stays independent of ActorPlugin, which just
+        // reads it back from the container later.
         $this->rawClusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
-        // PHP-DI throws NotFoundException when the entry is absent (it does not
-        // return null), so the `??` fallback below cannot catch it. Guard with
-        // try/catch and fall back to a fresh instance.
+        // DIGet throws when the entry is missing (no null to fall back on), so
+        // fall back to a fresh instance via try/catch.
         try {
             $clusterConfig = DIGet(ClusterConfig::class);
         } catch (\Throwable $e) {
