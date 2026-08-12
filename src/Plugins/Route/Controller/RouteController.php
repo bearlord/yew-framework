@@ -119,7 +119,10 @@ abstract class RouteController extends Controller implements IController
     }
 
     /**
-     * Called on every request
+     * Called on every request. The @Inject $request/$response are object-level
+     * (injected once at bean creation) and must be refreshed here from the
+     * per-request coroutine context, otherwise a reused controller instance
+     * keeps a stale/null request across requests.
      *
      * @param string|null $controllerName
      * @param string|null $methodName
@@ -127,7 +130,14 @@ abstract class RouteController extends Controller implements IController
      */
     public function initialization(?string $controllerName, ?string $methodName)
     {
-
+        $request = getDeepContextValueByClassName(Request::class);
+        if ($request !== null) {
+            $this->request = $request;
+        }
+        $response = getDeepContextValueByClassName(Response::class);
+        if ($response !== null) {
+            $this->response = $response;
+        }
     }
 
     /**
