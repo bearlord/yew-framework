@@ -6,7 +6,7 @@
 
 namespace Yew\Plugins\Actor;
 
-use DI\Annotation\Inject;
+use DI\Attribute\Inject;
 use Yew\Core\Channel\Channel;
 use Yew\Core\Plugins\Event\EventDispatcher;
 use Yew\Core\Plugins\Logger\GetLogger;
@@ -71,12 +71,7 @@ abstract class Actor
      */
     protected ?ActorStore $store = null;
 
-    /**
-     * @Inject()
-     * @var ClusterActorStore|null Cluster-aware store injected by the framework
-     *      when cross-node durability is enabled. Takes precedence over the
-     *      local-only FileActorStore in init().
-     */
+    #[Inject]
     protected ?ClusterActorStore $injectedStore = null;
 
     /**
@@ -89,16 +84,10 @@ abstract class Actor
      */
     protected $channel;
 
-    /**
-     * @Inject()
-     * @var EventDispatcher
-     */
+    #[Inject]
     protected EventDispatcher $eventDispatcher;
 
-    /**
-     * @Inject()
-     * @var ActorConfig
-     */
+    #[Inject]
     protected ?ActorConfig $actorConfig = null;
 
     /**
