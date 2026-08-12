@@ -41,6 +41,34 @@ class ActorSystem
             return new ActorIpcProxy($actorName, false, $timeOut);
         }
 
+        // Cluster-aware placement: when clustering is enabled, create the actor on
+        // the node the consistent-hash ring assigns as its owner. If that is not
+        // this node, forward the create over the remote transport and return a
+        // remote proxy so that any later get()/ask() finds the actor where it lives.
+        $manager = ActorManager::getInstance();
+        try {
+            $clusterConfig = DIGet(\Yew\Cluster\ClusterConfig::class);
+        } catch (\Throwable $e) {
+            $clusterConfig = null;
+        }
+        if ($clusterConfig !== null && $clusterConfig->isEnabled()) {
+            $router = $manager->getShardRouter();
+            $loc = $router->locate($actorName);
+            if ($loc !== null && !$loc->getNode()->isLocal()) {
+                $actorData = $data === null ? [] : (is_array($data) ? $data : [$data]);
+                $result = $manager->getRemoteTransport()->create(
+                    $loc, $actionClass, $actorName, $actorData, $parentName, null, $timeOut
+                );
+                if ($result === null) {
+                    return false;
+                }
+                if (is_array($result) && (int) ($result['code'] ?? 200) >= 400) {
+                    throw new ActorException("Remote actor create failed: " . ($result['message'] ?? 'unknown'));
+                }
+                return new ActorIpcProxy($actorName, false, $timeOut);
+            }
+        }
+
         $processes = Server::$instance->getProcessManager()->getProcessGroup(ActorConfig::GROUP_NAME);
 
         $processList  = $processes->getProcesses();

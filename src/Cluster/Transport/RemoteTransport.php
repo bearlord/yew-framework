@@ -50,6 +50,28 @@ interface RemoteTransport
     public function ask(Location $location, string $method, array $arguments, ?string $traceId, float $timeOut);
 
     /**
+     * Create an actor on a remote node (the actor's hash owner).
+     *
+     * @param Location $location  Owner node location
+     * @param string   $className Actor class name
+     * @param string   $actorName Actor name
+     * @param array    $actorData Constructor data
+     * @param string|null $parent Parent actor name
+     * @param string   $traceId  Current trace id for cross-node propagation
+     * @param float    $timeOut  Seconds to wait for the reply
+     * @return mixed The create result (e.g. ["code","message","data"]), or null on timeout
+     */
+    public function create(
+        Location $location,
+        string $className,
+        string $actorName,
+        array $actorData,
+        ?string $parent,
+        ?string $traceId,
+        float $timeOut
+    );
+
+    /**
      * Whether this transport can reach the given (remote) location.
      */
     public function supports(Location $location): bool;

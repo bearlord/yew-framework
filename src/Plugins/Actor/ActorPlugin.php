@@ -232,6 +232,30 @@ class ActorPlugin extends AbstractPlugin
     public function handleRemoteEnvelope(RemoteEnvelope $env)
     {
         $manager = ActorManager::getInstance();
+
+        // Cross-node actor creation: the requesting node hashed this actor name
+        // onto us (the owner node), so we materialise it in our own actor worker
+        // pool and report success/failure back over the wire. The result must be
+        // serialisable (no IPC proxy object crosses the TCP boundary).
+        if ($env->kind === RemoteEnvelope::KIND_CREATE) {
+            try {
+                $result = ActorSystem::create(
+                    $env->className,
+                    $env->actorName,
+                    $env->actorData,
+                    true,
+                    5,
+                    $env->parent
+                );
+                if ($result === false) {
+                    return ['code' => 500, 'message' => 'actor create timeout'];
+                }
+                return ['code' => 200, 'message' => 'created', 'data' => ['actorName' => $env->actorName]];
+            } catch (\Throwable $e) {
+                return ['code' => 500, 'message' => $e->getMessage()];
+            }
+        }
+
         $info = $manager->getActorInfo($env->actorName);
         if ($info === null) {
             return null;

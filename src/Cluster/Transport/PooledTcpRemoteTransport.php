@@ -198,6 +198,53 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
         return $node !== null && !$node->isLocal();
     }
 
+    public function create(
+        Location $location,
+        string $className,
+        string $actorName,
+        array $actorData,
+        ?string $parent,
+        ?string $traceId,
+        float $timeOut
+    ) {
+        $env = new RemoteEnvelope(
+            $this->newMsgId(), RemoteEnvelope::KIND_CREATE,
+            $actorName, '', $actorData, $traceId, $this->localNodeId,
+            $className, $actorData, $parent
+        );
+        $node = $location->getNode();
+        $client = $this->borrow($node->getHost(), $node->getPort());
+        if ($client === null) {
+            return null;
+        }
+        $reusable = false;
+        try {
+            if (!$client->send($env->toJson() . "\n")) {
+                return null;
+            }
+            $line = $client->recv(max(1.0, $timeOut + $this->recvGrace));
+            if (!is_string($line) || trim($line) === '') {
+                return null;
+            }
+            try {
+                $reply = RemoteEnvelope::fromJson(trim($line));
+            } catch (\Throwable $e) {
+                return null;
+            }
+            if ($reply->msgId !== $env->msgId) {
+                return null;
+            }
+            $reusable = true;
+            return $reply->arguments['__reply'] ?? null;
+        } finally {
+            if ($reusable) {
+                $this->release($node->getHost(), $node->getPort(), $client);
+            } else {
+                $client->close();
+            }
+        }
+    }
+
     /**
      * Inbound data from the framework multi-port TCP listener. Buffers per fd
      * and processes newline-delimited JSON envelopes.
