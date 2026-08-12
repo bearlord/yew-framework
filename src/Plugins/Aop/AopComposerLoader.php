@@ -113,50 +113,47 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             return;
         }
 
-        if (PHP_MAJOR_VERSION >= 8) {
-            $this->loadClassPHP8($class, $file);
-            return;
-        }
-
-        $this->loadClassPHP7($class, $file);
-
+        $this->loadClassPHP8($class, $file);
     }
 
     /**
-     * @param string $class
-     * @param string $file
-     * @return void
-     * @throws \Exception
+     * Include a (possibly AOP php://filter) file. The go.source.transforming.loader
+     * user-stream filter can fail to deliver the (transformed) source under some
+     * runtimes (e.g. PHP 8.4 + Swoole coroutine, where feof() on the filter stream
+     * is unreliable). In that case fall back to including the real file path so the
+     * framework still boots instead of failing with
+     * "Failed opening php://filter/... for inclusion".
      */
-    protected function loadClassPHP7(string $class, string $file)
+    private function safeInclude(string $file): void
     {
-        if (strpos($class, "App\\") !== false) {
+        if (strpos($file, "php://") !== 0) {
             include $file;
             return;
         }
-
-        if (strpos($file, "php://") === 0) {
-            $file = $this->resolveRealFile($file);
+        $real = $this->realPathFromFilter($file);
+        if ($real === null) {
+            include $file;
+            return;
         }
-
-        include $file;
+        $ok = @include $file;
+        if ($ok === false && is_file($real)) {
+            include $real;
+        }
     }
 
     /**
-     * Extract the real path from an AOP php://filter address. If the
-     * go.source.transforming.loader stream filter is not registered, return the
-     * underlying real file path so the include degrades to plain loading instead
-     * of failing with "Failed opening php://filter/... for inclusion".
+     * Extract the underlying real path from an AOP php://filter address, or null
+     * if $file is not a filter address / the path cannot be parsed.
      */
-    private function resolveRealFile(string $file): string
+    private function realPathFromFilter(string $file): ?string
     {
         if (preg_match("/resource=(.+)$/", $file, $matches)) {
             $real = PathResolver::realpath($matches[1]);
-            if ($real !== false && $real !== '' && !in_array('go.source.transforming.loader', stream_get_filters(), true)) {
+            if ($real !== false && $real !== '') {
                 return $real;
             }
         }
-        return $file;
+        return null;
     }
 
     /**
@@ -175,14 +172,7 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             return;
         }
 
-        // If the AOP stream filter is not registered (e.g. init failed or a
-        // stale process), fall back to including the real file path so the
-        // framework can still boot instead of failing on every php:// include.
-        if (strpos($file, "php://") === 0) {
-            $file = $this->resolveRealFile($file);
-        }
-
-        include $file;
+        $this->safeInclude($file);
     }
 
 
