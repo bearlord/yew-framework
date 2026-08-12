@@ -136,14 +136,27 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
         }
 
         if (strpos($file, "php://") === 0) {
-            if (strpos($class, "Yew\\Nikic") !== false) {
-                if (preg_match("/resource=(.+)$/", $file, $matches)) {
-                    $file = PathResolver::realpath($matches[1]);
-                }
-            }
+            $file = $this->resolveRealFile($file);
         }
 
         include $file;
+    }
+
+    /**
+     * Extract the real path from an AOP php://filter address. If the
+     * go.source.transforming.loader stream filter is not registered, return the
+     * underlying real file path so the include degrades to plain loading instead
+     * of failing with "Failed opening php://filter/... for inclusion".
+     */
+    private function resolveRealFile(string $file): string
+    {
+        if (preg_match("/resource=(.+)$/", $file, $matches)) {
+            $real = PathResolver::realpath($matches[1]);
+            if ($real !== false && $real !== '' && !in_array('go.source.transforming.loader', stream_get_filters(), true)) {
+                return $real;
+            }
+        }
+        return $file;
     }
 
     /**
@@ -162,12 +175,11 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             return;
         }
 
+        // If the AOP stream filter is not registered (e.g. init failed or a
+        // stale process), fall back to including the real file path so the
+        // framework can still boot instead of failing on every php:// include.
         if (strpos($file, "php://") === 0) {
-            if (strpos($class, "Yew\\Nikic") !== false) {
-                if (preg_match("/resource=(.+)$/", $file, $matches)) {
-                    $file = PathResolver::realpath($matches[1]);
-                }
-            }
+            $file = $this->resolveRealFile($file);
         }
 
         include $file;
