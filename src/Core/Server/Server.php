@@ -77,6 +77,13 @@ abstract class Server extends BaseNode
     protected ?\Swoole\Server $server = null;
 
     /**
+     * The coroutine that sits in the master process waiting for SIGTERM.
+     * Held on a property so PHP doesn't GC it while the server is running.
+     * @var \Swoole\Coroutine|null
+     */
+    protected $stopSignalCoroutine = null;
+
+    /**
      * Server port
      * @var ServerPort
      */
@@ -364,6 +371,22 @@ abstract class Server extends BaseNode
         $this->getEventDispatcher()->dispatchEvent(new ApplicationEvent(ApplicationEvent::ApplicationStartingEvent, $this));
         $this->processManager->getMasterProcess()->onProcessStart();
 
+        // Spin up a coroutine in the master that blocks on SIGTERM. It has to
+        // live here (after start) — doing it before start with Process::signal()
+        // creates the event loop early and makes start() blow up. When the signal
+        // lands we call shutdown() so workers get to clean up before they go.
+        $this->stopSignalCoroutine = \Swoole\Coroutine::create(function () {
+            $signal = \Swoole\Coroutine\System::waitSignal(SIGTERM);
+            if ($signal === SIGTERM) {
+                $this->getLog()->info("Received SIGTERM, shutting down gracefully");
+                try {
+                    $this->server->shutdown();
+                } catch (Throwable $e) {
+                    $this->getLog()->error($e);
+                }
+            }
+        });
+
         try {
             $this->onStart();
         } catch (Throwable $e) {
@@ -554,6 +577,7 @@ abstract class Server extends BaseNode
         if ($this->server == null) {
             throw new Exception("Please call configure first");
         }
+
         $this->server->start();
     }
 

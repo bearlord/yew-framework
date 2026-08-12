@@ -50,43 +50,64 @@ class StopCmd extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = new SymfonyStyle($input, $output);
-        $serverConfig = Server::$instance->getServerConfig();
+        $serverName = Server::$instance->getServerConfig()->getName();
 
-        $serverName = $serverConfig->getName();
-	    $masterPid = exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'");
-        if (empty($masterPid)) {
+        // The master shows up as "<serverName>-master" in ps; grab its pid.
+        $masterPid = (int) trim(exec("ps -ef | grep $serverName-master | grep -v 'grep ' | awk '{print $2}'"));
+        if ($masterPid <= 0) {
             $io->warning("server $serverName not run");
             return ConsolePlugin::SUCCESS_EXIT;
         }
 
+        // Use ps to check liveness, not kill(pid, 0) — a zombie still answers 0,
+        // so kill() would lie and we'd think the server is still up.
+        $isAlive = function (int $pid): bool {
+            return $pid > 0 && trim(exec("ps -p $pid -o comm= 2>/dev/null")) !== '';
+        };
+
+        // --kill: just nuke the whole group and get out.
         if ($input->getOption("kill")) {
-            //kill -9
-            exec("ps -ef|grep $serverName|grep -v grep|cut -c 9-15|xargs kill -9");
+            posix_kill(-$masterPid, SIGKILL);
+            // small pause so we don't report success while it's still dying
+            for ($i = 0; $i < 10 && $isAlive($masterPid); $i++) {
+                usleep(200000);
+            }
+            if ($isAlive($masterPid)) {
+                $io->warning("Server $serverName stop fail");
+                return ConsolePlugin::FAIL_EXIT;
+            }
+            $io->success("Server $serverName stop success (force killed)");
             return ConsolePlugin::SUCCESS_EXIT;
         }
 
-        // Send stop signal to master process.
-        $masterPid && posix_kill($masterPid, SIGTERM);
-        // Timeout.
-        $timeout = 40;
-        $startTime = time();
-        // Check master process is still alive?
-        while (1) {
-            $masterIsAlive = $masterPid && posix_kill($masterPid, 0);
-            if ($masterIsAlive) {
-                // Timeout?
-                if (time() - $startTime >= $timeout) {
+        // Normal path: the master listens for SIGTERM (see _onStart) and calls
+        // Swoole's shutdown(), which lets every worker clean up first. Send once,
+        // then just wait.
+        posix_kill($masterPid, SIGTERM);
+
+        // Give it a few seconds (reload_async + max_wait_time is 3s). If it's
+        // still kicking after 8s, kill the whole group.
+        $graceTimeout = 8;
+        $start = time();
+        $forced = false;
+        while ($isAlive($masterPid)) {
+            if (time() - $start >= $graceTimeout) {
+                $io->warning("Graceful shutdown timed out, force killing process group $masterPid");
+                posix_kill(-$masterPid, SIGKILL);
+                $forced = true;
+                for ($i = 0; $i < 10 && $isAlive($masterPid); $i++) {
+                    usleep(200000);
+                }
+                if ($isAlive($masterPid)) {
                     $io->warning("Server $serverName stop fail");
                     return ConsolePlugin::FAIL_EXIT;
                 }
-                // Waiting amoment.
-                usleep(10000);
-                continue;
+                break;
             }
-            // Stop success.
-            $io->success("Server $serverName stop success");
-            break;
+            usleep(20000);
         }
+
+        $io->success("Server $serverName stop success" . ($forced ? " (force killed)" : " (graceful)"));
         return ConsolePlugin::SUCCESS_EXIT;
     }
 }
