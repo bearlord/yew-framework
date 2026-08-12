@@ -58,6 +58,11 @@ class GossipClusterState implements ClusterStateInterface
     private ?GossipTransport $transport = null;
     private array $seeds = [];
 
+    public function getTransport(): ?GossipTransport
+    {
+        return $this->transport;
+    }
+
     /**
      * Pending reliable sends awaiting ACK.
      * mid => ['peer'=>string,'msg'=>GossipMessage,'retries'=>int,'nextAt'=>int]

@@ -2,6 +2,8 @@
 
 namespace Yew\Cluster\Port;
 
+use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Core\Server\Port\ServerPort;
 use Yew\Core\Server\Server;
 use Yew\Core\Server\Config\PortConfig;

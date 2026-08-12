@@ -81,6 +81,13 @@ class PackAspect extends OrderAspect
     {
         list($fd, $reactorId, $data) = $invocation->getArguments();
         $abstractServerPort = $invocation->getThis();
+
+        // Cluster internal ports (cluster-tcp/cluster-gossip) speak their own
+        // binary protocol and must not be decoded as business packets.
+        if (str_starts_with(get_class($abstractServerPort), 'Yew\\Cluster\\Port\\')) {
+            $invocation->proceed();
+            return;
+        }
         $packConfig = $this->packConfigs[$abstractServerPort->getPortConfig()->getPort()];
         $packTool = $this->packTools[$packConfig->getPackTool()];
 
@@ -126,6 +133,13 @@ class PackAspect extends OrderAspect
     {
         list($data, $clientInfo) = $invocation->getArguments();
         $abstractServerPort = $invocation->getThis();
+
+        // Cluster internal ports (cluster-gossip/cluster-tcp) speak their own
+        // binary protocol and must not be decoded as business packets.
+        if (str_starts_with(get_class($abstractServerPort), 'Yew\\Cluster\\Port\\')) {
+            $invocation->proceed();
+            return;
+        }
         $packConfig = $this->packConfigs[$abstractServerPort->getPortConfig()->getPort()];
         $packTool = $this->packTools[$packConfig->getPackTool()];
         $clientData = $packTool->unPack(-1, $data, $packConfig);
