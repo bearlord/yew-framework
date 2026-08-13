@@ -26,7 +26,6 @@ use Yew\Plugins\Actor\Telemetry\Tracer;
 
 class ActorPlugin extends AbstractPlugin
 {
-
     /**
      * @var ActorConfig|null
      */
@@ -203,10 +202,8 @@ class ActorPlugin extends AbstractPlugin
         GossipShardRouter $router,
         GossipClusterState $state
     ): void {
-        if ($this->failoverHandler === null) {
-            return;
-        }
         $localNodeId = $state->getLocalNodeId();
+        $failoverMap = $this->actorConfig->getFailoverActorMap();
         foreach ($state->getReplicatedActorNames($deadNodeId) as $actorName) {
             // ownerOf() maps an actor name onto the consistent-hash ring; only
             // actors that now hash to this node are resurrected here.
@@ -216,7 +213,21 @@ class ActorPlugin extends AbstractPlugin
             if (ActorManager::getInstance()->getActorRaw($actorName) !== null) {
                 continue;
             }
-            ($this->failoverHandler)($actorName);
+            // Prefer a user-registered handler; otherwise fall back to the
+            // configured prefix=>class map so resurrection needs no app code.
+            if ($this->failoverHandler !== null) {
+                ($this->failoverHandler)($actorName);
+                continue;
+            }
+            $prefix = explode('-', $actorName)[0] ?? '';
+            $class = $failoverMap[$prefix] ?? null;
+            if ($class === null) {
+                Server::$instance->getLogger()->warning(
+                    sprintf('[actor] failover: no class mapped for actor "%s" (prefix "%s"), skip', $actorName, $prefix)
+                );
+                continue;
+            }
+            ActorSystem::create($class, $actorName);
         }
     }
 
@@ -285,33 +296,6 @@ class ActorPlugin extends AbstractPlugin
     public function beforeProcessStart(Context $context)
     {
         $this->ready();
-
-        // Optional lifecycle-hook smoke test. Off by default; enable with:
-        //   YEW_RUN_LIFECYCLE_SMOKE=1 php server.php
-        // Runs once inside the actor-0 process after startup.
-        if (getenv('YEW_RUN_LIFECYCLE_SMOKE') !== false
-            && Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() === "actor-0"
-        ) {
-            \Swoole\Coroutine::create(function () {
-                $candidates = [];
-                if (defined('ROOT_DIR')) {
-                    $candidates[] = ROOT_DIR . 'test/Actor/LifecycleHookSmoke.php';
-                }
-                $candidates[] = (getcwd() ?: __DIR__) . '/test/Actor/LifecycleHookSmoke.php';
-                foreach ($candidates as $file) {
-                    // cygwin shells expose /cygdrive/d/... paths that the native
-                    // swoole-cli binary cannot stat; map them back to Windows form.
-                    if (str_starts_with($file, '/cygdrive/')) {
-                        $file = preg_replace('#^/cygdrive/([a-z])/#i', '$1:/', $file);
-                    }
-                    if (is_file($file)) {
-                        require_once $file;
-                        \App\Test\runLifecycleHookSmoke();
-                        return;
-                    }
-                }
-            });
-        }
     }
 
 	/**
@@ -334,6 +318,16 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setSupervisorMode((string) ($config["supervisorMode"] ?? "one-for-one"));
 		$actorConfig->setPersistenceEnabled((bool) ($config["persistenceEnabled"] ?? false));
 		$actorConfig->setPersistenceDir((string) ($config["persistenceDir"] ?? "/tmp/yew-actor-store"));
+
+		// Failover actor map: prefix => actor FQCN, used to auto-resurrect
+		// persisted actors on a dead peer node. The application only configures
+		// it; the framework builds the failover handler from it.
+		$failoverActors = (array) ($config["failoverActors"] ?? []);
+		$failoverMap = [];
+		foreach ($failoverActors as $prefix => $fqcn) {
+			$failoverMap[$prefix] = ltrim((string) $fqcn, '\\');
+		}
+		$actorConfig->setFailoverActorMap($failoverMap);
 		$actorConfig->setRoutingStrategy((string) ($config["routingStrategy"] ?? "round-robin"));
 		$actorConfig->setRoutingReplicas((int) ($config["routingReplicas"] ?? 128));
 		$actorConfig->setDispatcher((string) ($config["dispatcher"] ?? "coroutine"));
