@@ -514,6 +514,55 @@ class ActorManager
     }
 
     /**
+     * Re-instantiate every actor that the shared actorTable records as belonging
+     * to THIS process but which has no live in-process instance yet.
+     *
+     * This is required after an actor process restart: the cross-process
+     * actorTable survives the restart (it lives in shared memory), so stale
+     * rows still point at the old process id. Without re-instantiation, proxies
+     * would dispatch IPC calls to a dead process and time out. We re-create the
+     * instance locally and let recovery() rebuild state from the durable store.
+     *
+     * @return string[] names that were successfully recovered
+     */
+    public function recoverLocalActors(): array
+    {
+        $current = Server::$instance->getProcessManager()->getCurrentProcessId();
+        $recovered = [];
+
+        foreach ($this->actorTable as $name => $row) {
+            if ((int)($row['processId'] ?? -1) !== $current) {
+                continue;
+            }
+            // Skip actors that already have a live DI instance in this process.
+            $className = $this->actorIdClassNameTable->get($row['classId'] ?? -1, 'className');
+            if (empty($className) || !class_exists($className)) {
+                continue;
+            }
+            if (DIGet($className . ':' . $name) instanceof Actor) {
+                continue;
+            }
+
+            try {
+                /** @var Actor $actor */
+                $actor = new $className($name, true, empty($row['parent']) ? null : $row['parent']);
+                $actor->recovery();
+                $this->addActor($actor, empty($row['parent']) ? null : $row['parent']);
+                $recovered[] = $name;
+            } catch (\Throwable $e) {
+                Server::$instance->getLog()->warning(sprintf(
+                    'ActorManager: failed to recover local actor %s (%s): %s',
+                    $name,
+                    $className,
+                    $e->getMessage()
+                ));
+            }
+        }
+
+        return $recovered;
+    }
+
+    /**
      * Get a handle to an existing Actor by name.
      *
      * Returns null if no such actor exists.

@@ -67,7 +67,6 @@ class ActorProcess extends Process
             if ($actor instanceof Actor) {
                 $actor->destroy();
             }
-
             $this->eventDispatcher->dispatchProcessEvent(
                 new ActorDestroyEvent(ActorDestroyEvent::ActorDestroyReadyEvent . ":" . $actorName, null),
                 Server::$instance->getProcessManager()->getProcessFromId($event->getProcessId())
@@ -81,6 +80,28 @@ class ActorProcess extends Process
             "ready_time" => null,
             "last_exit_time" => null
         ]);
+
+        // After a process restart the shared actorTable may still hold rows that
+        // belong to this process but have no live in-process instance. Re-create
+        // them (and replay durable state via recovery()) so proxies dispatch to a
+        // live actor instead of a dead process.
+        try {
+            $recovered = ActorManager::getInstance()->recoverLocalActors();
+            if (!empty($recovered)) {
+                Server::$instance->getLog()->info(sprintf(
+                    'ActorProcess %s recovered %d actor(s) on startup: %s',
+                    $this->processName,
+                    count($recovered),
+                    implode(', ', $recovered)
+                ));
+            }
+        } catch (\Throwable $e) {
+            Server::$instance->getLog()->warning(sprintf(
+                'ActorProcess %s recoverLocalActors failed: %s',
+                $this->processName,
+                $e->getMessage()
+            ));
+        }
     }
 
     /**
