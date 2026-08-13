@@ -250,8 +250,31 @@ class ActorIpcProxy extends IpcProxy
      */
     public function __call(string $name, array $arguments)
     {
+        // Lifecycle methods must never be forwarded over IPC: tearing down the
+        // actor (destroy/stop) before the reply is sent would hang the caller on
+        // a silent timeout, and removeActor/unregister mutate registry state
+        // that the caller cannot safely drive remotely. Route these through
+        // ActorSystem::destroy() instead.
+        static $reserved = [
+            'destroy'      => true,
+            'stop'         => true,
+            'removeActor'  => true,
+            'unregister'   => true,
+            'shutdown'     => true,
+        ];
+        if (isset($reserved[$name])) {
+            throw new \BadMethodCallException(sprintf(
+                "ActorIpcProxy: method '%s' is a reserved lifecycle method and must not be called over IPC; use ActorSystem::destroy() instead",
+                $name
+            ));
+        }
+
+        // Remote actors are dispatched through the cluster transport, NOT the
+        // inherited local-IPC __call (which would send a IpcCallMessage to an
+        // unresolved $this->process and silently time out). Route through ask(),
+        // which uses $this->remote->ask() over the remote transport.
         if ($this->isRemote()) {
-            return parent::__call($name, $arguments);
+            return $this->ask($name, $arguments);
         }
 
         if ($this->sessionId != null) {
