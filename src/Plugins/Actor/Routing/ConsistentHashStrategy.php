@@ -72,12 +72,7 @@ class ConsistentHashStrategy implements ActorRoutingStrategy
         return $bestIndex;
     }
 
-    /**
-     * 32-bit FNV-1a style hash mapped to unsigned int range.
-     *
-     * @param string $value
-     * @return int
-     */
+
     /**
      * 32-bit FNV-1a style hash mapped to the unsigned int range.
      *
