@@ -38,7 +38,8 @@ class ActorSystem
         ?string $routingKey = null)
     {
         if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
-            return new ActorIpcProxy($actorName, false, $timeOut);
+            $proxy = Actor::getProxy($actorName, false, $timeOut);
+            return $proxy === false ? true : $proxy;
         }
 
         // Cluster-aware placement: when clustering is enabled, create the actor on
@@ -65,7 +66,8 @@ class ActorSystem
                 if (is_array($result) && (int) ($result['code'] ?? 200) >= 400) {
                     throw new ActorException("Remote actor create failed: " . ($result['message'] ?? 'unknown'));
                 }
-                return new ActorIpcProxy($actorName, false, $timeOut);
+                $proxy = Actor::getProxy($actorName, false, $timeOut);
+                return $proxy === false ? true : $proxy;
             }
         }
 
@@ -106,7 +108,16 @@ class ActorSystem
             return false;
         }
 
-        return new ActorIpcProxy($actorName, false, $timeOut);
+        // Build the proxy defensively: if the actor ended up not registered in
+        // the local actorTable (e.g. the create event was not applied before this
+        // point, or the target process died), getProxy() returns false instead of
+        // throwing a fatal ActorException.
+        $proxy = Actor::getProxy($actorName, false, $timeOut);
+        if ($proxy === false) {
+            return false;
+        }
+
+        return $proxy;
     }
 
     /**

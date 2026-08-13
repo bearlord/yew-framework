@@ -170,7 +170,7 @@ class ActorIpcProxy extends IpcProxy
     /**
      * True when this proxy targets a remote cluster node.
      */
-    private function isRemote(): bool
+    public function isRemote(): bool
     {
         return $this->remote !== null && $this->location !== null && !$this->location->isLocal();
     }
