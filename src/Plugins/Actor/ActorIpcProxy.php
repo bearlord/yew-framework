@@ -240,6 +240,15 @@ class ActorIpcProxy extends IpcProxy
     public function sendMessage(ActorMessage $message): bool
     {
         $message = new ProcessIpcCallMessage($this->className, "sendMessage", [$message], true);
+        // TEMP DIAG (remove after fixing timeout)
+        Server::$instance->getLog()->info("DIAG ActorIpcProxy send: className=" . $this->className
+            . " actorName=" . $this->actorName
+            . " method=" . $name
+            . " toProcessId=" . $this->process->getProcessId()
+            . " toProcessType=" . $this->process->getProcessType()
+            . " fromProcessId=" . Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId()
+            . " token=" . $message->getProcessIpcCallData()->getToken());
+
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
 
         return true;
