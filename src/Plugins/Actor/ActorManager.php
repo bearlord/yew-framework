@@ -575,25 +575,37 @@ class ActorManager
      */
     public function getActor(string $actorName, ?bool $oneWay = false, ?float $timeOut = 0)
     {
-        if (!$this->hasActor($actorName)) {
-            return null;
+        // Local fast path: the actor is registered in this node's actorTable.
+        if ($this->hasActor($actorName)) {
+            // Only resolve the real instance when THIS process is the one that owns the actor.
+            $data = $this->actorTable->get($actorName);
+            if ((int)$data["processId"] === Server::$instance->getProcessManager()->getCurrentProcessId()) {
+                $className = $this->actorIdClassNameTable->get($data["classId"], "className");
+
+                /** @var Actor|null $actor */
+                $actor = DIGet($className . ":" . $actorName);
+
+                return $actor;
+            }
+
+            // From a worker: return an IPC proxy to the actor process.
+            // The factory returns false when the actor's location or info cannot be
+            // resolved, instead of throwing (the proxy constructor throws when the
+            // actor's location or info cannot be resolved).
+            return ActorIpcProxy::create($actorName, $oneWay, $timeOut);
         }
 
-        // Only resolve the real instance when THIS process is the one that owns the actor.
-        $data = $this->actorTable->get($actorName);
-        if ((int)$data["processId"] === Server::$instance->getProcessManager()->getCurrentProcessId()) {
-            $className = $this->actorIdClassNameTable->get($data["classId"], "className");
-
-            /** @var Actor|null $actor */
-            $actor = DIGet($className . ":" . $actorName);
-
-            return $actor;
+        // Not registered locally: if the cluster's shard router knows which node
+        // owns this actor, return a remote proxy so cross-node reads work. Without
+        // this, getActor() on a non-owner node would always return null.
+        $loc = $this->shardRouter->locate($actorName);
+        if ($loc !== null && !$loc->getNode()->isLocal()) {
+            $proxy = ActorIpcProxy::create($actorName, $oneWay, $timeOut);
+            if ($proxy !== false) {
+                return $proxy;
+            }
         }
 
-        // From a worker: return an IPC proxy to the actor process.
-        // The factory returns false when the actor's location or info cannot be
-        // resolved, instead of throwing (the proxy constructor throws when the
-        // actor's location or info cannot be resolved).
-        return ActorIpcProxy::create($actorName, $oneWay, $timeOut);
+        return null;
     }
 }
