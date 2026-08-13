@@ -55,8 +55,20 @@ class IpcMessageProcessor extends MessageProcessor
                     $handle = $actor;
                 }
             }
-            if ($handle === null) {
-                $handle = Server::$instance->getContainer()->get($className);
+            try {
+                if ($handle === null) {
+                    $handle = Server::$instance->getContainer()->get($className);
+                }
+            } catch (\Throwable $e) {
+                // Resolution failure (e.g. actor not owned by this process, or the
+                // class is not a registered DI service) must still produce a reply
+                // so the caller does not hang on a silent timeout.
+                $errorClass = get_class($e);
+                $errorCode = $e->getCode();
+                $errorMessage = $e->getMessage();
+                $this->error($e);
+                $this->reply($ipcCallData, $message, null, $errorClass, $errorCode, $errorMessage);
+                return true;
             }
             $result = null;
             $errorClass = null;
@@ -112,13 +124,8 @@ class IpcMessageProcessor extends MessageProcessor
                 return true;
             }
 
-            if (!$ipcCallData->isOneway()) {
-                Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage(
-                    new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
-                    Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
-                );
-            }
-            
+            $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
+
             //Processing cache
             if (!isset($this->sessions[$sessionKey])) {
                 $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
@@ -140,5 +147,31 @@ class IpcMessageProcessor extends MessageProcessor
         }
 
         return false;
+    }
+
+    /**
+     * Send the IPC result back to the caller process.
+     *
+     * Always replies (unless the call was one-way) so the caller never hangs on
+     * a silent timeout when the handler produced an error or could not resolve
+     * a handle.
+     *
+     * @param IpcCallData $ipcCallData
+     * @param Message     $message
+     * @param mixed       $result
+     * @param string|null $errorClass
+     * @param int|null    $errorCode
+     * @param string|null $errorMessage
+     */
+    private function reply(IpcCallData $ipcCallData, Message $message, $result, ?string $errorClass, ?int $errorCode, ?string $errorMessage): void
+    {
+        if ($ipcCallData->isOneway()) {
+            return;
+        }
+
+        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage(
+            new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
+            Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
+        );
     }
 }
