@@ -400,8 +400,8 @@ class ActorConfig extends BaseConfig
 	    // Resolve Yew path aliases (e.g. '@app', '@runtime') so a value like
 	    // '@app/persistence/actor-store' maps to the real directory instead of
 	    // being used verbatim. Aliases are registered during Application bootstrap.
-	    $this->persistenceDir = Yew::getAlias($persistenceDir);
-	    }
+	    $this->persistenceDir = Yew::getAlias($persistenceDir, false);
+    }
 
 
 
