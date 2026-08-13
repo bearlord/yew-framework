@@ -37,6 +37,21 @@ class LocalTransport implements RemoteTransport
         return null;
     }
 
+    public function create(
+        Location $location,
+        string $className,
+        string $actorName,
+        array $actorData,
+        ?string $parent,
+        ?string $traceId,
+        float $timeOut
+    ) {
+        // Local placement is delivered via in-process IPC; actors are created
+        // on the local node through the normal ActorSystem path rather than a
+        // network transport. Never reached for same-node creation.
+        return null;
+    }
+
     public function supports(Location $location): bool
     {
         return $location->isLocal();
