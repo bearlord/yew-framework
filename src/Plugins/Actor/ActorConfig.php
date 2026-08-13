@@ -8,6 +8,7 @@ namespace Yew\Plugins\Actor;
 
 use Yew\Core\Plugins\Config\BaseConfig;
 use Yew\Cluster\ClusterConfig;
+use Yew\Yew;
 
 
 class ActorConfig extends BaseConfig
@@ -396,7 +397,10 @@ class ActorConfig extends BaseConfig
 	 */
 	public function setPersistenceDir(string $persistenceDir): void
 	{
-		$this->persistenceDir = $persistenceDir;
+		// Resolve Yew path aliases (e.g. '@app', '@runtime') so a value like
+		// '@app/persistence/actor-store' maps to the real directory instead of
+		// being used verbatim. Aliases are registered during Application bootstrap.
+		$this->persistenceDir = Yew::getAlias($persistenceDir);
 	}
 
 	/**
