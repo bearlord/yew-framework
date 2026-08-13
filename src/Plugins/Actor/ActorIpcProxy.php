@@ -212,7 +212,7 @@ class ActorIpcProxy extends IpcProxy
      */
     public function sendMessage(ActorMessage $message): bool
     {
-        $message = new ProcessIpcCallMessage($this->className, "sendMessage", [$message], true);
+        $message = new ActorIpcCallMessage($this->className, $this->actorName, "sendMessage", [$message], true);
 
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
 
