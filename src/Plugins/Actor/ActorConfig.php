@@ -75,15 +75,6 @@ class ActorConfig extends BaseConfig
     protected string $persistenceDir = '/tmp/yew-actor-store';
 
     /**
-     * @var array<string,string> Map of actor-name prefix => actor FQCN used to
-     *      resurrect persisted actors on failover. Key is the part before the
-     *      first '-' in the actor name (e.g. "counter" for "counter-x").
-     *      Configured via yew.actor.failoverActors; the framework builds the
-     *      failover handler from it so no code is needed at the application level.
-     */
-    protected array $failoverActorMap = [];
-
-    /**
      * @var string Process selection strategy for new actors:
      *             "round-robin" | "consistent-hash" | "least-loaded"
      */
@@ -410,24 +401,9 @@ class ActorConfig extends BaseConfig
 	    // '@app/persistence/actor-store' maps to the real directory instead of
 	    // being used verbatim. Aliases are registered during Application bootstrap.
 	    $this->persistenceDir = Yew::getAlias($persistenceDir);
-	}
+	    }
 
-	/**
-	 * @return array<string,string>
-	 */
-	public function getFailoverActorMap(): array
-	{
-	    return $this->failoverActorMap;
-	}
 
-	/**
-	 * @param array<string,string> $failoverActorMap
-	 * @return void
-	 */
-	public function setFailoverActorMap(array $failoverActorMap): void
-	{
-	    $this->failoverActorMap = $failoverActorMap;
-	}
 
 	/**
 	 * @return string

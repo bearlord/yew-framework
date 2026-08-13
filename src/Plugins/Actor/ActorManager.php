@@ -11,6 +11,8 @@ use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Exception\ActorException;
+use Yew\Plugins\Actor\Persistence\ActorStore;
+use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Cluster\State\ClusterNode;
 use Yew\Cluster\State\Location;
 use Yew\Cluster\Router\ShardRouter;
@@ -259,6 +261,17 @@ class ActorManager
             ? $this->shardRouter->getLocalNode()
             : new ClusterNode('local');
         $this->shardRouter->register($actorName, new Location($node, $currentProcessId));
+
+        // Route 2: persist the actor's class name alongside its state so a
+        // failover node can resurrect it without an external class mapping.
+        try {
+            $store = \DIGet(ClusterActorStore::class);
+            if ($store instanceof ActorStore) {
+                $store->saveMeta($actorName, $className);
+            }
+        } catch (\Throwable $e) {
+            // No durable store registered (persistence disabled): nothing to do.
+        }
 
         if ($parentName !== null) {
             $this->addChild($parentName, $actorName);

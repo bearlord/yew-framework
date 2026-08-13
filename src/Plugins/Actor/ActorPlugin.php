@@ -20,6 +20,7 @@ use Yew\Cluster\Transport\RemoteEnvelope;
 use Yew\Plugins\Actor\Actor;
 use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\ActorManager;
+use Yew\Plugins\Actor\Persistence\ActorStore;
 use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
 use Yew\Plugins\Actor\Telemetry\Tracer;
@@ -203,7 +204,8 @@ class ActorPlugin extends AbstractPlugin
         GossipClusterState $state
     ): void {
         $localNodeId = $state->getLocalNodeId();
-        $failoverMap = $this->actorConfig->getFailoverActorMap();
+        $store = $this->resolveFailoverStore();
+
         foreach ($state->getReplicatedActorNames($deadNodeId) as $actorName) {
             // ownerOf() maps an actor name onto the consistent-hash ring; only
             // actors that now hash to this node are resurrected here.
@@ -213,22 +215,46 @@ class ActorPlugin extends AbstractPlugin
             if (ActorManager::getInstance()->getActorRaw($actorName) !== null) {
                 continue;
             }
-            // Prefer a user-registered handler; otherwise fall back to the
-            // configured prefix=>class map so resurrection needs no app code.
+            // Prefer a user-registered handler; otherwise resolve the actor
+            // class automatically (Route 2: read the class from the replicated
+            // store meta, so every persisted actor is resurrected without any
+            // external class mapping).
             if ($this->failoverHandler !== null) {
                 ($this->failoverHandler)($actorName);
                 continue;
             }
-            $prefix = explode('-', $actorName)[0] ?? '';
-            $class = $failoverMap[$prefix] ?? null;
+            $class = $store !== null ? $store->loadClass($actorName) : null;
             if ($class === null) {
                 Server::$instance->getLogger()->warning(
-                    sprintf('[actor] failover: no class mapped for actor "%s" (prefix "%s"), skip', $actorName, $prefix)
+                    sprintf('[actor] failover: no class for actor "%s" (no persisted meta), skip', $actorName)
                 );
                 continue;
             }
             ActorSystem::create($class, $actorName);
         }
+    }
+
+    /**
+     * Resolve the durable store used to recover actor classes during failover.
+     *
+     * @return ClusterActorStore|FileActorStore|null
+     */
+    private function resolveFailoverStore()
+    {
+        try {
+            $store = \DIGet(ClusterActorStore::class);
+        } catch (\Throwable $e) {
+            $store = null;
+        }
+        if ($store instanceof ActorStore) {
+            return $store;
+        }
+        try {
+            $fileStore = \DIGet(FileActorStore::class);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        return $fileStore instanceof ActorStore ? $fileStore : null;
     }
 
     /**
@@ -318,16 +344,6 @@ class ActorPlugin extends AbstractPlugin
 		$actorConfig->setSupervisorMode((string) ($config["supervisorMode"] ?? "one-for-one"));
 		$actorConfig->setPersistenceEnabled((bool) ($config["persistenceEnabled"] ?? false));
 		$actorConfig->setPersistenceDir((string) ($config["persistenceDir"] ?? "/tmp/yew-actor-store"));
-
-		// Failover actor map: prefix => actor FQCN, used to auto-resurrect
-		// persisted actors on a dead peer node. The application only configures
-		// it; the framework builds the failover handler from it.
-		$failoverActors = (array) ($config["failoverActors"] ?? []);
-		$failoverMap = [];
-		foreach ($failoverActors as $prefix => $fqcn) {
-			$failoverMap[$prefix] = ltrim((string) $fqcn, '\\');
-		}
-		$actorConfig->setFailoverActorMap($failoverMap);
 		$actorConfig->setRoutingStrategy((string) ($config["routingStrategy"] ?? "round-robin"));
 		$actorConfig->setRoutingReplicas((int) ($config["routingReplicas"] ?? 128));
 		$actorConfig->setDispatcher((string) ($config["dispatcher"] ?? "coroutine"));

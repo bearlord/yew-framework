@@ -41,4 +41,15 @@ interface ActorStore
      * Delete all persisted state for an actor (events + snapshot).
      */
     public function delete(string $actorName): void;
+
+    /**
+     * Persist the actor's class name (used by failover to recreate the actor
+     * without an external class-name mapping).
+     */
+    public function saveMeta(string $actorName, string $class): void;
+
+    /**
+     * Load the persisted class name for an actor, or null if not available.
+     */
+    public function loadClass(string $actorName): ?string;
 }

@@ -190,6 +190,42 @@ class ClusterActorStore implements ActorStore
     }
 
     /**
+     * Persist the actor's class name locally and replicate it to peers so a
+     * failover node can recreate the actor without an external class mapping.
+     */
+    public function saveMeta(string $actorName, string $class): void
+    {
+        $this->local->saveMeta($actorName, $class);
+        $this->replicate($actorName, 'meta', json_encode([
+            'actorName' => $actorName,
+            'class' => $class,
+        ], JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * Resolve the actor's class name for failover.
+     *
+     * Prefers the locally persisted meta, then falls back to any replica that
+     * holds the meta entry, so a freshly promoted node can still rebuild it.
+     */
+    public function loadClass(string $actorName): ?string
+    {
+        $local = $this->local->loadClass($actorName);
+        if ($local !== null) {
+            return $local;
+        }
+        if ($this->cluster === null) {
+            return null;
+        }
+        $json = $this->cluster->findReplica($actorName, 'meta');
+        if ($json === null) {
+            return null;
+        }
+        $decoded = json_decode($json, true);
+        return is_array($decoded) && !empty($decoded['class']) ? $decoded['class'] : null;
+    }
+
+    /**
      * Ingest a replica entry pushed by a peer (called by the cluster layer when
      * a STORE_PUT gossip message arrives).
      */
@@ -223,6 +259,11 @@ class ClusterActorStore implements ActorStore
                 (int) ($decoded['lastSequence'] ?? 0),
                 (float) ($decoded['timestamp'] ?? 0)
             ));
+        } elseif ($kind === 'meta') {
+            $decoded = json_decode($payloadJson, true);
+            if (is_array($decoded) && !empty($decoded['class'])) {
+                $this->local->saveMeta((string) $decoded['actorName'], (string) $decoded['class']);
+            }
         } elseif ($kind === 'clear') {
             $this->local->delete($actorName);
         }
@@ -247,6 +288,16 @@ class ClusterActorStore implements ActorStore
                 return null;
             }
             return ['actorName' => $actorName, 'kind' => 'snapshots', 'payload' => json_encode($snap->toArray(), JSON_UNESCAPED_UNICODE)];
+        }
+        if ($kind === 'meta') {
+            $class = $this->local->loadClass($actorName);
+            if ($class === null) {
+                return null;
+            }
+            return ['actorName' => $actorName, 'kind' => 'meta', 'payload' => json_encode([
+                'actorName' => $actorName,
+                'class' => $class,
+            ], JSON_UNESCAPED_UNICODE)];
         }
         if ($kind === 'clear') {
             return ['actorName' => $actorName, 'kind' => 'clear', 'payload' => '[]'];

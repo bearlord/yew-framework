@@ -189,5 +189,47 @@ class FileActorStore implements ActorStore
     {
         @unlink($this->eventsFile($actorName));
         @unlink($this->snapshotFile($actorName));
+        @unlink($this->metaFile($actorName));
+    }
+
+    /**
+     * Path of the meta JSON file (actor name -> class) for an actor.
+     *
+     * @param string $actorName Actor name
+     * @return string
+     */
+    private function metaFile(string $actorName): string
+    {
+        return $this->dir . DIRECTORY_SEPARATOR . $this->sanitize($actorName) . '.meta.json';
+    }
+
+    /**
+     * Persist the actor's class name for failover recovery.
+     *
+     * @param string $actorName Actor name
+     * @param string $class Fully-qualified class name
+     */
+    public function saveMeta(string $actorName, string $class): void
+    {
+        $this->writeJson($this->metaFile($actorName), [
+            'actorName' => $actorName,
+            'class' => $class,
+        ]);
+    }
+
+    /**
+     * Load the persisted class name for an actor, or null if not available.
+     *
+     * @param string $actorName Actor name
+     * @return string|null
+     */
+    public function loadClass(string $actorName): ?string
+    {
+        $rows = $this->readJson($this->metaFile($actorName));
+        if (empty($rows) || empty($rows['class'])) {
+            return null;
+        }
+
+        return $rows['class'];
     }
 }
