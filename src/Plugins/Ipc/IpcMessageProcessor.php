@@ -10,6 +10,7 @@ use Yew\Core\Message\Message;
 use Yew\Core\Message\MessageProcessor;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
+use Yew\Plugins\Actor\ActorIpcCallMessage;
 
 class IpcMessageProcessor extends MessageProcessor
 {
@@ -42,13 +43,35 @@ class IpcMessageProcessor extends MessageProcessor
     {
         if ($message instanceof IpcCallMessage) {
             $ipcCallData = $message->getProcessIpcCallData();
-            $handle = Server::$instance->getContainer()->get($ipcCallData->getClassName());
+
+            // Actor proxies carry the actor name in a dedicated field of the
+            // ActorIpcCallMessage subtype, so the class name stays a clean DI
+            // identifier. Resolve actor handles through ActorManager::getActor().
+            $handle = null;
+            $className = $ipcCallData->getClassName();
+            if ($message instanceof ActorIpcCallMessage) {
+                $actor = \Yew\Plugins\Actor\ActorManager::getInstance()->getActor($ipcCallData->getActorName());
+                if ($actor instanceof \Yew\Plugins\Actor\Actor) {
+                    $handle = $actor;
+                }
+            }
+            if ($handle === null) {
+                $handle = Server::$instance->getContainer()->get($className);
+            }
             $result = null;
             $errorClass = null;
             $errorCode = null;
             $errorMessage = null;
 
-            $lockSessionId = $this->sessions[$ipcCallData->getClassName()] ?? null;
+            // Session lock key: actor messages are keyed by the actor name so each
+            // actor instance keeps its own transaction lock (equivalent to the old
+            // "ClassName:actorName" key). Plain service classes keep the class name
+            // as the lock key, matching the per-DI-singleton transaction semantics.
+            $sessionKey = $message instanceof ActorIpcCallMessage
+                ? $ipcCallData->getActorName()
+                : $ipcCallData->getClassName();
+
+            $lockSessionId = $this->sessions[$sessionKey] ?? null;
             $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
             $args = $ipcCallData->getArguments();
 
@@ -84,7 +107,7 @@ class IpcMessageProcessor extends MessageProcessor
                 }
             } else {
                 //The transaction id does not match and cache the message
-                $this->cacheMessages[$ipcCallData->getClassName()][] = $message;
+                $this->cacheMessages[$sessionKey][] = $message;
 
                 return true;
             }
@@ -97,8 +120,8 @@ class IpcMessageProcessor extends MessageProcessor
             }
             
             //Processing cache
-            if (!isset($this->sessions[$ipcCallData->getClassName()])) {
-                $cacheMessages = $this->cacheMessages[$ipcCallData->getClassName()] ?? null;
+            if (!isset($this->sessions[$sessionKey])) {
+                $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
                 if (!empty($cacheMessages)) {
                     foreach ($cacheMessages as $cacheMessage) {
                         goWithContext(function () use ($cacheMessage) {

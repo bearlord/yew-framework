@@ -10,7 +10,10 @@ use Yew\Plugins\Actor\Exception\ActorException;
 use Yew\Cluster\State\Location;
 use Yew\Plugins\Actor\Telemetry\Tracer;
 use Yew\Plugins\Ipc\IpcProxy;
-use Yew\Plugins\Ipc\IpcCallMessage;
+use Yew\Plugins\Ipc\IpcException;
+use Yew\Plugins\Ipc\IpcManager;
+use Yew\Plugins\Ipc\IpcResultData;
+use Yew\Plugins\Actor\ActorIpcCallMessage;
 use Yew\Coroutine\Server\Server;
 
 class ActorIpcProxy extends IpcProxy
@@ -19,6 +22,12 @@ class ActorIpcProxy extends IpcProxy
      * @var Location|null Resolved physical location (location transparency seam)
      */
     protected ?Location $location = null;
+
+    /**
+     * @var string|null Actor name, carried separately from the class name so the
+     *      IPC processor can resolve the per-process ActorManager instance.
+     */
+    protected ?string $actorName = null;
 
     /**
      * Proxy to a remote Actor. Method calls are routed to the actor process via IPC.
@@ -57,7 +66,10 @@ class ActorIpcProxy extends IpcProxy
             if ($actorInfo == null) {
                 throw new ActorException(sprintf("Actor '%s' info not found, cannot build proxy", $actorName));
             }
-            parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName() . ":" . $actorInfo->getName(), $oneWay, $timeOut);
+            // Keep the class name clean and carry the actor name in its own
+            // field via the dedicated ActorIpcCallMessage type.
+            parent::__construct($actorInfo->getProcess(), $actorInfo->getClassName(), $oneWay, $timeOut);
+            $this->actorName = $actorInfo->getName();
             return;
         }
 
@@ -74,14 +86,60 @@ class ActorIpcProxy extends IpcProxy
     protected $remote = null;
 
     /**
+     * Route a method call to the target actor via the dedicated ActorIpcCallMessage
+     * type, which carries the actor name in its own field instead of polluting
+     * the class name. Remote actors are dispatched through the remote transport.
+     *
+     * @param string $name
+     * @param array $arguments
+     * @return mixed|void
+     * @throws \Yew\Plugins\Ipc\IpcException
+     */
+    public function __call(string $name, array $arguments)
+    {
+        if ($this->isRemote()) {
+            return parent::__call($name, $arguments);
+        }
+
+        if ($this->sessionId != null) {
+            $arguments["sessionId"] = $this->sessionId;
+        }
+
+        $message = new ActorIpcCallMessage(
+            $this->className,
+            $this->actorName,
+            $name,
+            $arguments,
+            $this->oneway
+        );
+
+        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
+
+        if (!$this->oneway) {
+            $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
+            $result = $channel->pop($this->timeOut);
+            $channel->close();
+
+            if ($result instanceof IpcResultData) {
+                if ($result->getErrorClass() != null) {
+                    throw new IpcException("[{$result->getErrorClass()}]{$result->getErrorMessage()}", $result->getErrorCode());
+                } else {
+                    return $result->getResult();
+                }
+            } else {
+                throw new IpcException("Time out");
+            }
+        }
+    }
+
+    /**
      * Fire-and-forget: invoke a method on the actor without waiting for a reply.
      *
      * @param string $method
      * @param array  $arguments
      * @return bool
      */
-    public function tell(string $method, array $arguments = []): bool
-    {
+    public function tell(string $method, array $arguments = []): bool    {
         $arguments['__traceId'] = Tracer::currentTraceId();
         if ($this->isRemote()) {
             return $this->remote->tell($this->location, $method, $arguments, Tracer::currentTraceId());
@@ -200,7 +258,7 @@ class ActorIpcProxy extends IpcProxy
             return false;
         }
 
-        $message = new IpcCallMessage($actorInfo->getClassName(), "sendMessage", [$message], true);
+        $message = new ActorIpcCallMessage($actorInfo->getClassName(), $actorName, "sendMessage", [$message], true);
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $actorInfo->getProcess());
 
         return true;
