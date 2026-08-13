@@ -56,10 +56,22 @@ class UdpGossipTransport implements GossipTransport
 
     /**
      * Feed an inbound datagram (called by the framework multi-port UDP listener).
+     *
+     * The framework dispatches UDP packets on a Swoole reactor thread, which is
+     * NOT a coroutine context, so pushing directly onto a Coroutine\Channel here
+     * would throw "Channel cannot be used in non-coroutine context" and the
+     * packet would be silently dropped. Defer the push onto the worker event
+     * loop (coroutine context) so the consumer coroutine can receive it.
      */
     public function handlePacket(string $data, array $clientInfo): void
     {
-        $this->inbox->push($data);
+        if ($this->inbox === null) {
+            return;
+        }
+        $inbox = $this->inbox;
+        \Swoole\Event::defer(function () use ($inbox, $data) {
+            $inbox->push($data);
+        });
     }
 
     /**
