@@ -246,7 +246,11 @@ abstract class AbstractServerPort
      */
     public function _onPacket($server, string $data, array $clientInfo)
     {
-        Server::$instance->getProcessManager()->getCurrentProcess()->waitReady();
+        // UDP packet events are dispatched on a Swoole reactor thread, NOT inside a
+        // worker coroutine. Calling waitReady() here would block on a Channel::pop()
+        // outside of any coroutine context and throw, which silently swallows the
+        // packet. Gossip handlers (onUdpPacket) do not depend on process-ready state,
+        // so we must NOT call waitReady() in the UDP path.
         try {
             $this->onUdpPacket($data, $clientInfo);
         } catch (\Throwable $e) {
