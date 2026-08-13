@@ -167,7 +167,8 @@ class AopComposerLoader extends \Yew\Goaop\Instrument\ClassLoading\AopComposerLo
             try {
                 include $file;
             } catch (\Throwable $e) {
-                throw new \Exception($e->getMessage());
+                $_message = sprintf("class: %s: file: %s, message: %s", $class, $file, $e->getMessage());
+                throw new \Exception($_message);
             }
             return;
         }

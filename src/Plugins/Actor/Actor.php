@@ -830,13 +830,6 @@ abstract class Actor
      * @return bool True if enqueued, false if dropped (drop strategy) or rejected.
      */
     public function sendMessage(ActorMessage $message): bool
-    {    /**
-     * Enqueue a message into the mailbox, applying the configured overflow strategy.
-     *
-     * @param ActorMessage $message
-     * @return bool True if enqueued, false if dropped (drop strategy) or rejected.
-     */
-    public function sendMessage(ActorMessage $message): bool
     {
         try {
             $pushed = $this->mailboxOverflowStrategy->enqueue(
