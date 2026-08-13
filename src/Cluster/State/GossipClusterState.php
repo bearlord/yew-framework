@@ -7,6 +7,7 @@
 namespace Yew\Cluster\State;
 
 use Yew\Cluster\Transport\GossipTransport;
+use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 
 /**
@@ -57,6 +58,24 @@ class GossipClusterState implements ClusterStateInterface
     private array $listeners = [];
     private ?GossipTransport $transport = null;
     private array $seeds = [];
+
+    /**
+     * Optional cross-worker shared membership view (Swoole\Table, shared memory).
+     * When set AND this process is NOT the designated gossip worker, all read
+     * methods (aliveNodes/allNodes/getNode) serve from the table so every worker
+     * routes against a single converged view, regardless of which worker actually
+     * received the UDP gossip packets.
+     * @var Table|null
+     */
+    private ?Table $sharedTable = null;
+
+    /**
+     * Whether THIS process is the single designated gossip worker (usually
+     * worker-0). Only the gossip worker runs the UDP receiver coroutine, the
+     * failure-detection ticker, and writes the shared table. Non-gossip workers
+     * are pure consumers of the shared table.
+     */
+    private bool $isGossipWorker = true;
 
     public function getTransport(): ?GossipTransport
     {
@@ -1075,6 +1094,15 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function aliveNodes(): array
     {
+        if ($this->sharedTable !== null && !$this->isGossipWorker) {
+            $out = [];
+            foreach ($this->readSharedNodes() as $id => $m) {
+                if ($m->isAlive()) {
+                    $out[$id] = $m;
+                }
+            }
+            return $out;
+        }
         $out = [];
         foreach ($this->members as $id => $m) {
             if ($m->isAlive()) {
@@ -1091,6 +1119,9 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function allNodes(): array
     {
+        if ($this->sharedTable !== null && !$this->isGossipWorker) {
+            return $this->readSharedNodes();
+        }
         return $this->members;
     }
 
@@ -1102,6 +1133,10 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function getNode(string $nodeId): ?ClusterMember
     {
+        if ($this->sharedTable !== null && !$this->isGossipWorker) {
+            $row = $this->sharedTable->get($nodeId);
+            return $row === false ? null : ClusterMember::fromRow($row);
+        }
         return $this->members[$nodeId] ?? null;
     }
 
@@ -1146,9 +1181,79 @@ class GossipClusterState implements ClusterStateInterface
 
     private function notify(array $changed): void
     {
+        if ($this->isGossipWorker) {
+            $this->syncToSharedTable();
+        }
         foreach ($this->listeners as $cb) {
             $cb($changed, $this);
         }
+    }
+
+    /**
+     * Non-gossip workers consume the shared table but never receive the
+     * membership-change notification (that only fires on the gossip worker).
+     * This lets a consumer worker periodically rebuild its router ring from the
+     * shared table so routing converges without waiting for a UDP packet.
+     */
+    public function refreshView(): void
+    {
+        if ($this->isGossipWorker) {
+            return;
+        }
+        foreach ($this->listeners as $cb) {
+            $cb([], $this);
+        }
+    }
+
+    /**
+     * Read every member from the shared cross-worker table.
+     * @return array<string,ClusterMember>
+     */
+    private function readSharedNodes(): array
+    {
+        $out = [];
+        foreach ($this->sharedTable as $id => $row) {
+            $out[$id] = ClusterMember::fromRow($row);
+        }
+        return $out;
+    }
+
+    /**
+     * Push the local (gossip worker) converged membership into the shared
+     * cross-worker table so every other worker routes against one view.
+     * Only called on the designated gossip worker.
+     */
+    public function syncToSharedTable(): void
+    {
+        if ($this->sharedTable === null) {
+            return;
+        }
+        $live = [];
+        foreach ($this->members as $id => $m) {
+            $live[$id] = true;
+            $this->sharedTable->set($id, $m->toRow());
+        }
+        // evict rows that have been converged away locally (collect first to
+        // avoid mutating the table while iterating it)
+        $stale = [];
+        foreach ($this->sharedTable as $id => $row) {
+            if (!isset($live[$id]) && $id !== $this->localNodeId) {
+                $stale[] = $id;
+            }
+        }
+        foreach ($stale as $id) {
+            $this->sharedTable->del($id);
+        }
+    }
+
+    /**
+     * Attach the shared cross-worker table and declare this process's role.
+     * Called by ClusterPlugin after construction.
+     */
+    public function configureSharedView(Table $table, bool $isGossipWorker): void
+    {
+        $this->sharedTable = $table;
+        $this->isGossipWorker = $isGossipWorker;
     }
 
     private function newMsgId(): string

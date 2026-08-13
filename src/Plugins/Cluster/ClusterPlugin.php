@@ -24,6 +24,7 @@ use Yew\Cluster\Transport\Transfer;
 
 use Yew\Cluster\Router\ShardRouter;
 use Yew\Cluster\Router\GossipShardRouter;
+use Yew\Core\Memory\CrossProcess\Table;
 use ReflectionClass;
 use ReflectionParameter;
 
@@ -219,6 +220,15 @@ class ClusterPlugin extends AbstractPlugin
         }
         $state->join($cfg->getHost(), $cfg->getPort(), $cfg->getWeight());
 
+        // Cross-worker shared membership view (Swoole\Table / shared memory).
+        // Created here in beforeServerStart, i.e. BEFORE the workers fork, so the
+        // table is shared by every worker process. The designated gossip worker
+        // (worker-0) writes converged membership into it; all other workers read
+        // it so GossipShardRouter routes against one consistent view regardless
+        // of which worker received a given UDP gossip packet.
+        $sharedTable = self::createSharedMemberTable(4096);
+        DISet("cluster.memberTable", $sharedTable);
+
         // Real UDP gossip wire layer.
         $udp = $this->buildService(
             (array) ($services["gossip"] ?? []),
@@ -316,10 +326,70 @@ class ClusterPlugin extends AbstractPlugin
         $seeds = $deferred["seeds"];
         $heartbeat = $deferred["heartbeat"];
 
+        // Only worker-0 owns the authoritative gossip state. In a multi-worker
+        // deployment every worker may receive UDP packets, but convergence must
+        // happen in exactly one place; the others are pure consumers of the
+        // shared table (set up in start()). This keeps all workers' routers in
+        // sync without duplicating the membership merge logic per worker.
+        $workerId = $this->getWorkerId();
+        $isGossipWorker = ($workerId === 0);
+
+        /** @var Table|null $sharedTable */
+        $sharedTable = DIGet("cluster.memberTable");
+        if ($sharedTable instanceof Table) {
+            $state->configureSharedView($sharedTable, $isGossipWorker);
+        }
+
+        if (!$isGossipWorker) {
+            // Seed the local node row so this worker can route to itself even
+            // before the first table sync from worker-0 lands.
+            if ($sharedTable instanceof Table) {
+                $local = $state->getNode($state->getLocalNodeId());
+                if ($local !== null) {
+                    $sharedTable->set($local->nodeId, $local->toRow());
+                }
+            }
+            // Consumer workers never receive the membership-change notification
+            // (that only fires on the gossip worker). Poll the shared table so
+            // the router ring converges to the authoritative view.
+            \Swoole\Timer::tick(2000, function () use ($state) {
+                $state->refreshView();
+            });
+            return;
+        }
+
         $state->start($udp, $seeds);
 
         \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
             $state->tick();
         });
+    }
+
+    private function getWorkerId(): int
+    {
+        $server = Server::$instance->getServer();
+        if ($server !== null && property_exists($server, 'worker_id')) {
+            return (int) $server->worker_id;
+        }
+        return 0;
+    }
+
+    /**
+     * Build the shared cross-worker membership table. Columns mirror
+     * ClusterMember::toRow() so rows round-trip through fromRow().
+     */
+    private static function createSharedMemberTable(int $size): Table
+    {
+        $table = new Table($size);
+        $table->column("nodeId", Table::TYPE_STRING, 64);
+        $table->column("host", Table::TYPE_STRING, 64);
+        $table->column("port", Table::TYPE_INT, 4);
+        $table->column("weight", Table::TYPE_INT, 2);
+        $table->column("status", Table::TYPE_STRING, 8);
+        $table->column("lastHeartbeat", Table::TYPE_INT, 8);
+        $table->column("incarnation", Table::TYPE_INT, 8);
+        $table->column("publicKey", Table::TYPE_STRING, 2048);
+        $table->create();
+        return $table;
     }
 }
