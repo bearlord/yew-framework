@@ -10,7 +10,7 @@ use Ds\Set;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Actor\Actor;
-use Yew\Plugins\Actor\ActorException;
+use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\ActorMessage;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
@@ -123,7 +123,6 @@ class Channel
      * @param array $excludeActorList
      * @param string|null $from
      * @return void
-     * @throws ActorException
      */
     public function publish(string $channel, string $message, array $excludeActorList = [], ?string $from = ""): void
     {
@@ -148,11 +147,10 @@ class Channel
      * @param $message
      * @param string|null $fromActor
      * @return void
-     * @throws ActorException
      */
     protected function publishToActor(string $channel, string $toActor, $message, ?string $fromActor = ""): void
     {
-        $actorInstance = Actor::getProxy($toActor);
+        $actorInstance = ActorIpcProxy::create($toActor, false, 5);
 
         if (!empty($actorInstance)) {
             $actorMessage = new ActorMessage([

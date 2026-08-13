@@ -712,7 +712,7 @@ abstract class Actor
      *
      * @return void
      */
-    protected function preRestart(): void
+    public function preRestart(): void
     {
     }
 
@@ -824,24 +824,13 @@ abstract class Actor
 
 
     /**
-     * Get proxy
-     * @param string $actorName
-     * @param bool $oneWay
-     * @param float|null $timeOut
-     * @return \Yew\Plugins\Actor\ActorIpcProxy|false
+     * Enqueue a message into the mailbox, applying the configured overflow strategy.
+     *
+     * @param ActorMessage $message
+     * @return bool True if enqueued, false if dropped (drop strategy) or rejected.
      */
-    public static function getProxy(string $actorName, ?bool $oneWay = false, ?float $timeOut = 5)
-    {
-        try {
-            return new ActorIpcProxy($actorName, $oneWay, $timeOut);
-        } catch (ActorException $exception) {
-            return false;
-        }
-    }
-
-    
-
-    /**
+    public function sendMessage(ActorMessage $message): bool
+    {    /**
      * Enqueue a message into the mailbox, applying the configured overflow strategy.
      *
      * @param ActorMessage $message

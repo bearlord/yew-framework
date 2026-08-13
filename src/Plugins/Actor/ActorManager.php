@@ -11,6 +11,7 @@ use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Exception\ActorException;
+use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\Persistence\ActorStore;
 use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Cluster\State\ClusterNode;
@@ -590,9 +591,9 @@ class ActorManager
         }
 
         // From a worker: return an IPC proxy to the actor process.
-        // Use getProxy() so a missing/ unresolvable actor yields false instead
-        // of an uncaught exception (the proxy constructor throws ActorException
-        // when the actor's location or info cannot be resolved).
-        return Actor::getProxy($actorName, $oneWay, $timeOut);
+        // The factory returns false when the actor's location or info cannot be
+        // resolved, instead of throwing (the proxy constructor throws when the
+        // actor's location or info cannot be resolved).
+        return ActorIpcProxy::create($actorName, $oneWay, $timeOut);
     }
 }

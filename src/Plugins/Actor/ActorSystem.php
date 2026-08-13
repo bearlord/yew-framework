@@ -10,6 +10,7 @@ use Yew\Plugins\Actor\Routing\RoundRobinStrategy;
 use Yew\Plugins\Actor\Routing\ConsistentHashStrategy;
 use Yew\Plugins\Actor\Routing\LeastLoadedStrategy;
 use Yew\Plugins\Actor\Props;
+use Yew\Plugins\Actor\ActorIpcProxy;
 
 class ActorSystem
 {
@@ -38,7 +39,7 @@ class ActorSystem
         ?string $routingKey = null)
     {
         if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
-            $proxy = Actor::getProxy($actorName, false, $timeOut);
+            $proxy = ActorIpcProxy::create($actorName, false, $timeOut);
             return $proxy === false ? true : $proxy;
         }
 
@@ -66,7 +67,7 @@ class ActorSystem
                 if (is_array($result) && (int) ($result['code'] ?? 200) >= 400) {
                     throw new ActorException("Remote actor create failed: " . ($result['message'] ?? 'unknown'));
                 }
-                $proxy = Actor::getProxy($actorName, false, $timeOut);
+                $proxy = ActorIpcProxy::create($actorName, false, $timeOut);
                 return $proxy === false ? true : $proxy;
             }
         }
@@ -110,14 +111,9 @@ class ActorSystem
 
         // Build the proxy defensively: if the actor ended up not registered in
         // the local actorTable (e.g. the create event was not applied before this
-        // point, or the target process died), getProxy() returns false instead of
-        // throwing a fatal ActorException.
-        $proxy = Actor::getProxy($actorName, false, $timeOut);
-        if ($proxy === false) {
-            return false;
-        }
-
-        return $proxy;
+        // point, or the target process died), the factory returns false instead
+        // of throwing a fatal error.
+        return ActorIpcProxy::create($actorName, false, $timeOut);
     }
 
     /**

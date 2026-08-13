@@ -30,6 +30,12 @@ class ActorIpcProxy extends IpcProxy
     protected ?string $actorName = null;
 
     /**
+     * @var \Yew\Cluster\Transport\RemoteTransport|null Transport used when the
+     *      target actor lives on another cluster node.
+     */
+    protected $remote = null;
+
+    /**
      * Proxy to a remote Actor. Method calls are routed to the actor process via IPC.
      *
      * Two messaging semantics are supported (Akka-style):
@@ -80,55 +86,21 @@ class ActorIpcProxy extends IpcProxy
     }
 
     /**
-     * @var \Yew\Cluster\Transport\RemoteTransport|null Transport used when the
-     *      target actor lives on another cluster node.
-     */
-    protected $remote = null;
-
-    /**
-     * Route a method call to the target actor via the dedicated ActorIpcCallMessage
-     * type, which carries the actor name in its own field instead of polluting
-     * the class name. Remote actors are dispatched through the remote transport.
+     * Static factory: build an ActorIpcProxy, returning false instead of throwing
+     * when the actor's location or info cannot be resolved. This is the unified
+     * entry point that replaces the previous Actor::getProxy() helper.
      *
-     * @param string $name
-     * @param array $arguments
-     * @return mixed|void
-     * @throws \Yew\Plugins\Ipc\IpcException
+     * @param string $actorName
+     * @param bool $oneWay
+     * @param float $timeOut
+     * @return self|false
      */
-    public function __call(string $name, array $arguments)
+    public static function create(string $actorName, bool $oneWay, float $timeOut = 0)
     {
-        if ($this->isRemote()) {
-            return parent::__call($name, $arguments);
-        }
-
-        if ($this->sessionId != null) {
-            $arguments["sessionId"] = $this->sessionId;
-        }
-
-        $message = new ActorIpcCallMessage(
-            $this->className,
-            $this->actorName,
-            $name,
-            $arguments,
-            $this->oneway
-        );
-
-        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
-
-        if (!$this->oneway) {
-            $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
-            $result = $channel->pop($this->timeOut);
-            $channel->close();
-
-            if ($result instanceof IpcResultData) {
-                if ($result->getErrorClass() != null) {
-                    throw new IpcException("[{$result->getErrorClass()}]{$result->getErrorMessage()}", $result->getErrorCode());
-                } else {
-                    return $result->getResult();
-                }
-            } else {
-                throw new IpcException("Time out");
-            }
+        try {
+            return new self($actorName, $oneWay, $timeOut);
+        } catch (ActorException $exception) {
+            return false;
         }
     }
 
@@ -139,7 +111,8 @@ class ActorIpcProxy extends IpcProxy
      * @param array  $arguments
      * @return bool
      */
-    public function tell(string $method, array $arguments = []): bool    {
+    public function tell(string $method, array $arguments = []): bool
+    {
         $arguments['__traceId'] = Tracer::currentTraceId();
         if ($this->isRemote()) {
             return $this->remote->tell($this->location, $method, $arguments, Tracer::currentTraceId());
@@ -240,14 +213,6 @@ class ActorIpcProxy extends IpcProxy
     public function sendMessage(ActorMessage $message): bool
     {
         $message = new ProcessIpcCallMessage($this->className, "sendMessage", [$message], true);
-        // TEMP DIAG (remove after fixing timeout)
-        Server::$instance->getLog()->info("DIAG ActorIpcProxy send: className=" . $this->className
-            . " actorName=" . $this->actorName
-            . " method=" . $name
-            . " toProcessId=" . $this->process->getProcessId()
-            . " toProcessType=" . $this->process->getProcessType()
-            . " fromProcessId=" . Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId()
-            . " token=" . $message->getProcessIpcCallData()->getToken());
 
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
 
@@ -271,5 +236,52 @@ class ActorIpcProxy extends IpcProxy
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $actorInfo->getProcess());
 
         return true;
+    }
+
+    /**
+     * Route a method call to the target actor via the dedicated ActorIpcCallMessage
+     * type, which carries the actor name in its own field instead of polluting
+     * the class name. Remote actors are dispatched through the remote transport.
+     *
+     * @param string $name
+     * @param array $arguments
+     * @return mixed|void
+     * @throws \Yew\Plugins\Ipc\IpcException
+     */
+    public function __call(string $name, array $arguments)
+    {
+        if ($this->isRemote()) {
+            return parent::__call($name, $arguments);
+        }
+
+        if ($this->sessionId != null) {
+            $arguments["sessionId"] = $this->sessionId;
+        }
+
+        $message = new ActorIpcCallMessage(
+            $this->className,
+            $this->actorName,
+            $name,
+            $arguments,
+            $this->oneway
+        );
+
+        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
+
+        if (!$this->oneway) {
+            $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
+            $result = $channel->pop($this->timeOut);
+            $channel->close();
+
+            if ($result instanceof IpcResultData) {
+                if ($result->getErrorClass() != null) {
+                    throw new IpcException("[{$result->getErrorClass()}]{$result->getErrorMessage()}", $result->getErrorCode());
+                } else {
+                    return $result->getResult();
+                }
+            } else {
+                throw new IpcException("Time out");
+            }
+        }
     }
 }
