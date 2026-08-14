@@ -309,7 +309,17 @@ class ClusterPlugin extends AbstractPlugin
             return;
         }
         // Seed the initial view in every process (cheap, one-shot).
-        $router->refresh();
+        // The cluster-state process may not be IPC-ready yet during
+        // beforeProcessStart (it boots in parallel), so a timeout here is
+        // expected and harmless: the periodic ticker (actor-0) and the TTL-based
+        // lazy refresh (every other process, on first routing lookup) will pull a
+        // fresh view once the authority is up. Swallow the IPC timeout so it does
+        // not fatally abort this process's startup.
+        try {
+            $router->refresh();
+        } catch (\Yew\Plugins\Ipc\IpcException $e) {
+            // Leave the ring empty; it will be populated on the next refresh.
+        }
 
         $current = Server::$instance->getProcessManager()->getCurrentProcess();
         $isPrimary = $current !== null && $current->getProcessName() === 'actor-0';

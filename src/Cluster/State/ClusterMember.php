@@ -25,6 +25,8 @@ class ClusterMember
     public bool $local;
     public string $status;
     public int $lastHeartbeat;
+    /** @var int Virtual-replica weight for the consistent-hash ring (1 = even). */
+    public int $weight;
 
     public function __construct(
         string $nodeId,
@@ -32,7 +34,8 @@ class ClusterMember
         int $port,
         bool $local,
         string $status,
-        int $lastHeartbeat
+        int $lastHeartbeat,
+        int $weight = 1
     ) {
         $this->nodeId = $nodeId;
         $this->host = $host;
@@ -40,10 +43,21 @@ class ClusterMember
         $this->local = $local;
         $this->status = $status;
         $this->lastHeartbeat = $lastHeartbeat;
+        $this->weight = $weight;
     }
 
     public function isLocal(): bool
     {
         return $this->local;
+    }
+
+    /**
+     * A member is considered alive (eligible for routing / gossip fan-out) when
+     * it is UP or SUSPECT. A node in the DOWN state is excluded until it proves
+     * liveness again (strictly higher incarnation on a later observe()).
+     */
+    public function isAlive(): bool
+    {
+        return $this->status === self::STATUS_UP || $this->status === self::STATUS_SUSPECT;
     }
 }

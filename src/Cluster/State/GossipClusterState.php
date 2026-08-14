@@ -170,10 +170,9 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function join(string $host, int $port, int $weight = 1): void
     {
-        $pub = $this->key !== null ? $this->key->getPublicKeyPem() : '';
         $this->members[$this->localNodeId] = new ClusterMember(
-            $this->localNodeId, $host, $port, $weight,
-            ClusterMember::STATUS_UP, time(), 0, $pub
+            $this->localNodeId, $host, $port, true,
+            ClusterMember::STATUS_UP, time(), $weight
         );
     }
 
@@ -915,8 +914,8 @@ class GossipClusterState implements ClusterStateInterface
 
             if ($existing === null) {
                 $this->members[$id] = new ClusterMember(
-                    $id, $row['host'], (int) $row['port'], (int) $row['weight'],
-                    $row['status'], $hb, $inc
+                    $id, $row['host'], (int) $row['port'], false,
+                    $row['status'], $hb, (int) ($row['weight'] ?? 1)
                 );
                 $changed[] = $id;
                 continue;
@@ -1126,7 +1125,7 @@ class GossipClusterState implements ClusterStateInterface
             $existing = $this->members[$id] ?? null;
             if ($existing === null) {
                 $this->members[$id] = new ClusterMember(
-                    $id, 'unknown', 0, 1, $status, $hb, $inc
+                    $id, 'unknown', 0, false, $status, $hb, 1
                 );
                 // We learned of a node but lack its address. The sender attached
                 // its own coordinates in $msg->self, so observe() fills them in
