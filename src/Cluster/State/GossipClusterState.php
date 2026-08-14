@@ -1237,7 +1237,14 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function syncToSharedTable(): void
     {
-        if ($this->sharedTable === null) {
+        // The inherited ClusterState::$memberTable (a Swoole\Table in shared
+        // memory) IS the cross-worker view that GossipShardRouter->rebuild() reads
+        // via aliveNodes()/getNode(). If a dedicated sharedTable was configured we
+        // prefer it; otherwise we fall back to memberTable so the converged gossip
+        // membership actually reaches the router. Without this sync, only the
+        // local node is ever visible to routing and remote actor placement fails.
+        $table = $this->sharedTable ?? $this->memberTable;
+        if ($table === null) {
             return;
         }
         // Every worker that receives gossip packets merges them into its local
@@ -1257,7 +1264,7 @@ class GossipClusterState implements ClusterStateInterface
             if ($m->host === '' || $m->host === 'unknown' || $m->port <= 0) {
                 continue;
             }
-            $this->sharedTable->set($id, $m->toRow());
+            $table->set($id, $m->toRow());
         }
     }
 
