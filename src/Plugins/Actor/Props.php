@@ -54,6 +54,12 @@ class Props
     private float $timeOut;
 
     /**
+     * @var bool When true the actor is pinned to the local node and never routed
+     *           to a peer over the cluster routing path (see ActorSystem::create).
+     */
+    private bool $localOnly;
+
+    /**
      * @param string      $actionClass
      * @param mixed       $data
      * @param string|null $name
@@ -61,6 +67,7 @@ class Props
      * @param string|null $routingKey
      * @param bool        $waitCreate
      * @param float       $timeOut
+     * @param bool        $localOnly
      */
     public function __construct(
         string $actionClass,
@@ -69,7 +76,8 @@ class Props
         ?string $parentName = null,
         ?string $routingKey = null,
         bool $waitCreate = true,
-        float $timeOut = 5.0
+        float $timeOut = 5.0,
+        bool $localOnly = false
     ) {
         $this->actionClass = $actionClass;
         $this->data = $data;
@@ -78,6 +86,7 @@ class Props
         $this->routingKey = $routingKey;
         $this->waitCreate = $waitCreate;
         $this->timeOut = $timeOut;
+        $this->localOnly = $localOnly;
     }
 
     /**
@@ -127,34 +136,49 @@ class Props
         return $this->timeOut;
     }
 
+    public function isLocalOnly(): bool
+    {
+        return $this->localOnly;
+    }
+
     public function withData($data): self
     {
-        return new self($this->actionClass, $data, $this->name, $this->parentName, $this->routingKey, $this->waitCreate, $this->timeOut);
+        return new self($this->actionClass, $data, $this->name, $this->parentName, $this->routingKey, $this->waitCreate, $this->timeOut, $this->localOnly);
     }
 
     public function withName(?string $name): self
     {
-        return new self($this->actionClass, $this->data, $name, $this->parentName, $this->routingKey, $this->waitCreate, $this->timeOut);
+        return new self($this->actionClass, $this->data, $name, $this->parentName, $this->routingKey, $this->waitCreate, $this->timeOut, $this->localOnly);
     }
 
     public function withParentName(?string $parentName): self
     {
-        return new self($this->actionClass, $this->data, $this->name, $parentName, $this->routingKey, $this->waitCreate, $this->timeOut);
+        return new self($this->actionClass, $this->data, $this->name, $parentName, $this->routingKey, $this->waitCreate, $this->timeOut, $this->localOnly);
     }
 
     public function withRoutingKey(?string $routingKey): self
     {
-        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $routingKey, $this->waitCreate, $this->timeOut);
+        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $routingKey, $this->waitCreate, $this->timeOut, $this->localOnly);
     }
 
     public function withWaitCreate(bool $waitCreate): self
     {
-        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $this->routingKey, $waitCreate, $this->timeOut);
+        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $this->routingKey, $waitCreate, $this->timeOut, $this->localOnly);
     }
 
     public function withTimeOut(float $timeOut): self
     {
-        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $this->routingKey, $this->waitCreate, $timeOut);
+        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $this->routingKey, $this->waitCreate, $timeOut, $this->localOnly);
+    }
+
+    /**
+     * Pin this actor to the local node: creation bypasses the cluster routing
+     * path and the shard router never re-homes it to a peer (locate() resolves a
+     * locally-activated actor to local regardless of ring ownership).
+     */
+    public function withLocalOnly(bool $localOnly = true): self
+    {
+        return new self($this->actionClass, $this->data, $this->name, $this->parentName, $this->routingKey, $this->waitCreate, $this->timeOut, $localOnly);
     }
 
     /**
@@ -170,6 +194,7 @@ class Props
             'parentName' => $this->parentName,
             'routingKey' => $this->routingKey,
             'waitCreate' => $this->waitCreate,
+            'localOnly'  => $this->localOnly,
             'timeOut'    => $this->timeOut,
         ];
     }
