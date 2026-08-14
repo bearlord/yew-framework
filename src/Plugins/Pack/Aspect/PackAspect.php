@@ -140,6 +140,7 @@ class PackAspect extends OrderAspect
             $invocation->proceed();
             return;
         }
+
         $packConfig = $this->packConfigs[$abstractServerPort->getPortConfig()->getPort()];
         $packTool = $this->packTools[$packConfig->getPackTool()];
         $clientData = $packTool->unPack(-1, $data, $packConfig);

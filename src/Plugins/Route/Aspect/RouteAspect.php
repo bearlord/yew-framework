@@ -539,6 +539,16 @@ class RouteAspect extends OrderAspect
     protected function aroundUdpPacket(MethodInvocation $invocation)
     {
         $abstractServerPort = $invocation->getThis();
+
+        // Cluster internal ports speak their own binary protocol and must not be
+        // routed as business UDP packets.
+        if (str_starts_with(get_class($abstractServerPort), 'Yew\\Cluster\\Port\\')) {
+            $invocation->proceed();
+            return;
+        }
+
+
+        $abstractServerPort = $invocation->getThis();
         $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
         setContextValue("routePortConfig", $routePortConfig);
 
