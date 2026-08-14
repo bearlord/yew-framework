@@ -98,14 +98,10 @@ class ActorPlugin extends AbstractPlugin
             $state = DIGet(GossipClusterState::class);
 
             if ($router instanceof ShardRouter && $transport instanceof RemoteTransport) {
-                // Local actor lookup is owned by the actor layer; inject it so the
-                // router stays cluster-only.
-                if (method_exists($router, 'setActorLocator')) {
-                    $router->setActorLocator(function (string $name) {
-                        return ActorManager::getInstance()->getActorRaw($name);
-                    });
-                }
-
+                // The shard router is purely cluster-aware (node resolution). Local
+                // actor resolution is handled by the actor layer itself
+                // (ActorManager::getActor fast path), so no locator injection is
+                // needed — the dependency stays strictly actor -> cluster.
                 $this->actorManager->setShardRouter($router);
                 $this->actorManager->setRemoteTransport($transport);
 

@@ -37,20 +37,6 @@ class GossipShardRouter implements ShardRouter
     private ?array $aliveCache = null;
     /** @var callable|null */
     private $rebalanceHook = null;
-    /** @var callable(string):?array|null Injected actor-row lookup (owned by actor layer). */
-    private $actorLocator = null;
-
-    /**
-     * Inject the actor-row lookup used by {@see locate()} for local actors.
-     * The callback receives an actor name and returns the actor table row
-     * (with a "processId" key) or null. Defaults to "not found".
-     *
-     * @param callable(string):?array $fn
-     */
-    public function setActorLocator(callable $fn): void
-    {
-        $this->actorLocator = $fn;
-    }
 
     /**
      * Build a consistent-hash router over the live cluster membership.
@@ -103,28 +89,11 @@ class GossipShardRouter implements ShardRouter
 
     public function locate(string $actorName): ?Location
     {
-        // Location-transparency seam for LOCAL actors. If the actor is already
-        // activated in THIS node's actor table, it must always resolve to local ¡ª
-        // regardless of where the consistent-hash ring say it "should" live. This
-        // is what makes a "local-only" actor (created with ActorSystem::create(...,
-        // localOnly: true), deliberately kept off the remote routing path) actually
-        // stay local: its proxy lookup can never be misrouted to a peer node just
-        // because the hash happens to land there. It also benefits normal actors ¡ª
-        // an already-activated local actor should be found locally, not re-homed.
-        if ($this->actorLocator !== null) {
-            $local = ($this->actorLocator)($actorName);
-            if ($local !== null) {
-                $node = new ClusterNode(
-                    $this->localNode->getNodeId(),
-                    $this->localNode->getHost(),
-                    $this->localNode->getPort(),
-                    true
-                );
-                $processId = (int) ($local['processId'] ?? 0);
-                return new Location($node, $processId);
-            }
-        }
-
+        // Pure cluster routing: resolve the owning node from the consistent-hash
+        // ring. The router has NO knowledge of actor placement ¡ª it only knows
+        // nodes. Local resolution (an already-activated actor on this node) is the
+        // actor layer's concern (ActorManager::getActor fast path), keeping the
+        // dependency strictly actor -> cluster.
         $owner = $this->ownerOf($actorName);
         if ($owner === null) {
             return null;
@@ -137,15 +106,10 @@ class GossipShardRouter implements ShardRouter
             $member->nodeId, $member->host, $member->port,
             $this->cluster->isLocal($member->nodeId)
         );
-        // Process id for a locally-owned actor is resolved through the injected
-        // locator (owned by the actor layer). Remote placement needs a real
-        // transport and carries no meaningful local process id here.
-        $processId = 0;
-        if ($node->isLocal() && $this->actorLocator !== null) {
-            $data = ($this->actorLocator)($actorName);
-            $processId = $data !== null ? (int) ($data['processId'] ?? 0) : 0;
-        }
-        return new Location($node, $processId);
+        // Cross-node placement carries no meaningful local process id at the
+        // routing layer; the actor layer resolves the concrete process via its
+        // own actor table.
+        return new Location($node, 0);
     }
 
     public function register(string $actorName, Location $location): void

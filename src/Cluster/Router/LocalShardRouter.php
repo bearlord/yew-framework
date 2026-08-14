@@ -23,11 +23,6 @@ class LocalShardRouter implements ShardRouter
     private ClusterNode $localNode;
 
     /**
-     * @var callable(string):?array|null Injected actor-row lookup.
-     */
-    private $actorLocator = null;
-
-    /**
      * Build a local-only router for one node.
      *
      * @param string $nodeId Id of the single local node
@@ -37,29 +32,11 @@ class LocalShardRouter implements ShardRouter
         $this->localNode = new ClusterNode($nodeId, '127.0.0.1', 0, true);
     }
 
-    /**
-     * Inject the actor-row lookup used by {@see locate()}. The callback receives
-     * an actor name and returns the actor table row (with a "processId" key) or
-     * null. Owned by the actor layer; defaults to "not found".
-     *
-     * @param callable(string):?array $fn
-     */
-    public function setActorLocator(callable $fn): void
-    {
-        $this->actorLocator = $fn;
-    }
-
     public function locate(string $actorName): ?Location
     {
-        if ($this->actorLocator === null) {
-            return null;
-        }
-        $data = ($this->actorLocator)($actorName);
-        if (empty($data)) {
-            return null;
-        }
-
-        return new Location($this->localNode, (int) ($data['processId'] ?? 0));
+        // Always local. The worker process id is resolved by the actor layer via
+        // its own actor table, so the router stays cluster-only and actor-agnostic.
+        return new Location($this->localNode, 0);
     }
 
     public function register(string $actorName, Location $location): void

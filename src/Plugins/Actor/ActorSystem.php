@@ -26,14 +26,14 @@ class ActorSystem
      *                                 created in the parent's process (supervision tree)
      * @param string|null $routingKey  Key for key-based routing (consistent hash);
      *                                 defaults to $actorName when null
-     * @param bool        $localOnly   When true the actor is pinned to THIS node
-     *                                 and never forwarded to a peer over the cluster
-     *                                 routing path. The process still lives in the
-     *                                 actor process group (normal IPC semantics), but
-     *                                 the shard router's consistent-hash owner is
-     *                                 ignored so the actor stays local — used for
-     *                                 node-local handlers (e.g. UDP ingestion) that
-     *                                 must not be re-homed across the cluster.
+     * @param bool        $pinLocal    When true the actor is pinned to a LOCAL actor
+     *                                 process: placement never consults the cluster
+     *                                 shard router and create() is never forwarded to
+     *                                 a peer node. This is a pure actor-side deployment
+     *                                 constraint — the cluster module is unaware of it.
+     *                                 The process still lives in the normal actor
+     *                                 process group (IPC semantics unchanged), and the
+     *                                 actor is resolved via the local actor table.
      * @return ActorIpcProxy|false
      * @throws ActorException
      */
@@ -45,26 +45,23 @@ class ActorSystem
         float $timeOut = 5,
         ?string $parentName = null,
         ?string $routingKey = null,
-        bool $localOnly = false)
+        bool $pinLocal = false)
     {
         if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
             $proxy = ActorIpcProxy::create($actorName, false, $timeOut);
             return $proxy === false ? true : $proxy;
         }
 
-        // Cluster-aware placement: when clustering is enabled, create the actor on
-        // the node the consistent-hash ring assigns as its owner. If that is not
-        // this node, forward the create over the remote transport and return a
-        // remote proxy so that any later get()/ask() finds the actor where it lives.
-        // A $localOnly actor bypasses this entirely and is always created in the
-        // local actor process group.
+        // Cluster-aware placement: when cluster routing is enabled and the actor is
+        // NOT pinned locally, create it on the node the shard router assigns as its
+        // owner. If that is a remote node, forward the create over the remote
+        // transport and return a remote proxy. A $pinLocal actor bypasses this
+        // branch entirely and is always created in the local actor process group.
+        // Note: the actor module decides whether clustering is active purely from
+        // the shard router type (see ActorManager::isClusterRoutingEnabled), so it
+        // never imports any cluster config class — dependency stays actor -> cluster.
         $manager = ActorManager::getInstance();
-        try {
-            $clusterConfig = DIGet(\Yew\Cluster\ClusterConfig::class);
-        } catch (\Throwable $e) {
-            $clusterConfig = null;
-        }
-        if (!$localOnly && $clusterConfig !== null && $clusterConfig->isEnabled()) {
+        if (!$pinLocal && $manager->isClusterRoutingEnabled()) {
             $router = $manager->getShardRouter();
             $loc = $router->locate($actorName);
             if ($loc !== null && !$loc->getNode()->isLocal()) {
@@ -146,7 +143,7 @@ class ActorSystem
      *                                 - 'parentName'  : supervision parent (child shares its process)
      *                                 - 'routingKey'  : consistent-hash routing key
      *                                 - 'waitCreate'  : block until created (default true)
-     *                                 - 'localOnly'   : pin to this node, never routed to a peer
+     *                                 - 'pinLocal'    : pin to a local actor process, never routed to a peer
      *                                 - 'timeOut'     : wait timeout in seconds (default 5)
      * @param string|null $actorName   Explicit actor name; when null a name is
      *                                 auto-generated (akka-<pid>-<seq>)
@@ -162,7 +159,7 @@ class ActorSystem
             $routingKey = $props->getRoutingKey();
             $waitCreate = $props->isWaitCreate();
             $timeOut    = $props->getTimeOut();
-            $localOnly  = $props->isLocalOnly();
+            $pinLocal   = $props->isPinLocal();
         } else {
             $props = $props ?? [];
             if ($actorName === null) {
@@ -172,7 +169,7 @@ class ActorSystem
             $parentName = $props['parentName'] ?? null;
             $routingKey = $props['routingKey'] ?? null;
             $waitCreate = $props['waitCreate'] ?? true;
-            $localOnly  = $props['localOnly'] ?? false;
+            $pinLocal   = $props['pinLocal'] ?? false;
             $timeOut    = $props['timeOut'] ?? 5;
         }
 
@@ -188,7 +185,7 @@ class ActorSystem
             $timeOut,
             $parentName,
             $routingKey,
-            $localOnly
+            $pinLocal
         );
     }
 

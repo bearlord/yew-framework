@@ -184,6 +184,18 @@ class ActorManager
     }
 
     /**
+     * Whether cluster-based routing is active. Derived purely from the type of
+     * the injected shard router — the actor module never imports any cluster
+     * config class, keeping the dependency direction strictly actor -> cluster.
+     *
+     * @return bool
+     */
+    public function isClusterRoutingEnabled(): bool
+    {
+        return !($this->shardRouter instanceof LocalShardRouter);
+    }
+
+    /**
      * Replace the shard router (e.g. with a clustered/gossip implementation).
      *
      * @param ShardRouter $shardRouter
