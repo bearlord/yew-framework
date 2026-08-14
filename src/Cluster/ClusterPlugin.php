@@ -295,6 +295,12 @@ class ClusterPlugin extends AbstractPlugin
     // after the event loop is up. Idempotent. Keeps the IPC-backed IpcShardRouter
     // ring in sync with the authoritative view from the cluster-state process so
     // topology rebalancing (actor eviction) fires locally.
+    //
+    // De-duplication: only ONE process (the canonical "actor-0" actor process)
+    // needs to own the periodic IPC ticker. Every other worker process still gets
+    // a fresh-enough ring via the TTL-based lazy refresh inside IpcShardRouter
+    // (triggered on each routing lookup), so we avoid N-1 redundant IPC timers
+    // each hammering the single cluster-state process every tick.
     private function bootstrapGossip(): void
     {
         /** @var IpcShardRouter|null $router */
@@ -302,11 +308,18 @@ class ClusterPlugin extends AbstractPlugin
         if (!$router instanceof IpcShardRouter) {
             return;
         }
+        // Seed the initial view in every process (cheap, one-shot).
+        $router->refresh();
+
+        $current = Server::$instance->getProcessManager()->getCurrentProcess();
+        $isPrimary = $current !== null && $current->getProcessName() === 'actor-0';
+        if (!$isPrimary) {
+            return;
+        }
         $intervalMs = max(500, (int) ($this->clusterConfig->getHeartbeatInterval() * 1000));
         \Swoole\Timer::tick($intervalMs, static function () use ($router) {
             $router->refresh();
         });
-        $router->refresh();
     }
 
     /**
