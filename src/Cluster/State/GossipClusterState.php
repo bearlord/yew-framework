@@ -1094,7 +1094,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function aliveNodes(): array
     {
-        if ($this->sharedTable !== null && !$this->isGossipWorker) {
+        if ($this->sharedTable !== null) {
             $out = [];
             foreach ($this->readSharedNodes() as $id => $m) {
                 if ($m->isAlive()) {
@@ -1119,7 +1119,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function allNodes(): array
     {
-        if ($this->sharedTable !== null && !$this->isGossipWorker) {
+        if ($this->sharedTable !== null) {
             return $this->readSharedNodes();
         }
         return $this->members;
@@ -1133,7 +1133,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function getNode(string $nodeId): ?ClusterMember
     {
-        if ($this->sharedTable !== null && !$this->isGossipWorker) {
+        if ($this->sharedTable !== null) {
             $row = $this->sharedTable->get($nodeId);
             return $row === false ? null : ClusterMember::fromRow($row);
         }
@@ -1181,9 +1181,7 @@ class GossipClusterState implements ClusterStateInterface
 
     private function notify(array $changed): void
     {
-        if ($this->isGossipWorker) {
-            $this->syncToSharedTable();
-        }
+        $this->syncToSharedTable();
         foreach ($this->listeners as $cb) {
             $cb($changed, $this);
         }
@@ -1228,21 +1226,16 @@ class GossipClusterState implements ClusterStateInterface
         if ($this->sharedTable === null) {
             return;
         }
-        $live = [];
+        // Every worker that receives gossip packets merges them into its local
+        // $members and here pushes the rows it knows into the shared table. The
+        // table therefore aggregates members learned by ANY worker, so routing
+        // sees a complete, converged view even though each worker only receives
+        // a slice of the UDP traffic. We only SET (never DEL): a row absent from
+        // this worker's local view may well be known to another worker, and a
+        // departed node is reflected via its status (suspect/down), not by
+        // physical removal, which would race across workers.
         foreach ($this->members as $id => $m) {
-            $live[$id] = true;
             $this->sharedTable->set($id, $m->toRow());
-        }
-        // evict rows that have been converged away locally (collect first to
-        // avoid mutating the table while iterating it)
-        $stale = [];
-        foreach ($this->sharedTable as $id => $row) {
-            if (!isset($live[$id]) && $id !== $this->localNodeId) {
-                $stale[] = $id;
-            }
-        }
-        foreach ($stale as $id) {
-            $this->sharedTable->del($id);
         }
     }
 

@@ -326,36 +326,26 @@ class ClusterPlugin extends AbstractPlugin
         $seeds = $deferred["seeds"];
         $heartbeat = $deferred["heartbeat"];
 
-        // Only worker-0 owns the authoritative gossip state. In a multi-worker
-        // deployment every worker may receive UDP packets, but convergence must
-        // happen in exactly one place; the others are pure consumers of the
-        // shared table (set up in start()). This keeps all workers' routers in
-        // sync without duplicating the membership merge logic per worker.
-        $workerId = $this->getWorkerId();
-        $isGossipWorker = ($workerId === 0);
-
+        // Every worker runs the full gossip receiver + failure-detection ticker
+        // (same as single-worker behaviour). Because UDP packets are load-
+        // balanced across workers, each worker only sees a slice of the traffic,
+        // so no single worker converges on its own. The shared table (created in
+        // start(), shared across all worker processes) aggregates every member
+        // learned by ANY worker; routing reads from that table, so every worker
+        // routes against one complete, converged view.
         /** @var Table|null $sharedTable */
         $sharedTable = DIGet("cluster.memberTable");
         if ($sharedTable instanceof Table) {
-            $state->configureSharedView($sharedTable, $isGossipWorker);
-        }
-
-        if (!$isGossipWorker) {
-            // Seed the local node row so this worker can route to itself even
-            // before the first table sync from worker-0 lands.
-            if ($sharedTable instanceof Table) {
-                $local = $state->getNode($state->getLocalNodeId());
-                if ($local !== null) {
-                    $sharedTable->set($local->nodeId, $local->toRow());
-                }
+            // Seed the local node row BEFORE configureSharedView, so getNode()
+            // still reads the local $members (which already contains the joined
+            // local node) rather than the not-yet-populated shared table. This
+            // guarantees the table is never empty, so routers build a non-empty
+            // ring immediately.
+            $local = $state->getNode($state->getLocalNodeId());
+            if ($local !== null) {
+                $sharedTable->set($local->nodeId, $local->toRow());
             }
-            // Consumer workers never receive the membership-change notification
-            // (that only fires on the gossip worker). Poll the shared table so
-            // the router ring converges to the authoritative view.
-            \Swoole\Timer::tick(2000, function () use ($state) {
-                $state->refreshView();
-            });
-            return;
+            $state->configureSharedView($sharedTable, true);
         }
 
         $state->start($udp, $seeds);
@@ -363,25 +353,6 @@ class ClusterPlugin extends AbstractPlugin
         \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
             $state->tick();
         });
-    }
-
-    private function getWorkerId(): int
-    {
-        $server = Server::$instance->getServer();
-        if ($server === null) {
-            return 0;
-        }
-        // NOTE: Yew overwrites $server->worker_id with its OWN process id
-        // (see ProcessManager::setCurrentProcessId), so the property no longer
-        // reflects the Swoole worker index. Use the native Swoole accessor,
-        // which reads the internal C value, to pick the single gossip worker.
-        if (method_exists($server, 'getWorkerId')) {
-            $id = $server->getWorkerId();
-            if (is_int($id) && $id >= 0) {
-                return $id;
-            }
-        }
-        return 0;
     }
 
     /**
