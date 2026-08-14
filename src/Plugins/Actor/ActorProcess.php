@@ -12,6 +12,14 @@ use Yew\Core\Server\Process\Process;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Actor\Event\ActorCreateEvent;
 use Yew\Plugins\Actor\Event\ActorDestroyEvent;
+use Yew\Cluster\ClusterConfig;
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\Router\IpcShardRouter;
+use Yew\Cluster\Persistence\IpcReplicaTransport;
+use Yew\Plugins\Actor\ActorFailover;
+use Yew\Plugins\Actor\ActorConfig;
+use Yew\Plugins\Actor\Persistence\ClusterActorStore;
+use Yew\Plugins\Actor\Persistence\FileActorStore;
 use Yew\Yew;
 
 class ActorProcess extends Process
@@ -101,6 +109,44 @@ class ActorProcess extends Process
                 $this->processName,
                 $e->getMessage()
             ));
+        }
+
+        // Cross-node failover: only the first actor process drives resurrection
+        // so we never double-spawn the same actor across sibling actor processes.
+        // Replicas live solely in the cluster-state process; we read them over IPC
+        // and re-create the actors the ring now assigns to this node.
+        if ($this->processName === 'actor-0') {
+            try {
+                $actorConfig = DIGet(ActorConfig::class);
+                $clusterConfig = DIGet(ClusterConfig::class);
+                $store = new ClusterActorStore(
+                    new FileActorStore($actorConfig->getPersistenceDir())
+                );
+                $store->setCluster(new IpcReplicaTransport());
+                $localNode = new ClusterNode(
+                    $clusterConfig->getNodeId(),
+                    $clusterConfig->getHost(),
+                    $clusterConfig->getPort(),
+                    true
+                );
+                $router = new IpcShardRouter($localNode, $clusterConfig->getReplicas());
+                $failover = new ActorFailover($router, $store, $this->processName);
+                \Swoole\Timer::tick(2000, static function () use ($failover) {
+                    try {
+                        $failover->run();
+                    } catch (\Throwable $e) {
+                        Server::$instance->getLog()->warning(
+                            'ActorProcess failover sweep failed: ' . $e->getMessage()
+                        );
+                    }
+                });
+            } catch (\Throwable $e) {
+                Server::$instance->getLog()->warning(sprintf(
+                    'ActorProcess %s failover init failed: %s',
+                    $this->processName,
+                    $e->getMessage()
+                ));
+            }
         }
     }
 
