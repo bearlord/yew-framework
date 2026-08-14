@@ -7,159 +7,236 @@
 namespace Yew\Cluster\State;
 
 use Yew\Core\Memory\CrossProcess\Table;
-use Yew\Core\Plugins\Logger\GetLogger;
 
 /**
- * Shared-memory cluster membership service.
+ * Authority for cluster membership, failure detection and shard routing.
  *
- * This is the pragmatic stand-in for a gossip protocol in a single Swoole
- * server / multi-process deployment. Every actor worker process can read the
- * same Swoole Table, so "who is alive" is visible cluster-wide without any
- * network traffic. A periodic {@see tick()}:
- *   - refreshes the local node's heartbeat,
- *   - marks nodes stale past the suspicion window as SUSPECT,
- *   - marks nodes past the failure window as DOWN,
- *   - fires the onMembershipChange callback so the shard router can rebalance.
+ * This object lives inside a SINGLE dedicated helper process ("cluster-state",
+ * one per node). Because it is the only writer and reader of its member table,
+ * there is no cross-worker shared state and therefore no split-brain: failure
+ * detection and the consistent-hash ring are computed exactly once per node.
  *
- * Swapping this for a UDP gossip layer later only means replacing the Table
- * read/write with broadcast + merge; the public surface (aliveNodes, tick,
- * registerListener) stays identical.
+ * Worker processes (including actor workers) never touch this state directly;
+ * they query it through the {@see \Yew\Cluster\GetClusterState} IPC proxy, which
+ * forwards method calls to this instance over the process message channel.
+ *
+ * Stage 1 (this class) seeds the member view from configuration (local node +
+ * static peers) and runs the in-process failure-detection tick. The gossip UDP
+ * protocol will be moved here in a later stage; until then peers are trusted to
+ * be present and their liveness is tracked by the tick against lastHeartbeat
+ * (which, in stage 1, is only updated by external heartbeats once gossip lands,
+ * or simply assumed alive until downAfter elapses — see {@see tick}).
  */
 class ClusterState implements ClusterStateInterface
 {
-    use GetLogger;
-
-    private const DEFAULT_HEARTBEAT_INTERVAL = 1;   // seconds
-    private const DEFAULT_SUSPECT_AFTER = 3;        // missed heartbeats
-    private const DEFAULT_DOWN_AFTER = 8;           // missed heartbeats
-
+    /**
+     * @var string Local node id
+     */
     private string $localNodeId;
-    private Table $memberTable;
-    private float $suspectAfter;
-    private float $downAfter;
+
+    /**
+     * @var array<string, ClusterMember> Authoritative member table (process memory).
+     */
+    private array $members = [];
+
+    /**
+     * @var int Seconds before a silent peer is marked suspect
+     */
+    private int $suspectAfter;
+
+    /**
+     * @var int Seconds before a silent peer is marked down
+     */
+    private int $downAfter;
+
+    /**
+     * @var array<int, callable> Listeners fired when the view changes
+     */
     private array $listeners = [];
 
     /**
-     * @param string $localNodeId Stable id of this node
-     * @param int $maxNodes Capacity of the membership table
-     * @param float $suspectAfter Seconds before a missing node becomes SUSPECT
-     * @param float $downAfter Seconds before a missing node becomes DOWN
+     * @var callable|null Returns the current epoch seconds (injectable for tests)
+     */
+    private $nowFn;
+
+    /**
+     * @param string $localNodeId
+     * @param int    $suspectAfter
+     * @param int    $downAfter
+     * @param array  $peers        Static seed peers as ["nodeId" => "host:port"]
+     * @param callable|null $nowFn
      */
     public function __construct(
         string $localNodeId,
-        int $maxNodes = 64,
-        float $suspectAfter = self::DEFAULT_SUSPECT_AFTER,
-        float $downAfter = self::DEFAULT_DOWN_AFTER
+        int $suspectAfter,
+        int $downAfter,
+        array $peers = [],
+        ?callable $nowFn = null
     ) {
         $this->localNodeId = $localNodeId;
         $this->suspectAfter = $suspectAfter;
         $this->downAfter = $downAfter;
+        $this->nowFn = $nowFn ?? static fn () => time();
 
-        $this->memberTable = new Table($maxNodes);
-        $this->memberTable->column('nodeId', Table::TYPE_STRING, 64);
-        $this->memberTable->column('host', Table::TYPE_STRING, 64);
-        $this->memberTable->column('port', Table::TYPE_INT);
-        $this->memberTable->column('weight', Table::TYPE_INT);
-        $this->memberTable->column('status', Table::TYPE_STRING, 16);
-        $this->memberTable->column('lastHeartbeat', Table::TYPE_INT);
-        $this->memberTable->column('incarnation', Table::TYPE_INT);
-        $this->memberTable->create();
-    }
-
-    /**
-     * Register (or re-register) the local node. Called once per process start.
-     */
-    public function join(string $host, int $port, int $weight = 1): void
-    {
-        $now = time();
-        $existing = $this->memberTable->get($this->localNodeId);
-        $incarnation = $existing === false ? 1 : ((int) $existing['incarnation']) + 1;
-
-        $member = new ClusterMember(
-            $this->localNodeId, $host, $port, $weight,
-            ClusterMember::STATUS_UP, $now, $incarnation
+        // Seed: local node is always up and owned by this process.
+        $this->members[$localNodeId] = new ClusterMember(
+            $localNodeId, '127.0.0.1', 0, true, ClusterMember::STATUS_UP, $this->now()
         );
-        $this->memberTable->set($this->localNodeId, $member->toRow());
-    }
-
-    /**
-     * Announce graceful departure (optional; DOWN is also implied by timeout).
-     */
-    public function leave(): void
-    {
-        $row = $this->memberTable->get($this->localNodeId);
-        if ($row !== false) {
-            $row['status'] = ClusterMember::STATUS_DOWN;
-            $this->memberTable->set($this->localNodeId, $row);
+        // Static peers start as "up" (optimistic); the FD tick will downgrade
+        // them if no heartbeat arrives. Once gossip is wired in stage 1.5 this
+        // seeding is replaced by discovered membership.
+        foreach ($peers as $peerId => $endpoint) {
+            [$host, $port] = explode(':', (string) $endpoint) + ['', 0];
+            $this->members[(string) $peerId] = new ClusterMember(
+                (string) $peerId, (string) $host, (int) $port, false,
+                ClusterMember::STATUS_UP, $this->now()
+            );
         }
     }
 
+    private function now(): int
+    {
+        return ($this->nowFn)();
+    }
+
     /**
-     * Periodic maintenance: heartbeat + failure detection. Returns the set of
-     * node ids whose status changed so the caller can trigger rebalancing.
+     * Failure-detection tick. Runs ONLY inside the cluster-state process, so the
+     * verdict is authoritative and consistent — no per-worker disagreement.
      *
-     * @return string[] Node ids that changed status since the previous tick
+     * @return void
      */
-    public function tick(): array
+    public function tick(): void
     {
-        $now = time();
-        $changed = [];
-
-        // Self heartbeat.
-        $self = $this->memberTable->get($this->localNodeId);
-        if ($self !== false) {
-            $self['lastHeartbeat'] = $now;
-            $self['status'] = ClusterMember::STATUS_UP;
-            $this->memberTable->set($this->localNodeId, $self);
-        }
-
-        foreach ($this->memberTable as $nodeId => $row) {
-            if ($nodeId === $this->localNodeId) {
-                continue;
+        $changed = false;
+        $now = $this->now();
+        foreach ($this->members as $id => $m) {
+            if ($m->isLocal()) {
+                continue; // local is always alive
             }
-            $elapsed = $now - (int) $row['lastHeartbeat'];
-            $prevStatus = $row['status'];
-
-            if ($prevStatus === ClusterMember::STATUS_DOWN) {
-                continue;
+            $silent = $now - $m->lastHeartbeat;
+            $prev = $m->status;
+            if ($silent >= $this->downAfter) {
+                $m->status = ClusterMember::STATUS_DOWN;
+            } elseif ($silent >= $this->suspectAfter) {
+                $m->status = ClusterMember::STATUS_SUSPECT;
             }
-
-            if ($elapsed >= $this->downAfter) {
-                $row['status'] = ClusterMember::STATUS_DOWN;
-                $this->memberTable->set($nodeId, $row);
-                $changed[] = $nodeId;
-            } elseif ($elapsed >= $this->suspectAfter) {
-                $row['status'] = ClusterMember::STATUS_SUSPECT;
-                $this->memberTable->set($nodeId, $row);
-                if ($prevStatus !== ClusterMember::STATUS_SUSPECT) {
-                    $changed[] = $nodeId;
-                }
+            if ($m->status !== $prev) {
+                $changed = true;
             }
         }
-
-        if (!empty($changed)) {
-            $this->notify($changed);
+        if ($changed) {
+            $this->fireListeners();
         }
-
-        return $changed;
     }
 
     /**
-     * Record a heartbeat received from a peer (used when a real transport exists;
-     * for the in-process Table build this is a no-op-friendly hook).
+     * Record a heartbeat for a node (called by gossip receive in later stage, or
+     * by an external probe). Keeps the member alive.
+     *
+     * @param string $nodeId
+     * @param int|null $ts
+     * @return void
      */
-    public function observe(ClusterMember $member): void
+    public function heartbeat(string $nodeId, ?int $ts = null): void
     {
-        $row = $this->memberTable->get($member->nodeId);
-        if ($row !== false && (int) $row['incarnation'] > $member->incarnation) {
-            return; // stale update, ignore
+        if (!isset($this->members[$nodeId])) {
+            return;
         }
-        $member->lastHeartbeat = time();
-        if ($member->status === ClusterMember::STATUS_SUSPECT && $row !== false) {
-            $member->status = ClusterMember::STATUS_UP;
+        $this->members[$nodeId]->lastHeartbeat = $ts ?? $this->now();
+        if ($this->members[$nodeId]->status !== ClusterMember::STATUS_UP) {
+            $this->members[$nodeId]->status = ClusterMember::STATUS_UP;
+            $this->fireListeners();
         }
-        $this->memberTable->set($member->nodeId, $member->toRow());
     }
+
+    /**
+     * Resolve the owning node of an actor by consistent-hash ring over the
+     * currently-UP members. Peers that are suspect/down participate only if no
+     * UP member exists, to keep the ring stable during transient partitions.
+     *
+     * @param string $actorName
+     * @return Location|null
+     */
+    public function locate(string $actorName): ?Location
+    {
+        $up = [];
+        $fallback = [];
+        foreach ($this->members as $m) {
+            if ($m->status === ClusterMember::STATUS_UP) {
+                $up[$m->nodeId] = $m;
+            } else {
+                $fallback[$m->nodeId] = $m;
+            }
+        }
+        $pool = $up !== [] ? $up : $fallback;
+        if ($pool === []) {
+            return null;
+        }
+        $ring = $this->buildRing($pool);
+        $key = $this->hashKey($actorName);
+        $owner = $this->ownerOfRing($ring, $key);
+        if ($owner === null) {
+            return null;
+        }
+        $node = new ClusterNode(
+            $owner->nodeId, $owner->host, $owner->port,
+            $owner->nodeId === $this->localNodeId
+        );
+        return new Location($node, 0);
+    }
+
+    /**
+     * Serializable snapshot of the member view for worker-side queries.
+     *
+     * @return array
+     */
+    public function getMemberView(): array
+    {
+        $out = [];
+        foreach ($this->members as $m) {
+            $out[] = [
+                'nodeId'         => $m->nodeId,
+                'host'           => $m->host,
+                'port'           => $m->port,
+                'local'          => $m->isLocal(),
+                'status'         => $m->status,
+                'lastHeartbeat'  => $m->lastHeartbeat,
+                'alive'          => $m->status === ClusterMember::STATUS_UP || $m->isLocal(),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Serializable form of {@see locate()} for IPC: returns a flat array the
+     * worker side can rebuild into a {@see Location}, since objects cannot cross
+     * the process message channel.
+     *
+     * @param string $actorName
+     * @return array|null [nodeId, host, port, local, processId]
+     */
+    public function getLocationArray(string $actorName): ?array
+    {
+        $loc = $this->locate($actorName);
+        if ($loc === null) {
+            return null;
+        }
+        $node = $loc->getNode();
+        return [
+            'nodeId'    => $node->getNodeId(),
+            'host'      => $node->getHost(),
+            'port'      => $node->getPort(),
+            'local'     => $node->isLocal(),
+            'processId' => $loc->getProcessId(),
+        ];
+    }
+
+    public function getLocalNodeId(): string
+    {
+        return $this->localNodeId;
+    }
+
+    // ---- ClusterStateInterface ----
 
     /**
      * @return ClusterMember[] Only nodes considered reachable (UP).
@@ -167,72 +244,76 @@ class ClusterState implements ClusterStateInterface
     public function aliveNodes(): array
     {
         $out = [];
-        foreach ($this->memberTable as $nodeId => $row) {
-            $member = ClusterMember::fromRow($row);
-            if ($member->isAlive()) {
-                $out[$nodeId] = $member;
+        foreach ($this->members as $m) {
+            if ($m->status === ClusterMember::STATUS_UP || $m->isLocal()) {
+                $out[$m->nodeId] = $m;
             }
         }
         return $out;
     }
 
-    /**
-     * @return ClusterMember[] All known nodes regardless of status.
-     */
-    public function allNodes(): array
-    {
-        $out = [];
-        foreach ($this->memberTable as $nodeId => $row) {
-            $out[$nodeId] = ClusterMember::fromRow($row);
-        }
-        return $out;
-    }
-
-    /**
-     * Look up a single member by node id.
-     *
-     * @param string $nodeId
-     * @return ClusterMember|null
-     */
     public function getNode(string $nodeId): ?ClusterMember
     {
-        $row = $this->memberTable->get($nodeId);
-        return $row === false ? null : ClusterMember::fromRow($row);
+        return $this->members[$nodeId] ?? null;
     }
 
-    /**
-     * Whether the given node id is this node.
-     *
-     * @param string $nodeId
-     * @return bool
-     */
     public function isLocal(string $nodeId): bool
     {
-        return $nodeId === $this->localNodeId;
+        return isset($this->members[$nodeId]) && $this->members[$nodeId]->isLocal();
     }
 
     /**
-     * This node's id.
+     * Register a callback fired whenever the member view changes.
      *
-     * @return string
-     */
-    public function getLocalNodeId(): string
-    {
-        return $this->localNodeId;
-    }
-
-    /**
-     * Register a listener invoked with the list of changed node ids after each tick.
+     * @param callable $cb
+     * @return void
      */
     public function registerListener(callable $cb): void
     {
         $this->listeners[] = $cb;
     }
 
-    private function notify(array $changed): void
+    private function fireListeners(): void
     {
+        $view = $this->getMemberView();
         foreach ($this->listeners as $cb) {
-            $cb($changed, $this);
+            ($cb)($view);
         }
+    }
+
+    // ---- consistent-hash ring (mirrors GossipShardRouter math) ----
+
+    private function buildRing(array $pool): array
+    {
+        $ring = [];
+        $replicas = 128;
+        foreach ($pool as $m) {
+            for ($i = 0; $i < $replicas; $i++) {
+                $h = $this->hashKey($m->nodeId . '#' . $i);
+                $ring[$h] = $m->nodeId;
+            }
+        }
+        ksort($ring, SORT_NUMERIC);
+        return $ring;
+    }
+
+    private function ownerOfRing(array $ring, int $key): ?ClusterMember
+    {
+        if ($ring === []) {
+            return null;
+        }
+        foreach ($ring as $h => $nodeId) {
+            if ($key <= $h) {
+                return $this->members[$nodeId] ?? null;
+            }
+        }
+        // wrap around
+        $first = array_values($ring)[0];
+        return $this->members[$first] ?? null;
+    }
+
+    private function hashKey(string $s): int
+    {
+        return (int) (sprintf('%u', crc32($s)) % 4294967296);
     }
 }
