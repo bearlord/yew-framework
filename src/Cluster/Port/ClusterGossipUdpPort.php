@@ -7,6 +7,7 @@ use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Core\Server\Port\ServerPort;
 use Yew\Core\Server\Server;
 use Yew\Core\Server\Config\PortConfig;
+use Yew\Core\Plugins\Logger\GetLogger;
 
 /**
  * Framework-managed UDP listener for gossip membership traffic.
@@ -18,6 +19,8 @@ use Yew\Core\Server\Config\PortConfig;
  */
 class ClusterGossipUdpPort extends ServerPort
 {
+    use GetLogger;
+
     public const NAME = 'cluster-gossip';
 
     /** @var GossipClusterState|null */
@@ -50,12 +53,17 @@ class ClusterGossipUdpPort extends ServerPort
 
     public function onUdpPacket(string $data, array $clientInfo): void
     {
+        $this->error('[gossip-udp][node-1] onUdpPacket HIT from ' . ($clientInfo['address'] ?? '?') . ':' . ($clientInfo['port'] ?? '?') . ' len=' . strlen($data));
         if ($this->state === null) {
+            $this->error('[gossip-udp][node-1] onUdpPacket DROP: state is null');
             return;
         }
         $transport = $this->state->getTransport();
         if ($transport instanceof UdpGossipTransport) {
             $transport->handlePacket($data, $clientInfo);
+            $this->error('[gossip-udp][node-1] onUdpPacket handled, pendingOut=' . $this->state->pendingCount());
+        } else {
+            $this->error('[gossip-udp][node-1] onUdpPacket DROP: transport not UdpGossipTransport');
         }
     }
 
