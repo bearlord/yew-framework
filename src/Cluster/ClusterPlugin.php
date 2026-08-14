@@ -27,6 +27,7 @@ use Yew\Cluster\Persistence\IpcReplicaTransport;
 use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
 use Yew\Plugins\Actor\ActorConfig;
+use Yew\Plugins\Actor\ActorPlugin;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Cluster\Port\ClusterTcpPort;
 use Yew\Cluster\Transport\GossipTransport;
@@ -75,6 +76,10 @@ class ClusterPlugin extends AbstractPlugin
         // registers IpcPlugin; declaring the dependency here keeps ClusterPlugin
         // self-sufficient if loaded without ActorPlugin.
         $this->atAfter(IpcPlugin::class);
+        // ShardRouter / ClusterActorStore are bound inside beforeServerStart();
+        // ActorPlugin's beforeServerStart() resolves ShardRouter via DIGet, so
+        // ClusterPlugin must run first to register the concrete IpcShardRouter.
+        $this->atBefore(ActorPlugin::class);
         // Snapshot yew.cluster; the cluster package builds its own config here
         // so it stays independent of ActorPlugin.
         $this->rawClusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
@@ -333,6 +338,14 @@ class ClusterPlugin extends AbstractPlugin
             false // real heartbeats now drive FD; no optimistic hold
         );
 
+        // Register the concrete ClusterState instance in the container the IPC
+        // message processor resolves against BEFORE any other setup that could
+        // throw. Otherwise an exception later in startClusterState would leave the
+        // cluster-state process unable to resolve ClusterState for inbound IPC
+        // calls (getMemberView, etc.), and the worker refresh tick would fatal-loop.
+        $this->setToDIContainer(ClusterState::class, $state);
+        Server::$instance->getContainer()->set(ClusterState::class, $state);
+
         // Build the proven GossipClusterState engine. No shared table is attached
         // (configureSharedView is NOT called), so it operates purely on its own
         // in-process $members — i.e. single authority, exactly as intended.
@@ -384,8 +397,6 @@ class ClusterPlugin extends AbstractPlugin
             $peerCacheFile,
             max(500, (int) ($cfg->getHeartbeatInterval() * 1000))
         ));
-
-        $this->setToDIContainer(ClusterState::class, $state);
 
         // Cross-node ActorStore replication + failover live HERE too: this is the
         // single process that owns the gossip replica buffer. The local store

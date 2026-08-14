@@ -87,9 +87,9 @@ class ClusterState implements ClusterStateInterface
      * @param bool   $optimisticPeers  Hold seeded peers UP until gossip takes over
      */
     public function __construct(
-        string $localNodeId,
-        int $suspectAfter,
-        int $downAfter,
+        string $localNodeId = '',
+        int $suspectAfter = 0,
+        int $downAfter = 0,
         array $peers = [],
         ?callable $nowFn = null,
         bool $optimisticPeers = false
