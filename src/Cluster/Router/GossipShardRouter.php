@@ -103,6 +103,28 @@ class GossipShardRouter implements ShardRouter
 
     public function locate(string $actorName): ?Location
     {
+        // Location-transparency seam for LOCAL actors. If the actor is already
+        // activated in THIS node's actor table, it must always resolve to local ¡ª
+        // regardless of where the consistent-hash ring say it "should" live. This
+        // is what makes a "local-only" actor (created with ActorSystem::create(...,
+        // localOnly: true), deliberately kept off the remote routing path) actually
+        // stay local: its proxy lookup can never be misrouted to a peer node just
+        // because the hash happens to land there. It also benefits normal actors ¡ª
+        // an already-activated local actor should be found locally, not re-homed.
+        if ($this->actorLocator !== null) {
+            $local = ($this->actorLocator)($actorName);
+            if ($local !== null) {
+                $node = new ClusterNode(
+                    $this->localNode->getNodeId(),
+                    $this->localNode->getHost(),
+                    $this->localNode->getPort(),
+                    true
+                );
+                $processId = (int) ($local['processId'] ?? 0);
+                return new Location($node, $processId);
+            }
+        }
+
         $owner = $this->ownerOf($actorName);
         if ($owner === null) {
             return null;
