@@ -89,6 +89,30 @@ class ActorProcess extends Process
             "last_exit_time" => null
         ]);
 
+        // Every actor process needs the IPC-backed ClusterActorStore so that any
+        // actor constructed here — whether recovered on startup or (re)spawned by
+        // the failover driver — injects the correct replica transport via #[Inject]
+        // (Actor::__construct calls injectOn($this)). Without this, injectOn would
+        // resolve a default ClusterActorStore with no ReplicaTransport, and
+        // recovery() would silently read no replica (failover would restore empty
+        // actors). This must run before recoverLocalActors() and before the
+        // failover sweep below.
+        try {
+            $actorConfig = DIGet(ActorConfig::class);
+            $clusterConfig = DIGet(ClusterConfig::class);
+            $ipcStore = new ClusterActorStore(
+                new FileActorStore($actorConfig->getPersistenceDir())
+            );
+            $ipcStore->setCluster(new IpcReplicaTransport());
+            DISet(ClusterActorStore::class, static fn() => $ipcStore);
+        } catch (\Throwable $e) {
+            Server::$instance->getLog()->warning(sprintf(
+                'ActorProcess %s ClusterActorStore(DI) setup failed: %s',
+                $this->processName,
+                $e->getMessage()
+            ));
+        }
+
         // After a process restart the shared actorTable may still hold rows that
         // belong to this process but have no live in-process instance. Re-create
         // them (and replay durable state via recovery()) so proxies dispatch to a
@@ -117,12 +141,6 @@ class ActorProcess extends Process
         // and re-create the actors the ring now assigns to this node.
         if ($this->processName === 'actor-0') {
             try {
-                $actorConfig = DIGet(ActorConfig::class);
-                $clusterConfig = DIGet(ClusterConfig::class);
-                $store = new ClusterActorStore(
-                    new FileActorStore($actorConfig->getPersistenceDir())
-                );
-                $store->setCluster(new IpcReplicaTransport());
                 $localNode = new ClusterNode(
                     $clusterConfig->getNodeId(),
                     $clusterConfig->getHost(),
@@ -130,7 +148,11 @@ class ActorProcess extends Process
                     true
                 );
                 $router = new IpcShardRouter($localNode, $clusterConfig->getReplicas());
-                $failover = new ActorFailover($router, $store, $this->processName);
+                $failover = new ActorFailover($router, $ipcStore, $this->processName);
+                Server::$instance->getLog()->info(sprintf(
+                    'ActorProcess %s: cross-node failover sweep armed (interval 2000ms)',
+                    $this->processName
+                ));
                 \Swoole\Timer::tick(2000, static function () use ($failover) {
                     try {
                         $failover->run();

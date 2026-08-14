@@ -37,8 +37,8 @@ class IpcShardRouter implements ShardRouter
     /** @var callable|null */
     private $rebalanceHook = null;
 
-    /** @var string[]|null last seen node ids, to detect membership changes */
-    private ?array $lastNodeIds = null;
+    /** @var array<string,string>|null last seen nodeId => status, to detect membership/status changes */
+    private ?array $lastStatuses = null;
 
     public function __construct(ClusterNode $localNode, int $replicas = 128)
     {
@@ -90,12 +90,30 @@ class IpcShardRouter implements ShardRouter
     public function refresh(): array
     {
         $view = $this->getClusterView();
-        $nodeIds = array_keys($view);
-        $changed = ($this->lastNodeIds === null || $this->lastNodeIds !== $nodeIds)
-            ? $nodeIds
-            : [];
+        $statuses = [];
+        foreach ($view as $id => $row) {
+            $statuses[$id] = $row['status'] ?? 'unknown';
+        }
+        // "Changed" = first run, or any node added/removed, or any status flip
+        // (e.g. a peer going DOWN must trigger rebalance + failover candidates).
+        $changed = [];
+        if ($this->lastStatuses === null) {
+            $changed = array_keys($view);
+        } else {
+            foreach ($statuses as $id => $st) {
+                if (!array_key_exists($id, $this->lastStatuses) || $this->lastStatuses[$id] !== $st) {
+                    $changed[] = $id;
+                }
+            }
+            // nodes that disappeared entirely
+            foreach ($this->lastStatuses as $id => $_) {
+                if (!array_key_exists($id, $statuses)) {
+                    $changed[] = $id;
+                }
+            }
+        }
         $this->view = $view;
-        $this->lastNodeIds = $nodeIds;
+        $this->lastStatuses = $statuses;
         $this->rebuild();
         if ($changed !== [] && $this->rebalanceHook !== null) {
             ($this->rebalanceHook)($changed, $this);

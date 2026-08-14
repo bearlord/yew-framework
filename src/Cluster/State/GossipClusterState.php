@@ -60,6 +60,17 @@ class GossipClusterState implements ClusterStateInterface
     private array $seeds = [];
 
     /**
+     * Seed self-healing: a locally persisted cache of peer "host:port" endpoints
+     * learned from previous runs. If every static seed is simultaneously down, a
+     * restarting node can still reach the cluster by treating these cached peers
+     * as temporary seeds. Only peers whose real coordinates we actually received
+     * (i.e. they were alive at some point) are cached, so the cache cannot be
+     * poisoned by never-seen node ids.
+     */
+    private ?string $peerCacheFile = null;
+    private array $peerCache = [];
+
+    /**
      * Optional cross-worker shared membership view (Swoole\Table, shared memory).
      * When set AND this process is NOT the designated gossip worker, all read
      * methods (aliveNodes/allNodes/getNode) serve from the table so every worker
@@ -455,9 +466,76 @@ class GossipClusterState implements ClusterStateInterface
             }
         });
 
-        foreach ($this->seeds as $seed) {
+        // Seed self-healing: fold any previously-learned peers into the SYNC
+        // targets so a node can re-join even when all static seeds are down.
+        $this->loadPeerCache();
+        $targets = array_unique(array_merge($this->seeds, $this->peerCache));
+        foreach ($targets as $seed) {
             $this->sendSync($seed);
         }
+    }
+
+    /**
+     * Point the engine at a file used to persist learned peer endpoints for
+     * seed self-healing. Call before start().
+     */
+    public function setPeerCacheFile(string $file): void
+    {
+        $this->peerCacheFile = $file;
+    }
+
+    /**
+     * Load previously-learned peer endpoints from disk.
+     */
+    private function loadPeerCache(): void
+    {
+        if ($this->peerCacheFile === null || !is_file($this->peerCacheFile)) {
+            return;
+        }
+        $raw = @file_get_contents($this->peerCacheFile);
+        if ($raw === false) {
+            return;
+        }
+        $data = json_decode($raw, true);
+        if (is_array($data)) {
+            foreach ($data as $ep) {
+                if (is_string($ep) && $ep !== '') {
+                    $this->peerCache[] = $ep;
+                }
+            }
+        }
+    }
+
+    /**
+     * Persist currently-known peer endpoints (host:port) so a future cold start
+     * can reach them as temporary seeds. Only peers with real coordinates are
+     * stored. Written at most once per changed set to avoid fs churn.
+     */
+    private function flushPeerCache(): void
+    {
+        if ($this->peerCacheFile === null) {
+            return;
+        }
+        $known = [];
+        foreach ($this->members as $id => $m) {
+            if ($id === $this->localNodeId) {
+                continue;
+            }
+            if ($m->host !== '' && $m->host !== 'unknown' && $m->port > 0) {
+                $known[] = $m->host . ':' . $m->port;
+            }
+        }
+        $known = array_values(array_unique($known));
+        sort($known);
+        if ($known === $this->peerCache) {
+            return; // unchanged
+        }
+        $this->peerCache = $known;
+        $dir = dirname($this->peerCacheFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        @file_put_contents($this->peerCacheFile, json_encode($known));
     }
 
     /**
@@ -999,6 +1077,9 @@ class GossipClusterState implements ClusterStateInterface
         // Steady-state digest push to a random peer.
         $this->gossipRound($now);
 
+        // Persist learned peer endpoints for seed self-healing on next cold start.
+        $this->flushPeerCache();
+
         if (!empty($changed)) {
             $this->notify($changed);
         }
@@ -1293,14 +1374,12 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function syncToSharedTable(): void
     {
-        // The inherited ClusterState::$memberTable (a Swoole\Table in shared
-        // memory) IS the cross-worker view that GossipShardRouter->rebuild() reads
-        // via aliveNodes()/getNode(). If a dedicated sharedTable was configured we
-        // prefer it; otherwise we fall back to memberTable so the converged gossip
-        // membership actually reaches the router. Without this sync, only the
-        // local node is ever visible to routing and remote actor placement fails.
-        $table = $this->sharedTable ?? $this->memberTable;
-        if ($table === null) {
+        // NOTE: In the single-authority architecture the cluster-state process is
+        // the ONLY writer of membership; there is no cross-worker Swoole\Table to
+        // sync into. This method is therefore a no-op when no sharedTable was
+        // configured (the normal case now). Kept so the FD notify() path stays
+        // unchanged.
+        if ($this->sharedTable === null) {
             return;
         }
         // Every worker that receives gossip packets merges them into its local

@@ -28,6 +28,7 @@ use Yew\Cluster\Persistence\IpcReplicaTransport;
 use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
 use Yew\Plugins\Actor\ActorConfig;
+use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Cluster\Port\ClusterTcpPort;
 use Yew\Cluster\Transport\GossipTransport;
 use Yew\Cluster\Transport\UdpGossipTransport;
@@ -72,6 +73,11 @@ class ClusterPlugin extends AbstractPlugin
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
+        // Ensure the IPC channel exists before any worker-side IpcShardRouter /
+        // IpcReplicaTransport talks to the cluster-state process. ActorPlugin also
+        // registers IpcPlugin; declaring the dependency here keeps ClusterPlugin
+        // self-sufficient if loaded without ActorPlugin.
+        $this->atAfter(IpcPlugin::class);
         // Snapshot yew.cluster; the cluster package builds its own config here
         // so it stays independent of ActorPlugin.
         $this->rawClusterCfg = (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
@@ -367,7 +373,20 @@ class ClusterPlugin extends AbstractPlugin
         $router = new GossipShardRouter($engine, $localNode, $cfg->getReplicas());
 
         // Mount everything into the single authority process and start the wire.
-        $state->attachGossip($cfg, $engine, $udp, $router, $cfg->getSeeds());
+        // Persist learned peers per node so a cold start can still join when all
+        // static seeds are down (seed self-healing).
+        $peerCacheFile = Server::$instance->getServerConfig()->getRuntimeDir()
+            . DIRECTORY_SEPARATOR . 'cluster'
+            . DIRECTORY_SEPARATOR . 'peers-' . $cfg->getNodeId() . '.json';
+        $state->attachGossip($cfg, $engine, $udp, $router, $cfg->getSeeds(), $peerCacheFile);
+
+        $this->logger->info(sprintf(
+            '[cluster-state] authority process ready: node=%s seeds=[%s] peerCache=%s tick=%dms',
+            $cfg->getNodeId(),
+            implode(',', $cfg->getSeeds()),
+            $peerCacheFile,
+            max(500, (int) ($cfg->getHeartbeatInterval() * 1000))
+        ));
 
         $this->setToDIContainer(ClusterState::class, $state);
 

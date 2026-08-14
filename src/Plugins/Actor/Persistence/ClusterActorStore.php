@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yew\Plugins\Actor\Persistence;
 
 use Yew\Cluster\Persistence\ReplicaTransport;
+use Yew\Coroutine\Server\Server;
 
 /**
  * Cross-node durable ActorStore.
@@ -316,6 +317,14 @@ class ClusterActorStore implements ActorStore
     {
         if ($this->cluster !== null) {
             $this->cluster->replicateStoreEntry($actorName, $kind, $payload, time());
+        } else {
+            // Should not happen: both the worker and cluster-state processes wire
+            // a ReplicaTransport at startup. A null here means the store was
+            // constructed without setCluster() ¡ª surface it instead of silently
+            // dropping the replica.
+            Server::$instance->getLog()->warning(
+                "ClusterActorStore: replicate($actorName/$kind) dropped ¡ª no ReplicaTransport wired"
+            );
         }
     }
 }

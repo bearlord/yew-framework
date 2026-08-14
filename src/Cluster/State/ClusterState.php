@@ -128,19 +128,26 @@ class ClusterState implements ClusterStateInterface
      * @param UdpGossipTransport   $udp      Self-managed transport (setManaged(false))
      * @param GossipShardRouter    $router   Router over $engine
      * @param string[]             $seeds    Seed endpoints host:port
+     * @param string|null          $peerCacheFile  Path to persist learned peers for seed self-healing
      */
     public function attachGossip(
         ClusterConfig $cfg,
         GossipClusterState $engine,
         UdpGossipTransport $udp,
         GossipShardRouter $router,
-        array $seeds
+        array $seeds,
+        ?string $peerCacheFile = null
     ): void {
         $this->gossip = $engine;
         $this->router = $router;
         // Forward any listeners registered before attach to the engine.
         foreach ($this->listeners as $cb) {
             $engine->registerListener($cb);
+        }
+        // Seed self-healing: persist learned peers so a cold start can re-join
+        // even when every static seed is down.
+        if ($peerCacheFile !== null) {
+            $engine->setPeerCacheFile($peerCacheFile);
         }
         // Engine drives FD and reconciliation; no shared table needed here.
         $engine->start($udp, $seeds);
