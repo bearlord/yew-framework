@@ -353,6 +353,16 @@ class ClusterPlugin extends AbstractPlugin
         \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
             $state->tick();
         });
+
+        // Every worker must periodically reconcile its router ring with the
+        // converged shared table. UDP traffic is load-balanced across workers, so
+        // no single worker's private $members converges on its own; without this
+        // ticker a worker whose slice never included a peer keeps a single-node
+        // ring and routes "remote" actors back to itself. refreshView() merges
+        // the shared rows and fires the membership listeners so the router rebuilds.
+        \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
+            $state->refreshView();
+        });
     }
 
     /**

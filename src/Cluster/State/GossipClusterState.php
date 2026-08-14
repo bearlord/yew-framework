@@ -1202,15 +1202,41 @@ class GossipClusterState implements ClusterStateInterface
     }
 
     /**
-     * Non-gossip workers consume the shared table but never receive the
-     * membership-change notification (that only fires on the gossip worker).
-     * This lets a consumer worker periodically rebuild its router ring from the
-     * shared table so routing converges without waiting for a UDP packet.
+     * Reconcile this worker's router ring with the converged shared view.
+     *
+     * In the multi-worker model every worker runs the gossip receiver, but UDP
+     * traffic is load-balanced so a single worker only ever sees a slice of the
+     * membership updates. Each worker therefore converges its own $members only
+     * partially; the shared table aggregates what ANY worker learned. Routing in
+     * every worker must reflect the SHARED view, not just this worker's partial
+     * private one ¡ª otherwise a worker whose slice never included node-2 keeps a
+     * ring of size 1 and routes every "remote" actor back to itself (500 / wrong
+     * owner). We merge the shared rows into $members (without clobbering known
+     * good endpoints with "unknown") and fire the membership listeners so the
+     * router rebuilds its ring from the now-complete set.
+     *
+     * This must run on EVERY worker, gossip or not, so it must NOT short-circuit
+     * on isGossipWorker (the old guard made every worker skip it).
      */
     public function refreshView(): void
     {
-        if ($this->isGossipWorker) {
-            return;
+        if ($this->sharedTable !== null) {
+            foreach ($this->readSharedNodes() as $id => $m) {
+                // Only pull a shared row if it carries a usable endpoint, or if we
+                // don't already have a better (non-unknown) one locally. Never let a
+                // "unknown" shared row overwrite a correct local endpoint.
+                if (!isset($this->members[$id])) {
+                    if ($m->host !== '' && $m->host !== 'unknown' && $m->port > 0) {
+                        $this->members[$id] = $m;
+                    }
+                } else {
+                    $existing = $this->members[$id];
+                    if (($existing->host === '' || $existing->host === 'unknown' || $existing->port <= 0)
+                        && $m->host !== '' && $m->host !== 'unknown' && $m->port > 0) {
+                        $this->members[$id] = $m;
+                    }
+                }
+            }
         }
         foreach ($this->listeners as $cb) {
             $cb([], $this);
