@@ -1289,12 +1289,4 @@ class GossipClusterState implements ClusterStateInterface
             'sharedMembers' => $shared,
         ];
     }
-
-    /**
-     * Diagnostics only: number of unacknowledged outbound gossip messages.
-     */
-    public function pendingCount(): int
-    {
-        return count($this->pendingOut);
-    }
 }
