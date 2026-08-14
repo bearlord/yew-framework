@@ -11,7 +11,6 @@ namespace Yew\Cluster;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
-use Yew\Core\Plugin\Order;
 use Yew\Coroutine\Server\Server;
 use Yew\Cluster\ClusterConfig;
 use Yew\Cluster\Router\ShardRouter;
@@ -44,8 +43,6 @@ use ReflectionParameter;
  */
 class ClusterPlugin extends AbstractPlugin
 {
-    use Order;
-
     /**
      * Name of the dedicated cluster-state helper process (one per node). Mirrors
      * the Connection plugin's process model: this process is the sole owner of
