@@ -1234,7 +1234,15 @@ class GossipClusterState implements ClusterStateInterface
         // this worker's local view may well be known to another worker, and a
         // departed node is reflected via its status (suspect/down), not by
         // physical removal, which would race across workers.
+        //
+        // Skip rows whose host is still "unknown" / port unset. A worker that has
+        // only learned a peer's nodeId (via a digest) but not yet its real
+        // endpoint would otherwise overwrite a correct row written by another
+        // worker with an unusable "unknown" address, breaking cross-node TCP.
         foreach ($this->members as $id => $m) {
+            if ($m->host === '' || $m->host === 'unknown' || $m->port <= 0) {
+                continue;
+            }
             $this->sharedTable->set($id, $m->toRow());
         }
     }
