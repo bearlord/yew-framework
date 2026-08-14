@@ -368,8 +368,18 @@ class ClusterPlugin extends AbstractPlugin
     private function getWorkerId(): int
     {
         $server = Server::$instance->getServer();
-        if ($server !== null && property_exists($server, 'worker_id')) {
-            return (int) $server->worker_id;
+        if ($server === null) {
+            return 0;
+        }
+        // NOTE: Yew overwrites $server->worker_id with its OWN process id
+        // (see ProcessManager::setCurrentProcessId), so the property no longer
+        // reflects the Swoole worker index. Use the native Swoole accessor,
+        // which reads the internal C value, to pick the single gossip worker.
+        if (method_exists($server, 'getWorkerId')) {
+            $id = $server->getWorkerId();
+            if (is_int($id) && $id >= 0) {
+                return $id;
+            }
         }
         return 0;
     }
