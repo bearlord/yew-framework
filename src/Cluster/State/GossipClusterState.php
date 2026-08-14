@@ -1261,4 +1261,40 @@ class GossipClusterState implements ClusterStateInterface
     {
         return uniqid('gm-', true);
     }
+
+    /**
+     * Diagnostics only: return the private per-worker $members view plus whether
+     * routing is currently served from the shared cross-worker table. Lets the
+     * diag endpoint compare the two sources so it can tell a real routing failure
+     * apart from "this worker's private view just hasn't learned the peer yet".
+     *
+     * @return array{nodeId:string, sharedView:bool, privateMembers:array, sharedMembers:array}
+     */
+    public function debugState(): array
+    {
+        $shared = [];
+        if ($this->sharedTable !== null) {
+            foreach ($this->readSharedNodes() as $id => $m) {
+                $shared[$id] = $m->toRow();
+            }
+        }
+        $private = [];
+        foreach ($this->members as $id => $m) {
+            $private[$id] = $m->toRow();
+        }
+        return [
+            'nodeId' => $this->localNodeId,
+            'sharedView' => $this->sharedTable !== null,
+            'privateMembers' => $private,
+            'sharedMembers' => $shared,
+        ];
+    }
+
+    /**
+     * Diagnostics only: number of unacknowledged outbound gossip messages.
+     */
+    public function pendingCount(): int
+    {
+        return count($this->pendingOut);
+    }
 }
