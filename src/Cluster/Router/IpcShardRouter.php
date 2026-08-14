@@ -121,6 +121,18 @@ class IpcShardRouter implements ShardRouter
         return $changed;
     }
 
+    /**
+     * Return the member view cached by the most recent {@see refresh()}. Avoids a
+     * second IPC round-trip for callers (e.g. the failover sweep) that need both
+     * the refreshed ring and the membership view in the same tick.
+     *
+     * @return array<string,array{nodeId:string,host:string,port:int,local:bool,status:string}>
+     */
+    public function getView(): array
+    {
+        return $this->view;
+    }
+
     public function onRebalance(callable $hook): void
     {
         $this->rebalanceHook = $hook;

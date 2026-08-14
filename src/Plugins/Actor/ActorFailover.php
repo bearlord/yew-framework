@@ -44,8 +44,10 @@ class ActorFailover
      */
     public function run(): array
     {
+        // refresh() already pulls the member view over IPC and caches it; reuse
+        // that cache via getView() instead of paying for a second IPC round-trip.
         $this->router->refresh();
-        $view = $this->router->getClusterView();
+        $view = $this->router->getView();
         if ($view === []) {
             return [];
         }
