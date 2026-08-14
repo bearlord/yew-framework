@@ -889,8 +889,12 @@ class GossipClusterState implements ClusterStateInterface
         // The shared table aggregates heartbeats learned by ANY worker in this process,
         // so it is the authoritative "when did THIS process last hear the peer is alive"
         // clock. FD therefore reads the peer's heartbeat from the shared table when
-        // available, and writes its verdict back into the shared table so every worker
-        // converges on ONE decision instead of N contradictory ones.
+        // available. We only mutate THIS worker's private $members here; the converged
+        // cross-worker view is reconciled by syncToSharedTable(), which merges by
+        // heartbeat freshness (a worker carrying a fresher "up" heartbeat overwrites a
+        // stale "down"). That prevents a worker with a stale private clock from
+        // poisoning the shared table, while still letting a genuinely-stale peer (whose
+        // freshness cannot be out-argued by anyone) be marked down.
         $sharedHb = [];
         if ($this->sharedTable !== null) {
             foreach ($this->sharedTable as $id => $row) {
@@ -928,9 +932,6 @@ class GossipClusterState implements ClusterStateInterface
                     $changed[] = $id;
                 }
             }
-            // Mirror the verdict into the shared table so other workers converge on
-            // the same status instead of re-declaring the peer alive/down independently.
-            $this->writeSharedStatus($id, $m->status);
         }
 
         // Reliability: retransmit pending sends whose deadline passed.
@@ -1286,47 +1287,6 @@ class GossipClusterState implements ClusterStateInterface
     }
 
     /**
-     * Update just the status column of a peer row in the shared table, preserving
-     * the other columns (host/port/etc). Used by failure detection so every worker
-     * in the process converges on the SAME up/suspect/down verdict rather than each
-     * worker writing its own contradictory status. No-op if the shared table is not
-     * configured or the row does not yet exist.
-     */
-    private function writeSharedStatus(string $id, string $status): void
-    {
-        if ($this->sharedTable === null || !$this->sharedTable->exist($id)) {
-            return;
-        }
-        $row = $this->sharedTable->get($id);
-        if ($row === false) {
-            return;
-        }
-        if (($row['status'] ?? '') === $status) {
-            return;
-        }
-        $row['status'] = $status;
-        $this->sharedTable->set($id, $row);
-    }
-
-    /**
-     * Severity order for membership status: down > suspect > up.
-     * Returns the more severe of the two so converged failure detection never
-     * regresses a "dead" verdict back to "alive" just because one worker's slice
-     * of UDP traffic hasn't recently heard the peer.
-     */
-    private function worseStatus(string $a, string $b): string
-    {
-        $rank = [
-            ClusterMember::STATUS_UP => 0,
-            ClusterMember::STATUS_SUSPECT => 1,
-            ClusterMember::STATUS_DOWN => 2,
-        ];
-        $ra = $rank[$a] ?? 0;
-        $rb = $rank[$b] ?? 0;
-        return $ra >= $rb ? $a : $b;
-    }
-
-    /**
      * Push the local (gossip worker) converged membership into the shared
      * cross-worker table so every other worker routes against one view.
      * Only called on the designated gossip worker.
@@ -1361,15 +1321,32 @@ class GossipClusterState implements ClusterStateInterface
                 continue;
             }
             $row = $m->toRow();
-            // Never let a local "up" verdict overwrite a shared "suspect"/"down"
-            // verdict. A worker that has not recently heard the peer may still see
-            // it as up in its private view; the shared table carries the most severe
-            // status any worker has decided, which is the converged truth. Keep the
-            // worse status so FD verdicts are stable across workers.
+            // Merge by FRESHNESS, not by severity. UDP traffic is load-balanced across
+            // workers, so a worker that hasn't recently heard a peer may still see it
+            // as "up" in its private view while another worker ！ which also hasn't
+            // heard it ！ has already declared it "down". Blindly keeping the "worse"
+            // status (our previous logic) let a single mistaken down/suspect verdict
+            // permanently poison the shared table; a worker that DID hear a fresh
+            // heartbeat (higher lastHeartbeat) could never resurrect the peer.
+            //
+            // The peer's lastHeartbeat is the ground truth: whichever worker holds the
+            // NEWEST evidence about the peer wins. A worker carrying a fresh "up"
+            // heartbeat overwrites a stale "down" (resurrection). A worker carrying a
+            // stale private view (older hb) cannot overwrite a fresher shared row, so
+            // mistaken local verdicts no longer pollute the converged view.
             if ($table->exist($id)) {
                 $existing = $table->get($id);
                 if ($existing !== false) {
-                    $row['status'] = $this->worseStatus($existing['status'] ?? '', $row['status']);
+                    $existingHb = (int) ($existing['lastHeartbeat'] ?? 0);
+                    $localHb = (int) ($row['lastHeartbeat'] ?? 0);
+                    if ($existingHb > $localHb) {
+                        // Shared row is newer ！ keep it (status, host, port, hb).
+                        $row['status'] = $existing['status'];
+                        $row['host'] = $existing['host'];
+                        $row['port'] = $existing['port'];
+                        $row['lastHeartbeat'] = $existingHb;
+                    }
+                    // else: local evidence is at least as fresh ！ use our row as-is.
                 }
             }
             $table->set($id, $row);
