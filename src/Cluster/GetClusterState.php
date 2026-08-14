@@ -6,7 +6,6 @@
 
 namespace Yew\Cluster;
 
-use Yew\Cluster\State\ClusterStatePlugin;
 use Yew\Cluster\State\ClusterState;
 use Yew\Cluster\State\ClusterNode;
 use Yew\Cluster\State\Location;
@@ -36,7 +35,7 @@ trait GetClusterState
      */
     public function clusterLocate(string $actorName): ?Location
     {
-        $ipc = $this->callProcessName(ClusterStatePlugin::PROCESS_NAME, ClusterState::class);
+        $ipc = $this->callProcessName(ClusterPlugin::PROCESS_NAME, ClusterState::class);
         if ($ipc === null) {
             return null;
         }
@@ -60,7 +59,7 @@ trait GetClusterState
      */
     public function getClusterView(): array
     {
-        $ipc = $this->callProcessName(ClusterStatePlugin::PROCESS_NAME, ClusterState::class);
+        $ipc = $this->callProcessName(ClusterPlugin::PROCESS_NAME, ClusterState::class);
         if ($ipc === null) {
             return [];
         }

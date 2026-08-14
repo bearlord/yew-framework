@@ -14,7 +14,7 @@ use Yew\Core\Server\Process\Process;
  *
  * It is intentionally a thin shell: all cluster logic lives in ClusterState,
  * which is registered into the DI container of THIS process (see
- * ClusterStatePlugin). Worker processes talk to it through the GetClusterState
+ * ClusterPlugin). Worker processes talk to it through the GetClusterState
  * IPC proxy, exactly like the Connection pattern.
  */
 class ClusterStateProcess extends Process
