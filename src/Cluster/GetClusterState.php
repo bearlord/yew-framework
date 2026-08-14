@@ -66,4 +66,55 @@ trait GetClusterState
         $view = $ipc->getMemberView();
         return is_array($view) ? $view : [];
     }
+
+    /**
+     * Replicate a store mutation to peers through the cluster-state process.
+     *
+     * @param string $actorName
+     * @param string $kind
+     * @param string $payload
+     * @param int    $ts
+     */
+    public function clusterReplicate(string $actorName, string $kind, string $payload, int $ts): void
+    {
+        $ipc = $this->callProcessName(ClusterPlugin::PROCESS_NAME, ClusterState::class);
+        if ($ipc === null) {
+            return;
+        }
+        $ipc->replicateStoreEntry($actorName, $kind, $payload, $ts);
+    }
+
+    /**
+     * Look up a replicated store entry through the cluster-state process.
+     *
+     * @param string $actorName
+     * @param string $kind
+     * @return string|null
+     */
+    public function clusterFindReplica(string $actorName, string $kind): ?string
+    {
+        $ipc = $this->callProcessName(ClusterPlugin::PROCESS_NAME, ClusterState::class);
+        if ($ipc === null) {
+            return null;
+        }
+        $res = $ipc->findReplica($actorName, $kind);
+        return is_string($res) ? $res : null;
+    }
+
+    /**
+     * Actor names replicated from a dead $ownerNodeId, used by workers to
+     * decide which persisted actors to resurrect after a peer failure.
+     *
+     * @param string $ownerNodeId
+     * @return string[]
+     */
+    public function clusterFailoverActors(string $ownerNodeId): array
+    {
+        $ipc = $this->callProcessName(ClusterPlugin::PROCESS_NAME, ClusterState::class);
+        if ($ipc === null) {
+            return [];
+        }
+        $res = $ipc->getFailoverActors($ownerNodeId);
+        return is_array($res) ? $res : [];
+    }
 }

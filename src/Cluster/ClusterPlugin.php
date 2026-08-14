@@ -14,22 +14,26 @@ use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Core\Plugin\Order;
 use Yew\Coroutine\Server\Server;
 use Yew\Cluster\ClusterConfig;
+use Yew\Cluster\Router\ShardRouter;
+use Yew\Cluster\Router\GossipShardRouter;
+use Yew\Cluster\Router\IpcShardRouter;
 use Yew\Cluster\State\ClusterNode;
 use Yew\Cluster\State\ClusterState;
 use Yew\Cluster\State\ClusterStateProcess;
 use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\State\IpcGossipState;
 use Yew\Cluster\State\NodeKey;
-use Yew\Cluster\Port\ClusterGossipUdpPort;
+use Yew\Cluster\Persistence\LocalReplicaTransport;
+use Yew\Cluster\Persistence\IpcReplicaTransport;
+use Yew\Plugins\Actor\Persistence\ClusterActorStore;
+use Yew\Plugins\Actor\Persistence\FileActorStore;
+use Yew\Plugins\Actor\ActorConfig;
 use Yew\Cluster\Port\ClusterTcpPort;
-use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Cluster\Transport\GossipTransport;
+use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Cluster\Transport\PooledTcpRemoteTransport;
 use Yew\Cluster\Transport\RemoteTransport;
 use Yew\Cluster\Transport\Transfer;
-
-use Yew\Cluster\Router\ShardRouter;
-use Yew\Cluster\Router\GossipShardRouter;
-use Yew\Core\Memory\CrossProcess\Table;
 use ReflectionClass;
 use ReflectionParameter;
 
@@ -54,12 +58,6 @@ class ClusterPlugin extends AbstractPlugin
     // Snapshot of `yew.cluster` taken at onAdded(); reused for "%token%"
     // resolution so config isn't re-read (or drift) before server start.
     private array $rawClusterCfg = [];
-
-    // Gossip bootstrap deferred until the worker process (beforeProcessStart),
-    // where the Swoole event loop is already running. Must NOT be started in
-    // beforeServerStart(): that activates the coroutine runtime first and makes
-    // Swoole\Http\Server::start() fail with "The event-loop has already been created".
-    private ?array $deferredGossip = null;
 
     public function __construct()
     {
@@ -114,54 +112,36 @@ class ClusterPlugin extends AbstractPlugin
 
     public function beforeProcessStart(Context $context)
     {
-        // Attach multi-port listeners BEFORE booting gossip, so the UDP transport
-        // is flagged managed and doesn't open a self-bound socket. Both run here
-        // (worker process) where the event loop is live.
-        $this->wirePorts();
-        $this->bootstrapGossip();
-
-        // Only the cluster-state helper process owns the authoritative state and
-        // runs the FD tick. Worker processes resolve it exclusively through IPC
-        // (GetClusterState); they skip this branch entirely.
+        // Only the cluster-state helper process owns the authoritative state, the
+        // gossip UDP socket and the FD tick. Worker processes resolve it exclusively
+        // through IPC (GetClusterState). Bail out BEFORE the legacy multi-port
+        // gossip wiring so the old path never binds the gossip UDP port in this
+        // process (which would conflict with the self-managed socket below).
         $current = Server::$instance->getProcessManager()->getCurrentProcess();
         if ($current !== null && $current->getProcessName() === self::PROCESS_NAME) {
             $this->startClusterState();
             return;
         }
 
+        // Worker path (non-cluster-state processes): wire the cluster-tcp port for
+        // inbound cross-node actor calls, and start the IPC router refresh ticker so
+        // the IpcShardRouter ring stays in sync with the authoritative view from the
+        // cluster-state process. The gossip wire itself is owned by the cluster-state
+        // process, not here.
+        $this->wirePorts();
+        $this->bootstrapGossip();
+
         $this->ready();
     }
 
-    // Attach the gossip state / transport to the framework-managed multi-port
-    // listeners (cluster-gossip UDP, cluster-tcp TCP). Runs in the worker process
-    // because PortManager::$namePorts is populated only after beforeServerStart().
+    // Attach the cross-node actor transport to the framework-managed cluster-tcp
+    // multi-port listener. Runs in the worker process because PortManager::$namePorts
+    // is populated only after beforeServerStart(). The UDP gossip port
+    // (cluster-gossip) is intentionally NOT wired here: since Stage 1.5 the gossip
+    // wire is owned by the dedicated cluster-state helper process via a self-managed
+    // UdpGossipTransport, so it must not also be bound by the framework.
     private function wirePorts(): void
     {
-        if ($this->deferredGossip === null) {
-            return;
-        }
-        /** @var GossipClusterState $state */
-        $state = $this->deferredGossip["state"];
-        /** @var UdpGossipTransport $udp */
-        $udp = $this->deferredGossip["udp"];
-
-        $gossipPort = Server::$instance->getPortManager()->getPortFromName(ClusterGossipUdpPort::NAME);
-        if ($gossipPort instanceof ClusterGossipUdpPort) {
-            $udp->setManaged(true);
-            $udp->setSender(function (string $host, int $port, string $payload) {
-                $swoole = Server::$instance->getServer();
-                if ($swoole !== null) {
-                    $swoole->sendto($host, $port, $payload);
-                }
-            });
-            $gossipPort->setClusterState($state);
-        } else {
-            Server::$instance->getLog()->warning(
-                "cluster: UDP port '" . ClusterGossipUdpPort::NAME
-                . "' not declared in yew.port; falling back to self-bound gossip socket"
-            );
-        }
-
         $tcpPort = Server::$instance->getPortManager()->getPortFromName(ClusterTcpPort::NAME);
         if ($tcpPort instanceof ClusterTcpPort) {
             $tcpPort->setTransport(DIGet(RemoteTransport::class));
@@ -215,9 +195,15 @@ class ClusterPlugin extends AbstractPlugin
     }
 
     // Assemble the cluster subsystem from declarative config and publish its
-    // three primitives (ShardRouter, RemoteTransport, GossipClusterState) to the
-    // DI container. Does not touch the actor runtime — the actor layer pulls
-    // these and wires them in itself.
+    // primitives to the DI container. Since Stage 2 the authoritative membership
+    // / FD / gossip lives in the dedicated "cluster-state" helper process; the
+    // worker-side primitives here are read-through proxies over IPC:
+    //   - ShardRouter  -> IpcShardRouter (routes via GetClusterState)
+    //   - RemoteTransport -> PooledTcpRemoteTransport (peer host:port comes from
+    //                        the resolved Location, not from membership lookups)
+    //   - GossipClusterState -> IpcGossipState (multicast fan-out view, IPC-backed)
+    // The old cross-worker shared Swoole\Table and the multi-worker gossip wire
+    // are gone (no split-brain, single authority).
     private function start(): void
     {
         $cfg = $this->clusterConfig;
@@ -228,91 +214,34 @@ class ClusterPlugin extends AbstractPlugin
             : (array) (Server::$instance->getConfigContext()->get("yew.cluster") ?? []);
         $services = $cfg->getServices();
 
-        $state = $this->buildService(
-            (array) ($services["state"] ?? []),
-            [
-                "class" => GossipClusterState::class,
-                "args" => [
-                    "localNodeId" => $cfg->getNodeId(),
-                    "suspectAfter" => $cfg->getSuspectAfter(),
-                    "downAfter" => $cfg->getDownAfter(),
-                ],
-            ],
-            $clusterCfg
-        );
-        if (!$state instanceof GossipClusterState) {
-            throw new \RuntimeException("cluster.state must be an instance of " . GossipClusterState::class);
-        }
-        // Prefer per-node asymmetric keys; fall back to the shared HMAC secret.
-        $priv = $cfg->getPrivateKey();
-        $pub = $cfg->getPublicKey();
-        if ($priv !== '' && $pub !== '') {
-            $key = NodeKey::fromPem($priv, $pub);
-            $state->setKey($key, $cfg->getTrustStore(), $cfg->getClockSkew() * 120);
-        } else {
-            $state->setSecret($cfg->getSecret(), $cfg->getClockSkew());
-        }
-        $state->join($cfg->getHost(), $cfg->getPort(), $cfg->getWeight());
-
-        // Cross-worker shared membership view (Swoole\Table / shared memory).
-        // Created here in beforeServerStart, i.e. BEFORE the workers fork, so the
-        // table is shared by every worker process. The designated gossip worker
-        // (worker-0) writes converged membership into it; all other workers read
-        // it so GossipShardRouter routes against one consistent view regardless
-        // of which worker received a given UDP gossip packet.
-        $sharedTable = self::createSharedMemberTable(4096);
-        DISet("cluster.memberTable", $sharedTable);
-
-        // Real UDP gossip wire layer.
-        $udp = $this->buildService(
-            (array) ($services["gossip"] ?? []),
-            [
-                "class" => UdpGossipTransport::class,
-                "args" => [
-                    "bindHost" => $cfg->getGossipHost(),
-                    "bindPort" => $cfg->getGossipPort() ?: ($cfg->getPort() + 1000),
-                    "broadcastTarget" => $cfg->getGossipBroadcast(),
-                ],
-            ],
-            $clusterCfg
-        );
-        if (!$udp instanceof GossipTransport) {
-            throw new \RuntimeException("cluster.gossip must implement " . GossipTransport::class);
-        }
-
-        // Ports aren't registered yet (namePorts is populated only after
-        // beforeServerStart), so defer the wiring to wirePorts() in the worker.
-        $this->deferredGossip = [
-            "state" => $state,
-            "udp" => $udp,
-            "seeds" => $cfg->getSeeds(),
-            "heartbeat" => $cfg->getHeartbeatInterval(),
-        ];
-
         $localNode = new ClusterNode(
             $cfg->getNodeId(),
             $cfg->getHost(),
             $cfg->getPort(),
             true
         );
-        /** @var GossipShardRouter $router */
+
+        // IPC-backed shard router. Its ring is refreshed on a worker timer (see
+        // beforeProcessStart) so topology rebalancing still fires locally.
+        /** @var IpcShardRouter $router */
         $router = $this->buildService(
             (array) ($services["router"] ?? []),
             [
-                "class" => GossipShardRouter::class,
+                "class" => IpcShardRouter::class,
                 "args" => [
-                    "cluster" => $state,
                     "localNode" => $localNode,
                     "replicas" => $cfg->getReplicas(),
                 ],
             ],
             $clusterCfg
         );
-        if (!$router instanceof GossipShardRouter) {
-            throw new \RuntimeException("cluster.router must be an instance of " . GossipShardRouter::class);
+        if (!$router instanceof IpcShardRouter) {
+            throw new \RuntimeException("cluster.router must be an instance of " . IpcShardRouter::class);
         }
 
-        // Pooled TCP transport for cross-node calls.
+        // Pooled TCP transport for cross-node calls. It draws the target
+        // host:port from the resolved Location (not from membership), so it is
+        // independent of the gossip wire and runs unchanged in the worker.
         $transport = $this->buildService(
             (array) ($services["transport"] ?? []),
             [
@@ -331,115 +260,134 @@ class ClusterPlugin extends AbstractPlugin
                 "cluster.transport must implement " . RemoteTransport::class . " and " . Transfer::class
             );
         }
-
-        // cluster-tcp wiring (setTransport) is deferred to wirePorts() for the
-        // same reason as the gossip port: namePorts isn't ready in beforeServerStart.
         $transport->start();
 
-        // Publish the three primitives; the actor layer pulls them from the
-        // container and wires them into the actor runtime.
+        // IPC-backed cluster view for multicast fan-out (no wire of its own).
+        $ipcState = new IpcGossipState($cfg->getNodeId());
+
+        // Publish the primitives; the actor / multicast layers pull them in.
         DISet(ShardRouter::class, $router);
         DISet(RemoteTransport::class, $transport);
-        DISet(GossipClusterState::class, $state);
+        DISet(GossipClusterState::class, $ipcState);
+
+        // Worker-side ActorStore: a shared instance wired with the IPC replica
+        // transport. Every actor on this worker resolves the SAME instance via
+        // #[Inject]; replication and failover reads are proxied to the
+        // cluster-state process (single authority, no per-worker replica drift).
+        DISet(ClusterActorStore::class, static function () use ($cfg) {
+            $store = new ClusterActorStore(
+                new FileActorStore(DIGet(ActorConfig::class)->getPersistenceDir())
+            );
+            $store->setCluster(new IpcReplicaTransport());
+            return $store;
+        });
     }
 
-    // Boot the gossip receiver coroutine + failure-detection ticker. Runs once
-    // in the worker process after the event loop is up. Idempotent.
+    // Boot the worker-side cluster refresh ticker. Runs in the worker process
+    // after the event loop is up. Idempotent. Keeps the IPC-backed IpcShardRouter
+    // ring in sync with the authoritative view from the cluster-state process so
+    // topology rebalancing (actor eviction) fires locally.
     private function bootstrapGossip(): void
     {
-        if ($this->deferredGossip === null) {
+        /** @var IpcShardRouter|null $router */
+        $router = DIGet(ShardRouter::class);
+        if (!$router instanceof IpcShardRouter) {
             return;
         }
-        $deferred = $this->deferredGossip;
-        $this->deferredGossip = null;
-
-        /** @var GossipClusterState $state */
-        $state = $deferred["state"];
-        /** @var GossipTransport $udp */
-        $udp = $deferred["udp"];
-        $seeds = $deferred["seeds"];
-        $heartbeat = $deferred["heartbeat"];
-
-        // Every worker runs the full gossip receiver + failure-detection ticker
-        // (same as single-worker behaviour). Because UDP packets are load-
-        // balanced across workers, each worker only sees a slice of the traffic,
-        // so no single worker converges on its own. The shared table (created in
-        // start(), shared across all worker processes) aggregates every member
-        // learned by ANY worker; routing reads from that table, so every worker
-        // routes against one complete, converged view.
-        /** @var Table|null $sharedTable */
-        $sharedTable = DIGet("cluster.memberTable");
-        if ($sharedTable instanceof Table) {
-            // Seed the local node row BEFORE configureSharedView, so getNode()
-            // still reads the local $members (which already contains the joined
-            // local node) rather than the not-yet-populated shared table. This
-            // guarantees the table is never empty, so routers build a non-empty
-            // ring immediately.
-            $local = $state->getNode($state->getLocalNodeId());
-            if ($local !== null) {
-                $sharedTable->set($local->nodeId, $local->toRow());
-            }
-            $state->configureSharedView($sharedTable, true);
-        }
-
-        $state->start($udp, $seeds);
-
-        \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
-            $state->tick();
+        $intervalMs = max(500, (int) ($this->clusterConfig->getHeartbeatInterval() * 1000));
+        \Swoole\Timer::tick($intervalMs, static function () use ($router) {
+            $router->refresh();
         });
-
-        // Every worker must periodically reconcile its router ring with the
-        // converged shared table. UDP traffic is load-balanced across workers, so
-        // no single worker's private $members converges on its own; without this
-        // ticker a worker whose slice never included a peer keeps a single-node
-        // ring and routes "remote" actors back to itself. refreshView() merges
-        // the shared rows and fires the membership listeners so the router rebuilds.
-        \Swoole\Timer::tick((int) ($heartbeat * 1000), function () use ($state) {
-            $state->refreshView();
-        });
+        $router->refresh();
     }
 
     /**
-     * Build the shared cross-worker membership table. Columns mirror
-     * ClusterMember::toRow() so rows round-trip through fromRow().
-     */
-    private static function createSharedMemberTable(int $size): Table
-    {
-        $table = new Table($size);
-        $table->column("nodeId", Table::TYPE_STRING, 64);
-        $table->column("host", Table::TYPE_STRING, 64);
-        $table->column("port", Table::TYPE_INT, 4);
-        $table->column("weight", Table::TYPE_INT, 2);
-        $table->column("status", Table::TYPE_STRING, 8);
-        $table->column("lastHeartbeat", Table::TYPE_INT, 8);
-        $table->column("incarnation", Table::TYPE_INT, 8);
-        $table->column("publicKey", Table::TYPE_STRING, 2048);
-        $table->create();
-        return $table;
-    }
-
-    /**
-     * Boot the dedicated cluster-state helper process: build the authoritative
-     * {@see ClusterState}, publish it into THIS process's DI container, and run
-     * the failure-detection tick. Runs once, inside the cluster-state process.
+     * Boot the dedicated cluster-state helper process. This process is the SOLE
+     * authority for membership / failure detection / shard routing for the node.
      *
-     * Mirrors the Connection plugin: the worker processes never touch ClusterState
-     * directly — they query it via the {@see \Yew\Cluster\GetClusterState} IPC
-     * proxy. Stage 1 seeds membership from config (local node + static peers);
-     * gossip UDP is migrated in a later stage, replacing resolvePeers().
+     * Stage 1.5: the real gossip protocol (SYN / SYN-ACK / ACK handshake, digest
+     * anti-entropy, UDP fragmentation + per-fragment retransmit, asymmetric-key
+     * verification, FD) runs HERE via a mounted {@see GossipClusterState} engine
+     * over a self-managed {@see UdpGossipTransport}. Because the UDP socket is
+     * opened in this process (setManaged(false)), the entire protocol executes in
+     * the single cluster-state process — no multi-worker gossip, no shared
+     * Swoole\Table, no split-brain.
+     *
+     * Worker processes never touch any of this directly; they query {@see ClusterState}
+     * through the {@see \Yew\Cluster\GetClusterState} IPC proxy.
      */
     private function startClusterState(): void
     {
         $cfg = $this->clusterConfig;
-        $peers = $this->resolvePeers($cfg);
 
+        // Authoritative state facade (IPC surface + engine owner).
         $state = new ClusterState(
             $cfg->getNodeId(),
             $cfg->getSuspectAfter(),
             $cfg->getDownAfter(),
-            $peers
+            $this->resolvePeers($cfg),
+            null,
+            false // real heartbeats now drive FD; no optimistic hold
         );
+
+        // Build the proven GossipClusterState engine. No shared table is attached
+        // (configureSharedView is NOT called), so it operates purely on its own
+        // in-process $members — i.e. single authority, exactly as intended.
+        $engine = new GossipClusterState(
+            $cfg->getNodeId(),
+            $cfg->getSuspectAfter(),
+            $cfg->getDownAfter()
+        );
+        $priv = $cfg->getPrivateKey();
+        $pub = $cfg->getPublicKey();
+        if ($priv !== '' && $pub !== '') {
+            $engine->setKey(
+                NodeKey::fromPem($priv, $pub),
+                $cfg->getTrustStore(),
+                $cfg->getClockSkew() * 120
+            );
+        } else {
+            $engine->setSecret($cfg->getSecret(), $cfg->getClockSkew());
+        }
+        $engine->join($cfg->getHost(), $cfg->getPort(), $cfg->getWeight());
+
+        // Self-managed UDP socket in THIS process (no framework multi-port), so
+        // the cluster-state process is the only receiver/sender of gossip traffic.
+        $udp = new UdpGossipTransport(
+            $cfg->getGossipHost(),
+            $cfg->getGossipPort() ?: ($cfg->getPort() + 1000),
+            $cfg->getGossipBroadcast()
+        );
+        $udp->setManaged(false);
+
+        // Router over the engine (consumes ClusterStateInterface).
+        $localNode = new ClusterNode(
+            $cfg->getNodeId(), $cfg->getHost(), $cfg->getPort(), true
+        );
+        $router = new GossipShardRouter($engine, $localNode, $cfg->getReplicas());
+
+        // Mount everything into the single authority process and start the wire.
+        $state->attachGossip($cfg, $engine, $udp, $router, $cfg->getSeeds());
+
         $this->setToDIContainer(ClusterState::class, $state);
+
+        // Cross-node ActorStore replication + failover live HERE too: this is the
+        // single process that owns the gossip replica buffer. The local store
+        // ingests inbound replicas straight to disk; onNodeDown records the dead
+        // node so workers can query which actors to resurrect via IPC.
+        $store = new ClusterActorStore(
+            new FileActorStore(DIGet(ActorConfig::class)->getPersistenceDir())
+        );
+        $store->setCluster(new LocalReplicaTransport($state));
+        $state->setActorStore($store);
+        $state->onNodeDown(function (string $deadNodeId) use ($state, $cfg) {
+            $this->logger->info(
+                "[cluster-state] peer down: {$deadNodeId}; failover actors: "
+                . implode(',', $state->getFailoverActors($deadNodeId))
+            );
+            // Workers pick this up via IpcShardRouter::refresh() membership drop +
+            // clusterFailoverActors(); no direct push needed.
+        });
 
         $intervalMs = max(500, (int) ($cfg->getHeartbeatInterval() * 1000));
         \Swoole\Timer::tick($intervalMs, static function () use ($state) {

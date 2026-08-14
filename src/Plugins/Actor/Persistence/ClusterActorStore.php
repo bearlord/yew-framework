@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Yew\Plugins\Actor\Persistence;
 
-use Yew\Cluster\State\GossipClusterState;
+use Yew\Cluster\Persistence\ReplicaTransport;
 
 /**
  * Cross-node durable ActorStore.
@@ -25,7 +25,7 @@ class ClusterActorStore implements ActorStore
 {
     private string $actorName = '';
 
-    private ?GossipClusterState $cluster = null;
+    private ?ReplicaTransport $cluster = null;
 
     /**
      * Build a cluster-backed store wrapping a local FileActorStore.
@@ -53,11 +53,11 @@ class ClusterActorStore implements ActorStore
     }
 
     /**
-     * Attach the cluster state used for cross-node replication/lookup.
+     * Attach the replica transport used for cross-node replication/lookup.
      *
-     * @param GossipClusterState $cluster Cluster membership/transport
+     * @param ReplicaTransport $cluster Replica transport (local or IPC-backed)
      */
-    public function setCluster(GossipClusterState $cluster): void
+    public function setCluster(ReplicaTransport $cluster): void
     {
         $this->cluster = $cluster;
     }

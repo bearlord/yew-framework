@@ -6,6 +6,10 @@
 
 namespace Yew\Cluster\State;
 
+use Yew\Cluster\ClusterConfig;
+use Yew\Cluster\Router\GossipShardRouter;
+use Yew\Cluster\Transport\GossipTransport;
+use Yew\Cluster\Transport\UdpGossipTransport;
 use Yew\Core\Memory\CrossProcess\Table;
 
 /**
@@ -20,12 +24,17 @@ use Yew\Core\Memory\CrossProcess\Table;
  * they query it through the {@see \Yew\Cluster\GetClusterState} IPC proxy, which
  * forwards method calls to this instance over the process message channel.
  *
- * Stage 1 (this class) seeds the member view from configuration (local node +
- * static peers) and runs the in-process failure-detection tick. The gossip UDP
- * protocol will be moved here in a later stage; until then peers are trusted to
- * be present and their liveness is tracked by the tick against lastHeartbeat
- * (which, in stage 1, is only updated by external heartbeats once gossip lands,
- * or simply assumed alive until downAfter elapses — see {@see tick}).
+ * Membership / FD / gossip are powered by a mounted {@see GossipClusterState}
+ * engine running inside this same process. A self-managed {@see UdpGossipTransport}
+ * (setManaged(false)) opens the UDP socket in THIS process, so the entire gossip
+ * protocol — handshake, ACK, fragmentation, key verification and the FD ticker —
+ * executes in the single cluster-state process. There is no Swoole\Table and no
+ * multi-worker gossip: this process is the sole authority.
+ *
+ * The earlier Stage-1 static-peer seeding (PeerState) is retained only as a
+ * zero-gossip fallback: if no gossip engine is attached, locate() falls back to
+ * a simple consistent-hash ring over the static peers. Once attachGossip() is
+ * called, the engine fully owns membership and the static ring is ignored.
  */
 class ClusterState implements ClusterStateInterface
 {
@@ -35,22 +44,19 @@ class ClusterState implements ClusterStateInterface
     private string $localNodeId;
 
     /**
-     * @var array<string, ClusterMember> Authoritative member table (process memory).
+     * @var GossipClusterState|null The real gossip engine (stage 1.5+). When set,
+     *      it owns membership, FD and (via its transport) the UDP wire.
      */
-    private array $members = [];
+    private ?GossipClusterState $gossip = null;
 
     /**
-     * @var int Seconds before a silent peer is marked suspect
+     * @var GossipShardRouter|null Consistent-hash router built over the engine.
      */
-    private int $suspectAfter;
+    private ?GossipShardRouter $router = null;
 
     /**
-     * @var int Seconds before a silent peer is marked down
-     */
-    private int $downAfter;
-
-    /**
-     * @var array<int, callable> Listeners fired when the view changes
+     * @var array<int, callable> Listeners fired when the view changes (forwarded
+     *      to the engine when present, else served by the fallback ring).
      */
     private array $listeners = [];
 
@@ -60,160 +66,177 @@ class ClusterState implements ClusterStateInterface
     private $nowFn;
 
     /**
+     * @var bool When true (Stage 1: static peer seeding, no gossip yet), peers
+     *           that were seeded optimistically are held UP regardless of silence,
+     *           because nothing is sending heartbeats to drive the FD verdict.
+     */
+    private bool $optimisticPeers;
+
+    // ---- Stage-1 fallback (used only when no gossip engine is attached) ----
+    /**
+     * @var array<string, PeerState> Static peer ring for the no-gossip fallback.
+     */
+    private array $fallback = [];
+
+    /**
      * @param string $localNodeId
      * @param int    $suspectAfter
      * @param int    $downAfter
      * @param array  $peers        Static seed peers as ["nodeId" => "host:port"]
      * @param callable|null $nowFn
+     * @param bool   $optimisticPeers  Hold seeded peers UP until gossip takes over
      */
     public function __construct(
         string $localNodeId,
         int $suspectAfter,
         int $downAfter,
         array $peers = [],
-        ?callable $nowFn = null
+        ?callable $nowFn = null,
+        bool $optimisticPeers = false
     ) {
         $this->localNodeId = $localNodeId;
-        $this->suspectAfter = $suspectAfter;
-        $this->downAfter = $downAfter;
         $this->nowFn = $nowFn ?? static fn () => time();
+        $this->optimisticPeers = $optimisticPeers;
 
-        // Seed: local node is always up and owned by this process.
-        $this->members[$localNodeId] = new ClusterMember(
-            $localNodeId, '127.0.0.1', 0, true, ClusterMember::STATUS_UP, $this->now()
-        );
-        // Static peers start as "up" (optimistic); the FD tick will downgrade
-        // them if no heartbeat arrives. Once gossip is wired in stage 1.5 this
-        // seeding is replaced by discovered membership.
+        // Seed the Stage-1 fallback ring (local + static peers). Ignored once a
+        // real gossip engine is attached via attachGossip().
+        $this->fallback[$localNodeId] = new PeerState($localNodeId, '127.0.0.1', 0, true);
         foreach ($peers as $peerId => $endpoint) {
             [$host, $port] = explode(':', (string) $endpoint) + ['', 0];
-            $this->members[(string) $peerId] = new ClusterMember(
-                (string) $peerId, (string) $host, (int) $port, false,
-                ClusterMember::STATUS_UP, $this->now()
+            $this->fallback[(string) $peerId] = new PeerState(
+                (string) $peerId, (string) $host, (int) $port, false
             );
         }
+        // Keep the legacy thresholds available for the engine hand-off.
+        $this->suspectAfter = $suspectAfter;
+        $this->downAfter = $downAfter;
     }
 
-    private function now(): int
+    private int $suspectAfter;
+    private int $downAfter;
+
+    /**
+     * Mount the real gossip engine into this process and wire it up: attach the
+     * routing interface, open the self-managed UDP socket, spawn the receiver
+     * coroutine and send the initial SYNs to seeds. After this call the engine
+     * fully owns membership / FD / the wire; the Stage-1 fallback ring is ignored.
+     *
+     * Must be called exactly once, inside the cluster-state process.
+     *
+     * @param ClusterConfig        $cfg
+     * @param GossipClusterState   $engine   Pre-built, keyed + joined engine
+     * @param UdpGossipTransport   $udp      Self-managed transport (setManaged(false))
+     * @param GossipShardRouter    $router   Router over $engine
+     * @param string[]             $seeds    Seed endpoints host:port
+     */
+    public function attachGossip(
+        ClusterConfig $cfg,
+        GossipClusterState $engine,
+        UdpGossipTransport $udp,
+        GossipShardRouter $router,
+        array $seeds
+    ): void {
+        $this->gossip = $engine;
+        $this->router = $router;
+        // Forward any listeners registered before attach to the engine.
+        foreach ($this->listeners as $cb) {
+            $engine->registerListener($cb);
+        }
+        // Engine drives FD and reconciliation; no shared table needed here.
+        $engine->start($udp, $seeds);
+    }
+
+    /**
+     * Whether the real gossip engine is mounted (stage 1.5+).
+     */
+    public function hasGossip(): bool
+    {
+        return $this->gossip !== null;
+    }
+
+    public function now(): int
     {
         return ($this->nowFn)();
     }
 
-    /**
-     * Failure-detection tick. Runs ONLY inside the cluster-state process, so the
-     * verdict is authoritative and consistent — no per-worker disagreement.
-     *
-     * @return void
-     */
-    public function tick(): void
-    {
-        $changed = false;
-        $now = $this->now();
-        foreach ($this->members as $id => $m) {
-            if ($m->isLocal()) {
-                continue; // local is always alive
-            }
-            $silent = $now - $m->lastHeartbeat;
-            $prev = $m->status;
-            if ($silent >= $this->downAfter) {
-                $m->status = ClusterMember::STATUS_DOWN;
-            } elseif ($silent >= $this->suspectAfter) {
-                $m->status = ClusterMember::STATUS_SUSPECT;
-            }
-            if ($m->status !== $prev) {
-                $changed = true;
-            }
-        }
-        if ($changed) {
-            $this->fireListeners();
-        }
-    }
+    // ---------------------------------------------------------------------
+    // ClusterStateInterface — delegate to the engine, fall back to the ring.
+    // ---------------------------------------------------------------------
 
     /**
-     * Record a heartbeat for a node (called by gossip receive in later stage, or
-     * by an external probe). Keeps the member alive.
-     *
-     * @param string $nodeId
-     * @param int|null $ts
-     * @return void
+     * @return ClusterMember[]
      */
-    public function heartbeat(string $nodeId, ?int $ts = null): void
+    public function aliveNodes(): array
     {
-        if (!isset($this->members[$nodeId])) {
-            return;
+        if ($this->gossip !== null) {
+            return $this->gossip->aliveNodes();
         }
-        $this->members[$nodeId]->lastHeartbeat = $ts ?? $this->now();
-        if ($this->members[$nodeId]->status !== ClusterMember::STATUS_UP) {
-            $this->members[$nodeId]->status = ClusterMember::STATUS_UP;
-            $this->fireListeners();
-        }
-    }
-
-    /**
-     * Resolve the owning node of an actor by consistent-hash ring over the
-     * currently-UP members. Peers that are suspect/down participate only if no
-     * UP member exists, to keep the ring stable during transient partitions.
-     *
-     * @param string $actorName
-     * @return Location|null
-     */
-    public function locate(string $actorName): ?Location
-    {
-        $up = [];
-        $fallback = [];
-        foreach ($this->members as $m) {
-            if ($m->status === ClusterMember::STATUS_UP) {
-                $up[$m->nodeId] = $m;
-            } else {
-                $fallback[$m->nodeId] = $m;
-            }
-        }
-        $pool = $up !== [] ? $up : $fallback;
-        if ($pool === []) {
-            return null;
-        }
-        $ring = $this->buildRing($pool);
-        $key = $this->hashKey($actorName);
-        $owner = $this->ownerOfRing($ring, $key);
-        if ($owner === null) {
-            return null;
-        }
-        $node = new ClusterNode(
-            $owner->nodeId, $owner->host, $owner->port,
-            $owner->nodeId === $this->localNodeId
-        );
-        return new Location($node, 0);
-    }
-
-    /**
-     * Serializable snapshot of the member view for worker-side queries.
-     *
-     * @return array
-     */
-    public function getMemberView(): array
-    {
         $out = [];
-        foreach ($this->members as $m) {
-            $out[] = [
-                'nodeId'         => $m->nodeId,
-                'host'           => $m->host,
-                'port'           => $m->port,
-                'local'          => $m->isLocal(),
-                'status'         => $m->status,
-                'lastHeartbeat'  => $m->lastHeartbeat,
-                'alive'          => $m->status === ClusterMember::STATUS_UP || $m->isLocal(),
-            ];
+        foreach ($this->fallback as $id => $p) {
+            if ($p->status === PeerState::UP) {
+                $out[$id] = new ClusterMember(
+                    $id, $p->host, $p->port, $p->local,
+                    ClusterMember::STATUS_UP, $p->lastHeartbeat
+                );
+            }
         }
         return $out;
     }
 
+    public function getNode(string $nodeId): ?ClusterMember
+    {
+        if ($this->gossip !== null) {
+            return $this->gossip->getNode($nodeId);
+        }
+        $p = $this->fallback[$nodeId] ?? null;
+        if ($p === null) {
+            return null;
+        }
+        return new ClusterMember(
+            $nodeId, $p->host, $p->port, $p->local,
+            $p->status === PeerState::UP ? ClusterMember::STATUS_UP : ClusterMember::STATUS_DOWN,
+            $p->lastHeartbeat
+        );
+    }
+
+    public function isLocal(string $nodeId): bool
+    {
+        return $nodeId === $this->localNodeId;
+    }
+
+    public function registerListener(callable $cb): void
+    {
+        $this->listeners[] = $cb;
+        if ($this->gossip !== null) {
+            $this->gossip->registerListener($cb);
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Routing / FD / IPC accessors
+    // ---------------------------------------------------------------------
+
     /**
-     * Serializable form of {@see locate()} for IPC: returns a flat array the
-     * worker side can rebuild into a {@see Location}, since objects cannot cross
-     * the process message channel.
-     *
-     * @param string $actorName
-     * @return array|null [nodeId, host, port, local, processId]
+     * Resolve the owning node of an actor name.
+     */
+    public function locate(string $actorName): ?Location
+    {
+        if ($this->router !== null) {
+            return $this->router->locate($actorName);
+        }
+        // No-gossip fallback: consistent-hash ring over static peers.
+        $owner = $this->fallbackOwner($actorName);
+        if ($owner === null) {
+            return null;
+        }
+        $p = $this->fallback[$owner];
+        $node = new ClusterNode($owner, $p->host, $p->port, $p->local);
+        return new Location($node, 0);
+    }
+
+    /**
+     * Serializable (array) form of locate() for IPC return values.
+     * @return array{nodeId:string,host:string,port:int,local:bool,processId:int}|null
      */
     public function getLocationArray(string $actorName): ?array
     {
@@ -223,97 +246,199 @@ class ClusterState implements ClusterStateInterface
         }
         $node = $loc->getNode();
         return [
-            'nodeId'    => $node->getNodeId(),
-            'host'      => $node->getHost(),
-            'port'      => $node->getPort(),
-            'local'     => $node->isLocal(),
+            'nodeId' => $node->getNodeId(),
+            'host' => $node->getHost(),
+            'port' => $node->getPort(),
+            'local' => $node->isLocal(),
             'processId' => $loc->getProcessId(),
         ];
     }
 
-    public function getLocalNodeId(): string
-    {
-        return $this->localNodeId;
-    }
-
-    // ---- ClusterStateInterface ----
-
     /**
-     * @return ClusterMember[] Only nodes considered reachable (UP).
+     * IPC-friendly snapshot of the full member view.
+     * @return array<string,array{nodeId:string,host:string,port:int,local:bool,status:string,lastHeartbeat:int}>
      */
-    public function aliveNodes(): array
+    public function getMemberView(): array
     {
-        $out = [];
-        foreach ($this->members as $m) {
-            if ($m->status === ClusterMember::STATUS_UP || $m->isLocal()) {
-                $out[$m->nodeId] = $m;
+        if ($this->gossip !== null) {
+            $members = $this->gossip->allNodes();
+        } else {
+            $members = [];
+            foreach ($this->fallback as $id => $p) {
+                $members[$id] = new ClusterMember(
+                    $id, $p->host, $p->port, $p->local,
+                    $p->status === PeerState::UP ? ClusterMember::STATUS_UP : ClusterMember::STATUS_DOWN,
+                    $p->lastHeartbeat
+                );
             }
+        }
+        $out = [];
+        foreach ($members as $id => $m) {
+            $out[$id] = [
+                'nodeId' => $m->nodeId,
+                'host' => $m->host,
+                'port' => $m->port,
+                'local' => $m->local,
+                'status' => $m->status,
+                'lastHeartbeat' => $m->lastHeartbeat,
+            ];
         }
         return $out;
     }
 
-    public function getNode(string $nodeId): ?ClusterMember
+    /**
+     * Record a heartbeat for a peer (used by the gossip engine on inbound SYN-ACK).
+     * No-op in the no-gossip fallback (the FD tick keeps static peers UP).
+     */
+    public function heartbeat(string $nodeId, int $ts): void
     {
-        return $this->members[$nodeId] ?? null;
-    }
-
-    public function isLocal(string $nodeId): bool
-    {
-        return isset($this->members[$nodeId]) && $this->members[$nodeId]->isLocal();
+        if ($this->gossip !== null) {
+            return; // engine manages its own member heartbeats
+        }
+        if (isset($this->fallback[$nodeId])) {
+            $this->fallback[$nodeId]->lastHeartbeat = $ts;
+        }
     }
 
     /**
-     * Register a callback fired whenever the member view changes.
-     *
-     * @param callable $cb
-     * @return void
+     * Inject the local ClusterActorStore so the engine can ingest replicas
+     * straight to disk on inbound STORE_PUT (used only inside the cluster-state
+     * process, where the real engine + UDP wire live).
      */
-    public function registerListener(callable $cb): void
+    public function setActorStore(object $store): void
     {
-        $this->listeners[] = $cb;
-    }
-
-    private function fireListeners(): void
-    {
-        $view = $this->getMemberView();
-        foreach ($this->listeners as $cb) {
-            ($cb)($view);
+        if ($this->gossip !== null) {
+            $this->gossip->setActorStore($store);
         }
     }
 
-    // ---- consistent-hash ring (mirrors GossipShardRouter math) ----
-
-    private function buildRing(array $pool): array
+    /**
+     * Register the cross-node supervision callback fired when a peer node goes
+     * DOWN. The engine drives FD, so we forward to it.
+     *
+     * @param callable(string):void $cb
+     */
+    public function onNodeDown(callable $cb): void
     {
-        $ring = [];
-        $replicas = 128;
-        foreach ($pool as $m) {
-            for ($i = 0; $i < $replicas; $i++) {
-                $h = $this->hashKey($m->nodeId . '#' . $i);
-                $ring[$h] = $m->nodeId;
-            }
+        if ($this->gossip !== null) {
+            $this->gossip->onNodeDown($cb);
         }
-        ksort($ring, SORT_NUMERIC);
-        return $ring;
     }
 
-    private function ownerOfRing(array $ring, int $key): ?ClusterMember
+    /**
+     * Replicate a store mutation to peers. No-op in the no-gossip fallback.
+     */
+    public function replicateStoreEntry(string $actorName, string $kind, string $payload, int $ts): void
     {
-        if ($ring === []) {
+        if ($this->gossip !== null) {
+            $this->gossip->replicateStoreEntry($actorName, $kind, $payload, $ts);
+        }
+    }
+
+    /**
+     * Look up a replicated copy of a store entry. No-op (null) in fallback.
+     */
+    public function findReplica(string $actorName, string $kind): ?string
+    {
+        if ($this->gossip === null) {
             return null;
         }
-        foreach ($ring as $h => $nodeId) {
-            if ($key <= $h) {
-                return $this->members[$nodeId] ?? null;
-            }
-        }
-        // wrap around
-        $first = array_values($ring)[0];
-        return $this->members[$first] ?? null;
+        return $this->gossip->findReplica($actorName, $kind);
     }
 
-    private function hashKey(string $s): int
+    /**
+     * Actor names replicated from a dead $ownerNodeId — drives cross-node
+     * failover on the surviving worker nodes.
+     *
+     * @return string[]
+     */
+    public function getFailoverActors(string $ownerNodeId): array
     {
-        return (int) (sprintf('%u', crc32($s)) % 4294967296);
+        if ($this->gossip === null) {
+            return [];
+        }
+        return $this->gossip->getReplicatedActorNames($ownerNodeId);
+    }
+
+    /**
+     * Failure-detection tick. When the gossip engine is mounted it owns FD; we
+     * just forward. In the no-gossip fallback we keep static peers UP (optimistic)
+     * so the ring stays valid for architecture verification.
+     *
+     * @return string[] node ids whose status changed
+     */
+    public function tick(): array
+    {
+        if ($this->gossip !== null) {
+            return $this->gossip->tick();
+        }
+        if ($this->optimisticPeers) {
+            return [];
+        }
+        $now = $this->now();
+        $changed = [];
+        foreach ($this->fallback as $id => $p) {
+            if ($p->local) {
+                continue;
+            }
+            $silent = $now - $p->lastHeartbeat;
+            if ($silent >= $this->downAfter) {
+                if ($p->status !== PeerState::DOWN) {
+                    $p->status = PeerState::DOWN;
+                    $changed[] = $id;
+                }
+            } elseif ($silent >= $this->suspectAfter) {
+                if ($p->status !== PeerState::SUSPECT) {
+                    $p->status = PeerState::SUSPECT;
+                    $changed[] = $id;
+                }
+            }
+        }
+        if (!empty($changed)) {
+            foreach ($this->listeners as $cb) {
+                $cb($changed, $this);
+            }
+        }
+        return $changed;
+    }
+
+    // ---------------------------------------------------------------------
+    // No-gossip fallback ring (consistent hash over static peers)
+    // ---------------------------------------------------------------------
+
+    private function fallbackOwner(string $actorName): ?string
+    {
+        $alive = [];
+        foreach ($this->fallback as $id => $p) {
+            if ($p->status === PeerState::UP) {
+                $alive[$id] = $p;
+            }
+        }
+        if ($alive === []) {
+            return null;
+        }
+        $key = $this->hash($actorName);
+        $best = null;
+        $bestDelta = null;
+        foreach ($alive as $id => $p) {
+            $h = $this->hash($id);
+            $delta = $h >= $key ? ($h - $key) : (0xFFFFFFFF - $key + $h);
+            if ($bestDelta === null || $delta < $bestDelta) {
+                $bestDelta = $delta;
+                $best = $id;
+            }
+        }
+        return $best;
+    }
+
+    private function hash(string $s): int
+    {
+        $hash = 2166136261;
+        $len = strlen($s);
+        for ($i = 0; $i < $len; $i++) {
+            $hash ^= ord($s[$i]);
+            $hash = ($hash * 16777619) & 0xFFFFFFFF;
+        }
+        return (int) $hash;
     }
 }

@@ -6,30 +6,35 @@
 
 namespace Yew\Cluster\Broadcaster;
 
+use Yew\Cluster\State\ClusterStateInterface;
 use Yew\Core\Plugins\Logger\GetLogger;
 
 /**
- * ClusterBroadcaster backed by GossipClusterState membership + an independent
- * GossipTransport (UDP) channel dedicated to multicast payloads.
+ * ClusterBroadcaster backed by the authoritative cluster membership
+ * (ClusterStateInterface) + an independent GossipTransport (UDP) channel
+ * dedicated to multicast payloads.
  *
  * It does NOT reuse the cluster's internal gossip transport, so multicast
- * traffic can never be mistaken for a SYNC/SYN-ACK gossip frame.
+ * traffic can never be mistaken for a SYNC/SYN-ACK gossip frame. The membership
+ * source is the authoritative cluster-state process, reached either directly
+ * (inside that process) or over IPC via {@see \Yew\Cluster\State\IpcGossipState}
+ * (in the multicast helper process).
  */
 class GossipClusterBroadcaster implements ClusterBroadcaster
 {
     use GetLogger;
 
     /**
-     * @var GossipClusterState
+     * @var ClusterStateInterface
      */
-    protected GossipClusterState $state;
+    protected ClusterStateInterface $state;
 
     /**
      * @var GossipTransport
      */
     protected GossipTransport $transport;
 
-    public function __construct(GossipClusterState $state, GossipTransport $transport)
+    public function __construct(ClusterStateInterface $state, GossipTransport $transport)
     {
         $this->state = $state;
         $this->transport = $transport;

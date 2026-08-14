@@ -12,16 +12,14 @@ use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Ipc\IpcPlugin;
 use Yew\Cluster\ClusterConfig;
-use Yew\Cluster\State\GossipClusterState;
 use Yew\Cluster\Router\ShardRouter;
-use Yew\Cluster\Router\GossipShardRouter;
+use Yew\Cluster\Router\IpcShardRouter;
 use Yew\Cluster\Transport\RemoteTransport;
 use Yew\Cluster\Transport\RemoteEnvelope;
 use Yew\Plugins\Actor\Actor;
 use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\ActorManager;
 use Yew\Plugins\Actor\Persistence\ActorStore;
-use Yew\Plugins\Actor\Persistence\ClusterActorStore;
 use Yew\Plugins\Actor\Persistence\FileActorStore;
 use Yew\Plugins\Actor\Telemetry\Tracer;
 
@@ -95,7 +93,6 @@ class ActorPlugin extends AbstractPlugin
         if ($clusterConfig instanceof ClusterConfig && $clusterConfig->isEnabled()) {
             $router = DIGet(ShardRouter::class);
             $transport = DIGet(RemoteTransport::class);
-            $state = DIGet(GossipClusterState::class);
 
             if ($router instanceof ShardRouter && $transport instanceof RemoteTransport) {
                 // The shard router is purely cluster-aware (node resolution). Local
@@ -112,146 +109,67 @@ class ActorPlugin extends AbstractPlugin
                     $transport->setInboundHandler([$this, 'handleRemoteEnvelope']);
                 }
 
-                // Cluster-aware durable store: when persistence + replication are
-                // both on, wrap the local FileActorStore so every actor's
-                // events/snapshots are replicated to peer nodes.
-                if ($this->actorConfig->isPersistenceEnabled()
-                    && $clusterConfig->getReplicationFactor() > 0
-                    && $state instanceof GossipClusterState) {
-                    $store = new ClusterActorStore(
-                        new FileActorStore($this->actorConfig->getPersistenceDir()),
-                        $clusterConfig->getReplicationFactor()
-                    );
-                    $store->setCluster($state);
-                    $state->setActorStore($store);
-                    DISet(ClusterActorStore::class, $store);
-                }
-
-                if ($router instanceof GossipShardRouter) {
-                    // Topology rebalance: evict local actors that no longer belong
-                    // to this node after a ring change.
-                    $router->onRebalance(function (array $changed, GossipShardRouter $r) {
-                        $localNodeId = $r->getLocalNode()->getNodeId();
-                        foreach ($this->actorManager->getLocalActorNames() as $name) {
-                            $actor = $this->actorManager->getActor($name);
-                            if (!$actor instanceof Actor) {
-                                continue;
-                            }
-                            $owner = $r->ownerOf($name);
-                            if ($owner === $localNodeId || $owner === null) {
-                                continue;
-                            }
-                            $this->actorManager->removeActor($actor);
-                            Server::$instance->getLog()->info("cluster: evicted local actor [$name] (now owned by [$owner])");
+                // Topology rebalance: evict local actors that no longer belong to
+                // this node after a ring change. The router (IpcShardRouter) is
+                // refreshed on a worker timer against the authoritative view from
+                // the cluster-state process, so this fires on real membership
+                // changes. Actor placement itself is resolved via IPC in locate().
+                $router->onRebalance(function (array $changed, ShardRouter $r) {
+                    $localNodeId = $r->getLocalNode()->getNodeId();
+                    foreach ($this->actorManager->getLocalActorNames() as $name) {
+                        $actor = $this->actorManager->getActor($name);
+                        if (!$actor instanceof Actor) {
+                            continue;
                         }
-                        if ($changed !== []) {
-                            Server::$instance->getLog()->warning(
-                                "cluster: ring changed for nodes [" . implode(',', $changed) . "]; "
-                                . "cross-node migration of non-persisted actors is not wired yet"
-                            );
+                        $owner = $r->ownerOf($name);
+                        if ($owner === $localNodeId || $owner === null) {
+                            continue;
                         }
-                    });
-
-                    // Cross-node supervision: resurrect persisted actors that now
-                    // hash to this node after a peer node fails.
-                    if ($state instanceof GossipClusterState) {
-                        $state->onNodeDown(function (string $deadNodeId) use ($router, $state) {
-                            $this->failoverFrom($deadNodeId, $router, $state);
-                        });
+                        $this->actorManager->removeActor($actor);
+                        Server::$instance->getLog()->info("cluster: evicted local actor [$name] (now owned by [$owner])");
                     }
-                }
+                    if ($changed !== []) {
+                        $log = Server::$instance->getLog();
+                        $log->warning(
+                            "cluster: ring changed for nodes [" . implode(',', $changed) . "]; "
+                            . "evicted mis-owned local actors above"
+                        );
+                        // Failover of persisted actors: when a peer node goes down,
+                        // its replicated actor copies are buffered in every other
+                        // node's cluster-state process. When such an actor is (re)created
+                        // locally its recovery() reads fall back to that replica via IPC
+                        // (ClusterActorStore::findReplica -> IpcReplicaTransport). List the
+                        // resurrect-able actors here so the (re)creation path can pick them
+                        // up instead of starting empty.
+                        if ($r instanceof IpcShardRouter) {
+                            foreach ($changed as $nodeId) {
+                                $candidates = $r->clusterFailoverActors($nodeId);
+                                if ($candidates !== []) {
+                                    $log->info(
+                                        "cluster: peer [$nodeId] down; actors available for "
+                                        . "failover recovery: " . implode(',', $candidates)
+                                    );
+                                }
+                            }
+                        }
+                    }
+                });
             }
         }
         return;
     }
 
     /**
-     * User-registered cross-node supervision handler. Invoked for each persisted
-     * actor that should be resurrected on this node after its owning node died.
-     * The handler is responsible for re-creating the actor (the ClusterActorStore
-     * injected into it will recover its state from the replicated event log).
-     *
-     * @var callable(string):void|null
+     * Cross-node supervision (failover of persisted actors after a peer node
+     * dies) was previously driven by the legacy multi-worker GossipClusterState
+     * engine (onNodeDown + ClusterActorStore replication). In Stage 2 the cluster
+     * authority moved into the single "cluster-state" helper process, so that
+     * engine no longer exists in the worker. Re-pointing failover at the new
+     * architecture (node-down detection in the cluster-state process + a
+     * replicated store resolved via IPC) is a separate follow-up stage and is
+     * intentionally left unwired here. Topology-driven eviction of mis-owned
+     * local actors still happens via IpcShardRouter::onRebalance().
      */
-    private $failoverHandler = null;
-
-    /**
-     * Register a handler called when a peer node fails and one of its persisted
-     * actors now hashes to this node. Signature: (string $actorName) => void.
-     *
-     * @param callable(string):void $cb
-     * @return void
-     */
-    public function onNodeDown(callable $cb): void
-    {
-        $this->failoverHandler = $cb;
-    }
-
-    /**
-     * Cross-node supervision: a peer node died. For every actor whose replicated
-     * store this node holds and that now hashes to this node (per the consistent
-     * hash ring) and is not already alive here, invoke the user-registered
-     * handler so it can resurrect the actor (rebuilt from the replicated event
-     * log, so no state is lost across the failure).
-     */
-    private function failoverFrom(
-        string $deadNodeId,
-        GossipShardRouter $router,
-        GossipClusterState $state
-    ): void {
-        $localNodeId = $state->getLocalNodeId();
-        $store = $this->resolveFailoverStore();
-
-        foreach ($state->getReplicatedActorNames($deadNodeId) as $actorName) {
-            // ownerOf() maps an actor name onto the consistent-hash ring; only
-            // actors that now hash to this node are resurrected here.
-            if ($router->ownerOf($actorName) !== $localNodeId) {
-                continue;
-            }
-            if (ActorManager::getInstance()->getActorRaw($actorName) !== null) {
-                continue;
-            }
-            // Prefer a user-registered handler; otherwise resolve the actor
-            // class automatically (Route 2: read the class from the replicated
-            // store meta, so every persisted actor is resurrected without any
-            // external class mapping).
-            if ($this->failoverHandler !== null) {
-                ($this->failoverHandler)($actorName);
-                continue;
-            }
-            $class = $store !== null ? $store->loadClass($actorName) : null;
-            if ($class === null) {
-                Server::$instance->getLogger()->warning(
-                    sprintf('[actor] failover: no class for actor "%s" (no persisted meta), skip', $actorName)
-                );
-                continue;
-            }
-            ActorSystem::create($class, $actorName);
-        }
-    }
-
-    /**
-     * Resolve the durable store used to recover actor classes during failover.
-     *
-     * @return ClusterActorStore|FileActorStore|null
-     */
-    private function resolveFailoverStore()
-    {
-        try {
-            $store = \DIGet(ClusterActorStore::class);
-        } catch (\Throwable $e) {
-            $store = null;
-        }
-        if ($store instanceof ActorStore) {
-            return $store;
-        }
-        try {
-            $fileStore = \DIGet(FileActorStore::class);
-        } catch (\Throwable $e) {
-            return null;
-        }
-        return $fileStore instanceof ActorStore ? $fileStore : null;
-    }
 
     /**
      * Inbound cross-node request handler, injected into the (actor-agnostic)
