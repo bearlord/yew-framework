@@ -927,6 +927,12 @@ class GossipClusterState implements ClusterStateInterface
                 $existing->weight = (int) $row['weight'];
                 $changed[] = $id;
             }
+            // Guard against "zombie" revival (see observe()): a DOWN node can only
+            // be overwritten by a strictly higher incarnation (real restart).
+            if ($existing->status === ClusterMember::STATUS_DOWN
+                && $inc <= $existing->incarnation) {
+                continue;
+            }
             if ($inc > $existing->incarnation ||
                 ($inc === $existing->incarnation && $hb > $existing->lastHeartbeat)) {
                 $existing->status = $row['status'];
@@ -1132,6 +1138,12 @@ class GossipClusterState implements ClusterStateInterface
                 $this->notify([$id]);
                 continue;
             }
+            // Guard against "zombie" revival (see observe()): once a node is DOWN,
+            // only a strictly higher incarnation (real restart) may overwrite it.
+            if ($existing->status === ClusterMember::STATUS_DOWN
+                && $inc <= $existing->incarnation) {
+                continue;
+            }
             if ($inc > $existing->incarnation ||
                 ($inc === $existing->incarnation && $hb > $existing->lastHeartbeat)) {
                 $existing->status = $status;
@@ -1205,8 +1217,20 @@ class GossipClusterState implements ClusterStateInterface
         if ($existing !== null && $existing->incarnation > $member->incarnation) {
             return;
         }
+        // Guard against "zombie" revival: once a node has been declared DOWN by
+        // the failure detector, a stale/late/replayed heartbeat (same or lower
+        // incarnation) must NOT resurrect it. Only a strictly higher incarnation
+        // (i.e. the peer actually restarted and bumped its incarnation) is
+        // allowed to overwrite the DOWN state. This prevents a dead node from
+        // being shown as UP forever just because one old UDP packet arrived
+        // after the FD timeout.
+        if ($existing !== null && $existing->status === ClusterMember::STATUS_DOWN
+            && $member->incarnation <= $existing->incarnation) {
+            return;
+        }
         $member->lastHeartbeat = time();
-        if ($member->status === ClusterMember::STATUS_SUSPECT && $existing !== null) {
+        if ($member->status === ClusterMember::STATUS_SUSPECT && $existing !== null
+            && $existing->status !== ClusterMember::STATUS_DOWN) {
             $member->status = ClusterMember::STATUS_UP;
         }
         $this->members[$member->nodeId] = $member;
