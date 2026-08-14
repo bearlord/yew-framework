@@ -1294,7 +1294,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     private function writeSharedStatus(string $id, string $status): void
     {
-        if ($this->sharedTable === null || !$this->sharedTable->exists($id)) {
+        if ($this->sharedTable === null || !$this->sharedTable->exist($id)) {
             return;
         }
         $row = $this->sharedTable->get($id);
@@ -1366,7 +1366,7 @@ class GossipClusterState implements ClusterStateInterface
             // it as up in its private view; the shared table carries the most severe
             // status any worker has decided, which is the converged truth. Keep the
             // worse status so FD verdicts are stable across workers.
-            if ($table->exists($id)) {
+            if ($table->exist($id)) {
                 $existing = $table->get($id);
                 if ($existing !== false) {
                     $row['status'] = $this->worseStatus($existing['status'] ?? '', $row['status']);
