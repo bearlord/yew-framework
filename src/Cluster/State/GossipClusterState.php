@@ -310,20 +310,31 @@ class GossipClusterState implements ClusterStateInterface
             return true; // signing disabled
         }
         if ($msg->sig === null || $msg->sig === '') {
+            $this->error("[gossip-verify] DROP from {$msg->fromNode}: missing sig");
             return false; // signature required but missing
         }
         if (abs($now - $msg->ts) > $this->clockSkew) {
+            $this->error("[gossip-verify] DROP from {$msg->fromNode}: clockSkew now=$now ts={$msg->ts}");
             return false; // replay / stale
         }
         if ($this->key !== null) {
             $pub = $this->resolvePubKey($msg);
             if ($pub === null) {
+                $this->error("[gossip-verify] DROP from {$msg->fromNode}: no trusted pub (keyId=" . ($msg->keyId ?? 'null') . " hasPub=" . ($msg->pub ? 'yes' : 'no') . ")");
                 return false; // no trusted public key for this sender
             }
-            return NodeKey::verifyWith($pub, $this->canonicalBody($msg), $msg->sig);
+            $ok = NodeKey::verifyWith($pub, $this->canonicalBody($msg), $msg->sig);
+            if (!$ok) {
+                $this->error("[gossip-verify] DROP from {$msg->fromNode}: signature mismatch (keyId=" . ($msg->keyId ?? 'null') . ")");
+            }
+            return $ok;
         }
         // Legacy HMAC mode.
-        return hash_equals(hash_hmac('sha256', $this->canonicalBody($msg), $this->secret), (string) $msg->sig);
+        $ok = hash_equals(hash_hmac('sha256', $this->canonicalBody($msg), $this->secret), (string) $msg->sig);
+        if (!$ok) {
+            $this->error("[gossip-verify] DROP from {$msg->fromNode}: HMAC mismatch");
+        }
+        return $ok;
     }
 
     /**
@@ -991,6 +1002,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function handleDigest(GossipMessage $msg): void
     {
+        $this->error("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . ($msg->self ? $msg->self->host . ':' . $msg->self->port : 'null') . " membersNow=" . count($this->members));
         foreach ($msg->digest as $id => [$status, $inc, $hb]) {
             $inc = (int) $inc;
             $hb = (int) $hb;
