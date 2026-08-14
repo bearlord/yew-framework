@@ -547,8 +547,6 @@ class RouteAspect extends OrderAspect
             return;
         }
 
-
-        $abstractServerPort = $invocation->getThis();
         $routePortConfig = $this->routePortConfigs[$abstractServerPort->getPortConfig()->getPort()];
         setContextValue("routePortConfig", $routePortConfig);
 

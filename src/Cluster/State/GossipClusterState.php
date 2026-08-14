@@ -999,10 +999,12 @@ class GossipClusterState implements ClusterStateInterface
                 $this->members[$id] = new ClusterMember(
                     $id, 'unknown', 0, 1, $status, $hb, $inc
                 );
-                // We learned of a node but lack its address: pull full state.
+                // We learned of a node but lack its address. The sender attached
+                // its own coordinates in $msg->self, so observe() fills them in
+                // immediately instead of waiting for a SYNC round-trip.
                 if ($msg->self !== null) {
-                    $peer = $msg->self->host . ':' . $msg->self->port;
-                    $this->sendSync($peer);
+                    $this->observe($msg->self);
+                    $this->sendSync($msg->self->host . ':' . $msg->self->port);
                 }
                 $this->notify([$id]);
                 continue;

@@ -193,7 +193,10 @@ class GossipMessage
         foreach ($members as $id => $m) {
             $entries[$id] = [$m->status, $m->incarnation, $m->lastHeartbeat];
         }
-        return new self(self::DIGEST, $fromNode, null, $entries);
+        // Attach our own coordinates so a peer that only knows us as "unknown"
+        // can fire a SYNC back to us and fill in our real host:port.
+        $self = $members[$fromNode] ?? null;
+        return new self(self::DIGEST, $fromNode, $self, $entries);
     }
 
     /**
