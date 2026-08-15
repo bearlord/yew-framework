@@ -27,6 +27,8 @@ class ClusterMember
     public int $lastHeartbeat;
     /** @var int Virtual-replica weight for the consistent-hash ring (1 = even). */
     public int $weight;
+    /** @var int Gossip incarnation counter; bumped on restart to reject stale heartbeats (zombie revival guard). */
+    public int $incarnation;
 
     public function __construct(
         string $nodeId,
@@ -35,7 +37,8 @@ class ClusterMember
         bool $local,
         string $status,
         int $lastHeartbeat,
-        int $weight = 1
+        int $weight = 1,
+        int $incarnation = 0
     ) {
         $this->nodeId = $nodeId;
         $this->host = $host;
@@ -44,6 +47,7 @@ class ClusterMember
         $this->status = $status;
         $this->lastHeartbeat = $lastHeartbeat;
         $this->weight = $weight;
+        $this->incarnation = $incarnation;
     }
 
     public function isLocal(): bool
@@ -74,6 +78,7 @@ class ClusterMember
             'status'         => $this->status,
             'lastHeartbeat'  => $this->lastHeartbeat,
             'weight'         => $this->weight,
+            'incarnation'    => $this->incarnation,
         ];
     }
 
@@ -89,7 +94,8 @@ class ClusterMember
             (bool) ($row['local'] ?? false),
             (string) ($row['status'] ?? self::STATUS_DOWN),
             (int) ($row['lastHeartbeat'] ?? 0),
-            (int) ($row['weight'] ?? 1)
+            (int) ($row['weight'] ?? 1),
+            (int) ($row['incarnation'] ?? 0)
         );
     }
 }

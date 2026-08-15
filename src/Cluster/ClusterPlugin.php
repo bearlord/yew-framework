@@ -12,6 +12,7 @@ use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
 use Yew\Coroutine\Server\Server;
+use Yew\Yew;
 use Yew\Cluster\ClusterConfig;
 use Yew\Cluster\Router\ShardRouter;
 use Yew\Cluster\Router\GossipShardRouter;
@@ -413,7 +414,7 @@ class ClusterPlugin extends AbstractPlugin
             . DIRECTORY_SEPARATOR . 'peers-' . $cfg->getNodeId() . '.json';
         $state->attachGossip($cfg, $engine, $udp, $router, $cfg->getSeeds(), $peerCacheFile);
 
-        $this->logger->info(sprintf(
+        Yew::getLogger()->info(sprintf(
             '[cluster-state] authority process ready: node=%s seeds=[%s] peerCache=%s tick=%dms',
             $cfg->getNodeId(),
             implode(',', $cfg->getSeeds()),
