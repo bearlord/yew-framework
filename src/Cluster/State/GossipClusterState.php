@@ -181,11 +181,9 @@ class GossipClusterState implements ClusterStateInterface
         if ($self === null) {
             return null;
         }
-        // Advertise the gossip port on the wire so peers reply on the UDP gossip
-        // socket. The business port ($self->port) is intentionally left untouched:
-        // it is used by RPC/router and must stay 9600. Only $gossipPort is set so
-        // wireAddr()/observe() resolve the correct 9700 reply address without
-        // polluting the peer's business-port record.
+        // Only set $gossipPort; $self->port (business/RPC port) stays untouched
+        // so peers resolve the correct 9700 reply address without polluting the
+        // business-port record.
         if ($this->gossipPort > 0) {
             $clone = clone $self;
             $clone->gossipPort = $this->gossipPort;
@@ -1024,39 +1022,31 @@ class GossipClusterState implements ClusterStateInterface
             $self->status = ClusterMember::STATUS_UP;
         }
 
-        // Failure detection. In the multi-worker model UDP traffic is load-balanced
-        // across workers, so a single worker only periodically hears a given peer's
-        // heartbeat. Basing FD on THIS worker's private $members->lastHeartbeat would
-        // make every worker that happens not to receive the peer's packets decide the
-        // peer is dead, and each worker would write its own (contradictory) verdict
-        // into the shared table ！ exactly the "node-1 sees node-2 down / node-2 sees
-        // node-1 suspect" split-brain we observed.
-        //
-        // The shared table aggregates heartbeats learned by ANY worker in this process,
-        // so it is the authoritative "when did THIS process last hear the peer is alive"
-        // clock. FD therefore reads the peer's heartbeat from the shared table when
-        // available. We only mutate THIS worker's private $members here; the converged
-        // cross-worker view is reconciled by syncToSharedTable(), which merges by
-        // heartbeat freshness (a worker carrying a fresher "up" heartbeat overwrites a
-        // stale "down"). That prevents a worker with a stale private clock from
-        // poisoning the shared table, while still letting a genuinely-stale peer (whose
-        // freshness cannot be out-argued by anyone) be marked down.
-        // In this deployment the cluster-state process is the single writer of
-        // membership and syncToSharedTable() is a no-op, so $sharedTable never
-        // receives fresher heartbeats than the private $members clock (which
-        // handleDigest() updates on every received packet). Trusting the shared
-        // table here would overwrite the live, just-refreshed private heartbeat
-        // with a stale timestamp and spuriously mark a live peer DOWN. Therefore
-        // FD is driven purely by the private lastHeartbeat.
+        // UDP traffic is load-balanced across workers, so no single worker hears
+        // every peer's heartbeats. FD therefore reads the heartbeat clock from the
+        // shared table (the union of what ANY worker heard), not from this worker's
+        // private $members ！ otherwise each worker would vote independently and cause
+        // split-brain. syncToSharedTable() merges by heartbeat freshness, so a worker
+        // holding a fresher "up" heartbeat safely overwrites a stale "down".
+        $sharedHb = [];
+        if ($this->sharedTable !== null) {
+            foreach ($this->sharedTable as $id => $row) {
+                $sharedHb[$id] = (int) ($row['lastHeartbeat'] ?? 0);
+            }
+        }
         foreach ($this->members as $id => $m) {
             if ($id === $this->localNodeId) {
                 continue;
             }
-            // A node that keeps sending heartbeats (handleDigest refreshes its
-            // private lastHeartbeat) is alive on the wire and must be re-evaluated
-            // every tick, even if currently DOWN ！ otherwise a brief startup-race
-            // suspicion deadlocks it in DOWN forever.
+            // DOWN nodes are re-evaluated every tick: a peer still sending
+            // heartbeats (refreshed via handleDigest and pushed to the shared
+            // table) is provably alive on the wire and must be pulled back UP;
+            // skipping it would deadlock a briefly-suspected node in DOWN forever.
             $hb = $m->lastHeartbeat;
+            if (isset($sharedHb[$id]) && $sharedHb[$id] > $hb) {
+                $hb = $sharedHb[$id];
+                $m->lastHeartbeat = $hb;
+            }
             $elapsed = $now - $hb;
             $prev = $m->status;
             if ($elapsed >= $this->downAfter) {
@@ -1150,6 +1140,11 @@ class GossipClusterState implements ClusterStateInterface
         // Persist learned peer endpoints for seed self-healing on next cold start.
         $this->flushPeerCache();
 
+        // Push membership to the shared table every tick (not just on $changed),
+        // so a heartbeat-only refresh still propagates its freshness; otherwise
+        // other workers keep a stale "down" row. Merges by freshness, so an "up"
+        // row safely overwrites a stale "down".
+        $this->syncToSharedTable();
         if (!empty($changed)) {
             $this->notify($changed);
         }
@@ -1202,25 +1197,19 @@ class GossipClusterState implements ClusterStateInterface
                 $this->notify([$id]);
                 continue;
             }
-            // Guard against "zombie" revival (see observe()): once a node is DOWN,
-            // only a strictly higher incarnation (real restart) may overwrite its
-            // STATE. BUT we must still refresh the liveness clock on every received
-            // digest, otherwise a node that was briefly DOWN yet keeps sending
-            // heartbeats would be permanently stuck DOWN (the FD measures "how long
-            // since THIS node heard the peer", anchored to local receive time).
+            // Zombie guard (see observe()): a DOWN node's STATE is only overwritten
+            // by a strictly higher incarnation (real restart). But we still refresh
+            // the liveness clock here so a briefly-DOWN peer that keeps heartbeating
+            // is not stuck DOWN forever.
             if ($existing->status === ClusterMember::STATUS_DOWN
                 && $inc <= $existing->incarnation) {
                 $existing->lastHeartbeat = time();
                 continue;
             }
-            // NOTE: We deliberately do NOT adopt the peer's reported $hb as this
-            // node's heartbeat clock. The failure detector measures "how long has
-            // THIS node gone without hearing the peer", which must be anchored to
-            // the local receive time, not the peer's wall clock (clock skew between
-            // nodes and UDP/gossip scheduling jitter would otherwise inflate $elapsed
-            // and spuriously mark the peer DOWN). We record that we just heard the
-            // peer using the local receive time, while still using the peer's
-            // ($inc, $hb) tuple only to decide whether its STATE changed.
+            // FD measures "how long has THIS node not heard the peer", so the clock
+            // is anchored to local receive time (not the peer's $hb, which is prone
+            // to clock skew / jitter). The peer's ($inc, $hb) tuple only decides
+            // whether its STATE changed.
             $prevPeerHb = $existing->lastHeartbeat;
             $existing->lastHeartbeat = time();
             if ($inc > $existing->incarnation ||
@@ -1431,21 +1420,11 @@ class GossipClusterState implements ClusterStateInterface
     }
 
     /**
-     * Reconcile this worker's router ring with the converged shared view.
-     *
-     * In the multi-worker model every worker runs the gossip receiver, but UDP
-     * traffic is load-balanced so a single worker only ever sees a slice of the
-     * membership updates. Each worker therefore converges its own $members only
-     * partially; the shared table aggregates what ANY worker learned. Routing in
-     * every worker must reflect the SHARED view, not just this worker's partial
-     * private one ！ otherwise a worker whose slice never included node-2 keeps a
-     * ring of size 1 and routes every "remote" actor back to itself (500 / wrong
-     * owner). We merge the shared rows into $members (without clobbering known
-     * good endpoints with "unknown") and fire the membership listeners so the
-     * router rebuilds its ring from the now-complete set.
-     *
-     * This must run on EVERY worker, gossip or not, so it must NOT short-circuit
-     * on isGossipWorker (the old guard made every worker skip it).
+     * Reconcile this worker's router ring with the converged shared view. Every
+     * worker runs this (gossip or not): it pulls shared rows into $members without
+     * clobbering a known-good endpoint with "unknown", then fires listeners so the
+     * router rebuilds from the complete set ！ preventing a worker with an
+     * incomplete private slice from routing remote actors back to itself.
      */
     public function refreshView(): void
     {
@@ -1486,64 +1465,37 @@ class GossipClusterState implements ClusterStateInterface
     }
 
     /**
-     * Push the local (gossip worker) converged membership into the shared
-     * cross-worker table so every other worker routes against one view.
-     * Only called on the designated gossip worker.
+     * Push this worker's converged $members into the shared cross-worker table
+     * (no-op when unconfigured). Every worker that receives gossip packets calls
+     * this, so the table aggregates members learned by ANY worker ！ letting
+     * routing see a complete view despite UDP load-balancing. Rows are merged by
+     * heartbeat freshness, so a worker holding a fresher heartbeat (even "up")
+     * overwrites a stale "down"; unknown/portless rows are skipped to avoid
+     * clobbering a correct endpoint.
      */
     public function syncToSharedTable(): void
     {
-        // NOTE: In the single-authority architecture the cluster-state process is
-        // the ONLY writer of membership; there is no cross-worker Swoole\Table to
-        // sync into. This method is therefore a no-op when no sharedTable was
-        // configured (the normal case now). Kept so the FD notify() path stays
-        // unchanged.
         if ($this->sharedTable === null) {
             return;
         }
-        // Every worker that receives gossip packets merges them into its local
-        // $members and here pushes the rows it knows into the shared table. The
-        // table therefore aggregates members learned by ANY worker, so routing
-        // sees a complete, converged view even though each worker only receives
-        // a slice of the UDP traffic. We only SET (never DEL): a row absent from
-        // this worker's local view may well be known to another worker, and a
-        // departed node is reflected via its status (suspect/down), not by
-        // physical removal, which would race across workers.
-        //
-        // Skip rows whose host is still "unknown" / port unset. A worker that has
-        // only learned a peer's nodeId (via a digest) but not yet its real
-        // endpoint would otherwise overwrite a correct row written by another
-        // worker with an unusable "unknown" address, breaking cross-node TCP.
+        $table = $this->sharedTable;
         foreach ($this->members as $id => $m) {
             if ($m->host === '' || $m->host === 'unknown' || $m->port <= 0) {
                 continue;
             }
             $row = $m->toRow();
-            // Merge by FRESHNESS, not by severity. UDP traffic is load-balanced across
-            // workers, so a worker that hasn't recently heard a peer may still see it
-            // as "up" in its private view while another worker ！ which also hasn't
-            // heard it ！ has already declared it "down". Blindly keeping the "worse"
-            // status (our previous logic) let a single mistaken down/suspect verdict
-            // permanently poison the shared table; a worker that DID hear a fresh
-            // heartbeat (higher lastHeartbeat) could never resurrect the peer.
-            //
-            // The peer's lastHeartbeat is the ground truth: whichever worker holds the
-            // NEWEST evidence about the peer wins. A worker carrying a fresh "up"
-            // heartbeat overwrites a stale "down" (resurrection). A worker carrying a
-            // stale private view (older hb) cannot overwrite a fresher shared row, so
-            // mistaken local verdicts no longer pollute the converged view.
             if ($table->exist($id)) {
                 $existing = $table->get($id);
                 if ($existing !== false) {
                     $existingHb = (int) ($existing['lastHeartbeat'] ?? 0);
                     $localHb = (int) ($row['lastHeartbeat'] ?? 0);
                     if ($existingHb > $localHb) {
-                        // Shared row is newer ！ keep it (status, host, port, hb).
+                        // Shared row is newer ！ keep its status/host/port/hb.
                         $row['status'] = $existing['status'];
                         $row['host'] = $existing['host'];
                         $row['port'] = $existing['port'];
                         $row['lastHeartbeat'] = $existingHb;
                     }
-                    // else: local evidence is at least as fresh ！ use our row as-is.
                 }
             }
             $table->set($id, $row);
