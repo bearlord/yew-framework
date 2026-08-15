@@ -181,15 +181,14 @@ class GossipClusterState implements ClusterStateInterface
         if ($self === null) {
             return null;
         }
-        // Always advertise the gossip port on the wire (never the business port),
-        // so peers reply on the UDP gossip socket. The local table may already
-        // carry the gossip port (set in join()), but we still return a clone whose
-        // port field equals the gossip port so every consumer (wireAddr, logging,
-        // observe()) sees a consistent host:gossipPort address.
+        // Advertise the gossip port on the wire so peers reply on the UDP gossip
+        // socket. The business port ($self->port) is intentionally left untouched:
+        // it is used by RPC/router and must stay 9600. Only $gossipPort is set so
+        // wireAddr()/observe() resolve the correct 9700 reply address without
+        // polluting the peer's business-port record.
         if ($this->gossipPort > 0) {
             $clone = clone $self;
             $clone->gossipPort = $this->gossipPort;
-            $clone->port = $this->gossipPort;
             return $clone;
         }
         return $self;
@@ -1042,31 +1041,22 @@ class GossipClusterState implements ClusterStateInterface
         // stale "down"). That prevents a worker with a stale private clock from
         // poisoning the shared table, while still letting a genuinely-stale peer (whose
         // freshness cannot be out-argued by anyone) be marked down.
-        $sharedHb = [];
-        if ($this->sharedTable !== null) {
-            foreach ($this->sharedTable as $id => $row) {
-                $sharedHb[$id] = (int) ($row['lastHeartbeat'] ?? 0);
-            }
-        }
-
+        // In this deployment the cluster-state process is the single writer of
+        // membership and syncToSharedTable() is a no-op, so $sharedTable never
+        // receives fresher heartbeats than the private $members clock (which
+        // handleDigest() updates on every received packet). Trusting the shared
+        // table here would overwrite the live, just-refreshed private heartbeat
+        // with a stale timestamp and spuriously mark a live peer DOWN. Therefore
+        // FD is driven purely by the private lastHeartbeat.
         foreach ($this->members as $id => $m) {
             if ($id === $this->localNodeId) {
                 continue;
             }
-            // A DOWN node is re-evaluated every tick too: if it is still sending
-            // heartbeats (handleDigest refreshes its private lastHeartbeat), the
-            // freshest private clock proves it is alive on the wire and we must pull
-            // it back UP. Skipping DOWN here would deadlock a node in DOWN forever
-            // the moment it was briefly suspected after a startup race.
-            // Use the freshest heartbeat this process knows about. For a DOWN node we
-            // trust the private clock (refreshed by handleDigest) over the shared
-            // table, which may still carry the stale DOWN-marking timestamp.
+            // A node that keeps sending heartbeats (handleDigest refreshes its
+            // private lastHeartbeat) is alive on the wire and must be re-evaluated
+            // every tick, even if currently DOWN ¡ª otherwise a brief startup-race
+            // suspicion deadlocks it in DOWN forever.
             $hb = $m->lastHeartbeat;
-            if ($m->status !== ClusterMember::STATUS_DOWN
-                && isset($sharedHb[$id]) && $sharedHb[$id] > $hb) {
-                $hb = $sharedHb[$id];
-                $m->lastHeartbeat = $hb;
-            }
             $elapsed = $now - $hb;
             $prev = $m->status;
             if ($elapsed >= $this->downAfter) {
@@ -1084,8 +1074,7 @@ class GossipClusterState implements ClusterStateInterface
                 }
             } else {
                 // Fresh enough: a node that was SUSPECT or DOWN but is clearly still
-                // heartbeating on the wire recovers to UP (prevents permanent SUSPECT
-                // / stuck-DOWN once liveness is re-established).
+                // heartbeating on the wire recovers to UP.
                 if ($m->status !== ClusterMember::STATUS_UP) {
                     $m->status = ClusterMember::STATUS_UP;
                     $changed[] = $id;
