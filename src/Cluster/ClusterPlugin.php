@@ -414,7 +414,7 @@ class ClusterPlugin extends AbstractPlugin
             . DIRECTORY_SEPARATOR . 'peers-' . $cfg->getNodeId() . '.json';
         $state->attachGossip($cfg, $engine, $udp, $router, $cfg->getSeeds(), $peerCacheFile);
 
-        Yew::getLogger()->info(sprintf(
+        Server::$instance->getLog()->info(sprintf(
             '[cluster-state] authority process ready: node=%s seeds=[%s] peerCache=%s tick=%dms',
             $cfg->getNodeId(),
             implode(',', $cfg->getSeeds()),
