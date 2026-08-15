@@ -506,19 +506,27 @@ class GossipClusterState implements ClusterStateInterface
                     continue;
                 }
                 // Fragment envelope? Reassemble before parsing the real message.
+                $peek = @json_decode($payload, true);
+                $peekFrom = is_array($peek) ? ($peek['f'] ?? '?') : 'nonjson';
+                $peekType = is_array($peek) ? ($peek['t'] ?? '?') : '?';
+                $this->debug("[gossip-recv] raw from={$peekFrom} type={$peekType}");
                 $payload = $this->ingest($payload, time());
                 if ($payload === null) {
+                    $this->debug("[gossip-recv] dropped at ingest from={$peekFrom}");
                     continue; // either a fragment (buffered) or a dropped bad one
                 }
                 try {
                     $msg = GossipMessage::fromJson($payload);
                 } catch (\Throwable $e) {
+                    $this->debug("[gossip-recv] json-fail from={$peekFrom}");
                     continue;
                 }
                 if (!$this->verify($msg, time())) {
                     // Drop forged / stale / replayed messages.
+                    $this->debug("[gossip-recv] verify-fail from={$peekFrom} ts=" . ($msg->ts ?? '?'));
                     continue;
                 }
+                $this->debug("[gossip-recv] accepted from={$peekFrom}");
                 $this->dispatch($msg);
             }
         });
@@ -1178,7 +1186,9 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function handleDigest(GossipMessage $msg): void
     {
-        $this->debug("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . ($msg->self ? $msg->self->host . ':' . $msg->self->port : 'null') . " membersNow=" . count($this->members));
+        $selfInfo = $msg->self ? ($msg->self->host . ':' . $msg->self->port . ' gossipPort=' . $msg->self->gossipPort) : 'null';
+        $localGp = $this->gossipPort;
+        $this->debug("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . $selfInfo . " localGossipPort=" . $localGp . " membersNow=" . count($this->members));
         foreach ($msg->digest as $id => [$status, $inc, $hb]) {
             $inc = (int) $inc;
             $hb = (int) $hb;
@@ -1250,6 +1260,7 @@ class GossipClusterState implements ClusterStateInterface
             return;
         }
         $target = $peers[array_rand($peers)];
+        $this->debug("[gossip-send] target={$target} selfGossipPort=" . ($msg->self ? $msg->self->gossipPort : 'null') . " localGossipPort=" . $this->gossipPort);
         // Digests are fire-and-forget (epidemic); not tracked for retransmit.
         $this->emit($target, $msg, $now);
     }
