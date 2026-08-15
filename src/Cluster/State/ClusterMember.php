@@ -60,4 +60,36 @@ class ClusterMember
     {
         return $this->status === self::STATUS_UP || $this->status === self::STATUS_SUSPECT;
     }
+
+    /**
+     * Serialize to a plain row (array) for GossipMessage transport.
+     */
+    public function toRow(): array
+    {
+        return [
+            'nodeId'         => $this->nodeId,
+            'host'           => $this->host,
+            'port'           => $this->port,
+            'local'          => $this->local,
+            'status'         => $this->status,
+            'lastHeartbeat'  => $this->lastHeartbeat,
+            'weight'         => $this->weight,
+        ];
+    }
+
+    /**
+     * Reconstruct a ClusterMember from a row produced by toRow().
+     */
+    public static function fromRow(array $row): self
+    {
+        return new self(
+            (string) ($row['nodeId'] ?? ''),
+            (string) ($row['host'] ?? ''),
+            (int) ($row['port'] ?? 0),
+            (bool) ($row['local'] ?? false),
+            (string) ($row['status'] ?? self::STATUS_DOWN),
+            (int) ($row['lastHeartbeat'] ?? 0),
+            (int) ($row['weight'] ?? 1)
+        );
+    }
 }
