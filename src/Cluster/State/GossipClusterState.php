@@ -1178,7 +1178,20 @@ class GossipClusterState implements ClusterStateInterface
             return;
         }
         $msg = GossipMessage::digest($this->localNodeId, $this->members);
-        $peers = $this->peerAddresses();
+        // Prefer real, known members (alive OR suspect ¡ª both still gossip) so a
+        // misconfigured/unreachable seed (e.g. a node that is not deployed) can
+        // never steal a digest that should have gone to a live peer. Seeds are only
+        // used as a discovery fallback when we have zero known member addresses yet.
+        $live = [];
+        foreach ($this->members as $m) {
+            if ($m->nodeId === $this->localNodeId) {
+                continue;
+            }
+            if ($m->host !== 'unknown' && $m->port > 0) {
+                $live[] = $m->host . ':' . $m->port;
+            }
+        }
+        $peers = !empty($live) ? $live : $this->peerAddresses();
         if (empty($peers)) {
             return;
         }
