@@ -432,7 +432,7 @@ class ClusterPlugin extends AbstractPlugin
         $store->setCluster(new LocalReplicaTransport($state));
         $state->setActorStore($store);
         $state->onNodeDown(function (string $deadNodeId) use ($state, $cfg) {
-            $this->logger->info(
+            Server::$instance->getLog()->info(
                 "[cluster-state] peer down: {$deadNodeId}; failover actors: "
                 . implode(',', $state->getFailoverActors($deadNodeId))
             );
