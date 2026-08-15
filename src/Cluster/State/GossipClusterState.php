@@ -181,9 +181,15 @@ class GossipClusterState implements ClusterStateInterface
         if ($self === null) {
             return null;
         }
-        if ($this->gossipPort > 0 && $this->gossipPort !== $self->gossipPort) {
+        // Always advertise the gossip port on the wire (never the business port),
+        // so peers reply on the UDP gossip socket. The local table may already
+        // carry the gossip port (set in join()), but we still return a clone whose
+        // port field equals the gossip port so every consumer (wireAddr, logging,
+        // observe()) sees a consistent host:gossipPort address.
+        if ($this->gossipPort > 0) {
             $clone = clone $self;
             $clone->gossipPort = $this->gossipPort;
+            $clone->port = $this->gossipPort;
             return $clone;
         }
         return $self;
@@ -1176,7 +1182,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function handleDigest(GossipMessage $msg): void
     {
-        $this->error("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . ($msg->self ? $msg->self->host . ':' . $msg->self->port : 'null') . " membersNow=" . count($this->members));
+        $this->debug("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . ($msg->self ? $msg->self->host . ':' . $msg->self->port : 'null') . " membersNow=" . count($this->members));
         foreach ($msg->digest as $id => [$status, $inc, $hb]) {
             $inc = (int) $inc;
             $hb = (int) $hb;
