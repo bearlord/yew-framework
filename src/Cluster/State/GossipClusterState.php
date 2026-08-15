@@ -154,6 +154,53 @@ class GossipClusterState implements ClusterStateInterface
      */
     private $onNodeDown = null;
 
+    /**
+     * The UDP gossip port this node actually listens on. Membership records
+     * (ClusterMember->port) carry the *business* port, but every wire message
+     * must advertise the gossip port so peers can reach us back on the correct
+     * socket. Without this, peers learn our business port and send SYNC/ACK to
+     * it, which the gossip receiver never listens on -> one-way visibility.
+     * @var int
+     */
+    private int $gossipPort = 0;
+
+    public function setGossipPort(int $port): void
+    {
+        $this->gossipPort = $port;
+    }
+
+    /**
+     * Local member as advertised on the wire: same as $members[localNodeId] but
+     * with port replaced by the gossip port (see $gossipPort). Used for every
+     * outbound self record so peers reply on the UDP gossip socket, not the
+     * business port.
+     */
+    private function wireSelf(): ?ClusterMember
+    {
+        $self = $this->members[$this->localNodeId] ?? null;
+        if ($self === null) {
+            return null;
+        }
+        if ($this->gossipPort > 0 && $this->gossipPort !== $self->gossipPort) {
+            $clone = clone $self;
+            $clone->gossipPort = $this->gossipPort;
+            return $clone;
+        }
+        return $self;
+    }
+
+    /**
+     * Gossip wire address ("host:gossipPort") of a member. Gossip replies must
+     * hit the UDP gossip socket, which may differ from the business port carried
+     * in $member->port (used by RPC / broadcaster). Falls back to $member->port
+     * when no explicit gossip port is known.
+     */
+    private function wireAddr(ClusterMember $m): string
+    {
+        $p = $m->gossipPort > 0 ? $m->gossipPort : $m->port;
+        return $m->host . ':' . $p;
+    }
+
     public function __construct(
         string $localNodeId,
         float $suspectAfter = self::DEFAULT_SUSPECT_AFTER,
@@ -168,7 +215,7 @@ class GossipClusterState implements ClusterStateInterface
      * Register this node's own identity in the membership table (host:port).
      * Carries the node's public key so peers can verify its messages.
      */
-    public function join(string $host, int $port, int $weight = 1): void
+    public function join(string $host, int $port, int $weight = 1, int $gossipPort = 0): void
     {
         // Bump incarnation on every (re)start so a peer that previously marked us
         // DOWN will accept our new heartbeats: the zombie-revival guard in
@@ -180,7 +227,7 @@ class GossipClusterState implements ClusterStateInterface
         $incarnation = (int) (microtime(true) * 1000);
         $this->members[$this->localNodeId] = new ClusterMember(
             $this->localNodeId, $host, $port, true,
-            ClusterMember::STATUS_UP, time(), $weight, $incarnation
+            ClusterMember::STATUS_UP, time(), $weight, $incarnation, $gossipPort
         );
     }
 
@@ -855,7 +902,7 @@ class GossipClusterState implements ClusterStateInterface
      */
     private function sendSync(string $peer): void
     {
-        $self = $this->members[$this->localNodeId] ?? null;
+        $self = $this->wireSelf();
         if ($self === null) {
             return;
         }
@@ -875,7 +922,7 @@ class GossipClusterState implements ClusterStateInterface
             $this->observe($msg->self);
         }
         $reply = GossipMessage::fullState($this->localNodeId, $this->members);
-        $addr = $msg->self !== null ? ($msg->self->host . ':' . $msg->self->port) : null;
+        $addr = $msg->self !== null ? $this->wireAddr($msg->self) : null;
         if ($addr !== null) {
             // Acknowledge the SYNC first, then reliably send the full state.
             if ($msg->mid !== null) {
@@ -893,8 +940,9 @@ class GossipClusterState implements ClusterStateInterface
     {
         $changed = $this->mergeFull($msg->full);
         // Acknowledge so the peer stops retransmitting the full state.
-        $addr = $msg->full[$msg->fromNode]['host'] ?? null;
-        $port = $msg->full[$msg->fromNode]['port'] ?? 0;
+        $row = $msg->full[$msg->fromNode] ?? null;
+        $addr = $row['host'] ?? null;
+        $port = ($row['gossipPort'] ?? 0) > 0 ? $row['gossipPort'] : ($row['port'] ?? 0);
         if ($addr !== null && $port > 0) {
             if ($msg->mid !== null) {
                 $this->emit($addr . ':' . $port, GossipMessage::ack($this->localNodeId, $msg->mid), time());
@@ -923,7 +971,8 @@ class GossipClusterState implements ClusterStateInterface
             if ($existing === null) {
                 $this->members[$id] = new ClusterMember(
                     $id, $row['host'], (int) $row['port'], false,
-                    $row['status'], $hb, (int) ($row['weight'] ?? 1)
+                    $row['status'], $hb, (int) ($row['weight'] ?? 1),
+                    (int) ($row['incarnation'] ?? 0), (int) ($row['gossipPort'] ?? 0)
                 );
                 $changed[] = $id;
                 continue;
@@ -931,6 +980,7 @@ class GossipClusterState implements ClusterStateInterface
             if ($existing->host === 'unknown' && $row['host'] !== 'unknown') {
                 $existing->host = $row['host'];
                 $existing->port = (int) $row['port'];
+                $existing->gossipPort = (int) ($row['gossipPort'] ?? $row['port']);
                 $existing->weight = (int) $row['weight'];
                 $changed[] = $id;
             }
@@ -1140,7 +1190,7 @@ class GossipClusterState implements ClusterStateInterface
                 // immediately instead of waiting for a SYNC round-trip.
                 if ($msg->self !== null) {
                     $this->observe($msg->self);
-                    $this->sendSync($msg->self->host . ':' . $msg->self->port);
+                    $this->sendSync($this->wireAddr($msg->self));
                 }
                 $this->notify([$id]);
                 continue;
@@ -1178,6 +1228,9 @@ class GossipClusterState implements ClusterStateInterface
             return;
         }
         $msg = GossipMessage::digest($this->localNodeId, $this->members);
+        // Advertise the gossip port, not the business port, so the receiver can
+        // reply on the UDP gossip socket (see wireSelf()).
+        $msg->self = $this->wireSelf();
         // Prefer real, known members (alive OR suspect ¡ª both still gossip) so a
         // misconfigured/unreachable seed (e.g. a node that is not deployed) can
         // never steal a digest that should have gone to a live peer. Seeds are only
@@ -1187,8 +1240,8 @@ class GossipClusterState implements ClusterStateInterface
             if ($m->nodeId === $this->localNodeId) {
                 continue;
             }
-            if ($m->host !== 'unknown' && $m->port > 0) {
-                $live[] = $m->host . ':' . $m->port;
+            if ($m->host !== 'unknown' && ($m->gossipPort > 0 || $m->port > 0)) {
+                $live[] = $this->wireAddr($m);
             }
         }
         $peers = !empty($live) ? $live : $this->peerAddresses();
@@ -1212,8 +1265,8 @@ class GossipClusterState implements ClusterStateInterface
             if ($m->nodeId === $this->localNodeId) {
                 continue;
             }
-            if ($m->host !== 'unknown' && $m->port > 0) {
-                $out[] = $m->host . ':' . $m->port;
+            if ($m->host !== 'unknown' && ($m->gossipPort > 0 || $m->port > 0)) {
+                $out[] = $this->wireAddr($m);
             }
         }
         foreach ($this->seeds as $s) {
@@ -1230,8 +1283,8 @@ class GossipClusterState implements ClusterStateInterface
     private function peerAddrOf(string $nodeId): ?string
     {
         $m = $this->members[$nodeId] ?? null;
-        if ($m !== null && $m->host !== 'unknown' && $m->port > 0) {
-            return $m->host . ':' . $m->port;
+        if ($m !== null && $m->host !== 'unknown' && ($m->gossipPort > 0 || $m->port > 0)) {
+            return $this->wireAddr($m);
         }
         return null;
     }

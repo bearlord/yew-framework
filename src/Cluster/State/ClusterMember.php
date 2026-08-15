@@ -22,6 +22,8 @@ class ClusterMember
     public string $nodeId;
     public string $host;
     public int $port;
+    /** @var int UDP gossip port this member listens on. May differ from $port (the business/RPC port). Gossip replies must target this. */
+    public int $gossipPort;
     public bool $local;
     public string $status;
     public int $lastHeartbeat;
@@ -38,11 +40,13 @@ class ClusterMember
         string $status,
         int $lastHeartbeat,
         int $weight = 1,
-        int $incarnation = 0
+        int $incarnation = 0,
+        int $gossipPort = 0
     ) {
         $this->nodeId = $nodeId;
         $this->host = $host;
         $this->port = $port;
+        $this->gossipPort = $gossipPort > 0 ? $gossipPort : $port;
         $this->local = $local;
         $this->status = $status;
         $this->lastHeartbeat = $lastHeartbeat;
@@ -74,6 +78,7 @@ class ClusterMember
             'nodeId'         => $this->nodeId,
             'host'           => $this->host,
             'port'           => $this->port,
+            'gossipPort'     => $this->gossipPort,
             'local'          => $this->local,
             'status'         => $this->status,
             'lastHeartbeat'  => $this->lastHeartbeat,
@@ -95,7 +100,8 @@ class ClusterMember
             (string) ($row['status'] ?? self::STATUS_DOWN),
             (int) ($row['lastHeartbeat'] ?? 0),
             (int) ($row['weight'] ?? 1),
-            (int) ($row['incarnation'] ?? 0)
+            (int) ($row['incarnation'] ?? 0),
+            (int) ($row['gossipPort'] ?? 0)
         );
     }
 }

@@ -389,7 +389,9 @@ class ClusterPlugin extends AbstractPlugin
         } else {
             $engine->setSecret($cfg->getSecret(), $cfg->getClockSkew());
         }
-        $engine->join($cfg->getHost(), $cfg->getPort(), $cfg->getWeight());
+        $gossipPort = $cfg->getGossipPort() ?: ($cfg->getPort() + 1000);
+        $engine->setGossipPort($gossipPort);
+        $engine->join($cfg->getHost(), $cfg->getPort(), $cfg->getWeight(), $gossipPort);
 
         // Self-managed UDP socket in THIS process (no framework multi-port), so
         // the cluster-state process is the only receiver/sender of gossip traffic.
