@@ -1053,13 +1053,17 @@ class GossipClusterState implements ClusterStateInterface
             if ($id === $this->localNodeId) {
                 continue;
             }
-            if ($m->status === ClusterMember::STATUS_DOWN) {
-                continue;
-            }
-            // Use the freshest heartbeat this process knows about: prefer the shared
-            // table (any worker) over this worker's private clock.
+            // A DOWN node is re-evaluated every tick too: if it is still sending
+            // heartbeats (handleDigest refreshes its private lastHeartbeat), the
+            // freshest private clock proves it is alive on the wire and we must pull
+            // it back UP. Skipping DOWN here would deadlock a node in DOWN forever
+            // the moment it was briefly suspected after a startup race.
+            // Use the freshest heartbeat this process knows about. For a DOWN node we
+            // trust the private clock (refreshed by handleDigest) over the shared
+            // table, which may still carry the stale DOWN-marking timestamp.
             $hb = $m->lastHeartbeat;
-            if (isset($sharedHb[$id]) && $sharedHb[$id] > $hb) {
+            if ($m->status !== ClusterMember::STATUS_DOWN
+                && isset($sharedHb[$id]) && $sharedHb[$id] > $hb) {
                 $hb = $sharedHb[$id];
                 $m->lastHeartbeat = $hb;
             }
@@ -1076,6 +1080,14 @@ class GossipClusterState implements ClusterStateInterface
             } elseif ($elapsed >= $this->suspectAfter) {
                 $m->status = ClusterMember::STATUS_SUSPECT;
                 if ($prev !== ClusterMember::STATUS_SUSPECT) {
+                    $changed[] = $id;
+                }
+            } else {
+                // Fresh enough: a node that was SUSPECT or DOWN but is clearly still
+                // heartbeating on the wire recovers to UP (prevents permanent SUSPECT
+                // / stuck-DOWN once liveness is re-established).
+                if ($m->status !== ClusterMember::STATUS_UP) {
+                    $m->status = ClusterMember::STATUS_UP;
                     $changed[] = $id;
                 }
             }
@@ -1202,9 +1214,14 @@ class GossipClusterState implements ClusterStateInterface
                 continue;
             }
             // Guard against "zombie" revival (see observe()): once a node is DOWN,
-            // only a strictly higher incarnation (real restart) may overwrite it.
+            // only a strictly higher incarnation (real restart) may overwrite its
+            // STATE. BUT we must still refresh the liveness clock on every received
+            // digest, otherwise a node that was briefly DOWN yet keeps sending
+            // heartbeats would be permanently stuck DOWN (the FD measures "how long
+            // since THIS node heard the peer", anchored to local receive time).
             if ($existing->status === ClusterMember::STATUS_DOWN
                 && $inc <= $existing->incarnation) {
+                $existing->lastHeartbeat = time();
                 continue;
             }
             // NOTE: We deliberately do NOT adopt the peer's reported $hb as this
