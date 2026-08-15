@@ -1133,7 +1133,7 @@ class GossipClusterState implements ClusterStateInterface
             $existing = $this->members[$id] ?? null;
             if ($existing === null) {
                 $this->members[$id] = new ClusterMember(
-                    $id, 'unknown', 0, false, $status, $hb, 1
+                    $id, 'unknown', 0, false, $status, time(), 1
                 );
                 // We learned of a node but lack its address. The sender attached
                 // its own coordinates in $msg->self, so observe() fills them in
@@ -1151,11 +1151,20 @@ class GossipClusterState implements ClusterStateInterface
                 && $inc <= $existing->incarnation) {
                 continue;
             }
+            // NOTE: We deliberately do NOT adopt the peer's reported $hb as this
+            // node's heartbeat clock. The failure detector measures "how long has
+            // THIS node gone without hearing the peer", which must be anchored to
+            // the local receive time, not the peer's wall clock (clock skew between
+            // nodes and UDP/gossip scheduling jitter would otherwise inflate $elapsed
+            // and spuriously mark the peer DOWN). We record that we just heard the
+            // peer using the local receive time, while still using the peer's
+            // ($inc, $hb) tuple only to decide whether its STATE changed.
+            $prevPeerHb = $existing->lastHeartbeat;
+            $existing->lastHeartbeat = time();
             if ($inc > $existing->incarnation ||
-                ($inc === $existing->incarnation && $hb > $existing->lastHeartbeat)) {
+                ($inc === $existing->incarnation && $hb > $prevPeerHb)) {
                 $existing->status = $status;
                 $existing->incarnation = $inc;
-                $existing->lastHeartbeat = $hb;
             }
         }
     }
