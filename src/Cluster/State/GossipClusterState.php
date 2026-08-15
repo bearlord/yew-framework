@@ -170,9 +170,17 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function join(string $host, int $port, int $weight = 1): void
     {
+        // Bump incarnation on every (re)start so a peer that previously marked us
+        // DOWN will accept our new heartbeats: the zombie-revival guard in
+        // observe()/handleDigest() only overwrites a DOWN state when the incoming
+        // incarnation is strictly higher. Without this all nodes stay at incarnation
+        // 0 and the cluster deadlocks with every peer permanently DOWN after any
+        // blip (the FD down-then-never-revive trap). A millisecond timestamp is
+        // monotonically increasing across restarts and across the cluster.
+        $incarnation = (int) (microtime(true) * 1000);
         $this->members[$this->localNodeId] = new ClusterMember(
             $this->localNodeId, $host, $port, true,
-            ClusterMember::STATUS_UP, time(), $weight
+            ClusterMember::STATUS_UP, time(), $weight, $incarnation
         );
     }
 
