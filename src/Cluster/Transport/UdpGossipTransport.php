@@ -77,17 +77,27 @@ class UdpGossipTransport implements GossipTransport
         }
         $this->socket = new \Swoole\Coroutine\Socket(AF_INET, SOCK_DGRAM, 0);
         if (!$this->socket->bind($this->bindHost, $this->bindPort)) {
+            error_log("[gossip-udp] BIND FAILED host={$this->bindHost} port={$this->bindPort} err=" . ($this->socket->errMsg ?? '?'));
             return;
         }
+        error_log("[gossip-udp] BOUND host={$this->bindHost} port={$this->bindPort} ok");
         goWithContext(function () {
+            $ticks = 0;
             while ($this->socket !== null) {
                 $peer = [];
                 $data = $this->socket->recvfrom($peer, 1.0);
                 if ($data === false || $data === '') {
+                    $ticks++;
+                    if ($ticks % 30 === 0) {
+                        error_log("[gossip-udp] recvfrom idle ticks={$ticks}");
+                    }
                     continue;
                 }
+                $ticks = 0;
+                error_log("[gossip-udp] RECV " . strlen($data) . " bytes from " . ($peer['address'] ?? '?') . ':' . ($peer['port'] ?? '?'));
                 $this->inbox->push($data);
             }
+            error_log("[gossip-udp] recv loop exited");
         });
     }
 
