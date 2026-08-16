@@ -128,16 +128,19 @@ class UdpGossipTransport implements GossipTransport
      */
     public function broadcast(string $payload): void
     {
+        [$host, $port] = $this->parseEndpoint($this->broadcastTarget);
+        if ($port <= 0) {
+            $this->log("[gossip-udp] broadcast skipped: bad target '{$this->broadcastTarget}'");
+            return;
+        }
         if ($this->sender !== null) {
-            [$host, $port] = explode(':', $this->broadcastTarget);
-            ($this->sender)($host, (int) $port, $payload);
+            ($this->sender)($host, $port, $payload);
             return;
         }
         if ($this->socket === null) {
             return;
         }
-        [$host, $port] = explode(':', $this->broadcastTarget);
-        $this->socket->sendto($host, (int) $port, $payload);
+        $this->socket->sendto($host, $port, $payload);
     }
 
     /**
@@ -148,16 +151,42 @@ class UdpGossipTransport implements GossipTransport
      */
     public function sendTo(string $peer, string $payload): void
     {
+        [$host, $port] = $this->parseEndpoint($peer);
+        if ($port <= 0) {
+            $this->log("[gossip-udp] sendTo skipped: bad peer '$peer'");
+            return;
+        }
         if ($this->sender !== null) {
-            [$host, $port] = explode(':', $peer);
-            ($this->sender)($host, (int) $port, $payload);
+            ($this->sender)($host, $port, $payload);
             return;
         }
         if ($this->socket === null) {
             return;
         }
-        [$host, $port] = explode(':', $peer);
-        $this->socket->sendto($host, (int) $port, $payload);
+        $this->socket->sendto($host, $port, $payload);
+    }
+
+    /**
+     * Parse a "host:port" endpoint into [host, port].
+     * Supports IPv6 bracket form (e.g. "[::1]:9700"). Returns port <= 0 on malformed input.
+     *
+     * @return array{0: string, 1: int}
+     */
+    private function parseEndpoint(string $endpoint): array
+    {
+        if ($endpoint === '' || $endpoint[0] === '[') {
+            // IPv6 bracket form: [host]:port
+            if (preg_match('/^\[(.+)\]:(\d+)$/', $endpoint, $m)) {
+                return [$m[1], (int) $m[2]];
+            }
+            return ['', 0];
+        }
+        $parts = explode(':', $endpoint, 2);
+        if (count($parts) !== 2 || $parts[1] === '') {
+            return ['', 0];
+        }
+        $port = (int) $parts[1];
+        return [$parts[0], $port];
     }
 
     /**

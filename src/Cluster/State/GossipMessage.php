@@ -224,6 +224,7 @@ class GossipMessage
             $full[$id] = [
                 'host' => $m->host,
                 'port' => $m->port,
+                'gossipPort' => $m->gossipPort,
                 'weight' => $m->weight,
                 'status' => $m->status,
                 'incarnation' => $m->incarnation,
