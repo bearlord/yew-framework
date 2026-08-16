@@ -70,6 +70,8 @@ class RestartCmd extends Command
         if ($code == ConsolePlugin::FAIL_EXIT) {
             return ConsolePlugin::FAIL_EXIT;
         }
+
+        sleep(3);
         if ($input->getOption("clearCache")) {
             $io->note("Clear cache file");
 
@@ -84,7 +86,10 @@ class RestartCmd extends Command
                 clearDir($serverConfig->getCacheDir() . "/proxies");
             }
         }
+
         $serverConfig->setDaemonize(true);
+        $io->success("Input php server.php stop to quit. Start success.");
+
         return ConsolePlugin::NOEXIT;
     }
 }
