@@ -1189,6 +1189,25 @@ class GossipClusterState implements ClusterStateInterface
         $selfInfo = $msg->self ? ($msg->self->host . ':' . $msg->self->port . ' gossipPort=' . $msg->self->gossipPort) : 'null';
         $localGp = $this->gossipPort;
         $this->debug("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . $selfInfo . " localGossipPort=" . $localGp . " membersNow=" . count($this->members));
+        // Always refresh the sender's gossip port from its advertised self record,
+        // regardless of the per-entry branch below (DOWN/zombie guards may `continue`
+        // or `return` and skip it). If we keep a stale gossipPort=0 we'd fall back to
+        // the business port and send to a socket the peer never listens on -> the peer
+        // never receives our digests and is judged DOWN forever (one-way visibility).
+        if ($msg->self !== null && $msg->self->gossipPort > 0) {
+            $sender = $this->members[$msg->fromNode] ?? null;
+            if ($sender === null) {
+                $sender = new ClusterMember(
+                    $msg->fromNode, $msg->self->host, $msg->self->port, false,
+                    'unknown', time(), 1
+                );
+                $this->members[$msg->fromNode] = $sender;
+            }
+            $sender->gossipPort = $msg->self->gossipPort;
+            if ($sender->host === '' || $sender->host === 'unknown') {
+                $sender->host = $msg->self->host;
+            }
+        }
         foreach ($msg->digest as $id => [$status, $inc, $hb]) {
             $inc = (int) $inc;
             $hb = (int) $hb;
@@ -1320,6 +1339,12 @@ class GossipClusterState implements ClusterStateInterface
         // after the FD timeout.
         if ($existing !== null && $existing->status === ClusterMember::STATUS_DOWN
             && $member->incarnation <= $existing->incarnation) {
+            // Zombie guard: don't resurrect a DOWN node on a stale heartbeat.
+            // Still refresh the gossip port so we keep sending to the correct
+            // UDP socket (9700) and can actually receive its restart later.
+            if ($member->gossipPort > 0) {
+                $existing->gossipPort = $member->gossipPort;
+            }
             return;
         }
         $member->lastHeartbeat = time();
