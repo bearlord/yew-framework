@@ -51,7 +51,7 @@ class GossipClusterBroadcaster implements ClusterBroadcaster
             if ($id === $local) {
                 continue;
             }
-            $peer = $member->host . ':' . $member->port;
+            $peer = $member->host . ':' . ($member->gossipPort > 0 ? $member->gossipPort : $member->port);
             $payload = json_encode([
                 'type' => 'mc',
                 'channel' => $channel,

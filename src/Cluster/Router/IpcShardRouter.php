@@ -86,14 +86,12 @@ class IpcShardRouter implements ShardRouter
             return null;
         }
         $key = $this->hash($actorName);
-        $hashes = array_keys($this->ring);
-        sort($hashes);
-        foreach ($hashes as $h) {
+        foreach (array_keys($this->ring) as $h) {
             if ($h >= $key) {
                 return $this->ring[$h];
             }
         }
-        return $this->ring[$hashes[0]];
+        return $this->ring[array_key_first($this->ring)];
     }
 
     /**

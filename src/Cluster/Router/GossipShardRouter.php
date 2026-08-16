@@ -89,11 +89,6 @@ class GossipShardRouter implements ShardRouter
 
     public function locate(string $actorName): ?Location
     {
-        // Pure cluster routing: resolve the owning node from the consistent-hash
-        // ring. The router has NO knowledge of actor placement ¡ª it only knows
-        // nodes. Local resolution (an already-activated actor on this node) is the
-        // actor layer's concern (ActorManager::getActor fast path), keeping the
-        // dependency strictly actor -> cluster.
         $owner = $this->ownerOf($actorName);
         if ($owner === null) {
             return null;
@@ -106,21 +101,15 @@ class GossipShardRouter implements ShardRouter
             $member->nodeId, $member->host, $member->port,
             $this->cluster->isLocal($member->nodeId)
         );
-        // Cross-node placement carries no meaningful local process id at the
-        // routing layer; the actor layer resolves the concrete process via its
-        // own actor table.
         return new Location($node, 0);
     }
 
     public function register(string $actorName, Location $location): void
     {
-        // Placement is derived from the ring; the local actor table still holds
-        // the authoritative process id (see ActorManager::addActor). No-op seam.
     }
 
     public function unregister(string $actorName): void
     {
-        // No-op; ownership recomputed from the ring on lookup.
     }
 
     public function getLocalNode(): ClusterNode
