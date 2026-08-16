@@ -42,6 +42,23 @@ class UdpGossipTransport implements GossipTransport
     }
 
     /**
+     * Defensive logger: never fatal when the logger is not yet wired.
+     */
+    private function log(string $message): void
+    {
+        try {
+            $logger = $this->getLogger();
+            if ($logger !== null) {
+                $logger->debug($message);
+                return;
+            }
+        } catch (\Throwable $e) {
+            // fall through to error_log
+        }
+        error_log($message);
+    }
+
+    /**
      * Switch to framework-managed mode (no self-bound socket).
      */
     public function setManaged(bool $managed): void
@@ -81,38 +98,36 @@ class UdpGossipTransport implements GossipTransport
         }
         $this->socket = new \Swoole\Coroutine\Socket(AF_INET, SOCK_DGRAM, 0);
         if (!$this->socket->bind($this->bindHost, $this->bindPort)) {
-            $this->getLogger()->error("[gossip-udp] BIND FAILED host={$this->bindHost} port={$this->bindPort} err=" . ($this->socket->errMsg ?? '?'));
+            $this->log("[gossip-udp] BIND FAILED host={$this->bindHost} port={$this->bindPort} err=" . ($this->socket->errMsg ?? '?'));
             return;
         }
-        $this->getLogger()->debug("[gossip-udp] BOUND host={$this->bindHost} port={$this->bindPort} ok");
+        $this->log("[gossip-udp] BOUND host={$this->bindHost} port={$this->bindPort} ok");
         // Respawn the recv loop so a transient exception (e.g. a socket error
         // during a network flap) cannot permanently kill inbound gossip.
-        $spawn = function () use (&$spawn) {
-            try {
-                $ticks = 0;
-                while ($this->socket !== null) {
-                    $peer = [];
-                    $data = $this->socket->recvfrom($peer, 1.0);
-                    if ($data === false || $data === '') {
-                        $ticks++;
-                        if ($ticks % 30 === 0) {
-                            $this->getLogger()->debug("[gossip-udp] recvfrom idle ticks={$ticks}");
-                        }
-                        continue;
-                    }
+        goWithContext(function () {
+            while ($this->socket !== null) {
+                try {
                     $ticks = 0;
-                    $this->getLogger()->debug("[gossip-udp] RECV " . strlen($data) . " bytes from " . ($peer['address'] ?? '?') . ':' . ($peer['port'] ?? '?'));
-                    $this->inbox->push($data);
-                }
-            } catch (\Throwable $e) {
-                $this->getLogger()->error("[gossip-udp] recv loop died: " . $e->getMessage() . " — respawning in 1s");
-                \Swoole\Coroutine::sleep(1);
-                if ($this->socket !== null) {
-                    $spawn();
+                    while ($this->socket !== null) {
+                        $peer = [];
+                        $data = $this->socket->recvfrom($peer, 1.0);
+                        if ($data === false || $data === '') {
+                            $ticks++;
+                            if ($ticks % 30 === 0) {
+                                $this->log("[gossip-udp] recvfrom idle ticks={$ticks}");
+                            }
+                            continue;
+                        }
+                        $ticks = 0;
+                        $this->log("[gossip-udp] RECV " . strlen($data) . " bytes from " . ($peer['address'] ?? '?') . ':' . ($peer['port'] ?? '?'));
+                        $this->inbox->push($data);
+                    }
+                } catch (\Throwable $e) {
+                    $this->log("[gossip-udp] recv loop died: " . $e->getMessage() . " — respawning in 1s");
+                    \Swoole\Coroutine::sleep(1);
                 }
             }
-        };
-        goWithContext($spawn);
+        });
     }
 
     /**
