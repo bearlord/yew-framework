@@ -102,24 +102,15 @@ class UdpGossipTransport implements GossipTransport
             return;
         }
         $this->log("[gossip-udp] BOUND host={$this->bindHost} port={$this->bindPort} ok");
-        // Respawn the recv loop so a transient exception (e.g. a socket error
-        // during a network flap) cannot permanently kill inbound gossip.
         goWithContext(function () {
             while ($this->socket !== null) {
                 try {
-                    $ticks = 0;
                     while ($this->socket !== null) {
                         $peer = [];
                         $data = $this->socket->recvfrom($peer, 1.0);
                         if ($data === false || $data === '') {
-                            $ticks++;
-                            if ($ticks % 30 === 0) {
-                                $this->log("[gossip-udp] recvfrom idle ticks={$ticks}");
-                            }
                             continue;
                         }
-                        $ticks = 0;
-                        $this->log("[gossip-udp] RECV " . strlen($data) . " bytes from " . ($peer['address'] ?? '?') . ':' . ($peer['port'] ?? '?'));
                         $this->inbox->push($data);
                     }
                 } catch (\Throwable $e) {

@@ -505,28 +505,19 @@ class GossipClusterState implements ClusterStateInterface
                 if ($payload === null) {
                     continue;
                 }
-                // Fragment envelope? Reassemble before parsing the real message.
-                $peek = @json_decode($payload, true);
-                $peekFrom = is_array($peek) ? ($peek['f'] ?? '?') : 'nonjson';
-                $peekType = is_array($peek) ? ($peek['t'] ?? '?') : '?';
-                $this->debug("[gossip-recv] raw from={$peekFrom} type={$peekType}");
                 $payload = $this->ingest($payload, time());
                 if ($payload === null) {
-                    $this->debug("[gossip-recv] dropped at ingest from={$peekFrom}");
                     continue; // either a fragment (buffered) or a dropped bad one
                 }
                 try {
                     $msg = GossipMessage::fromJson($payload);
                 } catch (\Throwable $e) {
-                    $this->debug("[gossip-recv] json-fail from={$peekFrom}");
                     continue;
                 }
                 if (!$this->verify($msg, time())) {
                     // Drop forged / stale / replayed messages.
-                    $this->debug("[gossip-recv] verify-fail from={$peekFrom} ts=" . ($msg->ts ?? '?'));
                     continue;
                 }
-                $this->debug("[gossip-recv] accepted from={$peekFrom}");
                 $this->dispatch($msg);
             }
         });
@@ -1186,14 +1177,6 @@ class GossipClusterState implements ClusterStateInterface
      */
     public function handleDigest(GossipMessage $msg): void
     {
-        $selfInfo = $msg->self ? ($msg->self->host . ':' . $msg->self->port . ' gossipPort=' . $msg->self->gossipPort) : 'null';
-        $localGp = $this->gossipPort;
-        $this->debug("[gossip-digest] from {$msg->fromNode} entries=" . count($msg->digest) . " self=" . $selfInfo . " localGossipPort=" . $localGp . " membersNow=" . count($this->members));
-        // Always refresh the sender's gossip port from its advertised self record,
-        // regardless of the per-entry branch below (DOWN/zombie guards may `continue`
-        // or `return` and skip it). If we keep a stale gossipPort=0 we'd fall back to
-        // the business port and send to a socket the peer never listens on -> the peer
-        // never receives our digests and is judged DOWN forever (one-way visibility).
         if ($msg->self !== null && $msg->self->gossipPort > 0) {
             $sender = $this->members[$msg->fromNode] ?? null;
             if ($sender === null) {
@@ -1279,7 +1262,6 @@ class GossipClusterState implements ClusterStateInterface
             return;
         }
         $target = $peers[array_rand($peers)];
-        $this->debug("[gossip-send] target={$target} selfGossipPort=" . ($msg->self ? $msg->self->gossipPort : 'null') . " localGossipPort=" . $this->gossipPort);
         // Digests are fire-and-forget (epidemic); not tracked for retransmit.
         $this->emit($target, $msg, $now);
     }
@@ -1339,9 +1321,6 @@ class GossipClusterState implements ClusterStateInterface
         // after the FD timeout.
         if ($existing !== null && $existing->status === ClusterMember::STATUS_DOWN
             && $member->incarnation <= $existing->incarnation) {
-            // Zombie guard: don't resurrect a DOWN node on a stale heartbeat.
-            // Still refresh the gossip port so we keep sending to the correct
-            // UDP socket (9700) and can actually receive its restart later.
             if ($member->gossipPort > 0) {
                 $existing->gossipPort = $member->gossipPort;
             }
