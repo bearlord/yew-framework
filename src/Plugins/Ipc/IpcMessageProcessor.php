@@ -15,7 +15,7 @@ use Yew\Plugins\Actor\ActorIpcCallMessage;
 class IpcMessageProcessor extends MessageProcessor
 {
     use GetLogger;
-    
+
     const TYPE = "@ipc";
 
     /**
@@ -86,8 +86,11 @@ class IpcMessageProcessor extends MessageProcessor
             $lockSessionId = $this->sessions[$sessionKey] ?? null;
             $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
             $args = $ipcCallData->getArguments();
-            // Drop framework-internal keys (e.g. __traceId) so they are not
-            // passed as named arguments to the business method.
+            // Strip framework-internal metadata keys that travel inside the
+            // argument bag (e.g. the distributed-tracing id injected by
+            // ActorIpcProxy::tell/ask). They are not business method parameters,
+            // and call_user_func_array would otherwise expand them as named
+            // arguments and fatal with "Unknown named parameter $__traceId".
             unset($args['__traceId']);
 
             if ($lockSessionId === $sessionId) {
@@ -100,12 +103,12 @@ class IpcMessageProcessor extends MessageProcessor
                 switch ($_name) {
                     case "__getSession":
                         $result = time();
-                        $this->sessions[$sessionKey] = $result;
+                        $this->sessions[$_name] = $result;
                         break;
 
                     case "__clearSession":
-                        $result = $this->sessions[$sessionKey] ?? null;
-                        unset($this->sessions[$sessionKey]);
+                        $result = $this->sessions[$_name] ?? null;
+                        unset($this->sessions[$_name]);
                         break;
 
                     default:
