@@ -228,20 +228,8 @@ abstract class AbstractServerPort
 
     public function _onReceive($server, int $fd, int $reactorId, string $data)
     {
-        var_dump([
-            'flag' => __METHOD__,
-            'fd' => $fd,
-            'reactorId' => $reactorId,
-            'data' => $data,
-        ]);
-
         Server::$instance->getProcessManager()->getCurrentProcess()->waitReady();
         try {
-            var_dump([
-                'flag' => __METHOD__,
-                'step' => 2,
-                'class' => get_called_class(),
-            ]);
             $this->onTcpReceive($fd, $reactorId, $data);
         } catch (\Throwable $e) {
             Server::$instance->getLog()->error($e);

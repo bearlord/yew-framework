@@ -254,13 +254,6 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
      */
     public function handleReceive(int $fd, string $data): void
     {
-        var_dump([
-            'flag' => __METHOD__,
-            'fd' => $fd,
-            'data' => $data,
-        ]);
-
-
         $this->recvBuf[$fd] = ($this->recvBuf[$fd] ?? '') . $data;
         if (strlen($this->recvBuf[$fd]) > $this->maxRecvBuf) {
             // Peer is not sending a newline (or is flooding); drop it before the
