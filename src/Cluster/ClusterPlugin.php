@@ -332,7 +332,15 @@ class ClusterPlugin extends AbstractPlugin
         }
         $intervalMs = max(500, (int) ($this->clusterConfig->getHeartbeatInterval() * 1000));
         \Swoole\Timer::tick($intervalMs, static function () use ($router) {
-            $router->refresh();
+            // The cluster-state process may still be warming up (or IPC is
+            // temporarily saturated), so a timeout here is expected and must not
+            // fatally abort this worker on every tick. Swallow and let the next
+            // tick retry; the ring stays stale but the process survives.
+            try {
+                $router->refresh();
+            } catch (\Throwable $e) {
+                // no-op: retry on next tick
+            }
         });
     }
 
