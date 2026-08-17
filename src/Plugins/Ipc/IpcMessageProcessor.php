@@ -91,7 +91,20 @@ class IpcMessageProcessor extends MessageProcessor
                 ? $ipcCallData->getActorName()
                 : $ipcCallData->getClassName();
 
+            $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
+            $args = $ipcCallData->getArguments();
+            // Drop framework-internal keys (e.g. __traceId) so they are not
+            // passed as named arguments to the business method.
+            unset($args['__traceId']);
+
+            // --- Critical section: only touch the shared $sessions / $cacheMessages
+            //     maps here. The business call and the reply MUST stay OUTSIDE the
+            //     lock, otherwise a method that re-enters IPC (or blocks on a
+            //     Channel) would deadlock the whole cluster-state process and every
+            //     caller would time out. ---
             $this->sessionMutex->lock();
+            $locked = true;
+            $run = false;
             try {
                 $lockSessionId = $this->sessions[$sessionKey] ?? null;
                 // A lock is a unix timestamp; expire it after a lease so a crashed
@@ -100,68 +113,85 @@ class IpcMessageProcessor extends MessageProcessor
                     unset($this->sessions[$sessionKey]);
                     $lockSessionId = null;
                 }
-                $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
-                $args = $ipcCallData->getArguments();
-                // Drop framework-internal keys (e.g. __traceId) so they are not
-                // passed as named arguments to the business method.
-                unset($args['__traceId']);
 
+                // Transactional call: must match the live session id, otherwise it
+                // is queued until the owning transaction completes.
                 if ($lockSessionId === $sessionId) {
+                    $_name = $ipcCallData->getName();
+                    if ($_name === "__getSession") {
+                        // Open a new transaction session; the timestamp doubles as
+                        // the session token and the lease marker.
+                        $this->sessions[$sessionKey] = time();
+                        $locked = false;
+                        $this->sessionMutex->unlock();
+                        $this->reply($ipcCallData, $message, time(), null, null, null);
+                        return true;
+                    }
+                    if ($_name === "__clearSession") {
+                        $result = $this->sessions[$sessionKey] ?? null;
+                        unset($this->sessions[$sessionKey]);
+                        $locked = false;
+                        $this->sessionMutex->unlock();
+                        $this->reply($ipcCallData, $message, $result, null, null, null);
+                        $this->drainCache($sessionKey);
+                        return true;
+                    }
+                    // Default / business method: claim the slot (mark in-flight)
+                    // without holding the mutex, then run + reply OUTSIDE the lock.
                     if ($sessionId != null) {
                         unset($args["sessionId"]);
                     }
-
-                    $_name = $ipcCallData->getName();
-
-                    switch ($_name) {
-                        case "__getSession":
-                            $result = time();
-                            $this->sessions[$sessionKey] = $result;
-                            break;
-
-                        case "__clearSession":
-                            $result = $this->sessions[$sessionKey] ?? null;
-                            unset($this->sessions[$sessionKey]);
-                            break;
-
-                        default:
-                            try {
-                                $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
-                            } catch (\Throwable $e) {
-                                $errorClass = get_class($e);
-                                $errorCode = $e->getCode();
-                                $errorMessage = $e->getMessage();
-                                $this->error($e);
-                            }
-                            //drop any session lock on error so it can't leak
-                            if (isset($errorClass)) {
-                                unset($this->sessions[$sessionKey]);
-                            }
-                            break;
-
-                    }
+                    $this->sessions[$sessionKey] = "RUNNING";
+                    $run = true;
                 } else {
-                    //The transaction id does not match and cache the message
+                    // Transaction id mismatch (or a session is mid-flight): cache
+                    // the message and process it once the owner finishes.
                     $this->cacheMessages[$sessionKey][] = $message;
+                    $locked = false;
+                    $this->sessionMutex->unlock();
+                    return true;
+                }
+            } finally {
+                if ($locked) {
+                    $this->sessionMutex->unlock();
+                }
+            }
+
+            // --- Outside the lock: execute the business method and reply. This is
+            //     where the original code deadlocked the process. ---
+            if ($run) {
+                try {
+                    $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
+                } catch (\Throwable $e) {
+                    $errorClass = get_class($e);
+                    $errorCode = $e->getCode();
+                    $errorMessage = $e->getMessage();
+                    $this->error($e);
+                    // Drop the in-flight marker on error so it cannot leak.
+                    $this->sessionMutex->lock();
+                    try {
+                        if (($this->sessions[$sessionKey] ?? null) === "RUNNING") {
+                            unset($this->sessions[$sessionKey]);
+                        }
+                    } finally {
+                        $this->sessionMutex->unlock();
+                    }
+                    $this->reply($ipcCallData, $message, null, $errorClass, $errorCode, $errorMessage);
                     return true;
                 }
 
-                $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
+                $this->reply($ipcCallData, $message, $result, null, null, null);
 
-                //Processing cache
-                if (!isset($this->sessions[$sessionKey])) {
-                    $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
-                    if (!empty($cacheMessages)) {
-                        unset($this->cacheMessages[$sessionKey]);
-                        foreach ($cacheMessages as $cacheMessage) {
-                            goWithContext(function () use ($cacheMessage) {
-                                $this->handler($cacheMessage);
-                            });
-                        }
+                // Release the in-flight marker and drain any queued same-key calls.
+                $this->sessionMutex->lock();
+                try {
+                    if (($this->sessions[$sessionKey] ?? null) === "RUNNING") {
+                        unset($this->sessions[$sessionKey]);
                     }
+                } finally {
+                    $this->sessionMutex->unlock();
                 }
-            } finally {
-                $this->sessionMutex->unlock();
+                $this->drainCache($sessionKey);
             }
 
             return true;
@@ -189,6 +219,31 @@ class IpcMessageProcessor extends MessageProcessor
      * @param int|null    $errorCode
      * @param string|null $errorMessage
      */
+    /**
+     * Re-dispatch any messages that were queued while a session/transaction was
+     * in flight for $sessionKey. Must be called OUTSIDE the session mutex, since
+     * each re-dispatched message will acquire the mutex again in handler().
+     */
+    private function drainCache(string $sessionKey): void
+    {
+        $this->sessionMutex->lock();
+        try {
+            $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
+            if (empty($cacheMessages)) {
+                return;
+            }
+            unset($this->cacheMessages[$sessionKey]);
+        } finally {
+            $this->sessionMutex->unlock();
+        }
+
+        foreach ($cacheMessages as $cacheMessage) {
+            goWithContext(function () use ($cacheMessage) {
+                $this->handler($cacheMessage);
+            });
+        }
+    }
+
     private function reply(IpcCallData $ipcCallData, Message $message, $result, ?string $errorClass, ?int $errorCode, ?string $errorMessage): void
     {
         if ($ipcCallData->isOneway()) {
