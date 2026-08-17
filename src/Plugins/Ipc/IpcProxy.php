@@ -40,7 +40,7 @@ class IpcProxy
      * @param bool $oneway
      * @param float $timeOut
      */
-    public function __construct(Process $process, string $className, bool $oneway = false, float $timeOut = 5)
+    public function __construct(Process $process, string $className, bool $oneway = false, float $timeOut = 0)
     {
         $this->process = $process;
         $this->className = $className;

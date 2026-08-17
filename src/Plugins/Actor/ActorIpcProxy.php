@@ -51,7 +51,7 @@ class ActorIpcProxy extends IpcProxy
      * @param float $timeOut
      * @throws ActorException
      */
-    public function __construct(string $actorName, bool $oneWay, float $timeOut = 5)
+    public function __construct(string $actorName, bool $oneWay, float $timeOut = 0)
     {
         $manager = ActorManager::getInstance();
 
