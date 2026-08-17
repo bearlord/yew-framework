@@ -84,6 +84,12 @@ class IpcMessageProcessor extends MessageProcessor
                 : $ipcCallData->getClassName();
 
             $lockSessionId = $this->sessions[$sessionKey] ?? null;
+            // A lock is a unix timestamp; expire it after a lease so a crashed
+            // transaction can never block this actor's mailbox forever.
+            if ($lockSessionId !== null && time() - $lockSessionId > 30) {
+                unset($this->sessions[$sessionKey]);
+                $lockSessionId = null;
+            }
             $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
             $args = $ipcCallData->getArguments();
             // Drop framework-internal keys (e.g. __traceId) so they are not
@@ -116,6 +122,10 @@ class IpcMessageProcessor extends MessageProcessor
                             $errorCode = $e->getCode();
                             $errorMessage = $e->getMessage();
                             $this->error($e);
+                        }
+                        //drop any session lock on error so it can't leak
+                        if (isset($errorClass)) {
+                            unset($this->sessions[$sessionKey]);
                         }
                         break;
 
