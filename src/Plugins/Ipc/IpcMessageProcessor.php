@@ -28,6 +28,19 @@ class IpcMessageProcessor extends MessageProcessor
      */
     protected array $cacheMessages = [];
 
+    /**
+     * Guards $sessions / $cacheMessages. handler() runs concurrently for every
+     * actor in the process, so these shared maps need a coroutine mutex to stay
+     * consistent under load (a corrupted PHP array would crash the worker).
+     */
+    private \Swoole\Coroutine\Mutex $sessionMutex;
+
+    public function __construct()
+    {
+        parent::__construct(self::TYPE);
+        $this->sessionMutex = new \Swoole\Coroutine\Mutex();
+    }
+
     public function __construct()
     {
         parent::__construct(self::TYPE);
@@ -83,73 +96,77 @@ class IpcMessageProcessor extends MessageProcessor
                 ? $ipcCallData->getActorName()
                 : $ipcCallData->getClassName();
 
-            $lockSessionId = $this->sessions[$sessionKey] ?? null;
-            // A lock is a unix timestamp; expire it after a lease so a crashed
-            // transaction can never block this actor's mailbox forever.
-            if ($lockSessionId !== null && time() - $lockSessionId > 30) {
-                unset($this->sessions[$sessionKey]);
-                $lockSessionId = null;
-            }
-            $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
-            $args = $ipcCallData->getArguments();
-            // Drop framework-internal keys (e.g. __traceId) so they are not
-            // passed as named arguments to the business method.
-            unset($args['__traceId']);
-
-            if ($lockSessionId === $sessionId) {
-                if ($sessionId != null) {
-                    unset($args["sessionId"]);
+            $this->sessionMutex->lock();
+            try {
+                $lockSessionId = $this->sessions[$sessionKey] ?? null;
+                // A lock is a unix timestamp; expire it after a lease so a crashed
+                // transaction can never block this actor's mailbox forever.
+                if ($lockSessionId !== null && time() - $lockSessionId > 30) {
+                    unset($this->sessions[$sessionKey]);
+                    $lockSessionId = null;
                 }
+                $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
+                $args = $ipcCallData->getArguments();
+                // Drop framework-internal keys (e.g. __traceId) so they are not
+                // passed as named arguments to the business method.
+                unset($args['__traceId']);
 
-                $_name = $ipcCallData->getName();
+                if ($lockSessionId === $sessionId) {
+                    if ($sessionId != null) {
+                        unset($args["sessionId"]);
+                    }
 
-                switch ($_name) {
-                    case "__getSession":
-                        $result = time();
-                        $this->sessions[$sessionKey] = $result;
-                        break;
+                    $_name = $ipcCallData->getName();
 
-                    case "__clearSession":
-                        $result = $this->sessions[$sessionKey] ?? null;
-                        unset($this->sessions[$sessionKey]);
-                        break;
+                    switch ($_name) {
+                        case "__getSession":
+                            $result = time();
+                            $this->sessions[$sessionKey] = $result;
+                            break;
 
-                    default:
-                        try {
-                            $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
-                        } catch (\Throwable $e) {
-                            $errorClass = get_class($e);
-                            $errorCode = $e->getCode();
-                            $errorMessage = $e->getMessage();
-                            $this->error($e);
-                        }
-                        //drop any session lock on error so it can't leak
-                        if (isset($errorClass)) {
+                        case "__clearSession":
+                            $result = $this->sessions[$sessionKey] ?? null;
                             unset($this->sessions[$sessionKey]);
-                        }
-                        break;
+                            break;
 
+                        default:
+                            try {
+                                $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
+                            } catch (\Throwable $e) {
+                                $errorClass = get_class($e);
+                                $errorCode = $e->getCode();
+                                $errorMessage = $e->getMessage();
+                                $this->error($e);
+                            }
+                            //drop any session lock on error so it can't leak
+                            if (isset($errorClass)) {
+                                unset($this->sessions[$sessionKey]);
+                            }
+                            break;
+
+                    }
+                } else {
+                    //The transaction id does not match and cache the message
+                    $this->cacheMessages[$sessionKey][] = $message;
+                    return true;
                 }
-            } else {
-                //The transaction id does not match and cache the message
-                $this->cacheMessages[$sessionKey][] = $message;
 
-                return true;
-            }
+                $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
 
-            $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
-
-            //Processing cache
-            if (!isset($this->sessions[$sessionKey])) {
-                $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
-                if (!empty($cacheMessages)) {
-                    unset($this->cacheMessages[$sessionKey]);
-                    foreach ($cacheMessages as $cacheMessage) {
-                        goWithContext(function () use ($cacheMessage) {
-                            $this->handler($cacheMessage);
-                        });
+                //Processing cache
+                if (!isset($this->sessions[$sessionKey])) {
+                    $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
+                    if (!empty($cacheMessages)) {
+                        unset($this->cacheMessages[$sessionKey]);
+                        foreach ($cacheMessages as $cacheMessage) {
+                            goWithContext(function () use ($cacheMessage) {
+                                $this->handler($cacheMessage);
+                            });
+                        }
                     }
                 }
+            } finally {
+                $this->sessionMutex->unlock();
             }
 
             return true;
