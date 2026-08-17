@@ -22,7 +22,7 @@ class IpcProxy
     /**
      * @var float
      */
-    protected float $timeOut;
+    protected float $timeOut = 0.0;
     /**
      * @var bool
      */
@@ -40,7 +40,7 @@ class IpcProxy
      * @param bool $oneway
      * @param float $timeOut
      */
-    public function __construct(Process $process, string $className, bool $oneway = false, float $timeOut = 0)
+    public function __construct(Process $process, string $className, bool $oneway = false, float $timeOut = 5)
     {
         $this->process = $process;
         $this->className = $className;
