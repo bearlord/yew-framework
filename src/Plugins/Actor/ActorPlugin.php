@@ -189,6 +189,12 @@ class ActorPlugin extends AbstractPlugin
         // pool and report success/failure back over the wire. The result must be
         // serialisable (no IPC proxy object crosses the TCP boundary).
         if ($env->kind === RemoteEnvelope::KIND_CREATE) {
+            // Idempotent: if we already own this actor locally, just confirm it.
+            // Re-running ActorSystem::create would return a local proxy object,
+            // which cannot cross the TCP boundary back to the caller.
+            if ($manager->hasActor($env->actorName)) {
+                return ['code' => 200, 'message' => 'created', 'data' => ['actorName' => $env->actorName]];
+            }
             try {
                 $result = ActorSystem::create(
                     $env->className,
