@@ -254,6 +254,13 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
      */
     public function handleReceive(int $fd, string $data): void
     {
+        var_dump([
+            'flag' => __METHOD__,
+            'fd' => $fd,
+            'data' => $data,
+        ]);
+
+
         $this->recvBuf[$fd] = ($this->recvBuf[$fd] ?? '') . $data;
         if (strlen($this->recvBuf[$fd]) > $this->maxRecvBuf) {
             // Peer is not sending a newline (or is flooding); drop it before the
@@ -298,18 +305,26 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
      */
     private function handleInbound(int $fd, RemoteEnvelope $env): void
     {
+        // CREATE and ASK both expect a reply over the wire; TELL is fire-and-forget.
+        $wantsReply = $env->kind === RemoteEnvelope::KIND_ASK
+            || $env->kind === RemoteEnvelope::KIND_CREATE;
+
         if ($this->inboundHandler === null) {
-            // No actor layer attached: answer asks with an empty result so the
+            // No actor layer attached: answer with an empty result so the
             // remote caller does not hang.
-            if ($env->kind === RemoteEnvelope::KIND_ASK) {
+            if ($wantsReply) {
                 $this->sendReply($fd, $this->replyEnvelope($env, null));
             }
             return;
         }
 
-        $result = ($this->inboundHandler)($env);
+        try {
+            $result = ($this->inboundHandler)($env);
+        } catch (\Throwable $e) {
+            $result = ['__error' => $e->getMessage()];
+        }
 
-        if ($env->kind === RemoteEnvelope::KIND_ASK) {
+        if ($wantsReply) {
             $this->sendReply($fd, $this->replyEnvelope($env, $result));
         }
     }
@@ -324,9 +339,16 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
     {
         $swoole = Server::$instance->getServer();
         if ($swoole === null) {
+            Server::$instance->getLog()->error("cluster-tcp: cannot reply, Swoole server is null");
             return;
         }
-        if ($swoole->send($fd, $reply->toJson() . "\n") === false) {
+        $payload = $reply->toJson() . "\n";
+        if ($swoole->send($fd, $payload) === false) {
+            $code = $swoole->getLastError();
+            Server::$instance->getLog()->error(sprintf(
+                "cluster-tcp: reply send failed on fd=%d (err=%s); dropping buffer",
+                $fd, (string) $code
+            ));
             // Peer already gone; nothing to reply to, just drop its buffer.
             unset($this->recvBuf[$fd]);
         }

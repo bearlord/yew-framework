@@ -216,7 +216,14 @@ class ActorPlugin extends AbstractPlugin
             Tracer::continue($env->traceId);
         }
 
-        $proxy = new ActorIpcProxy($env->actorName, true, 0);
+        try {
+            $proxy = new ActorIpcProxy($env->actorName, true, 0);
+        } catch (\Throwable $e) {
+            if ($env->kind === RemoteEnvelope::KIND_ASK) {
+                return ['__error' => $e->getMessage()];
+            }
+            return null;
+        }
         if ($env->kind === RemoteEnvelope::KIND_ASK) {
             try {
                 return $proxy->ask($env->method, $env->arguments, 55);

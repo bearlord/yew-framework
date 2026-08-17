@@ -41,6 +41,13 @@ class ClusterTcpPort extends ServerPort
 
     public function onTcpReceive(int $fd, int $reactorId, string $data): void
     {
+        if ($this->transport === null) {
+            Server::$instance->getLog()->error(sprintf(
+                "cluster-tcp: onTcpReceive fd=%d but transport is NULL (wirePorts did not inject); dropping %d bytes",
+                $fd, strlen($data)
+            ));
+        }
+
         $this->transport?->handleReceive($fd, $data);
     }
 
