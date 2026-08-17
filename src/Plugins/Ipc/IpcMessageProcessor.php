@@ -100,12 +100,12 @@ class IpcMessageProcessor extends MessageProcessor
                 switch ($_name) {
                     case "__getSession":
                         $result = time();
-                        $this->sessions[$_name] = $result;
+                        $this->sessions[$sessionKey] = $result;
                         break;
 
                     case "__clearSession":
-                        $result = $this->sessions[$_name] ?? null;
-                        unset($this->sessions[$_name]);
+                        $result = $this->sessions[$sessionKey] ?? null;
+                        unset($this->sessions[$sessionKey]);
                         break;
 
                     default:
