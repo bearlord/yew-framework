@@ -318,8 +318,11 @@ class ClusterPlugin extends AbstractPlugin
         // not fatally abort this process's startup.
         try {
             $router->refresh();
-        } catch (\Yew\Plugins\Ipc\IpcException $e) {
+        } catch (\Throwable $e) {
             // Leave the ring empty; it will be populated on the next refresh.
+            // Swallow ANY startup-time IPC failure (timeout, class-load issue,
+            // etc.) so a not-yet-ready cluster-state process cannot fatally
+            // abort boot.
         }
 
         $current = Server::$instance->getProcessManager()->getCurrentProcess();
@@ -329,7 +332,15 @@ class ClusterPlugin extends AbstractPlugin
         }
         $intervalMs = max(500, (int) ($this->clusterConfig->getHeartbeatInterval() * 1000));
         \Swoole\Timer::tick($intervalMs, static function () use ($router) {
-            $router->refresh();
+            // The cluster-state process may still be warming up (or IPC is
+            // temporarily saturated), so a timeout here is expected and must not
+            // fatally abort this worker on every tick. Swallow and let the next
+            // tick retry; the ring stays stale but the process survives.
+            try {
+                $router->refresh();
+            } catch (\Throwable $e) {
+                // no-op: retry on next tick
+            }
         });
     }
 

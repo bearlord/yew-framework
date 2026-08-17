@@ -80,8 +80,8 @@ class IpcMessageProcessor extends MessageProcessor
             // "ClassName:actorName" key). Plain service classes keep the class name
             // as the lock key, matching the per-DI-singleton transaction semantics.
             $sessionKey = $message instanceof ActorIpcCallMessage
-                ? $ipcCallData->getActorName()
-                : $ipcCallData->getClassName();
+                    ? $ipcCallData->getActorName()
+                    : $ipcCallData->getClassName();
 
             $lockSessionId = $this->sessions[$sessionKey] ?? null;
             $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
@@ -176,8 +176,8 @@ class IpcMessageProcessor extends MessageProcessor
         }
 
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage(
-            new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
-            Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
+                new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
+                Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
         );
     }
 }
