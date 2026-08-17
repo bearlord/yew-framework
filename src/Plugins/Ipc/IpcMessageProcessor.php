@@ -133,6 +133,7 @@ class IpcMessageProcessor extends MessageProcessor
             if (!isset($this->sessions[$sessionKey])) {
                 $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
                 if (!empty($cacheMessages)) {
+                    unset($this->cacheMessages[$sessionKey]);
                     foreach ($cacheMessages as $cacheMessage) {
                         goWithContext(function () use ($cacheMessage) {
                             $this->handler($cacheMessage);
