@@ -168,6 +168,10 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
             }
             $line = $client->recv(max(1.0, $timeOut + $this->recvGrace));
             if (!is_string($line) || trim($line) === '') {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: ask recv timeout on %s:%d actor=%s method=%s (no reply within %.1fs)",
+                    $node->getHost(), $node->getPort(), $location->getActorName(), $method, $timeOut
+                ));
                 return null;
             }
             try {
@@ -176,6 +180,10 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
                 return null;
             }
             if ($reply->msgId !== $env->msgId) {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: ask msgId mismatch on %s:%d actor=%s (expected %s, got %s)",
+                    $node->getHost(), $node->getPort(), $location->getActorName(), $env->msgId, $reply->msgId
+                ));
                 return null;
             }
             $reusable = true;
@@ -221,6 +229,10 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
             }
             $line = $client->recv(max(1.0, $timeOut + $this->recvGrace));
             if (!is_string($line) || trim($line) === '') {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: create recv timeout on %s:%d actor=%s (no reply within %.1fs)",
+                    $node->getHost(), $node->getPort(), $actorName, $timeOut
+                ));
                 return null;
             }
             try {
@@ -229,6 +241,10 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
                 return null;
             }
             if ($reply->msgId !== $env->msgId) {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: create msgId mismatch on %s:%d actor=%s (expected %s, got %s)",
+                    $node->getHost(), $node->getPort(), $actorName, $env->msgId, $reply->msgId
+                ));
                 return null;
             }
             $reusable = true;
