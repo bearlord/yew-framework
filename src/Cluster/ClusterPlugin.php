@@ -318,8 +318,11 @@ class ClusterPlugin extends AbstractPlugin
         // not fatally abort this process's startup.
         try {
             $router->refresh();
-        } catch (\Yew\Plugins\Ipc\IpcException $e) {
+        } catch (\Throwable $e) {
             // Leave the ring empty; it will be populated on the next refresh.
+            // Swallow ANY startup-time IPC failure (timeout, class-load issue,
+            // etc.) so a not-yet-ready cluster-state process cannot fatally
+            // abort boot.
         }
 
         $current = Server::$instance->getProcessManager()->getCurrentProcess();
