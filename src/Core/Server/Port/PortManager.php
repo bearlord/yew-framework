@@ -231,6 +231,9 @@ class PortManager
     public function getPortFromFd(int $fd): ?ServerPort
     {
         $clientInfo = Server::$instance->getClientInfo($fd);
+        if ($clientInfo === null) {
+            return null;
+        }
 
         $serverPort = $clientInfo->getServerPort();
         if (empty($serverPort)) {
