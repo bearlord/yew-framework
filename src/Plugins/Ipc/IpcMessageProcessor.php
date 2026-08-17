@@ -86,11 +86,8 @@ class IpcMessageProcessor extends MessageProcessor
             $lockSessionId = $this->sessions[$sessionKey] ?? null;
             $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
             $args = $ipcCallData->getArguments();
-            // Strip framework-internal metadata keys that travel inside the
-            // argument bag (e.g. the distributed-tracing id injected by
-            // ActorIpcProxy::tell/ask). They are not business method parameters,
-            // and call_user_func_array would otherwise expand them as named
-            // arguments and fatal with "Unknown named parameter $__traceId".
+            // Drop framework-internal keys (e.g. __traceId) so they are not
+            // passed as named arguments to the business method.
             unset($args['__traceId']);
 
             if ($lockSessionId === $sessionId) {

@@ -159,11 +159,8 @@ class PooledTcpRemoteTransport implements RemoteTransport, Transfer
         if ($client === null) {
             return null;
         }
-        // A connection may only go back into the pool when the exchange ended
-        // cleanly. On timeout, malformed JSON or a msgId mismatch the socket may
-        // still hold unread/late bytes; reusing it would hand those leftovers to
-        // the next caller and desync every subsequent request on it. Such
-        // connections are closed instead.
+        // Only pool connections whose exchange ended cleanly; on failure the
+        // socket may still hold unread bytes, so it is closed instead.
         $reusable = false;
         try {
             if (!$client->send($env->toJson() . "\n")) {
