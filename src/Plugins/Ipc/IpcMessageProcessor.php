@@ -41,11 +41,6 @@ class IpcMessageProcessor extends MessageProcessor
         $this->sessionMutex = new \Swoole\Coroutine\Mutex();
     }
 
-    public function __construct()
-    {
-        parent::__construct(self::TYPE);
-    }
-
     /**
      * @param Message $message
      * @return bool
