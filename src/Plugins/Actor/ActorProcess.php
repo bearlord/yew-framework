@@ -105,6 +105,10 @@ class ActorProcess extends Process
             );
             $ipcStore->setCluster(new IpcReplicaTransport());
             DISet(ClusterActorStore::class, static fn() => $ipcStore);
+            // Decouple cross-node replication from the actor request path:
+            // mutations are enqueued and flushed in the background, so actors
+            // no longer block on the cluster-state IPC round-trip.
+            $ipcStore->startFlushTimer();
         } catch (\Throwable $e) {
             Server::$instance->getLog()->warning(sprintf(
                 'ActorProcess %s ClusterActorStore(DI) setup failed: %s',

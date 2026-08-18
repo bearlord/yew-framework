@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Yew\Plugins\Actor\Persistence;
 
+use Swoole\Coroutine\Mutex;
+use Swoole\Timer;
 use Yew\Cluster\Persistence\ReplicaTransport;
 use Yew\Coroutine\Server\Server;
 
@@ -29,6 +31,28 @@ class ClusterActorStore implements ActorStore
     private ?ReplicaTransport $cluster = null;
 
     /**
+     * Async replication queue. Mutations are enqueued here instead of being
+     * replicated synchronously (which blocks the calling actor coroutine on an
+     * IPC round-trip to the cluster-state process). A background timer drains
+     * the queue in batches. This trades strict "replicated before return"
+     * durability for much higher actor throughput under concurrency.
+     *
+     * @var array<int,array{actorName:string,kind:string,payload:string}>
+     */
+    private array $pendingReplicas = [];
+
+    /**
+     * Guards $pendingReplicas (the actor process may call persist() from many
+     * concurrent actor coroutines).
+     */
+    private Mutex $replicaMutex;
+
+    /**
+     * Ensures the background flush timer is started exactly once per process.
+     */
+    private bool $flushTimerStarted = false;
+
+    /**
      * Build a cluster-backed store wrapping a local FileActorStore.
      *
      * @param FileActorStore $local Local store for fast read/write
@@ -38,6 +62,7 @@ class ClusterActorStore implements ActorStore
         private FileActorStore $local,
         private int $replicationFactor = 2
     ) {
+        $this->replicaMutex = new Mutex();
     }
 
     /**
@@ -96,7 +121,7 @@ class ClusterActorStore implements ActorStore
         // actor's setActorName().
         $events = $this->local->loadEvents($event->getActorName());
         $rows = array_map(static fn(ActorEvent $e) => $e->toArray(), $events);
-        $this->replicate($event->getActorName(), 'events', json_encode($rows, JSON_UNESCAPED_UNICODE));
+        $this->enqueueReplica($event->getActorName(), 'events', json_encode($rows, JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -146,7 +171,7 @@ class ClusterActorStore implements ActorStore
     public function saveSnapshot(Snapshot $snapshot): void
     {
         $this->local->saveSnapshot($snapshot);
-        $this->replicate($snapshot->getActorName(), 'snapshots', json_encode($snapshot->toArray(), JSON_UNESCAPED_UNICODE));
+        $this->enqueueReplica($snapshot->getActorName(), 'snapshots', json_encode($snapshot->toArray(), JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -187,7 +212,7 @@ class ClusterActorStore implements ActorStore
     public function delete(string $actorName): void
     {
         $this->local->delete($actorName);
-        $this->replicate($actorName, 'clear', '[]');
+        $this->enqueueReplica($actorName, 'clear', '[]');
     }
 
     /**
@@ -197,7 +222,7 @@ class ClusterActorStore implements ActorStore
     public function saveMeta(string $actorName, string $class): void
     {
         $this->local->saveMeta($actorName, $class);
-        $this->replicate($actorName, 'meta', json_encode([
+        $this->enqueueReplica($actorName, 'meta', json_encode([
             'actorName' => $actorName,
             'class' => $class,
         ], JSON_UNESCAPED_UNICODE));
@@ -304,6 +329,93 @@ class ClusterActorStore implements ActorStore
             return ['actorName' => $actorName, 'kind' => 'clear', 'payload' => '[]'];
         }
         return null;
+    }
+
+    /**
+     * Enqueue a replication request instead of performing it synchronously.
+     *
+     * The calling actor coroutine returns immediately; a background timer
+     * (see startFlushTimer / flushReplicas) drains the queue in batches.
+     * This removes the IPC round-trip to the cluster-state process from the
+     * actor's request-critical path, eliminating the serialization/timeout
+     * bottleneck under concurrency.
+     *
+     * Durability note: replicas become visible to peers on the next flush
+     * (best-effort, low latency). If the process crashes before a queued
+     * entry is flushed, that last batch may be lost ¡ª acceptable for
+     * eventually-consistent counter-style state.
+     *
+     * @param string $actorName Actor name
+     * @param string $kind Entry kind: events | snapshots | clear | meta
+     * @param string $payload JSON-encoded payload
+     */
+    private function enqueueReplica(string $actorName, string $kind, string $payload): void
+    {
+        if ($this->cluster === null) {
+            Server::$instance->getLog()->warning(
+                "ClusterActorStore: enqueueReplica($actorName/$kind) dropped ¡ª no ReplicaTransport wired"
+            );
+            return;
+        }
+        $this->replicaMutex->lock();
+        $this->pendingReplicas[] = [
+            'actorName' => $actorName,
+            'kind' => $kind,
+            'payload' => $payload,
+        ];
+        $this->replicaMutex->unlock();
+    }
+
+    /**
+     * Drain and send all queued replication entries. Safe to call repeatedly
+     * (e.g. from a timer tick); never throws into the caller.
+     */
+    public function flushReplicas(): void
+    {
+        if ($this->cluster === null || empty($this->pendingReplicas)) {
+            return;
+        }
+        $this->replicaMutex->lock();
+        $batch = $this->pendingReplicas;
+        $this->pendingReplicas = [];
+        $this->replicaMutex->unlock();
+
+        foreach ($batch as $item) {
+            try {
+                $this->replicate($item['actorName'], $item['kind'], $item['payload']);
+            } catch (\Throwable $e) {
+                // Re-queue on failure so the replica is not silently lost; the
+                // next tick will retry it.
+                $this->replicaMutex->lock();
+                $this->pendingReplicas[] = $item;
+                $this->replicaMutex->unlock();
+                Server::$instance->getLog()->warning(sprintf(
+                    'ClusterActorStore: flushReplicas(%s/%s) failed, requeued: %s',
+                    $item['actorName'],
+                    $item['kind'],
+                    $e->getMessage()
+                ));
+            }
+        }
+    }
+
+    /**
+     * Start the background replication flush timer exactly once per process.
+     *
+     * Called from ActorProcess after the store is wired into DI. The timer
+     * runs inside the actor process and periodically drains pendingReplicas.
+     *
+     * @param int $intervalMs Flush interval in milliseconds (default 200ms)
+     */
+    public function startFlushTimer(int $intervalMs = 200): void
+    {
+        if ($this->flushTimerStarted) {
+            return;
+        }
+        $this->flushTimerStarted = true;
+        Timer::tick($intervalMs, function (): void {
+            $this->flushReplicas();
+        });
     }
 
     /**
