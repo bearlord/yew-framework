@@ -97,6 +97,7 @@ class ActorProcess extends Process
         // recovery() would silently read no replica (failover would restore empty
         // actors). This must run before recoverLocalActors() and before the
         // failover sweep below.
+        $ipcStore = null;
         try {
             $actorConfig = DIGet(ActorConfig::class);
             $clusterConfig = DIGet(ClusterConfig::class);
@@ -145,6 +146,12 @@ class ActorProcess extends Process
         // and re-create the actors the ring now assigns to this node.
         if ($this->processName === 'actor-0') {
             try {
+                if ($ipcStore === null) {
+                    Server::$instance->getLog()->warning(sprintf(
+                        'ActorProcess %s: ClusterActorStore unavailable, skip cross-node failover sweep',
+                        $this->processName
+                    ));
+                } else {
                 $localNode = new ClusterNode(
                     $clusterConfig->getNodeId(),
                     $clusterConfig->getHost(),
@@ -166,6 +173,7 @@ class ActorProcess extends Process
                         );
                     }
                 });
+                }
             } catch (\Throwable $e) {
                 Server::$instance->getLog()->warning(sprintf(
                     'ActorProcess %s failover init failed: %s',
