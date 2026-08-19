@@ -32,6 +32,26 @@ abstract class Process
     const PROCESS_TYPE_CUSTOM = 3;
 
     /**
+     * Max bytes read from the IPC pipe per recv() call (equals the Swoole
+     * default for an unadorned recv() and keeps the intent explicit).
+     */
+    const IPC_RECV_CHUNK_SIZE = 65536;
+
+    /**
+     * Hard cap on the in-memory reassembly buffer. If the peer never delivers
+     * the rest of a (possibly malicious / malformed) frame, the buffer stops
+     * growing here to avoid OOM; the connection is then closed.
+     */
+    const IPC_MAX_BUFFER_SIZE = 16 * 1024 * 1024;
+
+    /**
+     * Max declared frame length accepted from a peer. A larger value is
+     * treated as a protocol error and the connection is aborted immediately
+     * instead of waiting for data that will never arrive.
+     */
+    const IPC_MAX_FRAME_SIZE = 16 * 1024 * 1024;
+
+    /**
      * Process type
      * @var int
      */
@@ -290,20 +310,72 @@ abstract class Process
                 $this->getProcessManager()->setCurrentProcessId($this->processId);
                 Process::signal(SIGTERM, [$this, '_onProcessStop']);
                 $this->socket = $this->swooleProcess->exportSocket();
-                \Swoole\Coroutine::create(function () {
+
+                // Bounded mailbox + a single draining coroutine. Previously every
+                // fully-reassembled frame spawned a new coroutine
+                // (\Swoole\Coroutine::create), so a burst of IPC frames could
+                // create an unbounded number of coroutines (memory/scheduler
+                // pressure). Now received frames are pushed into a bounded
+                // Swoole Channel; push() yields when the channel is full, which
+                // back-pressures this receiver coroutine (it stops draining the
+                // socket) and, combined with the sender-side EAGAIN retry in
+                // sendMessage(), bounds the in-flight message count per process.
+                $mailboxSize = 1024;
+                $mailbox = new \Swoole\Coroutine\Channel($mailboxSize);
+                // Single long-lived consumer: pops frames and dispatches them.
+                // Exactly one coroutine processes pipe messages at a time, so the
+                // total coroutine count stays bounded at (mailboxSize + 2).
+                \Swoole\Coroutine::create(function () use ($mailbox) {
+                    while (true) {
+                        $item = $mailbox->pop();
+                        if ($item === false) {
+                            break;
+                        }
+                        [$payload, $fromProcess] = $item;
+                        $this->_onPipeMessage(serverUnSerialize($payload), $fromProcess);
+                    }
+                });
+
+                \Swoole\Coroutine::create(function () use ($mailbox) {
                     // Frames are streamed over the UnixSocket without message
                     // boundaries, so we accumulate bytes and reassemble complete
                     // frames ourselves. Layout: [4B srcProcessId][4B payloadLen][payload].
+                    // Hard cap on the reassembly buffer: if the peer advertises a
+                    // huge frame length (malicious or due to a protocol/parse error)
+                    // and never sends the rest, $buffer would grow unbounded and OOM
+                    // the process. We abort the connection once the cap is exceeded
+                    // or a single declared frame length is implausibly large.
+                    $maxBufferSize = self::IPC_MAX_BUFFER_SIZE;
+                    $maxFrameSize = self::IPC_MAX_FRAME_SIZE;
                     $buffer = '';
                     while (true) {
-                        $recv = $this->socket->recv();
+                        $recv = $this->socket->recv(self::IPC_RECV_CHUNK_SIZE);
                         if ($recv === '' || $recv === false) {
                             break;
                         }
 
                         $buffer .= $recv;
+                        // Total reassembly buffer exceeded: stop accumulating to
+                        // avoid OOM. Drop the connection and the pending bytes.
+                        if (strlen($buffer) > $maxBufferSize) {
+                            $this->log->warning(
+                                "IPC reassembly buffer exceeded {$maxBufferSize} bytes, "
+                                . "closing pipe to prevent OOM"
+                            );
+                            break;
+                        }
                         while (strlen($buffer) >= 8) {
                             $header = unpack("Nid/Nlen", substr($buffer, 0, 8));
+                            // Declared frame length is implausibly large -> treat as
+                            // a protocol error / malformed peer, abort immediately
+                            // instead of waiting for data that will never arrive.
+                            if ($header['len'] > $maxFrameSize) {
+                                $this->log->warning(
+                                    "IPC frame length {$header['len']} exceeds cap "
+                                    . "{$maxFrameSize}, closing pipe"
+                                );
+                                break 2;
+                            }
                             $frameSize = 8 + $header['len'];
                             if (strlen($buffer) < $frameSize) {
                                 break; // frame not fully arrived yet
@@ -314,11 +386,12 @@ abstract class Process
                             $buffer = substr($buffer, $frameSize);
 
                             $fromProcess = $this->server->getProcessManager()->getProcessFromId($processId);
-                            \Swoole\Coroutine::create(function () use ($payload, $fromProcess) {
-                                $this->_onPipeMessage(serverUnSerialize($payload), $fromProcess);
-                            });
+                            // push() yields (and thus bounds concurrency) when the
+                            // mailbox is full instead of spawning a new coroutine.
+                            $mailbox->push([$payload, $fromProcess]);
                         }
                     }
+                    $mailbox->close();
                 });
             }
 
