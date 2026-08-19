@@ -101,7 +101,6 @@ class UdpGossipTransport implements GossipTransport
             $this->log("[gossip-udp] BIND FAILED host={$this->bindHost} port={$this->bindPort} err=" . ($this->socket->errMsg ?? '?'));
             return;
         }
-        $this->log("[gossip-udp] BOUND host={$this->bindHost} port={$this->bindPort} ok");
         goWithContext(function () {
             while ($this->socket !== null) {
                 try {
