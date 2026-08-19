@@ -69,10 +69,31 @@ class IpcShardRouter implements ShardRouter
     }
 
     /**
-     * Resolve the owning node via the cluster-state process (authoritative).
+     * Resolve the owning node. Prefers the locally cached consistent-hash ring
+     * (populated/refreshed by {@see lazyRefresh()} on a TTL) so that routine
+     * routing lookups never hit the cluster-state process. This mirrors
+     * GossipShardRouter::locate. A direct authoritative IPC query to the
+     * cluster-state process is only used as a fallback when the local ring has
+     * not been populated yet (first lookup in this process), keeping the
+     * cluster-state helper process out of the per-request hot path and avoiding
+     * the IPC time-outs that occurred under load when every lookup was an IPC.
      */
     public function locate(string $actorName): ?Location
     {
+        $owner = $this->ownerOf($actorName);
+        if ($owner !== null && isset($this->view[$owner])) {
+            $row = $this->view[$owner];
+            $node = new ClusterNode(
+                (string) $row['nodeId'],
+                (string) $row['host'],
+                (int) $row['port'],
+                (bool) ($row['local'] ?? false)
+            );
+            return new Location($node, (int) ($row['processId'] ?? 0));
+        }
+
+        // Ring not ready (first lookup in this process, or refresh failed):
+        // fall back to the authoritative cluster-state process once.
         return $this->clusterLocate($actorName);
     }
 
