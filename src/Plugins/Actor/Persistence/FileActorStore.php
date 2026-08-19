@@ -63,6 +63,19 @@ class FileActorStore implements ActorStore
     }
 
     /**
+     * Path of the newline-delimited incremental event log. The hot write path
+     * appends here (O(1)); loadEvents() merges this on top of the .events.json
+     * baseline so replay/replication see the full ordered event stream.
+     *
+     * @param string $actorName Actor name
+     * @return string
+     */
+    private function eventsLogFile(string $actorName): string
+    {
+        return $this->dir . DIRECTORY_SEPARATOR . $this->sanitize($actorName) . '.events.log';
+    }
+
+    /**
      * Path of the snapshot JSON file for an actor.
      *
      * @param string $actorName Actor name
@@ -117,6 +130,10 @@ class FileActorStore implements ActorStore
     /**
      * Append an event to the actor's event log.
      *
+     * NOTE: this is the O(N) full-rewrite path, used for replay/recovery and by
+     * the cluster replication payload. Hot write path should use
+     * appendEventLine() instead (O(1) append).
+     *
      * @param ActorEvent $event Event to append
      */
     public function appendEvent(ActorEvent $event): void
@@ -127,26 +144,74 @@ class FileActorStore implements ActorStore
     }
 
     /**
+     * Hot-path append: write a single line (one JSON event) to a newline-
+     * delimited event log. O(1) — does NOT read or rewrite the whole log, so
+     * the per-increment cost no longer grows with event count. Used by
+     * ClusterActorStore::appendEvent so actor message processing stays fast
+     * under load (previously the O(N) full rewrite saturated the actor and
+     * backed up the IPC pipe).
+     *
+     * @param ActorEvent $event Event to append
+     */
+    public function appendEventLine(ActorEvent $event): void
+    {
+        $line = json_encode($event->toArray(), JSON_UNESCAPED_UNICODE) . "\n";
+        file_put_contents($this->eventsLogFile($event->getActorName()), $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
      * Load and reconstruct all events for an actor, in sequence order.
+     *
+     * Merges the .events.json baseline (written by appendEvent()) with the
+     * .events.log incremental tail (written by appendEventLine()) so the full
+     * ordered stream is seen for replay/replication. The hot write path only
+     * touches the log, so this read stays correct without a full rewrite.
      *
      * @param string $actorName Actor name
      * @return ActorEvent[]
      */
     public function loadEvents(string $actorName): array
     {
-        $rows = $this->readJson($this->eventsFile($actorName));
         $events = [];
-        foreach ($rows as $row) {
-            $events[] = new ActorEvent(
-                $row['actorName'],
-                $row['type'],
-                $row['payload'],
-                (float) $row['timestamp'],
-                (int) $row['sequence']
-            );
+        foreach ($this->readJson($this->eventsFile($actorName)) as $row) {
+            $events[] = $this->rowToEvent($row);
+        }
+        $log = $this->eventsLogFile($actorName);
+        if (is_file($log)) {
+            $handle = fopen($log, 'r');
+            if ($handle !== false) {
+                while (($line = fgets($handle)) !== false) {
+                    $line = trim($line);
+                    if ($line === '') {
+                        continue;
+                    }
+                    $row = json_decode($line, true);
+                    if (is_array($row)) {
+                        $events[] = $this->rowToEvent($row);
+                    }
+                }
+                fclose($handle);
+            }
         }
 
         return $events;
+    }
+
+    /**
+     * Build an ActorEvent from a decoded row array.
+     *
+     * @param array $row
+     * @return ActorEvent
+     */
+    private function rowToEvent(array $row): ActorEvent
+    {
+        return new ActorEvent(
+            $row['actorName'],
+            $row['type'],
+            $row['payload'],
+            (float) ($row['timestamp'] ?? 0),
+            (int) ($row['sequence'] ?? 0)
+        );
     }
 
     /**
@@ -156,7 +221,26 @@ class FileActorStore implements ActorStore
      */
     public function saveSnapshot(Snapshot $snapshot): void
     {
-        $this->writeJson($this->snapshotFile($snapshot->getActorName()), $snapshot->toArray());
+        $this->writeJsonAtomic($this->snapshotFile($snapshot->getActorName()), $snapshot->toArray());
+    }
+
+    /**
+     * Write JSON atomically (temp file + rename) so a concurrent reader (e.g. a
+     * worker reading the snapshot directly via the shared filesystem) never
+     * observes a half-written file.
+     *
+     * @param string $file Target path
+     * @param array $data Data to persist
+     */
+    private function writeJsonAtomic(string $file, array $data): void
+    {
+        $content = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $tmp = $file . '.' . getmypid() . '.' . mt_rand(1, 9999999) . '.tmp';
+        if (file_put_contents($tmp, $content) !== false) {
+            rename($tmp, $file);
+        } else {
+            @unlink($tmp);
+        }
     }
 
     /**
@@ -188,6 +272,7 @@ class FileActorStore implements ActorStore
     public function delete(string $actorName): void
     {
         @unlink($this->eventsFile($actorName));
+        @unlink($this->eventsLogFile($actorName));
         @unlink($this->snapshotFile($actorName));
         @unlink($this->metaFile($actorName));
     }

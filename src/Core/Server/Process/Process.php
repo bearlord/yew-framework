@@ -6,6 +6,7 @@
 
 namespace Yew\Core\Server\Process;
 
+use Carbon\Carbon;
 use Yew\Core\Channel\Channel;
 use Yew\Core\Context\Context;
 use Yew\Core\Context\ContextBuilder;
@@ -390,9 +391,38 @@ abstract class Process
             $frame = pack("N", $this->getProcessId()) . pack("N", strlen($payload)) . $payload;
             $offset = 0;
             $len = strlen($frame);
+            // Swoole's Unix pipe has a bounded kernel buffer. Under burst load the
+            // actor/worker consumer cannot keep up and write() returns false with
+            // EAGAIN (Resource temporarily unavailable). The original loop ignored
+            // the return value and silently dropped frames, leaving the caller
+            // waiting forever on a reply that was never delivered (=> IPC Timeout).
+            // We now retry on EAGAIN with a short coroutine yield, bounded by a
+            // hard cap well below the 5s IPC timeout so a stuck pipe fails loud
+            // instead of hanging the caller.
+            $maxRetries = 2000; // ~2s of 1ms yields, leaves headroom vs 5s IPC timeout
             while ($offset < $len) {
-                $toProcess->swooleProcess->write(substr($frame, $offset, $this->writeChunkSize));
-                $offset += $this->writeChunkSize;
+                $written = @$toProcess->swooleProcess->write(substr($frame, $offset, $this->writeChunkSize));
+                if ($written === false) {
+                    $err = swoole_last_error();
+                    if ($err === SOCKET_EAGAIN || $err === SOCKET_EWOULDBLOCK) {
+                        if ($maxRetries-- <= 0) {
+                            throw new \RuntimeException(sprintf(
+                                'Process::sendMessage to %s failed: pipe buffer full after retries (frame %d/%d bytes)',
+                                $toProcess->getProcessName(),
+                                $offset,
+                                $len
+                            ));
+                        }
+                        \Swoole\Coroutine::sleep(0.001);
+                        continue;
+                    }
+                    throw new \RuntimeException(sprintf(
+                        'Process::sendMessage to %s failed: write error %d',
+                        $toProcess->getProcessName(),
+                        $err
+                    ));
+                }
+                $offset += $written;
             }
         } else {
             //If process is worker or task

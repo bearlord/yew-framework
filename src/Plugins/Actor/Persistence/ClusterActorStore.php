@@ -113,12 +113,13 @@ class ClusterActorStore implements ActorStore
      */
     public function appendEvent(ActorEvent $event): void
     {
-        $this->local->appendEvent($event);
+        // Hot path: O(1) append instead of the old full-rewrite loadEvents +
+        // writeJson, so per-increment cost no longer grows with event count.
+        $this->local->appendEventLine($event);
         // Replicate the full event list under the event's own actor name as a
         // JSON array (matching toRow() and what ingestReplica()/loadEvents()
-        // expect). ClusterActorStore is a shared singleton, so we must NOT rely
-        // on a stored $this->actorName that could be clobbered by a concurrent
-        // actor's setActorName().
+        // expect). The replication is enqueued and drained by a background
+        // timer (fire-and-forget), so this O(N) read does not block the actor.
         $events = $this->local->loadEvents($event->getActorName());
         $rows = array_map(static fn(ActorEvent $e) => $e->toArray(), $events);
         $this->enqueueReplica($event->getActorName(), 'events', json_encode($rows, JSON_UNESCAPED_UNICODE));

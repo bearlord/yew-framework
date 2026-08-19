@@ -770,6 +770,14 @@ abstract class Actor
         $event = new ActorEvent($this->name, $type, $payload, microtime(true), $this->eventSequence);
         $this->store->appendEvent($event);
         $this->apply($event);
+        // Persist a snapshot after each state change so external readers (e.g.
+        // the HTTP controller reading the shared snapshot file directly,
+        // bypassing the actor's serial IPC queue) always observe a fresh value.
+        // Snapshot write is a single atomic file rename; state is typically
+        // small, so the extra cost per persist is negligible. recovery() still
+        // replays only events after the snapshot's lastSequence, so this stays
+        // consistent.
+        $this->saveContext();
     }
 
     /**
