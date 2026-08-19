@@ -48,6 +48,20 @@ class ActorProcess extends Process
             $data       = $_data[2] ?? null;
             $isCreated  = $_data[3] ?? false;
             $parentName = $_data[4] ?? null;
+
+            // Idempotent create: if the actor is already live in this process,
+            // do NOT reconstruct it (which would re-run recovery() and replay the
+            // whole durable event log, and would later throw "Has same actor name"
+            // from addActor). Just acknowledge the caller so ActorSystem::create's
+            // blocking wait returns immediately instead of waiting out a slow
+            // recovery / hitting the addActor collision.
+            if ($isCreated && ActorManager::getInstance()->hasActor($name)) {
+                $this->eventDispatcher->dispatchProcessEvent(new ActorCreateEvent(ActorCreateEvent::ActorCreateReadyEvent . ":" . $name, null),
+                    Server::$instance->getProcessManager()->getProcessFromId($event->getProcessId())
+                );
+                return;
+            }
+
             $actor      = new $class($name, $isCreated, $parentName);
 
             if ($actor instanceof Actor) {
