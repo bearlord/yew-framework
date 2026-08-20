@@ -118,6 +118,14 @@ abstract class Process
     protected ?\Swoole\Coroutine\Channel $mailbox = null;
 
     /**
+     * Tracks whether the mailbox has been closed, so _onProcessStop() can avoid
+     * calling close() twice. \Swoole\Coroutine\Channel has no stable isClosed()
+     * across versions, so we track it ourselves.
+     * @var bool
+     */
+    protected bool $mailboxClosed = false;
+
+    /**
      * @var LoggerInterface
      */
     protected LoggerInterface $log;
@@ -417,8 +425,9 @@ abstract class Process
                         }
                     }
                     // Socket disconnected: close mailbox so the consumer exits.
-                    if (isset($this->mailbox) && !$this->mailbox->isClosed()) {
+                    if (isset($this->mailbox) && !$this->mailboxClosed) {
                         $this->mailbox->close();
+                        $this->mailboxClosed = true;
                     }
                 });
             }
@@ -462,8 +471,9 @@ abstract class Process
             // Close the mailbox first so the consumer coroutine (blocked in
             // $mailbox->pop()) wakes up with false and exits cleanly instead of
             // lingering until the process is force-killed.
-            if ($this->mailbox !== null && !$this->mailbox->isClosed()) {
+            if ($this->mailbox !== null && !$this->mailboxClosed) {
                 $this->mailbox->close();
+                $this->mailboxClosed = true;
             }
             // Dispatch event
             $this->eventDispatcher->dispatchEvent(new ProcessEvent(ProcessEvent::ProcessStopEvent, $this));
