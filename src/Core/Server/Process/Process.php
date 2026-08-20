@@ -371,26 +371,34 @@ abstract class Process
                         }
 
                         $buffer .= $recv;
-                        // Total reassembly buffer exceeded: stop accumulating to
-                        // avoid OOM. Drop the connection and the pending bytes.
+                        // Total reassembly buffer exceeded: drop the pending bytes
+                        // to bound memory, but KEEP the draining coroutine alive.
+                        // Breaking here would kill the only receiver for this
+                        // process and silently stop ALL IPC to it (every caller
+                        // would then time out) — far worse than a transient
+                        // back-pressure event under burst load. We reset the buffer
+                        // and yield so the sender-side EAGAIN retry can drain.
                         if (strlen($buffer) > $maxBufferSize) {
                             $this->log->warning(
                                 "IPC reassembly buffer exceeded {$maxBufferSize} bytes, "
-                                . "closing pipe to prevent OOM"
+                                . "dropping pending bytes (receiver coroutine stays alive)"
                             );
-                            break;
+                            $buffer = '';
+                            \Swoole\Coroutine::sleep(0.001);
+                            continue;
                         }
                         while (strlen($buffer) >= 8) {
                             $header = unpack("Nid/Nlen", substr($buffer, 0, 8));
-                            // Declared frame length is implausibly large -> treat as
-                            // a protocol error / malformed peer, abort immediately
-                            // instead of waiting for data that will never arrive.
+                            // Declared frame length is implausibly large -> a
+                            // malformed/truncated header. Drop it and resync on the
+                            // next bytes instead of aborting the whole receiver.
                             if ($header['len'] > $maxFrameSize) {
                                 $this->log->warning(
                                     "IPC frame length {$header['len']} exceeds cap "
-                                    . "{$maxFrameSize}, closing pipe"
+                                    . "{$maxFrameSize}, dropping malformed frame"
                                 );
-                                break 2;
+                                $buffer = '';
+                                continue 2;
                             }
                             $frameSize = 8 + $header['len'];
                             if (strlen($buffer) < $frameSize) {
