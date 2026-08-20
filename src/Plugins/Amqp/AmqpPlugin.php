@@ -78,7 +78,6 @@ class AmqpPlugin extends AbstractPlugin
         foreach ($configs as $key => $config) {
             $pool = new AmqpPool($config);
             $pools->addPool($pool);
-            $this->debug(sprintf("Amqp connection pool named %s created", $config->getName()));
         }
 
         $context->add("amqpPools", $pools);
