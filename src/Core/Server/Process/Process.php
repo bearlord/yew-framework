@@ -350,7 +350,23 @@ abstract class Process
                     $buffer = '';
                     while (true) {
                         $recv = $this->socket->recv(self::IPC_RECV_CHUNK_SIZE);
-                        if ($recv === '' || $recv === false) {
+                        if ($recv === '') {
+                            // Peer closed the pipe (process exited / crashed): stop.
+                            break;
+                        }
+                        if ($recv === false) {
+                            // false can mean a transient "no data right now"
+                            // (EAGAIN) rather than a fatal error. Distinguish by
+                            // errno: on EAGAIN/EWOULDBLOCK just yield and retry,
+                            // otherwise the pipe is broken and we stop. Breaking
+                            // here on a mere EAGAIN would kill this draining
+                            // coroutine and silently stop the whole process from
+                            // receiving any further IPC (=> all callers time out).
+                            $err = swoole_last_error();
+                            if ($err === SOCKET_EAGAIN || $err === SOCKET_EWOULDBLOCK) {
+                                \Swoole\Coroutine::sleep(0.001);
+                                continue;
+                            }
                             break;
                         }
 
