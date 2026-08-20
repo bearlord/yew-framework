@@ -86,7 +86,13 @@ class Queue extends CliQueue
                 } elseif (!$repeat) {
                     break;
                 }
-                \Swoole\Coroutine::sleep(0.001);
+                // reserve() already blocks (BRPOP) when $timeout > 0, so a tight
+                // 1ms poll loop is only needed in non-blocking mode ($timeout == 0).
+                // A 1ms busy-poll pins a full CPU core; back off to a sane idle
+                // interval instead.
+                if ($timeout <= 0) {
+                    \Swoole\Coroutine::sleep(0.05);
+                }
             }
         });
     }

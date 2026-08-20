@@ -367,15 +367,20 @@ abstract class Process
                     $buffer = '';
                     while (true) {
                         $recv = $this->socket->recv(self::IPC_RECV_CHUNK_SIZE);
-                        if ($recv === '') {
-                            // Peer closed the pipe (process exited / crashed): stop.
+                        if ($recv === '' || $recv === false) {
+                            // Peer closed the pipe (process exited / crashed) or a
+                            // fatal read error. Under enableCoroutine the coroutine
+                            // socket auto-suspends on no-data (EAGAIN) and never
+                            // returns here for it, so reaching this means we must stop.
                             break;
                         }
-                        if ($recv === false) {
-                            // A fatal read error (not EAGAIN — under enableCoroutine
-                            // the coroutine socket auto-suspends on EAGAIN and never
-                            // returns false for it). Stop receiving.
-                            break;
+                        if ($recv === null) {
+                            // Some Swoole builds return null instead of suspending
+                            // when there is momentarily no data. Treat it as a
+                            // non-fatal no-op: yield briefly so we never busy-spin
+                            // the receiver coroutine (which would peg a CPU core).
+                            \Swoole\Coroutine::sleep(0.001);
+                            continue;
                         }
 
                         $buffer .= $recv;
