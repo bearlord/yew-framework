@@ -394,10 +394,15 @@ abstract class Process
                         if (strlen($buffer) > $maxBufferSize) {
                             $this->log->warning(
                                 "IPC reassembly buffer exceeded {$maxBufferSize} bytes, "
-                                . "dropping pending bytes (receiver coroutine stays alive)"
+                                . "dropping whole pending buffer and backing off"
                             );
-                            $buffer = substr($buffer, -7);
-                            \Swoole\Coroutine::sleep(0.001);
+                            // Discard the entire backlog instead of keeping the last
+                            // 7 bytes: a persistently overflowing buffer means the
+                            // peer is flooding us faster than we can drain, so a
+                            // 1-byte-keep + 1ms sleep loop would just busy-spin. Drop
+                            // everything and yield longer to let the consumer catch up.
+                            $buffer = '';
+                            \Swoole\Coroutine::sleep(0.01);
                             continue;
                         }
                         while (strlen($buffer) >= 8) {
