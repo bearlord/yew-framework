@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Yew\Plugins\Actor\Persistence;
 
-use Swoole\Coroutine\Mutex;
+use Swoole\Coroutine\Channel;
 use Swoole\Timer;
 use Yew\Cluster\Persistence\ReplicaTransport;
 use Yew\Coroutine\Server\Server;
@@ -43,9 +43,11 @@ class ClusterActorStore implements ActorStore
 
     /**
      * Guards $pendingReplicas (the actor process may call persist() from many
-     * concurrent actor coroutines).
+     * concurrent actor coroutines). Implemented as a binary semaphore over a
+     * Channel(1) because Swoole\Coroutine\Mutex is not available in all Swoole
+     * builds.
      */
-    private Mutex $replicaMutex;
+    private Channel $replicaMutex;
 
     /**
      * Ensures the background flush timer is started exactly once per process.
@@ -62,7 +64,9 @@ class ClusterActorStore implements ActorStore
         private FileActorStore $local,
         private int $replicationFactor = 2
     ) {
-        $this->replicaMutex = new Mutex();
+        // Binary semaphore: capacity 1, seeded with one token.
+        $this->replicaMutex = new Channel(1);
+        $this->replicaMutex->push(1);
     }
 
     /**
@@ -358,13 +362,13 @@ class ClusterActorStore implements ActorStore
             );
             return;
         }
-        $this->replicaMutex->lock();
+        $this->replicaMutex->pop();
         $this->pendingReplicas[] = [
             'actorName' => $actorName,
             'kind' => $kind,
             'payload' => $payload,
         ];
-        $this->replicaMutex->unlock();
+        $this->replicaMutex->push(1);
     }
 
     /**
@@ -376,10 +380,10 @@ class ClusterActorStore implements ActorStore
         if ($this->cluster === null || empty($this->pendingReplicas)) {
             return;
         }
-        $this->replicaMutex->lock();
+        $this->replicaMutex->pop();
         $batch = $this->pendingReplicas;
         $this->pendingReplicas = [];
-        $this->replicaMutex->unlock();
+        $this->replicaMutex->push(1);
 
         foreach ($batch as $item) {
             try {
@@ -387,9 +391,9 @@ class ClusterActorStore implements ActorStore
             } catch (\Throwable $e) {
                 // Re-queue on failure so the replica is not silently lost; the
                 // next tick will retry it.
-                $this->replicaMutex->lock();
+                $this->replicaMutex->pop();
                 $this->pendingReplicas[] = $item;
-                $this->replicaMutex->unlock();
+                $this->replicaMutex->push(1);
                 Server::$instance->getLog()->warning(sprintf(
                     'ClusterActorStore: flushReplicas(%s/%s) failed, requeued: %s',
                     $item['actorName'],
