@@ -34,6 +34,24 @@ class IpcMessageProcessor extends MessageProcessor
     }
 
     /**
+     * Safe telemetry logging. The GetLogger trait routes through
+     * Server::$instance->getLog(), which can be null/uninitialized in some
+     * processes (e.g. cluster-state). Never let a debug log crash the real
+     * message-handling path.
+     */
+    private function telemetry(string $msg): void
+    {
+        try {
+            $logger = Server::$instance->getLog();
+            if ($logger !== null) {
+                $logger->log(\Monolog\Logger::DEBUG, $msg, []);
+            }
+        } catch (\Throwable $e) {
+            // swallow: telemetry must never affect business processing
+        }
+    }
+
+    /**
      * @param Message $message
      * @return bool
      * @throws \DI\DependencyException
@@ -53,7 +71,7 @@ class IpcMessageProcessor extends MessageProcessor
             // side) from "actor process slow to process / reply" (large delta
             // between this and the reply below). Keyed by token so the caller's
             // logs can be correlated.
-            $this->log->debug(sprintf(
+            $this->telemetry(sprintf(
                 "[ipc-telemetry] RECV token=%d method=%s actor=%s",
                 $token, $method, $actorName ?? 'service'
             ));
@@ -68,7 +86,7 @@ class IpcMessageProcessor extends MessageProcessor
                 $actor = \Yew\Plugins\Actor\ActorManager::getInstance()->getActor($ipcCallData->getActorName());
                 $getActorMs = (microtime(true) - $tGetActor) * 1000;
                 if ($getActorMs > 1) {
-                    $this->log->debug(sprintf(
+                    $this->telemetry(sprintf(
                         "[ipc-telemetry] GETACTOR_SLOW token=%d actor=%s %.2fms",
                         $token, $ipcCallData->getActorName(), $getActorMs
                     ));
@@ -139,7 +157,7 @@ class IpcMessageProcessor extends MessageProcessor
                             $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
                             $execMs = (microtime(true) - $tExec) * 1000;
                             if ($execMs > 5) {
-                                $this->log->debug(sprintf(
+                                $this->telemetry(sprintf(
                                     "[ipc-telemetry] EXEC_SLOW token=%d method=%s actor=%s %.2fms",
                                     $token, $method, $actorName ?? 'service', $execMs
                                 ));
@@ -162,7 +180,7 @@ class IpcMessageProcessor extends MessageProcessor
                 // A growing queue here is the direct signal of "actor process
                 // cannot keep up" (the mailbox backlog), which is what surfaces
                 // as an IPC timeout on the caller side.
-                $this->log->debug(sprintf(
+                $this->telemetry(sprintf(
                     "[ipc-telemetry] QUEUED token=%d actor=%s queueLen=%d",
                     $token, $sessionKey, $queueLen + 1
                 ));
@@ -173,7 +191,7 @@ class IpcMessageProcessor extends MessageProcessor
             $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
 
             $totalMs = (microtime(true) - $t0) * 1000;
-            $this->log->debug(sprintf(
+            $this->telemetry(sprintf(
                 "[ipc-telemetry] DONE token=%d method=%s actor=%s %.2fms",
                 $token, $method, $actorName ?? 'service', $totalMs
             ));
