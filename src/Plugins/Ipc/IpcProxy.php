@@ -61,12 +61,30 @@ class IpcProxy
             $arguments["sessionId"] = $this->sessionId;
         }
         $message = new IpcCallMessage($this->className, $name, $arguments, $this->oneway);
+        $token = $message->getProcessIpcCallData()->getToken();
 
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
+        $this->log->debug(sprintf(
+            "[ipc-telemetry] SENT token=%d method=%s target=%s",
+            $token, $name, $this->process->getProcessName() ?? $this->process->getProcessId()
+        ));
 
         if (!$this->oneway) {
-            $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
+            $channel = IpcManager::getChannel($token);
+            $tWait = microtime(true);
             $result = $channel->pop($this->timeOut);
+            $waitMs = (microtime(true) - $tWait) * 1000;
+            if ($result === null) {
+                $this->log->error(sprintf(
+                    "[ipc-telemetry] TIMEOUT token=%d method=%s waited=%.2fms target=%s",
+                    $token, $name, $waitMs, $this->process->getProcessName() ?? $this->process->getProcessId()
+                ));
+            } else {
+                $this->log->debug(sprintf(
+                    "[ipc-telemetry] REPLIED token=%d method=%s waited=%.2fms",
+                    $token, $name, $waitMs
+                ));
+            }
             $channel->close();
 
             if ($result instanceof IpcResultData) {
