@@ -550,6 +550,11 @@ class ActorManager
             // Skip actors that already have a live DI instance in this process.
             $className = $this->actorIdClassNameTable->get($row['classId'] ?? -1, 'className');
             if (empty($className) || !class_exists($className)) {
+                Server::$instance->getLog()->warning(sprintf(
+                    'ActorManager: skip recovery of local actor %s: class for classId %s not found',
+                    $name,
+                    $row['classId'] ?? -1
+                ));
                 continue;
             }
             // DIGet() throws NotFoundException when the instance is NOT yet
@@ -623,10 +628,14 @@ class ActorManager
 
                 // One-shot local recovery: re-create the instance and replay its
                 // durable state so the in-flight message can be handled inline.
+                // Mirror recoverLocalActors() exactly (parent handling included) so
+                // the lazily-recovered instance matches what startup recovery would
+                // have produced.
+                $parent = empty($data['parent']) ? null : $data['parent'];
                 try {
-                    $actor = new $className($actorName, true);
+                    $actor = new $className($actorName, true, $parent);
                     $actor->recovery();
-                    $this->addActor($actor);
+                    $this->addActor($actor, $parent);
                     return $actor;
                 } catch (\Throwable $e) {
                     Server::$instance->getLog()->warning(sprintf(

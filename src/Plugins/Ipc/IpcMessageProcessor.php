@@ -34,24 +34,6 @@ class IpcMessageProcessor extends MessageProcessor
     }
 
     /**
-     * Safe telemetry logging. The GetLogger trait routes through
-     * Server::$instance->getLog(), which can be null/uninitialized in some
-     * processes (e.g. cluster-state). Never let a debug log crash the real
-     * message-handling path.
-     */
-    private function telemetry(string $msg): void
-    {
-        try {
-            $logger = Server::$instance->getLog();
-            if ($logger !== null) {
-                $logger->log(\Monolog\Logger::DEBUG, $msg, []);
-            }
-        } catch (\Throwable $e) {
-            // swallow: telemetry must never affect business processing
-        }
-    }
-
-    /**
      * @param Message $message
      * @return bool
      * @throws \DI\DependencyException
@@ -61,20 +43,6 @@ class IpcMessageProcessor extends MessageProcessor
     {
         if ($message instanceof IpcCallMessage) {
             $ipcCallData = $message->getProcessIpcCallData();
-            $token = $ipcCallData->getToken();
-            $method = $ipcCallData->getName();
-            $actorName = $message instanceof ActorIpcCallMessage ? $ipcCallData->getActorName() : null;
-            $t0 = microtime(true);
-
-            // ---- Telemetry: worker asked, actor process received ----
-            // Helps distinguish "worker failed to send" (no such log on the actor
-            // side) from "actor process slow to process / reply" (large delta
-            // between this and the reply below). Keyed by token so the caller's
-            // logs can be correlated.
-            $this->telemetry(sprintf(
-                "[ipc-telemetry] RECV token=%d method=%s actor=%s",
-                $token, $method, $actorName ?? 'service'
-            ));
 
             // Actor proxies carry the actor name in a dedicated field of the
             // ActorIpcCallMessage subtype, so the class name stays a clean DI
@@ -82,15 +50,7 @@ class IpcMessageProcessor extends MessageProcessor
             $handle = null;
             $className = $ipcCallData->getClassName();
             if ($message instanceof ActorIpcCallMessage) {
-                $tGetActor = microtime(true);
                 $actor = \Yew\Plugins\Actor\ActorManager::getInstance()->getActor($ipcCallData->getActorName());
-                $getActorMs = (microtime(true) - $tGetActor) * 1000;
-                if ($getActorMs > 1) {
-                    $this->telemetry(sprintf(
-                        "[ipc-telemetry] GETACTOR_SLOW token=%d actor=%s %.2fms",
-                        $token, $ipcCallData->getActorName(), $getActorMs
-                    ));
-                }
                 if ($actor instanceof \Yew\Plugins\Actor\Actor) {
                     $handle = $actor;
                 }
@@ -154,15 +114,7 @@ class IpcMessageProcessor extends MessageProcessor
                     default:
                         $_method = $ipcCallData->getName();
                         try {
-                            $tExec = microtime(true);
                             $result = call_user_func_array([$handle, $_method], $args);
-                            $execMs = (microtime(true) - $tExec) * 1000;
-                            if ($execMs > 5) {
-                                $this->telemetry(sprintf(
-                                    "[ipc-telemetry] EXEC_SLOW token=%d method=%s actor=%s %.2fms",
-                                    $token, $method, $actorName ?? 'service', $execMs
-                                ));
-                            }
                         } catch (\Throwable $e) {
                             $errorClass = get_class($e);
                             $errorCode = $e->getCode();
@@ -174,28 +126,12 @@ class IpcMessageProcessor extends MessageProcessor
                 }
             } else {
                 //The transaction id does not match and cache the message
-                $queueLen = count($this->cacheMessages[$sessionKey] ?? []);
                 $this->cacheMessages[$sessionKey][] = $message;
-                // A non-matching session id means the actor is busy processing a
-                // prior message and this one is being queued in $cacheMessages.
-                // A growing queue here is the direct signal of "actor process
-                // cannot keep up" (the mailbox backlog), which is what surfaces
-                // as an IPC timeout on the caller side.
-                $this->telemetry(sprintf(
-                    "[ipc-telemetry] QUEUED token=%d actor=%s queueLen=%d",
-                    $token, $sessionKey, $queueLen + 1
-                ));
 
                 return true;
             }
 
             $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
-
-            $totalMs = (microtime(true) - $t0) * 1000;
-            $this->telemetry(sprintf(
-                "[ipc-telemetry] DONE token=%d method=%s actor=%s %.2fms",
-                $token, $method, $actorName ?? 'service', $totalMs
-            ));
 
             //Processing cache
             if (!isset($this->sessions[$sessionKey])) {

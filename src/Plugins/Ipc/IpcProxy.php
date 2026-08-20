@@ -49,37 +49,6 @@ class IpcProxy
     }
 
     /**
-     * Safe debug telemetry. Logger may be null in some processes; never let it
-     * crash the IPC call path.
-     */
-    protected function telemetry(string $msg): void
-    {
-        try {
-            $logger = Server::$instance->getLog();
-            if ($logger !== null) {
-                $logger->log(\Monolog\Logger::DEBUG, $msg, []);
-            }
-        } catch (\Throwable $e) {
-            // swallow
-        }
-    }
-
-    /**
-     * Safe error telemetry (used for the timeout event).
-     */
-    private function telemetryErr(string $msg): void
-    {
-        try {
-            $logger = Server::$instance->getLog();
-            if ($logger !== null) {
-                $logger->log(\Monolog\Logger::ERROR, $msg, []);
-            }
-        } catch (\Throwable $e) {
-            // swallow
-        }
-    }
-
-    /**
      * @param string $name
      * @param array $arguments
      * @return mixed|void
@@ -95,27 +64,12 @@ class IpcProxy
         $token = $message->getProcessIpcCallData()->getToken();
 
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
-        $this->telemetry(sprintf(
-            "[ipc-telemetry] SENT token=%d method=%s target=%s",
-            $token, $name, $this->process->getProcessName() ?? $this->process->getProcessId()
-        ));
 
         if (!$this->oneway) {
             $channel = IpcManager::getChannel($token);
             $tWait = microtime(true);
             $result = $channel->pop($this->timeOut);
             $waitMs = (microtime(true) - $tWait) * 1000;
-            if ($result === null) {
-                $this->telemetry(sprintf(
-                    "[ipc-telemetry] TIMEOUT token=%d method=%s waited=%.2fms target=%s",
-                    $token, $name, $waitMs, $this->process->getProcessName() ?? $this->process->getProcessId()
-                ));
-            } else {
-                $this->telemetry(sprintf(
-                    "[ipc-telemetry] REPLIED token=%d method=%s waited=%.2fms",
-                    $token, $name, $waitMs
-                ));
-            }
             $channel->close();
 
             if ($result instanceof IpcResultData) {
