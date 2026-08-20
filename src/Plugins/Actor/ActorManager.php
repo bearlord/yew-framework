@@ -606,10 +606,11 @@ class ActorManager
             if ((int)$data["processId"] === Server::$instance->getProcessManager()->getCurrentProcessId()) {
                 $className = $this->actorIdClassNameTable->get($data["classId"], "className");
 
-                // The actor is owned by this process but its DI instance may not be
-                // ready yet (e.g. mid-recovery right after a reload). If the instance
-                // is missing, fall back to an IPC proxy instead of throwing
-                // NotFoundException and fataling the message.
+                // The actor is owned by this process. Its DI instance must exist
+                // once recovery has run; if it is missing we are racing startup /
+                // a reload. Recover THIS actor locally instead of falling back to an
+                // IPC proxy (which would loop the message back to this same process
+                // and time out, since no live instance exists to answer it).
                 try {
                     /** @var Actor|null $actor */
                     $actor = DIGet($className . ":" . $actorName);
@@ -619,6 +620,25 @@ class ActorManager
                 if ($actor instanceof Actor) {
                     return $actor;
                 }
+
+                // One-shot local recovery: re-create the instance and replay its
+                // durable state so the in-flight message can be handled inline.
+                try {
+                    $actor = new $className($actorName, true);
+                    $actor->recovery();
+                    $this->addActor($actor);
+                    return $actor;
+                } catch (\Throwable $e) {
+                    Server::$instance->getLog()->warning(sprintf(
+                        'ActorManager: lazy recovery of local actor %s (%s) failed: %s',
+                        $actorName,
+                        $className,
+                        $e->getMessage()
+                    ));
+                }
+
+                // Last resort: proxy to the owning process (may time out if the
+                // actor genuinely cannot be recreated).
                 $proxy = ActorIpcProxy::create($actorName, $oneWay, $timeOut);
                 if ($proxy !== false) {
                     return $proxy;
