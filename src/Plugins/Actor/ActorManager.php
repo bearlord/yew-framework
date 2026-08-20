@@ -552,7 +552,19 @@ class ActorManager
             if (empty($className) || !class_exists($className)) {
                 continue;
             }
-            if (DIGet($className . ':' . $name) instanceof Actor) {
+            // DIGet() throws NotFoundException when the instance is NOT yet
+            // registered (i.e. not yet recovered). Treat that as "needs recovery"
+            // rather than letting the exception abort the whole loop — otherwise a
+            // single missing actor would prevent every subsequent actor in the
+            // table from being restored, leaving them unroutable (DI\NotFoundException
+            // on every incoming message).
+            $alreadyRecovered = false;
+            try {
+                $alreadyRecovered = DIGet($className . ':' . $name) instanceof Actor;
+            } catch (\Throwable $e) {
+                $alreadyRecovered = false;
+            }
+            if ($alreadyRecovered) {
                 continue;
             }
 
@@ -594,10 +606,24 @@ class ActorManager
             if ((int)$data["processId"] === Server::$instance->getProcessManager()->getCurrentProcessId()) {
                 $className = $this->actorIdClassNameTable->get($data["classId"], "className");
 
-                /** @var Actor|null $actor */
-                $actor = DIGet($className . ":" . $actorName);
-
-                return $actor;
+                // The actor is owned by this process but its DI instance may not be
+                // ready yet (e.g. mid-recovery right after a reload). If the instance
+                // is missing, fall back to an IPC proxy instead of throwing
+                // NotFoundException and fataling the message.
+                try {
+                    /** @var Actor|null $actor */
+                    $actor = DIGet($className . ":" . $actorName);
+                } catch (\Throwable $e) {
+                    $actor = null;
+                }
+                if ($actor instanceof Actor) {
+                    return $actor;
+                }
+                $proxy = ActorIpcProxy::create($actorName, $oneWay, $timeOut);
+                if ($proxy !== false) {
+                    return $proxy;
+                }
+                return null;
             }
 
             // From a worker: return an IPC proxy to the actor process.

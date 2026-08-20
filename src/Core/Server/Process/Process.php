@@ -109,6 +109,15 @@ abstract class Process
     private \Swoole\Coroutine\Socket $socket;
 
     /**
+     * Bounded IPC mailbox (Swoole Channel). Received frames are pushed here by
+     * the draining coroutine and popped by the single consumer coroutine. It is
+     * an instance property so _onProcessStop() can close it on SIGTERM to let
+     * the consumer exit gracefully. Null for worker processes (no IPC server).
+     * @var \Swoole\Coroutine\Channel|null
+     */
+    protected ?\Swoole\Coroutine\Channel $mailbox = null;
+
+    /**
      * @var LoggerInterface
      */
     protected LoggerInterface $log;
@@ -321,13 +330,16 @@ abstract class Process
                 // socket) and, combined with the sender-side EAGAIN retry in
                 // sendMessage(), bounds the in-flight message count per process.
                 $mailboxSize = 1024;
-                $mailbox = new \Swoole\Coroutine\Channel($mailboxSize);
+                // Promote mailbox to an instance property so _onProcessStop() can
+                // close it on SIGTERM, letting the consumer coroutine exit cleanly.
+                $this->mailbox = new \Swoole\Coroutine\Channel($mailboxSize);
                 // Single long-lived consumer: pops frames and dispatches them.
                 // Exactly one coroutine processes pipe messages at a time, so the
                 // total coroutine count stays bounded at (mailboxSize + 2).
-                \Swoole\Coroutine::create(function () use ($mailbox) {
+                \Swoole\Coroutine::create(function () {
                     while (true) {
-                        $item = $mailbox->pop();
+                        $item = $this->mailbox->pop();
+                        // Channel closed (SIGTERM) or error: exit safely.
                         if ($item === false) {
                             break;
                         }
@@ -336,15 +348,12 @@ abstract class Process
                     }
                 });
 
-                \Swoole\Coroutine::create(function () use ($mailbox) {
+                \Swoole\Coroutine::create(function () {
                     // Frames are streamed over the UnixSocket without message
                     // boundaries, so we accumulate bytes and reassemble complete
                     // frames ourselves. Layout: [4B srcProcessId][4B payloadLen][payload].
-                    // Hard cap on the reassembly buffer: if the peer advertises a
-                    // huge frame length (malicious or due to a protocol/parse error)
-                    // and never sends the rest, $buffer would grow unbounded and OOM
-                    // the process. We abort the connection once the cap is exceeded
-                    // or a single declared frame length is implausibly large.
+                    // Hard cap on the reassembly buffer so a peer advertising a huge
+                    // frame length (or a protocol error) cannot grow $buffer unbounded.
                     $maxBufferSize = self::IPC_MAX_BUFFER_SIZE;
                     $maxFrameSize = self::IPC_MAX_FRAME_SIZE;
                     $buffer = '';
@@ -355,18 +364,9 @@ abstract class Process
                             break;
                         }
                         if ($recv === false) {
-                            // false can mean a transient "no data right now"
-                            // (EAGAIN) rather than a fatal error. Distinguish by
-                            // errno: on EAGAIN/EWOULDBLOCK just yield and retry,
-                            // otherwise the pipe is broken and we stop. Breaking
-                            // here on a mere EAGAIN would kill this draining
-                            // coroutine and silently stop the whole process from
-                            // receiving any further IPC (=> all callers time out).
-                            $err = swoole_last_error();
-                            if ($err === SOCKET_EAGAIN || $err === SOCKET_EWOULDBLOCK) {
-                                \Swoole\Coroutine::sleep(0.001);
-                                continue;
-                            }
+                            // A fatal read error (not EAGAIN — under enableCoroutine
+                            // the coroutine socket auto-suspends on EAGAIN and never
+                            // returns false for it). Stop receiving.
                             break;
                         }
 
@@ -376,29 +376,30 @@ abstract class Process
                         // Breaking here would kill the only receiver for this
                         // process and silently stop ALL IPC to it (every caller
                         // would then time out) — far worse than a transient
-                        // back-pressure event under burst load. We reset the buffer
-                        // and yield so the sender-side EAGAIN retry can drain.
+                        // back-pressure event under burst load. We keep the last 7
+                        // bytes so a header straddling the boundary is not lost.
                         if (strlen($buffer) > $maxBufferSize) {
                             $this->log->warning(
                                 "IPC reassembly buffer exceeded {$maxBufferSize} bytes, "
                                 . "dropping pending bytes (receiver coroutine stays alive)"
                             );
-                            $buffer = '';
+                            $buffer = substr($buffer, -7);
                             \Swoole\Coroutine::sleep(0.001);
                             continue;
                         }
                         while (strlen($buffer) >= 8) {
                             $header = unpack("Nid/Nlen", substr($buffer, 0, 8));
                             // Declared frame length is implausibly large -> a
-                            // malformed/truncated header. Drop it and resync on the
-                            // next bytes instead of aborting the whole receiver.
+                            // malformed/truncated header. Drop only this 8-byte
+                            // header and resync on the remaining bytes instead of
+                            // aborting the whole receiver.
                             if ($header['len'] > $maxFrameSize) {
                                 $this->log->warning(
                                     "IPC frame length {$header['len']} exceeds cap "
-                                    . "{$maxFrameSize}, dropping malformed frame"
+                                    . "{$maxFrameSize}, dropping malformed header"
                                 );
-                                $buffer = '';
-                                continue 2;
+                                $buffer = substr($buffer, 8);
+                                continue;
                             }
                             $frameSize = 8 + $header['len'];
                             if (strlen($buffer) < $frameSize) {
@@ -412,10 +413,13 @@ abstract class Process
                             $fromProcess = $this->server->getProcessManager()->getProcessFromId($processId);
                             // push() yields (and thus bounds concurrency) when the
                             // mailbox is full instead of spawning a new coroutine.
-                            $mailbox->push([$payload, $fromProcess]);
+                            $this->mailbox->push([$payload, $fromProcess]);
                         }
                     }
-                    $mailbox->close();
+                    // Socket disconnected: close mailbox so the consumer exits.
+                    if (isset($this->mailbox) && !$this->mailbox->isClosed()) {
+                        $this->mailbox->close();
+                    }
                 });
             }
 
@@ -455,7 +459,13 @@ abstract class Process
     public function _onProcessStop()
     {
         try {
-            //Dispatch event
+            // Close the mailbox first so the consumer coroutine (blocked in
+            // $mailbox->pop()) wakes up with false and exits cleanly instead of
+            // lingering until the process is force-killed.
+            if ($this->mailbox !== null && !$this->mailbox->isClosed()) {
+                $this->mailbox->close();
+            }
+            // Dispatch event
             $this->eventDispatcher->dispatchEvent(new ProcessEvent(ProcessEvent::ProcessStopEvent, $this));
             $this->onProcessStop();
         } catch (\Throwable $e) {
