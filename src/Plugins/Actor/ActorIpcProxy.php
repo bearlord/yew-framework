@@ -290,20 +290,37 @@ class ActorIpcProxy extends IpcProxy
             $this->oneway
         );
 
+        $token = $message->getProcessIpcCallData()->getToken();
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
+        $this->telemetry(sprintf(
+            "[ipc-telemetry] SENT token=%d method=%s actor=%s target=%s",
+            $token, $name, $this->actorName,
+            $this->process->getProcessName() ?? $this->process->getProcessId()
+        ));
 
         if (!$this->oneway) {
-            $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
+            $channel = IpcManager::getChannel($token);
+            $tWait = microtime(true);
             $result = $channel->pop($this->timeOut);
+            $waitMs = (microtime(true) - $tWait) * 1000;
             $channel->close();
 
             if ($result instanceof IpcResultData) {
                 if ($result->getErrorClass() != null) {
                     throw new IpcException("[{$result->getErrorClass()}]{$result->getErrorMessage()}", $result->getErrorCode());
                 } else {
+                    $this->telemetry(sprintf(
+                        "[ipc-telemetry] REPLIED token=%d method=%s actor=%s waited=%.2fms",
+                        $token, $name, $this->actorName, $waitMs
+                    ));
                     return $result->getResult();
                 }
             } else {
+                $this->telemetry(sprintf(
+                    "[ipc-telemetry] TIMEOUT token=%d method=%s actor=%s waited=%.2fms target=%s",
+                    $token, $name, $this->actorName, $waitMs,
+                    $this->process->getProcessName() ?? $this->process->getProcessId()
+                ));
                 throw new IpcException("Time out");
             }
         }
