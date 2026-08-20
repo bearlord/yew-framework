@@ -526,7 +526,13 @@ abstract class Process
             // We now retry on EAGAIN with a short coroutine yield, bounded by a
             // hard cap well below the 5s IPC timeout so a stuck pipe fails loud
             // instead of hanging the caller.
-            $maxRetries = 2000; // ~2s of 1ms yields, leaves headroom vs 5s IPC timeout
+            // NOTE: a tight `sleep(0.001)` retry loop on EAGAIN spins the CPU to
+            // ~50%+ whenever a peer's pipe buffer stays full (e.g. a slow/stuck
+            // consumer). We use a coarser yield (0.01) and add a rate-limited
+            // warning so the busy loop also *reports* which peer is backing up,
+            // instead of silently burning cycles.
+            $maxRetries = 400; // ~4s of 10ms yields, just under the 5s IPC timeout
+            $eagainWarned = 0;
             while ($offset < $len) {
                 $written = @$toProcess->swooleProcess->write(substr($frame, $offset, $this->writeChunkSize));
                 if ($written === false) {
@@ -540,7 +546,21 @@ abstract class Process
                                 $len
                             ));
                         }
-                        \Swoole\Coroutine::sleep(0.001);
+                        // Rate-limited warning: only surface the first few EAGAINs
+                        // per sendMessage call so a stuck peer shows up in logs
+                        // without flooding them.
+                        if ($eagainWarned++ < 3) {
+                            $log = Server::$instance !== null ? Server::$instance->getLog() : null;
+                            if ($log !== null) {
+                                $log->warning(sprintf(
+                                    '[ipc] pipe to %s full, yielding (retry %d, %d bytes buffered)',
+                                    $toProcess->getProcessName(),
+                                    $eagainWarned,
+                                    $len - $offset
+                                ));
+                            }
+                        }
+                        \Swoole\Coroutine::sleep(0.01);
                         continue;
                     }
                     throw new \RuntimeException(sprintf(
