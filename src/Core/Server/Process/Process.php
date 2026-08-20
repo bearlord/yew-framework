@@ -375,12 +375,12 @@ abstract class Process
                             break;
                         }
                         if ($recv === null) {
-                            // Some Swoole builds return null instead of suspending
-                            // when there is momentarily no data. Treat it as a
-                            // non-fatal no-op: yield briefly so we never busy-spin
-                            // the receiver coroutine (which would peg a CPU core).
-                            \Swoole\Coroutine::sleep(0.001);
-                            continue;
+                            // Under enableCoroutine a healthy coroutine socket
+                            // auto-suspends on no-data and never returns null for it.
+                            // A null here therefore means the socket is unusable
+                            // (closed/EOF/error), so stop receiving rather than
+                            // busy-spinning on it.
+                            break;
                         }
 
                         $buffer .= $recv;

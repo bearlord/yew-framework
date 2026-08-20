@@ -52,8 +52,11 @@ class Channel
         goWithContext(function () {
             while (true) {
                 $message = $this->swooleChannel->pop();
+                if ($message === false) {
+                    // Channel closed (process stopping): exit the loop.
+                    break;
+                }
                 $this->publishToActor($message[0], $message[1], $message[2], $message[3]);
-                \Swoole\Coroutine::sleep(0.001);
             }
         });
     }
