@@ -152,9 +152,10 @@ class IpcMessageProcessor extends MessageProcessor
                         break;
 
                     default:
+                        $_method = $ipcCallData->getName();
                         try {
                             $tExec = microtime(true);
-                            $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
+                            $result = call_user_func_array([$handle, $_method], $args);
                             $execMs = (microtime(true) - $tExec) * 1000;
                             if ($execMs > 5) {
                                 $this->telemetry(sprintf(

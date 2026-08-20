@@ -52,7 +52,7 @@ class IpcProxy
      * Safe debug telemetry. Logger may be null in some processes; never let it
      * crash the IPC call path.
      */
-    private function telemetry(string $msg): void
+    protected function telemetry(string $msg): void
     {
         try {
             $logger = Server::$instance->getLog();
