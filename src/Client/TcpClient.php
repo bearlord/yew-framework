@@ -17,6 +17,11 @@ class TcpClient
 {
     protected Client $client;
 
+    /**
+     * @param array $options Supported keys: connectTimeout (float seconds),
+     *                        ssl, sslVerifyPeer, sslAllowSelfSigned, sslCertFile,
+     *                        sslKeyFile
+     */
     public function __construct(
         protected string $host,
         protected int $port,
@@ -50,6 +55,7 @@ class TcpClient
     }
 
     /**
+     * @param float $timeout seconds to wait; -1 blocks until data arrives
      * @return string|false
      */
     public function recv(float $timeout = -1)

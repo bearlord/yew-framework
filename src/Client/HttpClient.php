@@ -16,6 +16,11 @@ class HttpClient
 {
     protected Client $client;
 
+    /**
+     * @param array $options Supported keys: settings (array passed to client->set),
+     *                        headers (default request headers), sslVerifyPeer,
+     *                        sslAllowSelfSigned, sslCertFile, sslKeyFile
+     */
     public function __construct(
         protected string $host,
         protected int $port,
@@ -39,16 +44,28 @@ class HttpClient
         }
     }
 
+    /**
+     * @param string $path    request path, should start with "/"
+     * @param array  $headers extra request headers
+     */
     public function get(string $path, array $headers = []): bool
     {
         return $this->client->get($path, $headers);
     }
 
+    /**
+     * @param string $path    request path, should start with "/"
+     * @param mixed  $data    request body, string or array
+     * @param array  $headers extra request headers
+     */
     public function post(string $path, $data, array $headers = []): bool
     {
         return $this->client->post($path, $data, $headers);
     }
 
+    /**
+     * @param string $method HTTP method, e.g. "GET", "POST"
+     */
     public function execute(string $path, string $method = 'GET'): bool
     {
         return $this->client->execute($path, $method);
@@ -59,12 +76,12 @@ class HttpClient
         return $this->client->statusCode;
     }
 
-    public function getBody()
+    public function getBody(): string
     {
         return $this->client->body;
     }
 
-    public function getHeaders()
+    public function getHeaders(): array
     {
         return $this->client->headers;
     }

@@ -17,6 +17,11 @@ class WebSocketClient
 {
     protected Client $client;
 
+    /**
+     * @param array $options Supported keys: settings (array passed to client->set),
+     *                        headers (default request headers), sslVerifyPeer,
+     *                        sslAllowSelfSigned, sslCertFile, sslKeyFile
+     */
     public function __construct(
         protected string $host,
         protected int $port,
@@ -48,13 +53,19 @@ class WebSocketClient
         }
     }
 
+    /**
+     * @param mixed $data    payload to send
+     * @param int   $opcode  frame type, default text
+     * @param bool  $finish  false to send a fragmented message
+     */
     public function push($data, int $opcode = WEBSOCKET_OPCODE_TEXT, bool $finish = true): bool
     {
         return $this->client->push($data, $opcode, $finish);
     }
 
     /**
-     * @return \Swoole\Http\Client\Exception|\Swoole\WebSocket\Frame|false
+     * @param float $timeout seconds to wait; -1 blocks until a frame arrives
+     * @return \Swoole\WebSocket\Frame|false
      */
     public function recv(float $timeout = -1)
     {
