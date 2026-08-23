@@ -1,16 +1,20 @@
 <?php
 /**
- * Copied from hyperf, and modifications are not listed anymore.
- * @contact  group@hyperf.io
- * @licence  MIT License
- * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ * Yew framework
+ * @author bearlord <565364226@qq.com>
  */
 
 namespace Yew\Snowflake\MetaGenerator;
 
 use Yew\Snowflake\MetaGenerator;
 
-class RandomMilliSecondMetaGenerator extends MetaGenerator
+/**
+ * Default meta generator with a fixed dataCenterId/workerId resolved from
+ * configuration, environment, or the current process id. Unlike the legacy
+ * RandomMilliSecondMetaGenerator, the worker id is stable for the process
+ * lifetime, which is required for id uniqueness.
+ */
+class SysMetaGenerator extends MetaGenerator
 {
     protected int $dataCenterId;
 
@@ -18,8 +22,8 @@ class RandomMilliSecondMetaGenerator extends MetaGenerator
 
     /**
      * @param int      $beginTimestamp epoch seconds; multiplied by 1000 internally
-     * @param int|null $dataCenterId   fixed id, defaults to a value derived from env/pid
-     * @param int|null $workerId       fixed id, defaults to a value derived from env/pid
+     * @param int|null $dataCenterId   fixed id, defaults to env SNOWFLAKE_DATA_CENTER_ID or pid
+     * @param int|null $workerId       fixed id, defaults to env SNOWFLAKE_WORKER_ID or pid
      */
     public function __construct(int $beginTimestamp = 0, ?int $dataCenterId = null, ?int $workerId = null)
     {
@@ -32,10 +36,6 @@ class RandomMilliSecondMetaGenerator extends MetaGenerator
         $this->workerId = $this->resolveId($workerId, 'SNOWFLAKE_WORKER_ID', $maxWorkerId);
     }
 
-    /**
-     * Pick a fixed id: use the explicit value if given, else an env var,
-     * else fall back to the current pid masked into range.
-     */
     protected function resolveId(?int $value, string $envKey, int $max): int
     {
         if ($value !== null) {

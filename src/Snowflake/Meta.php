@@ -26,12 +26,12 @@ class Meta
     protected int $sequence;
 
     /**
-     * @var int seconds or milliseconds
+     * @var int milliseconds since epoch
      */
     protected int $timestamp = 0;
 
     /**
-     * @var int seconds or milliseconds
+     * @var int milliseconds since epoch
      */
     protected int $beginTimestamp = 0;
 

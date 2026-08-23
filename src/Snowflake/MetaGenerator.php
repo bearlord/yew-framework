@@ -62,7 +62,7 @@ abstract class MetaGenerator implements MetaGeneratorInterface
      */
     protected function getOrSetConfiguration()
     {
-        if (empty($this->configuration)) {
+        if ($this->configuration === null) {
             $this->configuration = new Configuration();
         }
 
@@ -85,13 +85,17 @@ abstract class MetaGenerator implements MetaGeneratorInterface
         $timestamp = $this->getTimestamp();
 
         if ($timestamp == $this->lastTimestamp) {
-            $this->sequence = ($this->sequence + 1) % $this->configuration->maxSequence();
-            if ($this->sequence == 0) {
+            // Within the same millisecond: advance the sequence. If it wraps
+            // around, the millisecond is exhausted, so spin until the next one.
+            $this->sequence = $this->sequence + 1;
+            if ($this->sequence > $this->configuration->maxSequence()) {
                 $timestamp = $this->getNextTimestamp();
+                $this->sequence = 0;
             }
         } elseif ($timestamp < $this->lastTimestamp) {
+            // Clock moved backwards: refuse to generate to avoid collisions.
             $this->clockMovedBackwards($timestamp, $this->lastTimestamp);
-            $this->sequence = ($this->sequence + 1) % $this->configuration->maxSequence();
+            $this->sequence = 0;
             $timestamp = $this->lastTimestamp;
         } else {
             $this->sequence = 0;
@@ -107,10 +111,10 @@ abstract class MetaGenerator implements MetaGeneratorInterface
     }
 
     /**
-     * @param $timestamp
-     * @param $lastTimestamp
+     * @param int $timestamp
+     * @param int $lastTimestamp
      */
-    protected function clockMovedBackwards($timestamp, $lastTimestamp)
+    protected function clockMovedBackwards(int $timestamp, int $lastTimestamp)
     {
         throw new SnowflakeException(sprintf('Clock moved backwards. Refusing to generate id for %d milliseconds.', $lastTimestamp - $timestamp));
     }
