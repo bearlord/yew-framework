@@ -202,8 +202,8 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
                     }
                     $schema = $item["schema"] ?? null;
                     $path = $item["path"] ?? null;
-                    $weigth = $item["weight"] ?? 0;
-                    $nodes[] = new Node($schema, $item["host"], $item["port"], $path, $weigth);
+                    $weight = $item["weight"] ?? 0;
+                    $nodes[] = new Node($schema, $item["host"], $item["port"], $path, $weight);
                 }
             }
             return $nodes;
@@ -227,21 +227,30 @@ class JsonRpcHttpTransporter extends Component implements TransporterInterface
             $node->getPath()
         );
 
-        enableRuntimeCoroutine(true, SWOOLE_HOOK_ALL);
         $channel = new Channel(1);
         goWithContext(function () use ($channel, $url, $node, $data) {
             $saber = Saber::create([
                 "headers" => [
                     "Content-Type" => "application/json; charset=UTF-8",
-                ]
+                ],
+                "timeout" => $this->receiveTimeout,
             ]);
-            $responeData = $saber->post($url, $data)->getBody();
-            $channel->push($responeData);
-
-            $this->loadBalancer->removeNode($node);
+            $response = $saber->post($url, $data);
+            if (!$response->success) {
+                // Only remove a node on failure, not after every successful call.
+                if ($this->loadBalancer instanceof LoadBalancerInterface) {
+                    $this->loadBalancer->removeNode($node);
+                }
+                $channel->push(false);
+                return;
+            }
+            $channel->push($response->getBody());
         });
 
         $response = $channel->pop();
+        if ($response === false) {
+            throw new \RuntimeException(sprintf('JsonRpc http request to %s failed.', $url));
+        }
         return $response;
     }
 

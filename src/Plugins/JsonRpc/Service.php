@@ -34,7 +34,7 @@ class Service extends Component
         $actionParams = [];
         $requestedParams = [];
 
-        foreach ($method->getParameters() as $param) {
+        foreach ($method->getParameters() as $i => $param) {
             $name = $param->getName();
             $key = null;
             if (array_key_exists($i, $params)) {

@@ -168,8 +168,8 @@ class JsonRpcTransporter extends Component implements TransporterInterface
                     }
                     $schema = $item["schema"] ?? null;
                     $path = $item["path"] ?? null;
-                    $weigth = $item["weight"] ?? 0;
-                    $nodes[] = new Node($schema, $item["host"], $item["port"], $path, $weigth);
+                    $weight = $item["weight"] ?? 0;
+                    $nodes[] = new Node($schema, $item["host"], $item["port"], $path, $weight);
                 }
             }
             return $nodes;
