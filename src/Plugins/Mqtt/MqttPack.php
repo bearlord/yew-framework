@@ -8,6 +8,7 @@
 
 namespace Yew\Plugins\Mqtt;
 
+use DI\Annotation\Inject;
 use Yew\Mqtt\Message\AbstractMessage;
 use Yew\Mqtt\Message\ConnAck;
 use Yew\Mqtt\Message\DisConnect;

@@ -7,7 +7,6 @@
 namespace Yew\Plugins\Mqtt;
 
 use Yew\Core\Plugins\Config\BaseConfig;
-use Yew\Plugins\Mqtt\Auth\MqttAuth;
 
 class MqttPluginConfig extends BaseConfig
 {
@@ -24,12 +23,6 @@ class MqttPluginConfig extends BaseConfig
      * @var int
      */
     protected $serverQos = 0;
-
-    /**
-     * Connection authentication class
-     * @var string
-     */
-    protected $mqttAuthClass = MqttAuth::class;
 
     /**
      * When useRoute is set to true, it will no longer have the function of mqtt, and the topic field will be treated as the route path
@@ -49,22 +42,6 @@ class MqttPluginConfig extends BaseConfig
     public function __construct()
     {
         parent::__construct(self::KEY);
-    }
-
-    /**
-     * @return string
-     */
-    public function getMqttAuthClass(): string
-    {
-        return $this->mqttAuthClass;
-    }
-
-    /**
-     * @param string $mqttAuthClass
-     */
-    public function setMqttAuthClass(string $mqttAuthClass): void
-    {
-        $this->mqttAuthClass = $mqttAuthClass;
     }
 
     /**

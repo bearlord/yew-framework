@@ -9,7 +9,6 @@ class m250930_084859_create_mqtt_offline_message_table extends Migration
 {
     /**
      * {@inheritdoc}
-     *
      * @return bool
      */
     public function safeUp(): bool
@@ -57,7 +56,6 @@ class m250930_084859_create_mqtt_offline_message_table extends Migration
 
     /**
      * {@inheritdoc}
-     *
      * @return bool
      */
     public function safeDown(): bool
