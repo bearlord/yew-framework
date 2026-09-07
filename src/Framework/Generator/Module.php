@@ -34,7 +34,7 @@ use Yew\Framework\Web\ForbiddenHttpException;
  * With the above configuration, you will be able to access GiiModule in your browser using
  * the URL `http://localhost/path/to/index.php?r=gii`
  *
- * If your application enables [[\yii\web\UrlManager::enablePrettyUrl|pretty URLs]],
+ * If your application enables [[\Yew\Framework\Web\UrlManager::enablePrettyUrl|pretty URLs]],
  * you can then access Gii via URL: `http://localhost/path/to/index.php/gii`
  *
  * @author Qiang Xue <qiang.xue@gmail.com>

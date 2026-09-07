@@ -753,7 +753,7 @@ class Generator extends \Yew\Framework\Generator\Generator
     protected function generateRelationName(array $relations, TableSchema $table, string $key, bool $multiple): string
     {
         static $baseModel;
-        /* @var $baseModel \yii\db\ActiveRecord */
+        /* @var $baseModel \Yew\Framework\Db\ActiveRecord */
         if ($baseModel === null) {
             $baseClass = $this->baseClass;
             $baseClassReflector = new \ReflectionClass($baseClass);
@@ -1004,7 +1004,7 @@ class Generator extends \Yew\Framework\Generator\Generator
 
     /**
      * @return string|null driver name of db connection.
-     * In case db is not instance of \yii\db\Connection null will be returned.
+     * In case db is not instance of \Yew\Framework\Db\Connection null will be returned.
      * @since 2.0.6
      */
     protected function getDbDriverName(): ?string

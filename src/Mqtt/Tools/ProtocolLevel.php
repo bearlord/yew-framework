@@ -16,8 +16,8 @@ class ProtocolLevel
     public static function protocolLevels(): array
     {
         return [
-            self::PROTOCOL_LEVEL_V3_1 => 'v3.1',
-            self::PROTOCOL_LEVEL_V3_1_1 => 'v3.1.1',
+            self::PROTOCOL_LEVEL_V3_1 => '3.1',
+            self::PROTOCOL_LEVEL_V3_1_1 => '3.1.1',
             self::PROTOCOL_LEVEL_V5 => '5.0'
         ];
     }

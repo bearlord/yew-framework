@@ -27,59 +27,32 @@ abstract class AbstractServiceClient extends Component
      */
     public string $protocol = '';
 
-    /**
-     * @var array
-     */
     public array $nodes = [];
 
-    /**
-     * @var Node
-     */
-    public $node;
+    public ?Node $node = null;
 
-    /**
-     * @var string
-     */
     public string $host = '';
 
-    /**
-     * @var string
-     */
-    public string $port = '';
+    public int $port = 0;
 
-    /**
-     * @var Client
-     */
-    public $client;
+    public ?Client $client = null;
 
-    /**
-     * @return string
-     */
     public function getServiceName(): string
     {
         return $this->serviceName;
     }
 
-    /**
-     * @param string $serviceName
-     */
     public function setServiceName(string $serviceName): void
     {
         $this->serviceName = $serviceName;
     }
 
 
-    /**
-     * @param string $protocol
-     */
     public function setProtocol(string $protocol): void
     {
         $this->protocol = $protocol;
     }
 
-    /**
-     * @return string
-     */
     public function getProtocol(): string
     {
         if (empty($this->protocol)) {
@@ -90,65 +63,41 @@ abstract class AbstractServiceClient extends Component
         return $this->protocol;
     }
 
-    /**
-     * @return array
-     */
     public function getNodes(): array
     {
         return $this->nodes;
     }
 
-    /**
-     * @param array $nodes
-     */
     public function setNodes(array $nodes): void
     {
         $this->nodes = $nodes;
     }
 
-    /**
-     * @return string
-     */
     public function getHost(): string
     {
         return $this->host;
     }
 
-    /**
-     * @param string $host
-     */
     public function setHost(string $host): void
     {
         $this->host = $host;
     }
 
-    /**
-     * @return string
-     */
-    public function getPort(): string
+    public function getPort(): int
     {
         return $this->port;
     }
 
-    /**
-     * @param string $port
-     */
-    public function setPort(string $port): void
+    public function setPort(int $port): void
     {
         $this->port = $port;
     }
 
-    /**
-     * @return Client
-     */
-    public function getClient(): Client
+    public function getClient(): ?Client
     {
         return $this->client;
     }
 
-    /**
-     * @param Client $client
-     */
     public function setClient(Client $client): void
     {
         $this->client = $client;

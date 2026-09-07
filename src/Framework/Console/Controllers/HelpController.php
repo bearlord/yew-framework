@@ -223,7 +223,7 @@ class HelpController extends Controller
 
     /**
      * Returns available commands of a specified module.
-     * @param \yii\base\Module $module the module instance
+     * @param \Yew\Framework\Base\Module $module the module instance
      * @return array the available command names
      */
     protected function getModuleCommands($module)

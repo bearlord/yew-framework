@@ -13,21 +13,10 @@ use Yew\Plugins\Redis\RedisPlugin;
 
 class SessionPlugin extends AbstractPlugin
 {
-
-    /**
-     * @var SessionConfig|null
-     */
     private ?SessionConfig $sessionConfig;
 
-    /**
-     * @var SessionStorage
-     */
     protected SessionStorage $sessionStorage;
 
-    /**
-     * SessionPlugin constructor.
-     * @param SessionConfig|null $sessionConfig
-     */
     public function __construct(?SessionConfig $sessionConfig = null)
     {
         parent::__construct();
@@ -38,30 +27,17 @@ class SessionPlugin extends AbstractPlugin
         $this->sessionConfig = $sessionConfig;
     }
 
-    /**
-     * @param PluginInterfaceManager $pluginInterfaceManager
-     * @return void
-     */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
         $pluginInterfaceManager->addPlugin(new RedisPlugin());
     }
 
-    /**
-     * @inheritDoc
-     * @return string
-     */
     public function getName(): string
     {
         return "Session";
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \Exception
-     */
     public function beforeServerStart(Context $context)
     {
         $this->sessionConfig->merge();
@@ -71,18 +47,11 @@ class SessionPlugin extends AbstractPlugin
         $this->setToDIContainer(HttpSession::class, new HttpSessionProxy());
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     */
     public function beforeProcessStart(Context $context)
     {
         $this->ready();
     }
 
-    /**
-     * @return SessionStorage
-     */
     public function getSessionStorage(): SessionStorage
     {
         return $this->sessionStorage;

@@ -51,7 +51,7 @@ class RedisPool extends Pool
         $contextKey = sprintf("Redis:%s", $this->getConfig()->getName());
 
         $db = getContextValue($contextKey);
-        if ($db == null) {
+        if ($db === null) {
             /** @var PoolConnection $poolConnection */
             $poolConnection = $this->get();
             if (empty($poolConnection)) {

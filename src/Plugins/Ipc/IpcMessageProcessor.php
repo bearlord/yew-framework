@@ -10,11 +10,12 @@ use Yew\Core\Message\Message;
 use Yew\Core\Message\MessageProcessor;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
+use Yew\Plugins\Actor\ActorIpcCallMessage;
 
 class IpcMessageProcessor extends MessageProcessor
 {
     use GetLogger;
-    
+
     const TYPE = "@ipc";
 
     /**
@@ -42,15 +43,55 @@ class IpcMessageProcessor extends MessageProcessor
     {
         if ($message instanceof IpcCallMessage) {
             $ipcCallData = $message->getProcessIpcCallData();
-            $handle = Server::$instance->getContainer()->get($ipcCallData->getClassName());
+
+            // Actor proxies carry the actor name in a dedicated field of the
+            // ActorIpcCallMessage subtype, so the class name stays a clean DI
+            // identifier. Resolve actor handles through ActorManager::getActor().
+            $handle = null;
+            $className = $ipcCallData->getClassName();
+            if ($message instanceof ActorIpcCallMessage) {
+                $actor = \Yew\Plugins\Actor\ActorManager::getInstance()->getActor($ipcCallData->getActorName());
+                if ($actor instanceof \Yew\Plugins\Actor\Actor) {
+                    $handle = $actor;
+                }
+            }
+            try {
+                if ($handle === null) {
+                    $handle = Server::$instance->getContainer()->get($className);
+                }
+            } catch (\Throwable $e) {
+                // Resolution failure (e.g. actor not owned by this process, or the
+                // class is not a registered DI service) must still produce a reply
+                // so the caller does not hang on a silent timeout.
+                $errorClass = get_class($e);
+                $errorCode = $e->getCode();
+                $errorMessage = $e->getMessage();
+                $this->error($e);
+                $this->reply($ipcCallData, $message, null, $errorClass, $errorCode, $errorMessage);
+                return true;
+            }
             $result = null;
             $errorClass = null;
             $errorCode = null;
             $errorMessage = null;
 
-            $lockSessionId = $this->sessions[$ipcCallData->getClassName()] ?? null;
+            // Session lock key: actor messages are keyed by the actor name so each
+            // actor instance keeps its own transaction lock (equivalent to the old
+            // "ClassName:actorName" key). Plain service classes keep the class name
+            // as the lock key, matching the per-DI-singleton transaction semantics.
+            $sessionKey = $message instanceof ActorIpcCallMessage
+                    ? $ipcCallData->getActorName()
+                    : $ipcCallData->getClassName();
+
+            $lockSessionId = $this->sessions[$sessionKey] ?? null;
             $sessionId = $ipcCallData->getArguments()["sessionId"] ?? null;
             $args = $ipcCallData->getArguments();
+            // Strip framework-internal metadata keys that travel inside the
+            // argument bag (e.g. the distributed-tracing id injected by
+            // ActorIpcProxy::tell/ask). They are not business method parameters,
+            // and call_user_func_array would otherwise expand them as named
+            // arguments and fatal with "Unknown named parameter $__traceId".
+            unset($args['__traceId']);
 
             if ($lockSessionId === $sessionId) {
                 if ($sessionId != null) {
@@ -71,8 +112,9 @@ class IpcMessageProcessor extends MessageProcessor
                         break;
 
                     default:
+                        $_method = $ipcCallData->getName();
                         try {
-                            $result = call_user_func_array([$handle, $ipcCallData->getName()], $args);
+                            $result = call_user_func_array([$handle, $_method], $args);
                         } catch (\Throwable $e) {
                             $errorClass = get_class($e);
                             $errorCode = $e->getCode();
@@ -84,21 +126,16 @@ class IpcMessageProcessor extends MessageProcessor
                 }
             } else {
                 //The transaction id does not match and cache the message
-                $this->cacheMessages[$ipcCallData->getClassName()][] = $message;
+                $this->cacheMessages[$sessionKey][] = $message;
 
                 return true;
             }
 
-            if (!$ipcCallData->isOneway()) {
-                Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage(
-                    new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
-                    Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
-                );
-            }
-            
+            $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
+
             //Processing cache
-            if (!isset($this->sessions[$ipcCallData->getClassName()])) {
-                $cacheMessages = $this->cacheMessages[$ipcCallData->getClassName()] ?? null;
+            if (!isset($this->sessions[$sessionKey])) {
+                $cacheMessages = $this->cacheMessages[$sessionKey] ?? null;
                 if (!empty($cacheMessages)) {
                     foreach ($cacheMessages as $cacheMessage) {
                         goWithContext(function () use ($cacheMessage) {
@@ -117,5 +154,31 @@ class IpcMessageProcessor extends MessageProcessor
         }
 
         return false;
+    }
+
+    /**
+     * Send the IPC result back to the caller process.
+     *
+     * Always replies (unless the call was one-way) so the caller never hangs on
+     * a silent timeout when the handler produced an error or could not resolve
+     * a handle.
+     *
+     * @param IpcCallData $ipcCallData
+     * @param Message     $message
+     * @param mixed       $result
+     * @param string|null $errorClass
+     * @param int|null    $errorCode
+     * @param string|null $errorMessage
+     */
+    private function reply(IpcCallData $ipcCallData, Message $message, $result, ?string $errorClass, ?int $errorCode, ?string $errorMessage): void
+    {
+        if ($ipcCallData->isOneway()) {
+            return;
+        }
+
+        Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage(
+                new IpcResultMessage($ipcCallData->getToken(), $result, $errorClass, $errorCode, $errorMessage),
+                Server::$instance->getProcessManager()->getProcessFromId($message->getFromProcessId())
+        );
     }
 }

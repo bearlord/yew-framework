@@ -20,7 +20,7 @@ use Yew\Framework\Exception\UserException;
  *
  * ```php
  * if ($item === null) { // item does not exist
- *     throw new \yii\web\HttpException(404, 'The requested Item could not be found.');
+ *     throw new \Yew\Framework\Web\HttpException(404, 'The requested Item could not be found.');
  * }
  * ```
  *

@@ -86,7 +86,13 @@ class Queue extends CliQueue
                 } elseif (!$repeat) {
                     break;
                 }
-                \Swoole\Coroutine::sleep(0.001);
+                // reserve() already blocks (BRPOP) when $timeout > 0, so a tight
+                // 1ms poll loop is only needed in non-blocking mode ($timeout == 0).
+                // A 1ms busy-poll pins a full CPU core; back off to a sane idle
+                // interval instead.
+                if ($timeout <= 0) {
+                    \Swoole\Coroutine::sleep(0.05);
+                }
             }
         });
     }
@@ -172,6 +178,10 @@ class Queue extends CliQueue
         }
 
         $payload = $this->redis->hget("$this->channel.messages", $id);
+        if ($payload === false) {
+            // The message may have been removed/clear-ed between rpop and hget.
+            return null;
+        }
         list($ttr, $message) = explode(';', $payload, 2);
         $this->redis->zadd("$this->channel.reserved", time() + $ttr, $id);
         $attempt = $this->redis->hincrby("$this->channel.attempts", $id, 1);

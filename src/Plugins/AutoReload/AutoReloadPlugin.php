@@ -9,27 +9,20 @@ namespace Yew\Plugins\AutoReload;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Coroutine\Server\Server;
-use Yew\Plugins\AutoReload\AutoReloadConfig;
 
+/**
+ * Watches source files and reloads the server on change (inotify or polling).
+ */
 class AutoReloadPlugin extends AbstractPlugin
 {
     const PROCESS_NAME = "helper";
 
     const PROCESS_GROUP_NAME = "HelperGroup";
 
-    /**
-     * @var InotifyReload
-     */
-    protected $inotifyReload;
+    protected ?InotifyReload $inotifyReload = null;
 
-    /**
-     * @var AutoReloadConfig|null
-     */
     private ?AutoReloadConfig $autoReloadConfig = null;
 
-    /**
-     * @param AutoReloadConfig|null $autoReloadConfig
-     */
     public function __construct(?AutoReloadConfig $autoReloadConfig = null)
     {
         parent::__construct();
@@ -39,22 +32,11 @@ class AutoReloadPlugin extends AbstractPlugin
         $this->autoReloadConfig = $autoReloadConfig;
     }
 
-    /**
-     * @inheritDoc
-     * @return string
-     */
     public function getName(): string
     {
         return "AutoReload";
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \ReflectionException
-     * @throws \Yew\Core\Exception\ConfigException
-     * @throws \Yew\Core\Exception\Exception
-     */
     public function beforeServerStart(Context $context)
     {
         if ($this->autoReloadConfig->getMonitorDir() == null) {
@@ -62,16 +44,9 @@ class AutoReloadPlugin extends AbstractPlugin
         }
         $this->autoReloadConfig->merge();
 
-        //Add help process
         Server::$instance->addProcess(self::PROCESS_NAME, HelperReloadProcess::class, self::PROCESS_GROUP_NAME);
-        return;
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \Exception
-     */
     public function beforeProcessStart(Context $context)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName() === self::PROCESS_NAME) {
@@ -80,10 +55,7 @@ class AutoReloadPlugin extends AbstractPlugin
         $this->ready();
     }
 
-    /**
-     * @return InotifyReload
-     */
-    public function getInotifyReload(): InotifyReload
+    public function getInotifyReload(): ?InotifyReload
     {
         return $this->inotifyReload;
     }

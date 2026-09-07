@@ -46,12 +46,11 @@ class Protocol
      */
     public function getPacker(string $protocol): string
     {
-        $value = !empty($this->protocols[$protocol]) ? $this->protocols[$protocol] : "";
-        if (empty($value)) {
-            return false;
+        if (empty($this->protocols[$protocol])) {
+            throw new \Yew\Framework\Base\InvalidArgumentException(sprintf('Unknown JsonRpc protocol [%s] for packer.', $protocol));
         }
 
-        return $value["packer"];
+        return $this->protocols[$protocol]["packer"];
     }
 
     /**
@@ -60,11 +59,10 @@ class Protocol
      */
     public function getTransporter(string $protocol): string
     {
-        $value = !empty($this->protocols[$protocol]) ? $this->protocols[$protocol] : "";
-        if (empty($value)) {
-            return false;
+        if (empty($this->protocols[$protocol])) {
+            throw new \Yew\Framework\Base\InvalidArgumentException(sprintf('Unknown JsonRpc protocol [%s] for transporter.', $protocol));
         }
-        
-        return $value["transporter"];
+
+        return $this->protocols[$protocol]["transporter"];
     }
 }

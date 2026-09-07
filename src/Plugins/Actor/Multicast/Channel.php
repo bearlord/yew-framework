@@ -10,7 +10,7 @@ use Ds\Set;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Plugins\Actor\Actor;
-use Yew\Plugins\Actor\ActorException;
+use Yew\Plugins\Actor\ActorIpcProxy;
 use Yew\Plugins\Actor\ActorMessage;
 use Yew\Coroutine\Server\Server;
 use Yew\Yew;
@@ -32,8 +32,9 @@ class Channel
     protected $channelTable;
 
     /**
-     * Channel constructor.
-     * @param Table $channelTable
+     * Build the multicast channel manager and start the publish loop.
+     *
+     * @param Table $channelTable Cross-process table of channel/actor pairs
      */
     public function __construct(Table $channelTable)
     {
@@ -44,15 +45,18 @@ class Channel
             $this->addSubscribeFormTable($value["channel"], $value["actor"]);
         }
 
-        $config = Server::$instance->getConfigContext()->get("actor");
-        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$config["actorMulticastChannelCapacity"]]);
+        $capacity = Server::$instance->getConfigContext()->get("actor.multicastChannelCapacity", 10000);
+        $this->swooleChannel = DIGet(\Yew\Core\Channel\Channel::class, [$capacity]);
 
         //Iterate to publish messages to the actor
         goWithContext(function () {
             while (true) {
                 $message = $this->swooleChannel->pop();
+                if ($message === false) {
+                    // Channel closed (process stopping): exit the loop.
+                    break;
+                }
                 $this->publishToActor($message[0], $message[1], $message[2], $message[3]);
-                \Swoole\Coroutine::sleep(0.001);
             }
         });
     }
@@ -122,7 +126,6 @@ class Channel
      * @param array $excludeActorList
      * @param string|null $from
      * @return void
-     * @throws ActorException
      */
     public function publish(string $channel, string $message, array $excludeActorList = [], ?string $from = ""): void
     {
@@ -147,11 +150,10 @@ class Channel
      * @param $message
      * @param string|null $fromActor
      * @return void
-     * @throws ActorException
      */
     protected function publishToActor(string $channel, string $toActor, $message, ?string $fromActor = ""): void
     {
-        $actorInstance = Actor::getProxy($toActor);
+        $actorInstance = ActorIpcProxy::create($toActor, false, 5);
 
         if (!empty($actorInstance)) {
             $actorMessage = new ActorMessage([

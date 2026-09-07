@@ -1,0 +1,347 @@
+<?php
+
+namespace Yew\Plugins\Actor;
+
+use Yew\Coroutine\Server\Server;
+use Yew\Plugins\Actor\Event\ActorCreateEvent;
+use Yew\Plugins\Actor\Event\ActorDestroyEvent;
+use Yew\Plugins\Actor\Routing\ActorRoutingStrategy;
+use Yew\Plugins\Actor\Routing\RoundRobinStrategy;
+use Yew\Plugins\Actor\Routing\ConsistentHashStrategy;
+use Yew\Plugins\Actor\Routing\LeastLoadedStrategy;
+use Yew\Plugins\Actor\Props;
+use Yew\Plugins\Actor\ActorIpcProxy;
+
+class ActorSystem
+{
+    /**
+     * Create an actor and return its IPC proxy
+     *
+     * @param string      $actionClass Actor class name
+     * @param string      $actorName   Actor name (globally unique)
+     * @param mixed       $data        Initialization data
+     * @param bool        $waitCreate  Whether to wait for creation to finish
+     * @param float       $timeOut     Wait timeout in seconds
+     * @param string|null $parentName  Parent actor name; when set the child is
+     *                                 created in the parent's process (supervision tree)
+     * @param string|null $routingKey  Key for key-based routing (consistent hash);
+     *                                 defaults to $actorName when null
+     * @param bool        $pinLocal    When true the actor is pinned to a LOCAL actor
+     *                                 process: placement never consults the cluster
+     *                                 shard router and create() is never forwarded to
+     *                                 a peer node. This is a pure actor-side deployment
+     *                                 constraint — the cluster module is unaware of it.
+     *                                 The process still lives in the normal actor
+     *                                 process group (IPC semantics unchanged), and the
+     *                                 actor is resolved via the local actor table.
+     * @return ActorIpcProxy|false
+     * @throws ActorException
+     */
+    public static function create(
+        string $actionClass,
+        string $actorName,
+        $data = null,
+        bool $waitCreate = true,
+        float $timeOut = 5,
+        ?string $parentName = null,
+        ?string $routingKey = null,
+        bool $pinLocal = false)
+    {
+        if ($waitCreate && ActorManager::getInstance()->hasActor($actorName)) {
+            $proxy = ActorIpcProxy::create($actorName, false, $timeOut);
+            return $proxy === false ? true : $proxy;
+        }
+
+        // Cluster-aware placement: when cluster routing is enabled and the actor is
+        // NOT pinned locally, create it on the node the shard router assigns as its
+        // owner. If that is a remote node, forward the create over the remote
+        // transport and return a remote proxy. A $pinLocal actor bypasses this
+        // branch entirely and is always created in the local actor process group.
+        // Note: the actor module decides whether clustering is active purely from
+        // the shard router type (see ActorManager::isClusterRoutingEnabled), so it
+        // never imports any cluster config class — dependency stays actor -> cluster.
+        $manager = ActorManager::getInstance();
+        if (!$pinLocal && $manager->isClusterRoutingEnabled()) {
+            $router = $manager->getShardRouter();
+            $loc = $router->locate($actorName);
+            if ($loc !== null && !$loc->getNode()->isLocal()) {
+                $actorData = $data === null ? [] : (is_array($data) ? $data : [$data]);
+                $result = $manager->getRemoteTransport()->create(
+                    $loc, $actionClass, $actorName, $actorData, $parentName, null, $timeOut
+                );
+                if ($result === null) {
+                    return false;
+                }
+                if (is_array($result) && (int) ($result['code'] ?? 200) >= 400) {
+                    throw new ActorException("Remote actor create failed: " . ($result['message'] ?? 'unknown'));
+                }
+                $proxy = ActorIpcProxy::create($actorName, false, $timeOut);
+                return $proxy === false ? true : $proxy;
+            }
+        }
+
+        $processes = Server::$instance->getProcessManager()->getProcessGroup(ActorConfig::GROUP_NAME);
+
+        $processList  = $processes->getProcesses();
+        $processCount = count($processList);
+        if ($processCount === 0) {
+            throw new ActorException("No actor worker process available");
+        }
+
+        // When parenting, the child must live in the SAME process as the parent
+        // so the supervisor can restart/stop it directly.
+        if ($parentName !== null) {
+            $parentInfo = ActorManager::getInstance()->getActorInfo($parentName);
+            if ($parentInfo === null) {
+                throw new ActorException("Parent actor does not exist: {$parentName}");
+            }
+            $targetProcess = $parentInfo->getProcess();
+        } else {
+            $index = self::selectProcessIndex($processCount, $routingKey ?? $actorName);
+            $targetProcess = $processList[$index];
+        }
+
+        Server::$instance->getEventDispatcher()->dispatchProcessEvent(new ActorCreateEvent(
+            ActorCreateEvent::ActorCreateEvent,
+            [
+                $actionClass, $actorName, $data, true, $parentName
+            ]), $targetProcess);
+
+        if (!$waitCreate) {
+            return true;
+        }
+
+        $call   = Server::$instance->getEventDispatcher()->listen(ActorCreateEvent::ActorCreateReadyEvent . ":" . $actorName, null, true);
+        $result = $call->wait($timeOut);
+        if ($result === null) {
+            return false;
+        }
+
+        // Build the proxy defensively: if the actor ended up not registered in
+        // the local actorTable (e.g. the create event was not applied before this
+        // point, or the target process died), the factory returns false instead
+        // of throwing a fatal error.
+        return ActorIpcProxy::create($actorName, false, $timeOut);
+    }
+
+    /**
+     * Akka-style actor factory.
+     *
+     * Mirrors `ActorSystem.actorOf(Props, name?)`: creates an actor of the given
+     * class and returns its IPC proxy. Unlike {@see create()} this method lets
+     * the system auto-generate a globally unique name when $actorName is omitted,
+     * and bundles the class + init data behind a single $props argument (Props).
+     *
+     * @param string              $actionClass Actor class name
+     * @param array|Props|null    $props       Optional Props object (recommended,
+     *                                         Akka-style) or an associative array.
+     *                                         When a Props is given, $actorName is
+     *                                         ignored and Props::getName() wins.
+     *                                         Array keys:
+     *                                 - 'data'        : init data passed to the actor
+     *                                 - 'name'        : explicit actor name (overrides $actorName)
+     *                                 - 'parentName'  : supervision parent (child shares its process)
+     *                                 - 'routingKey'  : consistent-hash routing key
+     *                                 - 'waitCreate'  : block until created (default true)
+     *                                 - 'pinLocal'    : pin to a local actor process, never routed to a peer
+     *                                 - 'timeOut'     : wait timeout in seconds (default 5)
+     * @param string|null $actorName   Explicit actor name; when null a name is
+     *                                 auto-generated (akka-<pid>-<seq>)
+     * @return ActorIpcProxy|false
+     * @throws ActorException
+     */
+    public static function actorOf(string $actionClass, $props = null, ?string $actorName = null)
+    {
+        if ($props instanceof Props) {
+            $actorName  = $props->getName() ?? $actorName;
+            $data       = $props->getData();
+            $parentName = $props->getParentName();
+            $routingKey = $props->getRoutingKey();
+            $waitCreate = $props->isWaitCreate();
+            $timeOut    = $props->getTimeOut();
+            $pinLocal   = $props->isPinLocal();
+        } else {
+            $props = $props ?? [];
+            if ($actorName === null) {
+                $actorName = $props['name'] ?? null;
+            }
+            $data       = $props['data'] ?? null;
+            $parentName = $props['parentName'] ?? null;
+            $routingKey = $props['routingKey'] ?? null;
+            $waitCreate = $props['waitCreate'] ?? true;
+            $pinLocal   = $props['pinLocal'] ?? false;
+            $timeOut    = $props['timeOut'] ?? 5;
+        }
+
+        if ($actorName === null) {
+            $actorName = self::generateActorName();
+        }
+
+        return self::create(
+            $actionClass,
+            $actorName,
+            $data,
+            $waitCreate,
+            $timeOut,
+            $parentName,
+            $routingKey,
+            $pinLocal
+        );
+    }
+
+    /**
+     * Generate a process-unique, collision-resistant actor name following the
+     * Akka convention ("akka-<pid>-<seq>"). Retries until the name is not
+     * already registered in the ActorManager.
+     *
+     * @return string
+     */
+    protected static function generateActorName(): string
+    {
+        $pid  = getmypid() ?: 0;
+        $seq  = 0;
+        $manager = ActorManager::getInstance();
+
+        do {
+            $name = sprintf('akka-%d-%d', $pid, ++$seq);
+        } while ($manager->hasActor($name));
+
+        return $name;
+    }
+
+    /**
+     * Destroy an existing actor (by name) from any process.
+     *
+     * The teardown runs inside the actor's owning process (where the real
+     * instance lives), so this mirrors create() and works cross-process.
+     * When $waitDelete is true the call blocks until the actor process
+     * confirms the removal (or $timeOut elapses).
+     *
+     * @param string $actorName  Actor name (globally unique)
+     * @param bool   $waitDelete Whether to wait for the destroy confirmation
+     * @param float  $timeOut    Wait timeout in seconds
+     * @return bool   true when the request was dispatched (and, if $waitDelete,
+     *                the actor was confirmed gone); false when it does not exist
+     *                or the wait timed out
+     * @throws ActorException
+     */
+    public static function destroy(string $actorName, bool $waitDelete = true, float $timeOut = 5): bool
+    {
+        $manager = ActorManager::getInstance();
+        if (!$manager->hasActor($actorName)) {
+            return false;
+        }
+
+        $actorInfo = $manager->getActorInfo($actorName);
+        if ($actorInfo === null || $actorInfo->getProcess() === null) {
+            throw new ActorException("Cannot resolve owning process for actor: {$actorName}");
+        }
+
+        Server::$instance->getEventDispatcher()->dispatchProcessEvent(
+            new ActorDestroyEvent(ActorDestroyEvent::ActorDestroyEvent, $actorName),
+            $actorInfo->getProcess()
+        );
+
+        if (!$waitDelete) {
+            return true;
+        }
+
+        $call   = Server::$instance->getEventDispatcher()->listen(
+            ActorDestroyEvent::ActorDestroyReadyEvent . ":" . $actorName,
+            null,
+            true
+        );
+        $result = $call->wait($timeOut);
+
+        return $result !== null;
+    }
+
+    /**
+     * Select the worker process index for a new actor using the configured
+     * routing strategy (round-robin / consistent-hash / least-loaded).
+     *
+     * @param int         $processCount
+     * @param string|null $routingKey   Key for key-based routing
+     * @return int
+     */
+    protected static function selectProcessIndex(int $processCount, ?string $routingKey = null): int
+    {
+        $config = ActorManager::getInstance()->getActorConfig();
+        $strategy = self::resolveRoutingStrategy($config->getRoutingStrategy(), $config->getRoutingReplicas());
+
+        return $strategy->select($processCount, $routingKey);
+    }
+
+    /**
+     * Build the routing strategy instance for the given name.
+     *
+     * @param string $name
+     * @param int    $replicas
+     * @return ActorRoutingStrategy
+     */
+    protected static function resolveRoutingStrategy(string $name, int $replicas): ActorRoutingStrategy
+    {
+        $manager = ActorManager::getInstance();
+
+        switch ($name) {
+            case 'consistent-hash':
+                return new ConsistentHashStrategy($replicas);
+            case 'least-loaded':
+                return new LeastLoadedStrategy($manager);
+            case 'round-robin':
+            default:
+                return new RoundRobinStrategy($manager);
+        }
+    }
+
+    /**
+     * Whether an actor with the given name already exists.
+     *
+     * @param string $actorName
+     * @return bool
+     */
+    public static function has(string $actorName): bool
+    {
+        return ActorManager::getInstance()->hasActor($actorName);
+    }
+
+    /**
+     * Get a handle to an existing Actor by name.
+     *
+     * @param string $actorName
+     * @return Actor|ActorIpcProxy|null
+     */
+    public static function get(string $actorName, bool $oneWay = false, float $timeOut = 5)
+    {
+        return ActorManager::getInstance()->getActor($actorName, $oneWay, $timeOut);
+    }
+
+    /**
+     * Block until the named actor has been created (or the timeout elapses).
+     *
+     * Useful when an actor must wait for a dependency actor to come up before
+     * talking to it. Returns the actor handle on success, or false on timeout.
+     *
+     * @param string $actorName
+     * @param float  $timeOut Wait timeout in seconds
+     * @return Actor|ActorIpcProxy|false
+     */
+    public static function wait(string $actorName, float $timeOut = 5)
+    {
+        if (ActorManager::getInstance()->hasActor($actorName)) {
+            return self::get($actorName, false, $timeOut);
+        }
+
+        $call = Server::$instance->getEventDispatcher()->listen(
+            ActorCreateEvent::ActorCreateReadyEvent . ":" . $actorName,
+            null,
+            true
+        );
+        $result = $call->wait($timeOut);
+        if ($result === null) {
+            return false;
+        }
+
+        return self::get($actorName, false, $timeOut);
+    }
+}

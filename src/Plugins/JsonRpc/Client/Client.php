@@ -14,7 +14,6 @@ use Yew\Plugins\JsonRpc\Packer\PackerInterface;
 use Yew\Plugins\JsonRpc\Protocol;
 use Yew\Plugins\JsonRpc\Transporter\JsonRpcHttpTransporter;
 use Yew\Plugins\JsonRpc\Transporter\JsonRpcPoolTransporter;
-use Yew\Plugins\JsonRpc\Transporter\JsonRpcStreamTransport;
 use Yew\Plugins\JsonRpc\Transporter\JsonRpcTransporter;
 use Yew\Plugins\JsonRpc\Transporter\TransporterInterface;
 use Yew\Rpc\Client\AbstractServiceClient;
@@ -101,8 +100,8 @@ class Client extends \Yew\Rpc\Client\Client
         $params = [
             "class" => $packer
         ];
-        if (!empty($this->config["setting"])) {
-            $params = array_merge($params, $this->config["setting"]);
+        if (!empty($this->config["settings"])) {
+            $params = array_merge($params, $this->config["settings"]);
         }
 
         return Yew::createObject($params);

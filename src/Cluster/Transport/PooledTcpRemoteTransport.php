@@ -1,0 +1,388 @@
+<?php
+/**
+ * Yew framework
+ * @author bearlord <565364226@qq.com>
+ */
+
+namespace Yew\Cluster\Transport;
+
+use Yew\Cluster\State\Location;
+use Yew\Cluster\State\ClusterNode;
+use Yew\Coroutine\Server\Server;
+use Yew\Cluster\Transport\Transfer;
+
+/**
+ * Connection-pooled TCP transport for cross-node actor calls.
+ *
+ * Reuses established TCP connections per remote node instead of opening a new
+ * one per call, which matters for high-frequency ask traffic across the
+ * cluster. Connections are borrowed from a per-node pool and returned when the
+ * reply (or timeout) arrives. Broken connections are dropped and recreated.
+ *
+ * tell still uses a throwaway connection from the pool (fire-and-forget, no
+ * reply read); ask borrows a connection, reads the reply envelope, then returns
+ * it to the pool.
+ */
+class PooledTcpRemoteTransport implements RemoteTransport, Transfer
+{
+    private string $host;
+    private int $port;
+    private string $localNodeId;
+    private int $poolSize;
+    private float $idleTimeout;
+
+    /** Extra seconds waited on recv beyond the caller's timeout, so a slow-but-live reply is not mistaken for a dead connection. */
+    private float $recvGrace = 5.0;
+    /** Cap on buffered inbound bytes per fd; above this the connection is dropped to avoid memory exhaustion. */
+    private int $maxRecvBuf = 1048576;
+
+    /** @var array<string,\Swoole\Coroutine\Channel> host:port => pooled clients */
+    private array $pools = [];
+
+    /** @var array<int,string> per-connection inbound buffer, keyed by fd */
+    private array $recvBuf = [];
+    /** @var callable(RemoteEnvelope):mixed|null Injected request handler (actor layer). */
+    private $inboundHandler = null;
+
+    public function __construct(
+        string $host,
+        int $port,
+        string $localNodeId,
+        int $poolSize = 16,
+        float $idleTimeout = 60.0
+    ) {
+        $this->host = $host;
+        $this->port = $port;
+        $this->localNodeId = $localNodeId;
+        $this->poolSize = $poolSize;
+        $this->idleTimeout = $idleTimeout;
+    }
+
+    /**
+     * Inject the handler for inbound (cross-node) requests. The callback
+     * receives the decoded {@see RemoteEnvelope} and returns the actor's result
+     * (for ask) or null (for tell / not-found). Owned by the actor layer so this
+     * transport stays free of any actor-package dependency.
+     *
+     * @param callable(RemoteEnvelope):mixed $handler
+     */
+    public function setInboundHandler(callable $handler): void
+    {
+        $this->inboundHandler = $handler;
+    }
+
+    public function start(): void
+    {
+        // Pooling is lazy; nothing to bind. Kept for interface symmetry.
+    }
+
+    private function poolFor(string $key): \Swoole\Coroutine\Channel
+    {
+        if (!isset($this->pools[$key])) {
+            $this->pools[$key] = new \Swoole\Coroutine\Channel($this->poolSize);
+        }
+        return $this->pools[$key];
+    }
+
+    private function borrow(string $host, int $port): ?\Swoole\Coroutine\Client
+    {
+        $key = $host . ':' . $port;
+        $pool = $this->poolFor($key);
+        $client = null;
+        if ($pool->isEmpty()) {
+            $client = new \Swoole\Coroutine\Client(SWOOLE_SOCK_TCP);
+            if (!$client->connect($host, $port, 5.0)) {
+                return null;
+            }
+        } else {
+            /** @var \Swoole\Coroutine\Client $client */
+            $client = $pool->pop(0);
+            if ($client === false || !$client->isConnected()) {
+                $client = new \Swoole\Coroutine\Client(SWOOLE_SOCK_TCP);
+                if (!$client->connect($host, $port, 5.0)) {
+                    return null;
+                }
+            }
+        }
+        return $client;
+    }
+
+    private function release(string $host, int $port, ?\Swoole\Coroutine\Client $client): void
+    {
+        if ($client === null) {
+            return;
+        }
+        $key = $host . ':' . $port;
+        $pool = $this->poolFor($key);
+        if ($pool->isFull()) {
+            $client->close();
+            return;
+        }
+        $pool->push($client);
+    }
+
+    public function tell(Location $location, string $method, array $arguments, ?string $traceId): bool
+    {
+        $env = new RemoteEnvelope(
+            $this->newMsgId(), RemoteEnvelope::KIND_TELL,
+            $location->getActorName() ?? '', $method, $arguments, $traceId, $this->localNodeId
+        );
+        $node = $location->getNode();
+        $client = $this->borrow($node->getHost(), $node->getPort());
+        if ($client === null) {
+            return false;
+        }
+        try {
+            if (!$client->send($env->toJson() . "\n")) {
+                // Send failed mid-flight: the connection is dead, close it rather
+                // than returning a broken client to the pool.
+                $client->close();
+                return false;
+            }
+            return true;
+        } finally {
+            // Release a healthy connection so the pool never starves.
+            if ($client->isConnected()) {
+                $this->release($node->getHost(), $node->getPort(), $client);
+            }
+        }
+    }
+
+    public function ask(Location $location, string $method, array $arguments, ?string $traceId, float $timeOut)
+    {
+        $env = new RemoteEnvelope(
+            $this->newMsgId(), RemoteEnvelope::KIND_ASK,
+            $location->getActorName() ?? '', $method, $arguments, $traceId, $this->localNodeId
+        );
+        $node = $location->getNode();
+        $client = $this->borrow($node->getHost(), $node->getPort());
+        if ($client === null) {
+            return null;
+        }
+        // Only pool connections whose exchange ended cleanly; on failure the
+        // socket may still hold unread bytes, so it is closed instead.
+        $reusable = false;
+        try {
+            if (!$client->send($env->toJson() . "\n")) {
+                return null;
+            }
+            $line = $client->recv(max(1.0, $timeOut + $this->recvGrace));
+            if (!is_string($line) || trim($line) === '') {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: ask recv timeout on %s:%d actor=%s method=%s (no reply within %.1fs)",
+                    $node->getHost(), $node->getPort(), $location->getActorName(), $method, $timeOut
+                ));
+                return null;
+            }
+            try {
+                $reply = RemoteEnvelope::fromJson(trim($line));
+            } catch (\Throwable $e) {
+                return null;
+            }
+            if ($reply->msgId !== $env->msgId) {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: ask msgId mismatch on %s:%d actor=%s (expected %s, got %s)",
+                    $node->getHost(), $node->getPort(), $location->getActorName(), $env->msgId, $reply->msgId
+                ));
+                return null;
+            }
+            $reusable = true;
+            return $reply->arguments['__reply'] ?? null;
+        } finally {
+            if ($reusable) {
+                $this->release($node->getHost(), $node->getPort(), $client);
+            } else {
+                $client->close();
+            }
+        }
+    }
+
+    public function supports(Location $location): bool
+    {
+        $node = $location->getNode();
+        return $node !== null && !$node->isLocal();
+    }
+
+    public function create(
+        Location $location,
+        string $className,
+        string $actorName,
+        array $actorData,
+        ?string $parent,
+        ?string $traceId,
+        float $timeOut
+    ) {
+        $env = new RemoteEnvelope(
+            $this->newMsgId(), RemoteEnvelope::KIND_CREATE,
+            $actorName, '', $actorData, $traceId, $this->localNodeId,
+            $className, $actorData, $parent
+        );
+        $node = $location->getNode();
+        $client = $this->borrow($node->getHost(), $node->getPort());
+        if ($client === null) {
+            return null;
+        }
+        $reusable = false;
+        try {
+            if (!$client->send($env->toJson() . "\n")) {
+                return null;
+            }
+            $line = $client->recv(max(1.0, $timeOut + $this->recvGrace));
+            if (!is_string($line) || trim($line) === '') {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: create recv timeout on %s:%d actor=%s (no reply within %.1fs)",
+                    $node->getHost(), $node->getPort(), $actorName, $timeOut
+                ));
+                return null;
+            }
+            try {
+                $reply = RemoteEnvelope::fromJson(trim($line));
+            } catch (\Throwable $e) {
+                return null;
+            }
+            if ($reply->msgId !== $env->msgId) {
+                Server::$instance->getLog()->error(sprintf(
+                    "cluster-tcp: create msgId mismatch on %s:%d actor=%s (expected %s, got %s)",
+                    $node->getHost(), $node->getPort(), $actorName, $env->msgId, $reply->msgId
+                ));
+                return null;
+            }
+            $reusable = true;
+            return $reply->arguments['__reply'] ?? null;
+        } finally {
+            if ($reusable) {
+                $this->release($node->getHost(), $node->getPort(), $client);
+            } else {
+                $client->close();
+            }
+        }
+    }
+
+    /**
+     * Inbound data from the framework multi-port TCP listener. Buffers per fd
+     * and processes newline-delimited JSON envelopes.
+     *
+     * @param int $fd The Swoole connection file descriptor
+     * @param string $data Raw bytes just received on that connection
+     */
+    public function handleReceive(int $fd, string $data): void
+    {
+        $this->recvBuf[$fd] = ($this->recvBuf[$fd] ?? '') . $data;
+        if (strlen($this->recvBuf[$fd]) > $this->maxRecvBuf) {
+            // Peer is not sending a newline (or is flooding); drop it before the
+            // per-fd buffer grows unbounded and exhausts memory.
+            $swoole = Server::$instance->getServer();
+            $swoole?->close($fd);
+            unset($this->recvBuf[$fd]);
+            return;
+        }
+        while (($pos = strpos($this->recvBuf[$fd], "\n")) !== false) {
+            $line = substr($this->recvBuf[$fd], 0, $pos);
+            $this->recvBuf[$fd] = substr($this->recvBuf[$fd], $pos + 1);
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            try {
+                $envelope = RemoteEnvelope::fromJson($line);
+            } catch (\Throwable $e) {
+                continue;
+            }
+            $this->handleInbound($fd, $envelope);
+        }
+    }
+
+    /**
+     * A fd was closed; drop its partial buffer.
+     *
+     * @param int $fd The Swoole connection file descriptor that closed
+     */
+    public function handleClose(int $fd): void
+    {
+        unset($this->recvBuf[$fd]);
+    }
+
+    /**
+     * Deliver an inbound envelope to the locally-resident actor and, for ask,
+     * write the reply back over the same fd (the framework-managed connection).
+     *
+     * @param int $fd The connection fd to reply on (ask only)
+     * @param RemoteEnvelope $env The decoded request envelope
+     */
+    private function handleInbound(int $fd, RemoteEnvelope $env): void
+    {
+        // CREATE and ASK both expect a reply over the wire; TELL is fire-and-forget.
+        $wantsReply = $env->kind === RemoteEnvelope::KIND_ASK
+            || $env->kind === RemoteEnvelope::KIND_CREATE;
+
+        if ($this->inboundHandler === null) {
+            // No actor layer attached: answer with an empty result so the
+            // remote caller does not hang.
+            if ($wantsReply) {
+                $this->sendReply($fd, $this->replyEnvelope($env, null));
+            }
+            return;
+        }
+
+        try {
+            $result = ($this->inboundHandler)($env);
+        } catch (\Throwable $e) {
+            $result = ['__error' => $e->getMessage()];
+        }
+
+        if ($wantsReply) {
+            $this->sendReply($fd, $this->replyEnvelope($env, $result));
+        }
+    }
+
+    /**
+     * Write a reply envelope back to the connection that asked.
+     *
+     * @param int $fd The connection fd to send the reply on
+     * @param RemoteEnvelope $reply The reply envelope (newline-terminated JSON)
+     */
+    private function sendReply(int $fd, RemoteEnvelope $reply): void
+    {
+        $swoole = Server::$instance->getServer();
+        if ($swoole === null) {
+            Server::$instance->getLog()->error("cluster-tcp: cannot reply, Swoole server is null");
+            return;
+        }
+        $payload = $reply->toJson() . "\n";
+        if ($swoole->send($fd, $payload) === false) {
+            $code = $swoole->getLastError();
+            Server::$instance->getLog()->error(sprintf(
+                "cluster-tcp: reply send failed on fd=%d (err=%s); dropping buffer",
+                $fd, (string) $code
+            ));
+            // Peer already gone; nothing to reply to, just drop its buffer.
+            unset($this->recvBuf[$fd]);
+        }
+    }
+
+    /**
+     * Build the reply envelope for a request, carrying the result under
+     * arguments['__reply'] and matched to the request by msgId.
+     *
+     * @param RemoteEnvelope $req The original request envelope
+     * @param mixed $result The actor call result (or null if actor is absent)
+     * @return RemoteEnvelope The reply envelope
+     */
+    private function replyEnvelope(RemoteEnvelope $req, $result): RemoteEnvelope
+    {
+        return new RemoteEnvelope(
+            $req->msgId,
+            RemoteEnvelope::KIND_ASK, // reuse kind; client distinguishes by msgId
+            $req->actorName,
+            $req->method,
+            ['__reply' => $result],
+            $req->traceId,
+            $this->localNodeId
+        );
+    }
+
+    private function newMsgId(): string
+    {
+        return uniqid('am-', true);
+    }
+}

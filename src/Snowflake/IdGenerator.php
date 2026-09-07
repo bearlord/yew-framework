@@ -55,6 +55,21 @@ class IdGenerator implements IdGeneratorInterface
     {
         $meta = $this->getMeta($meta);
 
+        // Guard against out-of-range fields leaking into sibling bit fields.
+        $maxDataCenterId = $this->config->maxDataCenterId();
+        $maxWorkerId = $this->config->maxWorkerId();
+        $maxSequence = $this->config->maxSequence();
+
+        if ($meta->getDataCenterId() < 0 || $meta->getDataCenterId() > $maxDataCenterId) {
+            throw new \InvalidArgumentException(sprintf('dataCenterId %d out of range [0, %d].', $meta->getDataCenterId(), $maxDataCenterId));
+        }
+        if ($meta->getWorkerId() < 0 || $meta->getWorkerId() > $maxWorkerId) {
+            throw new \InvalidArgumentException(sprintf('workerId %d out of range [0, %d].', $meta->getWorkerId(), $maxWorkerId));
+        }
+        if ($meta->getSequence() < 0 || $meta->getSequence() > $maxSequence) {
+            throw new \InvalidArgumentException(sprintf('sequence %d out of range [0, %d].', $meta->getSequence(), $maxSequence));
+        }
+
         $interval = $meta->getTimeInterval() << $this->config->getTimestampLeftShift();
         $dataCenterId = $meta->getDataCenterId() << $this->config->getDataCenterIdShift();
         $workerId = $meta->getWorkerId() << $this->config->getWorkerIdShift();
@@ -68,16 +83,23 @@ class IdGenerator implements IdGeneratorInterface
      */
     public function degenerate(int $id): Meta
     {
-        $interval = $id >> $this->config->getTimestampLeftShift();
-        $dataCenterId = $id >> $this->config->getDataCenterIdShift();
-        $workerId = $id >> $this->config->getWorkerIdShift();
+        $tsShift = $this->config->getTimestampLeftShift();
+        $dcShift = $this->config->getDataCenterIdShift();
+        $workerShift = $this->config->getWorkerIdShift();
+
+        $interval = $id >> $tsShift;
+        $dataCenterId = ($id >> $dcShift) & ((1 << $this->config->getDataCenterIdBits()) - 1);
+        $workerId = ($id >> $workerShift) & ((1 << $this->config->getWorkerIdBits()) - 1);
+        $sequence = $id & ((1 << $this->config->getSequenceBits()) - 1);
+
+        $beginTimestamp = $this->metaGenerator->getBeginTimestamp();
 
         return new Meta(
-            $interval << $this->config->getDataCenterIdBits() ^ $dataCenterId,
-            $dataCenterId << $this->config->getWorkerIdBits() ^ $workerId,
-            $workerId << $this->config->getSequenceBits() ^ $id,
-            $interval + $this->metaGenerator->getBeginTimestamp(),
-            $this->metaGenerator->getBeginTimestamp()
+            $dataCenterId,
+            $workerId,
+            $sequence,
+            $interval + $beginTimestamp,
+            $beginTimestamp
         );
     }
 

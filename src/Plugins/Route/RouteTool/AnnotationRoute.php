@@ -8,7 +8,6 @@ namespace Yew\Plugins\Route\RouteTool;
 
 use Yew\Core\Exception\ParamException;
 use Yew\Core\Plugins\Logger\GetLogger;
-use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Route\Annotation\ModelAttribute;
 use Yew\Plugins\Route\Annotation\PathVariable;
 use Yew\Plugins\Route\Annotation\RequestBody;
@@ -122,26 +121,6 @@ class AnnotationRoute implements IRoute
         }
     }
 
-    /**
-     * Dispatcher Method not allowed
-     * @return false
-     */
-    protected function dispatcherMethodNotAllowed()
-    {
-        if ($this->clientData->getRequest()->getMethod() == "OPTIONS") {
-            $methods = [];
-            foreach ($routeInfo[1] as $value) {
-                list($port, $method) = explode(":", $value);
-                $methods[] = $method;
-            }
-            $this->clientData->getResponse()->withHeader("Access-Control-Allow-Methods", implode(",", $methods));
-            $this->clientData->getResponse()->end();
-            return false;
-        } else {
-            throw new MethodNotAllowedException("Method not allowed");
-        }
-    }
-
 	/**
 	 * @inheritDoc
 	 * @param ClientData $clientData
@@ -165,9 +144,6 @@ class AnnotationRoute implements IRoute
 
 		$request = $this->clientData->getRequest();
 
-		//is debug
-		$isDebug = Server::$instance->getConfigContext()->get("yew.server.debug");
-
 		switch ($routeInfo[0]) {
 			case Dispatcher::NOT_FOUND:
 				$this->dispatcherNotFound();
@@ -178,7 +154,7 @@ class AnnotationRoute implements IRoute
 				if (!empty($this->clientData->getRequest()) && $this->clientData->getRequest()->getMethod() == "OPTIONS") {
 					$methods = [];
 					foreach ($routeInfo[1] as $value) {
-						list($port, $method) = explode(":", $value);
+						[, $method] = explode(":", $value);
 						$methods[] = $method;
 					}
 					$this->clientData->getResponse()->withHeader("Access-Control-Allow-Methods", implode(",", $methods));
@@ -199,107 +175,16 @@ class AnnotationRoute implements IRoute
 				$annotations = RoutePlugin::$instance->getScanClass()->getMethodAndInterfaceAnnotations($methodReflection);
 				$this->clientData->setAnnotations($annotations);
 
-				foreach ($annotations as $annotation) {
-					switch (true) {
-						case ($annotation instanceof PathVariable):
-							$result = $vars[$annotation->value] ?? null;
-							if ($annotation->required) {
-								if ($result == null) {
-									throw new RouteException("path {$annotation->value} not found");
-								}
-							}
-							$params[$annotation->param ?? $annotation->value] = $result;
-							break;
+				// Read the request body once: PSR-7 streams are not rewindable,
+				// so a second getContents() would return an empty string.
+				$rawBody = $request !== null ? $request->getBody()->getContents() : '';
 
-						case ($annotation instanceof RequestParam):
-							if ($request == null) {
-								break;
-							}
-							$result = $request->query($annotation->value);
-							if ($annotation->required && $result == null) {
-								throw new ParamException("require params $annotation->value");
-							}
-							$params[$annotation->param ?? $annotation->value] = $result;
-							break;
+				// ResponeJsonRpc is a response-side annotation, handled separately
+				// so resolveAnnotationParams stays free of side effects.
+				$this->applyResponseAnnotations($annotations);
 
-						case ($annotation instanceof RequestFormData):
-							if ($request == null) {
-								break;
-							}
-							$result = $request->post($annotation->value);
-							if ($annotation->required && $result == null) {
-								throw new ParamException("require params $annotation->value");
-							}
-							$params[$annotation->param ?? $annotation->value] = $result;
-							break;
-
-						case ($annotation instanceof RequestRawJson):
-						case ($annotation instanceof RequestBody):
-							if ($request == null) {
-								break;
-							}
-							if (!$json = json_decode($request->getBody()->getContents(), true)) {
-								$this->warning("RequestRawJson error, raw:" . $request->getBody()->getContents());
-								throw new RouteException("RawJson Format error");
-							}
-							if (!empty($annotation->value)) {
-								$params[$annotation->value] = $json;
-							} else {
-								$params = $json;
-							}
-							break;
-
-						case ($annotation instanceof RequestRaw):
-							if ($request == null) {
-								break;
-							}
-							$raw = $request->getBody()->getContents();
-							$params[$annotation->value] = $raw;
-							break;
-
-						case ($annotation instanceof RequestRawXml):
-							if ($request == null) {
-								break;
-							}
-							$raw = $request->getBody()->getContents();
-							if (!$xml = simplexml_load_string($raw, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
-								$this->warning("RequestRawXml error, raw:" . $request->getBody()->getContents());
-								throw new RouteException("RawXml Format error");
-							}
-							$params[$annotation->value] = json_decode(json_encode($xml), true);
-							break;
-
-						case ($annotation instanceof ResponeJsonRpc):
-							$clientData->getResponse()->withHeader("Content-Type", $annotation->value);
-							break;
-
-					}
-				}
-				$realParams = [];
-				if ($methodReflection instanceof \ReflectionMethod) {
-					foreach ($methodReflection->getParameters() as $parameter) {
-					$paramClass = null;
-					$paramType = $parameter->getType();
-					if ($paramType instanceof \ReflectionNamedType && !$paramType->isBuiltin()) {
-						$paramClass = $paramType->getName();
-					}
-					if ($paramClass != null) {
-						$values = $params[$parameter->name];
-						if ($values != null) {
-							$values = ValidatedFilter::valid($paramClass, $values);
-							$instance = new $paramClass();
-							foreach ($instance as $key => $value) {
-									$instance->$key = $values[$key] ?? null;
-								}
-								$realParams[$parameter->getPosition()] = $instance;
-							} else {
-								$realParams[$parameter->getPosition()] = null;
-							}
-						} else {
-							$realParams[$parameter->getPosition()] = $params[$parameter->name] ?? "";
-						}
-					}
-				}
+				$params = $this->resolveAnnotationParams($annotations, $request, $rawBody, $vars);
+				$realParams = $this->buildRealParams($methodReflection, $params);
 
 				if (!empty($realParams)) {
 					$this->clientData->setParams($realParams);
@@ -307,6 +192,134 @@ class AnnotationRoute implements IRoute
 				break;
 		}
 		return true;
+	}
+
+	/**
+	 * Resolve request parameters from request-side annotations.
+	 *
+	 * Handles PathVariable, RequestParam, RequestFormData, RequestRawJson,
+	 * RequestBody, RequestRaw and RequestRawXml. Response-side annotations
+	 * (e.g. ResponeJsonRpc) are NOT processed here — see applyResponseAnnotations.
+	 *
+	 * @param array $annotations Method + interface annotations
+	 * @param mixed $request PSR-7 request or null
+	 * @param string $rawBody Request body read once (non-rewindable stream)
+	 * @param array $vars Path variables matched by the router
+	 * @return array Resolved parameters keyed by param name
+	 * @throws ParamException
+	 * @throws RouteException
+	 */
+	protected function resolveAnnotationParams(array $annotations, $request, string $rawBody, array $vars): array
+	{
+		$params = [];
+
+		foreach ($annotations as $annotation) {
+			switch (true) {
+				case ($annotation instanceof PathVariable):
+					$result = $vars[$annotation->value] ?? null;
+					if ($annotation->required && $result == null) {
+						throw new RouteException("path {$annotation->value} not found");
+					}
+					$params[$annotation->param ?? $annotation->value] = $result;
+					break;
+
+				case ($annotation instanceof RequestParam):
+					$result = $request !== null ? $request->query($annotation->value) : null;
+					if ($annotation->required && $result == null) {
+						throw new ParamException("require params $annotation->value");
+					}
+					$params[$annotation->param ?? $annotation->value] = $result;
+					break;
+
+				case ($annotation instanceof RequestFormData):
+					$result = $request !== null ? $request->post($annotation->value) : null;
+					if ($annotation->required && $result == null) {
+						throw new ParamException("require params $annotation->value");
+					}
+					$params[$annotation->param ?? $annotation->value] = $result;
+					break;
+
+				case ($annotation instanceof RequestRawJson):
+				case ($annotation instanceof RequestBody):
+					if (!$json = json_decode($rawBody, true)) {
+						$this->warning("RequestRawJson error, raw:" . $rawBody);
+						throw new RouteException("RawJson Format error");
+					}
+					if (!empty($annotation->value)) {
+						$params[$annotation->value] = $json;
+					} else {
+						// Merge instead of overwriting, so path/query params
+						// resolved earlier are not lost when both coexist.
+						$params = array_merge($params, $json);
+					}
+					break;
+
+				case ($annotation instanceof RequestRaw):
+					$params[$annotation->value] = $rawBody;
+					break;
+
+				case ($annotation instanceof RequestRawXml):
+					if (!$xml = simplexml_load_string($rawBody, "SimpleXMLElement", LIBXML_NOCDATA | LIBXML_NOBLANKS)) {
+						$this->warning("RequestRawXml error, raw:" . $rawBody);
+						throw new RouteException("RawXml Format error");
+					}
+					$params[$annotation->value] = json_decode(json_encode($xml), true);
+					break;
+			}
+		}
+
+		return $params;
+	}
+
+	/**
+	 * Apply response-side annotations (side effects only, no params).
+	 *
+	 * @param array $annotations
+	 * @return void
+	 */
+	protected function applyResponseAnnotations(array $annotations): void
+	{
+		foreach ($annotations as $annotation) {
+			if ($annotation instanceof ResponeJsonRpc) {
+				$this->clientData->getResponse()->withHeader("Content-Type", $annotation->value);
+			}
+		}
+	}
+
+	/**
+	 * Build the final ordered parameter list from resolved params
+	 * and the method's reflection parameters.
+	 *
+	 * @param \ReflectionMethod $methodReflection
+	 * @param array $params
+	 * @return array
+	 */
+	protected function buildRealParams(\ReflectionMethod $methodReflection, array $params): array
+	{
+		$realParams = [];
+		foreach ($methodReflection->getParameters() as $parameter) {
+			$paramClass = null;
+			$paramType = $parameter->getType();
+			if ($paramType instanceof \ReflectionNamedType && !$paramType->isBuiltin()) {
+				$paramClass = $paramType->getName();
+			}
+			if ($paramClass != null) {
+				$values = $params[$parameter->name];
+				if ($values != null) {
+					$values = ValidatedFilter::valid($paramClass, $values);
+					$instance = new $paramClass();
+					foreach ($instance as $key => $_) {
+						$instance->$key = $values[$key] ?? null;
+					}
+					$realParams[$parameter->getPosition()] = $instance;
+				} else {
+					$realParams[$parameter->getPosition()] = null;
+				}
+			} else {
+				$realParams[$parameter->getPosition()] = $params[$parameter->name] ?? "";
+			}
+		}
+		return $realParams;
 	}
 
 

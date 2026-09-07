@@ -25,7 +25,7 @@ class Helper
         if ($length == 0 || $length >= $max) {
             throw new Exception("Channel filter must be at 1~$max long");
         }
-        self::ValidateUTF8($filter);
+        self::validateUTF8($filter);
 
         if (false !== strpos($filter, chr(0))) {
             throw new Exception("Null character is not allowed in channel");

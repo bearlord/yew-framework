@@ -22,13 +22,13 @@ trait GetRedis
         //Default database number
         $defaultDbNum = Server::$instance->getConfigContext()->get("yew.redis.{$name}.database");
 
-        if ($db == null) {
+        if ($db === null) {
             /** @var RedisPools $redisPools */
             $redisPools = getDeepContextValueByClassName(RedisPools::class);
             if (!empty($redisPools)) {
                 $pool = $redisPools->getPool($name);
 
-                if ($pool == null) {
+                if ($pool === null) {
                     throw new \RuntimeException("Redis connection pool named {$name} not found");
                 }
 

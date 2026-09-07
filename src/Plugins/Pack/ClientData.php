@@ -49,7 +49,7 @@ class ClientData
     /**
      * @var string|null
      */
-    protected ?string $path = null;
+    protected string $path;
 
     /**
      * @var array
@@ -73,12 +73,15 @@ class ClientData
 
     /**
      * ClientData constructor.
-     * @param $fd
-     * @param $requestMethod
-     * @param $path
-     * @param $data
+     * @param int $fd
+     * @param string $requestMethod
+     * @param string $path
+     * @param mixed $data
      */
-    public function __construct($fd, $requestMethod, $path, $data)
+    public function __construct(
+        int $fd,
+        string $requestMethod,
+        string $path, mixed $data)
     {
         $this->setFd($fd);
         $this->setRequestMethod($requestMethod);

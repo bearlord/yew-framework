@@ -16,27 +16,13 @@ use Yew\Plugins\Session\SessionPlugin;
 
 class SecurityPlugin extends AbstractPlugin
 {
-    /**
-     * @var SecurityConfig|null
-     */
     private $securityConfig;
 
-    /**
-     * 获取插件名字
-     * @return string
-     */
     public function getName(): string
     {
         return "Security";
     }
 
-    /**
-     * CachePlugin constructor.
-     * @param SecurityConfig|null $securityConfig
-     * @throws \DI\DependencyException
-     * @throws \ReflectionException
-     * @throws \DI\NotFoundException
-     */
     public function __construct(?SecurityConfig $securityConfig = null)
     {
         parent::__construct();
@@ -48,10 +34,6 @@ class SecurityPlugin extends AbstractPlugin
         $this->securityConfig = $securityConfig;
     }
 
-    /**
-     * @param PluginInterfaceManager $pluginInterfaceManager
-     * @return void
-     */
     public function onAdded(PluginInterfaceManager $pluginInterfaceManager)
     {
         parent::onAdded($pluginInterfaceManager);
@@ -59,12 +41,6 @@ class SecurityPlugin extends AbstractPlugin
         $pluginInterfaceManager->addPlugin(new SessionPlugin());
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \ReflectionException
-     * @throws \Yew\Core\Exception\ConfigException
-     */
     public function init(Context $context)
     {
         parent::init($context);
@@ -73,22 +49,11 @@ class SecurityPlugin extends AbstractPlugin
         $aopConfig->addAspect(new SecurityAspect());
     }
 
-    /**
-     * @param Context $context
-     * @return void
-     * @throws \ReflectionException
-     * @throws \Yew\Core\Exception\ConfigException
-     */
     public function beforeServerStart(Context $context)
     {
         $this->securityConfig->merge();
     }
 
-    /**
-     * @inheritDoc
-     * @param Context $context
-     * @return mixed
-     */
     public function beforeProcessStart(Context $context)
     {
         $this->ready();

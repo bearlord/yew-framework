@@ -8,22 +8,9 @@ namespace Yew\Plugins\Session;
 
 interface SessionStorage
 {
-    /**
-     * @param string $id
-     * @return mixed
-     */
-    public function get(string $id);
+    public function get(string $id): ?string;
 
-    /**
-     * @param string $id
-     * @param string $data
-     * @return mixed
-     */
-    public function set(string $id,string $data);
+    public function set(string $id, string $data): void;
 
-    /**
-     * @param string $id
-     * @return mixed
-     */
-    public function remove(string $id);
+    public function remove(string $id): void;
 }

@@ -8,7 +8,6 @@
 namespace Yew\Framework\Queue\Cli;
 
 use Yew\Core\Plugins\Logger\GetLogger;
-use Yew\Server\Coroutine\Server;
 use Yew\Yew;
 use Yew\Framework\Base\InvalidConfigException;
 
@@ -77,7 +76,7 @@ abstract class Queue extends BaseQueue
                 return $event->exitCode === null;
             });
         } catch (\Exception $exception) {
-            Server::$instance->getLog()->error($exception->getMessage());
+            $this->error($exception->getMessage());
         } finally {
             $this->trigger(self::EVENT_WORKER_STOP, $event);
         }

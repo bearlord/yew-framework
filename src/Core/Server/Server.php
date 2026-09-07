@@ -347,12 +347,15 @@ abstract class Server extends BaseNode
     abstract public function configureReady();
 
     /**
-     * On start
+     * Internal Swoole "start" callback.
+     *
+     * Marks the server as started, records the start time, fires the
+     * ApplicationStarting event, boots the master process and finally calls
+     * the user-defined onStart() hook.
      */
     public function _onStart()
     {
-        Server::$isStart = true;
-        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+        $this->markStarted();
 
         $startTimeFile = ROOT_DIR . '/runtime/start_time';
         file_put_contents($startTimeFile, Server::$serverStartTime);
@@ -360,6 +363,22 @@ abstract class Server extends BaseNode
         //Send Application Starting Event
         $this->getEventDispatcher()->dispatchEvent(new ApplicationEvent(ApplicationEvent::ApplicationStartingEvent, $this));
         $this->processManager->getMasterProcess()->onProcessStart();
+
+        // Spin up a coroutine in the master that blocks on SIGTERM. It has to
+        // live here (after start) — doing it before start with Process::signal()
+        // creates the event loop early and makes start() blow up. When the signal
+        // lands we call shutdown() so workers get to clean up before they go.
+        \Swoole\Coroutine::create(function () {
+            $signal = \Swoole\Coroutine\System::waitSignal(SIGTERM);
+            if ($signal === SIGTERM) {
+                $this->getLog()->info("Received SIGTERM, shutting down gracefully");
+                try {
+                    $this->server->shutdown();
+                } catch (Throwable $e) {
+                    $this->getLog()->error($e);
+                }
+            }
+        });
 
         try {
             $this->onStart();
@@ -369,7 +388,10 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * On shutdown
+     * Internal Swoole "shutdown" callback.
+     *
+     * Fires the ApplicationShutdown event and calls the user-defined
+     * onShutdown() hook.
      */
     public function _onShutdown()
     {
@@ -423,8 +445,7 @@ abstract class Server extends BaseNode
      */
     public function _onManagerStart()
     {
-        Server::$isStart = true;
-        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+        $this->markStarted();
 
         $this->processManager->getManagerProcess()->onProcessStart();
         try {
@@ -450,26 +471,45 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * On worker start
+     * Internal Swoole "workerStart" callback.
      *
-     * @param $server
-     * @param int $workerId
+     * Marks the server as started, records the start time and delegates to the
+     * matching process object so it can run its own start logic.
+     *
+     * @param \Swoole\Server $server
+     * @param int            $workerId
      */
     public function _onWorkerStart($server, int $workerId)
     {
-        Server::$isStart = true;
-        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+        $this->markStarted();
 
         $process = $this->processManager->getProcessFromId($workerId);
         $process->_onProcessStart();
     }
 
     /**
-     * On pipe message
+     * Mark the server as started and record the start timestamp.
      *
-     * @param $server
-     * @param int $srcWorkerId
-     * @param $message
+     * Shared by the start / managerStart / workerStart Swoole callbacks so the
+     * "server is up" signal and timing are set consistently in one place.
+     *
+     * @return void
+     */
+    private function markStarted(): void
+    {
+        Server::$isStart = true;
+        Server::$serverStartTime = (Carbon::now())->format("Y-m-d H:i:s.u");
+    }
+
+    /**
+     * Internal Swoole "pipeMessage" callback.
+     *
+     * Forwards an inter-process pipe message to the current process, tagging
+     * it with the source process.
+     *
+     * @param \Swoole\Server $server
+     * @param int            $srcWorkerId worker id that sent the message
+     * @param mixed          $message
      */
     public function _onPipeMessage($server, int $srcWorkerId, $message)
     {
@@ -477,10 +517,12 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * On worker stop
+     * Internal Swoole "workerStop" callback.
      *
-     * @param $server
-     * @param int $worker_id
+     * Delegates the stop event to the matching process object.
+     *
+     * @param \Swoole\Server $server
+     * @param int            $worker_id
      */
     public function _onWorkerStop($server, int $worker_id)
     {
@@ -489,14 +531,33 @@ abstract class Server extends BaseNode
     }
 
 
+    /**
+     * Hook invoked when the server has started (master process).
+     */
     public abstract function onStart();
 
+    /**
+     * Hook invoked when the server is shutting down.
+     */
     public abstract function onShutdown();
 
+    /**
+     * Hook invoked when a worker process exits abnormally.
+     *
+     * @param Process $process  the failed worker process
+     * @param int     $exitCode worker exit code
+     * @param int     $signal   signal that caused the exit
+     */
     public abstract function onWorkerError(Process $process, int $exitCode, int $signal);
 
+    /**
+     * Hook invoked when the manager process starts.
+     */
     public abstract function onManagerStart();
 
+    /**
+     * Hook invoked when the manager process stops.
+     */
     public abstract function onManagerStop();
 
     /**
@@ -509,6 +570,7 @@ abstract class Server extends BaseNode
         if ($this->server == null) {
             throw new Exception("Please call configure first");
         }
+
         $this->server->start();
     }
 
@@ -523,7 +585,10 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * Get main port
+     * Get the main server port.
+     *
+     * The main port is the WebSocket/HTTP/TCP port that backs the underlying
+     * Swoole server instance created during configure().
      *
      * @return ServerPort
      */
@@ -534,9 +599,9 @@ abstract class Server extends BaseNode
 
 
     /**
-     * Get connections
+     * Iterate over all currently active client connections.
      *
-     * @return Iterator
+     * @return Iterator|Swoole\Connection\Iterator iterable of active fds
      */
     public function getConnections(): Iterator
     {
@@ -560,20 +625,53 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * Get client info
+     * Get the client info of a connection.
+     *
+     * Once a client disconnects, Swoole's getClientInfo() returns false for
+     * that fd, which would make the ClientInfo constructor throw a TypeError.
+     * To keep working after disconnection (e.g. when publishing the will
+     * message), we cache a snapshot of the info right before the client leaves
+     * via setClientInfoSnapshot() and fall back to it here.
      *
      * @param int $fd
-     * @return ClientInfo
+     * @return ClientInfo|null  live info if connected, last snapshot if gone,
+     *                          or null when nothing was ever cached
      */
-    public function getClientInfo(int $fd): ClientInfo
+    public function getClientInfo(int $fd): ?ClientInfo
     {
-        return new ClientInfo($this->server->getClientInfo($fd));
+        // Connection still alive: use Swoole's live info.
+        if ($this->server->exists($fd)) {
+            return new ClientInfo($this->server->getClientInfo($fd));
+        }
+
+        // Connection already gone: fall back to the cached snapshot.
+        if (!empty($this->clientInfoSnapshot)) {
+            return new ClientInfo($this->clientInfoSnapshot);
+        }
+
+        return null;
     }
 
-    /** Close fd
+    /**
+     * Cache a snapshot of the client info.
      *
-     * @param int $fd
-     * @param bool $reset
+     * Call this the moment a disconnect is detected (e.g. on a DISCONNECT
+     * packet or right before the WebSocket closes) so the info survives the
+     * loss of the underlying fd and stays available for follow-up work.
+     *
+     * @param array $clientInfoSnapshot
+     * @return void
+     */
+    public function setClientInfoSnapshot(array $clientInfoSnapshot)
+    {
+        $this->clientInfoSnapshot = $clientInfoSnapshot;
+    }
+
+    /**
+     * Force-close a client connection.
+     *
+     * @param int  $fd    connection file descriptor
+     * @param bool $reset true to send a TCP RST instead of a graceful close
      */
     public function closeFd(int $fd, bool $reset = false)
     {
@@ -581,10 +679,13 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * Auto send, auto judge whether websocket or tcp
+     * Send data to a client, automatically choosing the right transport.
      *
-     * @param int $fd
-     * @param string $data
+     * Looks up the client's port: if the connection is an established WebSocket
+     * it pushes a WebSocket frame, otherwise it sends raw TCP data.
+     *
+     * @param int    $fd   connection file descriptor
+     * @param string $data payload to send
      */
     public function autoSend(int $fd, string $data)
     {
@@ -626,26 +727,26 @@ abstract class Server extends BaseNode
 
 
     /**
-     * Send data to udp
+     * Send a UDP datagram to a remote host.
      *
-     * @param string $ip
-     * @param int $port
-     * @param string $data
-     * @param int $server_socket
+     * @param string $ip           target IP address
+     * @param int    $port         target port
+     * @param string $data         payload to send
+     * @param int    $serverSocket local socket to send from (-1 = default)
      * @return bool
      */
-    public function sendToUpd(string $ip, int $port, string $data, int $server_socket = -1): bool
+    public function sendToUdp(string $ip, int $port, string $data, int $serverSocket = -1): bool
     {
-        return $this->server->sendto($ip, $port, $data, $server_socket);
+        return $this->server->sendto($ip, $port, $data, $serverSocket);
     }
 
     /**
-     * Is exist Fd
+     * Check whether a connection fd is still alive.
      *
-     * @param $fd
-     * @return bool
+     * @param int $fd
+     * @return bool true if the connection exists, false once it is closed
      */
-    public function existFd($fd): bool
+    public function existFd(int $fd): bool
     {
         return $this->server->exist($fd);
     }
@@ -779,10 +880,10 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * Pack websocket data
+     * Pack a payload into a raw WebSocket frame.
      *
-     * @param WebSocketFrame $webSocketFrame
-     * @return string
+     * @param WebSocketFrame $webSocketFrame frame holding data/opcode/finish
+     * @return string raw frame bytes ready to send
      */
     public function wsPack(WebSocketFrame $webSocketFrame): string
     {
@@ -790,9 +891,9 @@ abstract class Server extends BaseNode
     }
 
     /**
-     * Unpack websocket data
+     * Unpack raw WebSocket frame bytes into a WebSocketFrame bean.
      *
-     * @param string $data
+     * @param string $data raw frame bytes received from the client
      * @return WebSocketFrame
      */
     public function wsUnPack(string $data): WebSocketFrame
@@ -940,9 +1041,7 @@ abstract class Server extends BaseNode
      */
     public function setExceptionHandler()
     {
-        set_exception_handler(function ($e) {
-            $this->getLog()->error($e);
-        });
+        set_exception_handler(fn($e) => $this->getLog()->error($e));
     }
 
     /**

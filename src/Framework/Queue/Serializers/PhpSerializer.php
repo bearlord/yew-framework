@@ -29,6 +29,10 @@ class PhpSerializer extends BaseObject implements SerializerInterface
      */
     public function unserialize($serialized)
     {
-        return unserialize($serialized);
+        $job = unserialize($serialized);
+        if ($job === false) {
+            throw new \Exception('Failed to unserialize job payload.');
+        }
+        return $job;
     }
 }

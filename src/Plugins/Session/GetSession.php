@@ -6,7 +6,9 @@
 
 namespace Yew\Plugins\Session;
 
-
+/**
+ * Resolves the per-request HttpSession from the coroutine context.
+ */
 trait GetSession
 {
     public function getSession(): HttpSession

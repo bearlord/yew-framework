@@ -10,13 +10,22 @@ use Yew\Core\Memory\CrossProcess\Atomic;
 use Yew\Core\Memory\CrossProcess\Table;
 use Yew\Core\Plugins\Logger\GetLogger;
 use Yew\Coroutine\Server\Server;
-use Yew\Plugins\Actor\Event\ActorDeleteEvent;
 use Yew\Plugins\Actor\Exception\ActorException;
+use Yew\Plugins\Actor\ActorIpcProxy;
+use Yew\Plugins\Actor\Persistence\ActorStore;
+use Yew\Plugins\Actor\Persistence\ClusterActorStore;
+use Yew\Cluster\State\ClusterNode;
+use Yew\Cluster\State\Location;
+use Yew\Cluster\Router\ShardRouter;
+use Yew\Cluster\Router\LocalShardRouter;
+use Yew\Cluster\Transport\RemoteTransport;
+use Yew\Cluster\Transport\LocalTransport;
 use Yew\Yew;
 
 class ActorManager
 {
     use GetLogger;
+
     /**
      * @var ActorManager
      */
@@ -38,6 +47,13 @@ class ActorManager
     protected $actorClassNameIdTable;
 
     /**
+     * Parent -> children relationship table (children names joined by ",")
+     *
+     * @var Table
+     */
+    protected $actorChildrenTable;
+
+    /**
      *
      * @var int
      */
@@ -54,16 +70,44 @@ class ActorManager
     protected $atomic;
 
     /**
+     * Per worker-process actor load counter (index => count), used by the
+     * least-loaded routing strategy. Backed by shared memory (Table).
+     *
+     * @var Table
+     */
+    protected $loadTable;
+
+    /**
+     * Shard router: resolves actor name -> physical location. The clustering
+     * seam; defaults to {@see LocalShardRouter} in single-machine mode.
+     *
+     * @var ShardRouter
+     */
+    protected ShardRouter $shardRouter;
+
+    /**
+     * Remote transport for cross-node delivery. No-op for local deployment.
+     *
+     * @var RemoteTransport
+     */
+    protected RemoteTransport $remoteTransport;
+
+    /**
      * @throws \Exception
      */
     public function __construct()
     {
         $this->actorConfig = DIGet(ActorConfig::class);
-        $this->actorTable = new Table($this->actorConfig->getMaxCount());
+        $this->actorTable  = new Table($this->actorConfig->getMaxCount());
         $this->actorTable->column("processId", Table::TYPE_INT);
         $this->actorTable->column("createTime", Table::TYPE_INT);
         $this->actorTable->column("classId", Table::TYPE_INT);
+        $this->actorTable->column("parent", Table::TYPE_STRING, 100);
         $this->actorTable->create();
+
+        $this->actorChildrenTable = new Table($this->actorConfig->getMaxCount());
+        $this->actorChildrenTable->column("children", Table::TYPE_STRING, 4 * 1024);
+        $this->actorChildrenTable->create();
 
         $this->actorIdClassNameTable = new Table($this->actorConfig->getMaxClassCount());
         $this->actorIdClassNameTable->column("className", Table::TYPE_STRING, 100);
@@ -74,6 +118,15 @@ class ActorManager
         $this->actorClassNameIdTable->create();
 
         $this->atomic = new Atomic();
+
+        $this->loadTable = new Table(max($this->actorConfig->getWorkerCount(), 1));
+        $this->loadTable->column("load", Table::TYPE_INT);
+        $this->loadTable->create();
+
+        // Clustering seam: location-transparent addressing defaults to the
+        // single-machine implementation. Swap for a gossip-based router later.
+        $this->shardRouter = new LocalShardRouter('local');
+        $this->remoteTransport = new LocalTransport();
     }
 
     /**
@@ -82,7 +135,7 @@ class ActorManager
      */
     public static function getInstance(): ActorManager
     {
-        if (self::$instance == null) {
+        if (self::$instance === null) {
             self::$instance = new ActorManager();
         }
         return self::$instance;
@@ -109,13 +162,78 @@ class ActorManager
     }
 
     /**
-     * @param Actor $actor
+     * Raw shared-memory row for an actor (used by the shard router to build a
+     * {@see \Yew\Cluster\State\Location} without constructing ActorInfo).
+     *
+     * @param string $actorName
+     * @return array|null
+     */
+    public function getActorRaw(string $actorName): ?array
+    {
+        $data = $this->actorTable->get($actorName);
+
+        return empty($data) ? null : $data;
+    }
+
+    /**
+     * @return ShardRouter
+     */
+    public function getShardRouter(): ShardRouter
+    {
+        return $this->shardRouter;
+    }
+
+    /**
+     * Whether cluster-based routing is active. Derived purely from the type of
+     * the injected shard router — the actor module never imports any cluster
+     * config class, keeping the dependency direction strictly actor -> cluster.
+     *
+     * @return bool
+     */
+    public function isClusterRoutingEnabled(): bool
+    {
+        return !($this->shardRouter instanceof LocalShardRouter);
+    }
+
+    /**
+     * Replace the shard router (e.g. with a clustered/gossip implementation).
+     *
+     * @param ShardRouter $shardRouter
+     */
+    public function setShardRouter(ShardRouter $shardRouter): void
+    {
+        $this->shardRouter = $shardRouter;
+    }
+
+    /**
+     * @return RemoteTransport
+     */
+    public function getRemoteTransport(): RemoteTransport
+    {
+        return $this->remoteTransport;
+    }
+
+    /**
+     * Replace the remote transport (e.g. with a real network implementation).
+     *
+     * @param RemoteTransport $remoteTransport
+     */
+    public function setRemoteTransport(RemoteTransport $remoteTransport): void
+    {
+        $this->remoteTransport = $remoteTransport;
+    }
+
+    /**
+     * Register an actor and link it under its parent (if any).
+     *
+     * @param Actor       $actor
+     * @param string|null $parentName Parent actor name, for supervision tree
      * @throws ActorException
      */
-    public function addActor(Actor $actor)
+    public function addActor(Actor $actor, ?string $parentName = null)
     {
         if (Server::$instance->getProcessManager()->getCurrentProcess()->getGroupName() != ActorConfig::GROUP_NAME) {
-            throw new ActorException("Do not new a actor, use Actor::create()");
+            throw new ActorException("Do not new a actor, use ActorSystem::create()");
         }
 
         $actorName = $actor->getName();
@@ -124,7 +242,12 @@ class ActorManager
             throw new ActorException("Has same actor name :{$actorName}");
         }
 
-        $className = get_class($actor);
+        // Parent must live in the same process group (supervision tree is intra-process).
+        if ($parentName !== null && !$this->actorTable->exist($parentName)) {
+            throw new ActorException("Parent actor does not exist: {$parentName}");
+        }
+
+        $className        = get_class($actor);
         $actorClassNameId = $this->actorClassNameIdTable->get($className);
         if (empty($actorClassNameId)) {
             $id = $this->actorIdClassNameTable->count();
@@ -134,14 +257,85 @@ class ActorManager
             $id = $actorClassNameId["id"];
         }
 
+        $currentProcessId = Server::$instance->getProcessManager()->getCurrentProcessId();
         $this->actorTable->set($actorName, [
-            "processId" => Server::$instance->getProcessManager()->getCurrentProcessId(),
+            "processId" => $currentProcessId,
             "createTime" => time(),
-            "classId" => $id
+            "classId" => $id,
+            "parent" => $parentName ?? ""
         ]);
         DISet($className . ":" . $actorName, $actor);
 
-        $this->debug(sprintf("Actor %s created", $actor->getName()));
+        $this->incrLoad($this->indexOfProcess($currentProcessId));
+
+        // Clustering seam: publish the actor's location (derived from ring for
+        // the gossip router; no-op for the local router).
+        $node = method_exists($this->shardRouter, 'getLocalNode')
+            ? $this->shardRouter->getLocalNode()
+            : new ClusterNode('local');
+        $this->shardRouter->register($actorName, new Location($node, $currentProcessId));
+
+        // Route 2: persist the actor's class name alongside its state so a
+        // failover node can resurrect it without an external class mapping.
+        try {
+            $store = \DIGet(ClusterActorStore::class);
+            if ($store instanceof ActorStore) {
+                $store->saveMeta($actorName, $className);
+            }
+        } catch (\Throwable $e) {
+            // No durable store registered (persistence disabled): nothing to do.
+        }
+
+        if ($parentName !== null) {
+            $this->addChild($parentName, $actorName);
+            $actor->setParentName($parentName);
+        }
+    }
+
+    /**
+     * Record a child under its parent.
+     *
+     * @param string $parentName
+     * @param string $childName
+     */
+    private function addChild(string $parentName, string $childName): void
+    {
+        $row = $this->actorChildrenTable->get($parentName);
+        $children = $row === false ? [] : explode(",", $row["children"]);
+        $children[] = $childName;
+        $this->actorChildrenTable->set($parentName, ["children" => implode(",", array_unique($children))]);
+    }
+
+    /**
+     * Get the parent actor name, or null when this is a root actor.
+     *
+     * @param string $actorName
+     * @return string|null
+     */
+    public function getParent(string $actorName): ?string
+    {
+        $data = $this->actorTable->get($actorName);
+        if (empty($data) || empty($data["parent"])) {
+            return null;
+        }
+
+        return $data["parent"];
+    }
+
+    /**
+     * Get the names of all direct children of the given actor.
+     *
+     * @param string $actorName
+     * @return string[]
+     */
+    public function getChildren(string $actorName): array
+    {
+        $row = $this->actorChildrenTable->get($actorName);
+        if ($row === false || $row["children"] === "") {
+            return [];
+        }
+
+        return explode(",", $row["children"]);
     }
 
     /**
@@ -150,20 +344,77 @@ class ActorManager
     public function removeActor(Actor $actor)
     {
         $actorName = $actor->getName();
+        $parentName = $this->getParent($actorName);
+
+        // Detach from parent's children list.
+        if ($parentName !== null) {
+            $row = $this->actorChildrenTable->get($parentName);
+            if ($row !== false) {
+                $children = array_diff(explode(",", $row["children"]), [$actorName]);
+                if (empty($children)) {
+                    $this->actorChildrenTable->del($parentName);
+                } else {
+                    $this->actorChildrenTable->set($parentName, ["children" => implode(",", $children)]);
+                }
+            }
+        }
+
+        // Cascade: stop all children when a parent is removed (Akka semantics).
+        foreach ($this->getChildren($actorName) as $childName) {
+            /** @var Actor|null $child */
+            $child = $this->getActor($childName);
+            if ($child instanceof Actor) {
+                $child->destroy();
+            }
+        }
+        $this->actorChildrenTable->del($actorName);
 
         $className = get_class($actor);
 
         DISet($className . ":" . $actorName, null);
-        $this->actorTable->del($actor->getName());
+        $row = $this->actorTable->get($actorName);
+        $this->decrLoad($this->indexOfProcess((int) ($row["processId"] ?? 0)));
+        $this->shardRouter->unregister($actorName);
+        $this->actorTable->del($actorName);
+    }
 
-        //Dispatch ActorDeleteEvent to actor-cache process, do not need reply
-        Server::$instance->getEventDispatcher()->dispatchProcessEvent(new ActorDeleteEvent(
-            ActorDeleteEvent::ActorDeleteEvent,
-            [
-                $actorName,
-            ]), Server::$instance->getProcessManager()->getProcessFromName(ActorCacheProcess::PROCESS_NAME));
+    /**
+     * Recreate an existing actor in place (used by supervision Restart).
+     *
+     * Preserves identity (name), persistent data, and parent linkage.
+     *
+     * @param string $actorName
+     * @return Actor|null The new actor instance, or null on failure
+     */
+    public function restartActor(string $actorName): ?Actor
+    {
+        $data = $this->actorTable->get($actorName);
+        if (empty($data)) {
+            return null;
+        }
 
-        $this->debug(sprintf("Actor %s removed"), $actor->getName());
+        $className = $this->actorIdClassNameTable->get($data["classId"], "className");
+        $parentName = empty($data["parent"]) ? null : $data["parent"];
+
+        /** @var Actor|null $old */
+        $old = DIGet($className . ":" . $actorName);
+        $actorData = $old instanceof Actor ? $old->getData() : [];
+
+        // Tear down the old instance without cascading to children.
+        if ($old instanceof Actor) {
+            $old->preRestart();
+        }
+        DISet($className . ":" . $actorName, null);
+        $this->actorTable->del($actorName);
+
+        /** @var Actor $actor */
+        $actor = new $className($actorName, true);
+        $actor->initData($actorData);
+        if ($parentName !== null) {
+            $actor->setParentName($parentName);
+        }
+
+        return $actor;
     }
 
     /**
@@ -172,6 +423,73 @@ class ActorManager
     public function getAtomic(): Atomic
     {
         return $this->atomic;
+    }
+
+    /**
+     * @return ActorConfig
+     */
+    public function getActorConfig(): ActorConfig
+    {
+        return $this->actorConfig;
+    }
+
+    /**
+     * Increment the load counter for a worker process (called on actor creation).
+     *
+     * @param int $processIndex
+     */
+    public function incrLoad(int $processIndex): void
+    {
+        $row = $this->loadTable->get($processIndex);
+        $load = $row === false ? 0 : (int) $row["load"];
+        $this->loadTable->set($processIndex, ["load" => $load + 1]);
+    }
+
+    /**
+     * Decrement the load counter for a worker process (called on actor removal).
+     *
+     * @param int $processIndex
+     */
+    public function decrLoad(int $processIndex): void
+    {
+        $row = $this->loadTable->get($processIndex);
+        $load = $row === false ? 0 : (int) $row["load"];
+        $this->loadTable->set($processIndex, ["load" => max(0, $load - 1)]);
+    }
+
+    /**
+     * Current actor count hosted by a worker process.
+     *
+     * @param int $processIndex
+     * @return int
+     */
+    public function getLoad(int $processIndex): int
+    {
+        $row = $this->loadTable->get($processIndex);
+
+        return $row === false ? 0 : (int) $row["load"];
+    }
+
+    /**
+     * Resolve a process id to its index inside the actor process group.
+     *
+     * @param int $processId
+     * @return int Index in [0, processCount), defaults to 0 when not found
+     */
+    public function indexOfProcess(int $processId): int
+    {
+        $group = Server::$instance->getProcessManager()->getProcessGroup(ActorConfig::GROUP_NAME);
+        if ($group === null) {
+            return 0;
+        }
+
+        foreach ($group->getProcesses() as $index => $process) {
+            if ($process->getProcessId() === $processId) {
+                return $index;
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -186,5 +504,175 @@ class ActorManager
         }
 
         return true;
+    }
+
+    /**
+     * Names of actors whose real instance lives in THIS process (not proxies).
+     *
+     * Used by cluster rebalancing to find local actors that must be evicted
+     * when the consistent-hash ring no longer maps them to this node.
+     *
+     * @return string[]
+     */
+    public function getLocalActorNames(): array
+    {
+        $current = Server::$instance->getProcessManager()->getCurrentProcessId();
+        $names = [];
+        foreach ($this->actorTable as $name => $row) {
+            if ((int)($row['processId'] ?? -1) === $current) {
+                $names[] = $name;
+            }
+        }
+        return $names;
+    }
+
+    /**
+     * Re-instantiate every actor that the shared actorTable records as belonging
+     * to THIS process but which has no live in-process instance yet.
+     *
+     * This is required after an actor process restart: the cross-process
+     * actorTable survives the restart (it lives in shared memory), so stale
+     * rows still point at the old process id. Without re-instantiation, proxies
+     * would dispatch IPC calls to a dead process and time out. We re-create the
+     * instance locally and let recovery() rebuild state from the durable store.
+     *
+     * @return string[] names that were successfully recovered
+     */
+    public function recoverLocalActors(): array
+    {
+        $current = Server::$instance->getProcessManager()->getCurrentProcessId();
+        $recovered = [];
+
+        foreach ($this->actorTable as $name => $row) {
+            if ((int)($row['processId'] ?? -1) !== $current) {
+                continue;
+            }
+            // Skip actors that already have a live DI instance in this process.
+            $className = $this->actorIdClassNameTable->get($row['classId'] ?? -1, 'className');
+            if (empty($className) || !class_exists($className)) {
+                Server::$instance->getLog()->warning(sprintf(
+                    'ActorManager: skip recovery of local actor %s: class for classId %s not found',
+                    $name,
+                    $row['classId'] ?? -1
+                ));
+                continue;
+            }
+            // DIGet() throws NotFoundException when the instance is NOT yet
+            // registered (i.e. not yet recovered). Treat that as "needs recovery"
+            // rather than letting the exception abort the whole loop — otherwise a
+            // single missing actor would prevent every subsequent actor in the
+            // table from being restored, leaving them unroutable (DI\NotFoundException
+            // on every incoming message).
+            $alreadyRecovered = false;
+            try {
+                $alreadyRecovered = DIGet($className . ':' . $name) instanceof Actor;
+            } catch (\Throwable $e) {
+                $alreadyRecovered = false;
+            }
+            if ($alreadyRecovered) {
+                continue;
+            }
+
+            try {
+                /** @var Actor $actor */
+                $actor = new $className($name, true, empty($row['parent']) ? null : $row['parent']);
+                $actor->recovery();
+                $this->addActor($actor, empty($row['parent']) ? null : $row['parent']);
+                $recovered[] = $name;
+            } catch (\Throwable $e) {
+                Server::$instance->getLog()->warning(sprintf(
+                    'ActorManager: failed to recover local actor %s (%s): %s',
+                    $name,
+                    $className,
+                    $e->getMessage()
+                ));
+            }
+        }
+
+        return $recovered;
+    }
+
+    /**
+     * Get a handle to an existing Actor by name.
+     *
+     * Returns null if no such actor exists.
+     *
+     * @param string     $actorName
+     * @param bool|null  $oneWay  Whether the proxy call is one-way (no reply expected)
+     * @param float|null $timeOut IPC wait timeout in seconds
+     * @return Actor|ActorIpcProxy|null
+     */
+    public function getActor(string $actorName, ?bool $oneWay = false, ?float $timeOut = 0)
+    {
+        // Local fast path: the actor is registered in this node's actorTable.
+        if ($this->hasActor($actorName)) {
+            // Only resolve the real instance when THIS process is the one that owns the actor.
+            $data = $this->actorTable->get($actorName);
+            if ((int)$data["processId"] === Server::$instance->getProcessManager()->getCurrentProcessId()) {
+                $className = $this->actorIdClassNameTable->get($data["classId"], "className");
+
+                // The actor is owned by this process. Its DI instance must exist
+                // once recovery has run; if it is missing we are racing startup /
+                // a reload. Recover THIS actor locally instead of falling back to an
+                // IPC proxy (which would loop the message back to this same process
+                // and time out, since no live instance exists to answer it).
+                try {
+                    /** @var Actor|null $actor */
+                    $actor = DIGet($className . ":" . $actorName);
+                } catch (\Throwable $e) {
+                    $actor = null;
+                }
+                if ($actor instanceof Actor) {
+                    return $actor;
+                }
+
+                // One-shot local recovery: re-create the instance and replay its
+                // durable state so the in-flight message can be handled inline.
+                // Mirror recoverLocalActors() exactly (parent handling included) so
+                // the lazily-recovered instance matches what startup recovery would
+                // have produced.
+                $parent = empty($data['parent']) ? null : $data['parent'];
+                try {
+                    $actor = new $className($actorName, true, $parent);
+                    $actor->recovery();
+                    $this->addActor($actor, $parent);
+                    return $actor;
+                } catch (\Throwable $e) {
+                    Server::$instance->getLog()->warning(sprintf(
+                        'ActorManager: lazy recovery of local actor %s (%s) failed: %s',
+                        $actorName,
+                        $className,
+                        $e->getMessage()
+                    ));
+                }
+
+                // Last resort: proxy to the owning process (may time out if the
+                // actor genuinely cannot be recreated).
+                $proxy = ActorIpcProxy::create($actorName, $oneWay, $timeOut);
+                if ($proxy !== false) {
+                    return $proxy;
+                }
+                return null;
+            }
+
+            // From a worker: return an IPC proxy to the actor process.
+            // The factory returns false when the actor's location or info cannot be
+            // resolved, instead of throwing (the proxy constructor throws when the
+            // actor's location or info cannot be resolved).
+            return ActorIpcProxy::create($actorName, $oneWay, $timeOut);
+        }
+
+        // Not registered locally: if the cluster's shard router knows which node
+        // owns this actor, return a remote proxy so cross-node reads work. Without
+        // this, getActor() on a non-owner node would always return null.
+        $loc = $this->shardRouter->locate($actorName);
+        if ($loc !== null && !$loc->getNode()->isLocal()) {
+            $proxy = ActorIpcProxy::create($actorName, $oneWay, $timeOut);
+            if ($proxy !== false) {
+                return $proxy;
+            }
+        }
+
+        return null;
     }
 }

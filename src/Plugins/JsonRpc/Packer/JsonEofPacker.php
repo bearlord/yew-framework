@@ -40,8 +40,10 @@ class JsonEofPacker extends Component implements PackerInterface
      */
     public function unpack(string $data)
     {
-        $data = rtrim($data, $this->eof);
-        
+        // The EOF frame boundary is handled by the transport layer (Swoole
+        // package_eof), so the payload here is already a complete frame.
+        // Do not rtrim, otherwise characters matching the EOF string inside
+        // the payload would be stripped.
         return json_decode($data, true);
     }
 

@@ -6,7 +6,7 @@
 
 namespace Yew\Plugins\Route\Controller;
 
-use DI\Annotation\Inject;
+use DI\Attribute\Inject;
 use Yew\Core\Exception\ParamException;
 use Yew\Core\Log\LoggerInterface;
 use Yew\Core\Server\Beans\Request;
@@ -31,28 +31,16 @@ abstract class RouteController extends Controller implements IController
      */
     const EVENT_AFTER_ACTION = "afterAction";
 
-    /**
-     * @Inject()
-     * @var Request
-     */
+    #[Inject]
     protected $request;
 
-    /**
-     * @Inject()
-     * @var Response
-     */
+    #[Inject]
     protected $response;
 
-    /**
-     * @Inject()
-     * @var ClientData| null
-     */
+    #[Inject]
     protected ?ClientData $clientData = null;
 
-    /**
-     * @Inject()
-     * @var LoggerInterface
-     */
+    #[Inject]
     protected LoggerInterface $log;
 	
 
@@ -119,7 +107,10 @@ abstract class RouteController extends Controller implements IController
     }
 
     /**
-     * Called on every request
+     * Called on every request. The Inject properties ($request/$response) are
+     * object-level (injected once at bean creation) and must be refreshed here
+     * from the per-request coroutine context, otherwise a reused controller
+     * instance keeps a stale/null request across requests.
      *
      * @param string|null $controllerName
      * @param string|null $methodName
@@ -127,7 +118,14 @@ abstract class RouteController extends Controller implements IController
      */
     public function initialization(?string $controllerName, ?string $methodName)
     {
-
+        $request = getDeepContextValueByClassName(Request::class);
+        if ($request !== null) {
+            $this->request = $request;
+        }
+        $response = getDeepContextValueByClassName(Response::class);
+        if ($response !== null) {
+            $this->response = $response;
+        }
     }
 
     /**

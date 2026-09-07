@@ -102,7 +102,6 @@ class DatabasePlugin extends \Yew\Core\Plugin\AbstractPlugin
         foreach ($configs as $config) {
             $pool = new DatabasePool($config);
             $pools->addPool($pool);
-            $this->debug(sprintf("%s connection pool named %s created", ucfirst($config->getDriverName()), $config->getName()));
         }
 
         $context->add("DatabasePools", $pools);

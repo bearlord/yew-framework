@@ -84,8 +84,6 @@ class RedisPlugin extends AbstractPlugin
         foreach ($configs as $key => $config) {
             $pool = new RedisPool($config);
             $pools->addPool($pool);
-
-            $this->debug(sprintf("%s connection pool named %s created", "Redis", $config->getName()));
         }
 
         $context->add("redisPool", $pools);

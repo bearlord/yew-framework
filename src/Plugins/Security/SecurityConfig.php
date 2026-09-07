@@ -12,9 +12,6 @@ class SecurityConfig extends BaseConfig
 {
     const KEY = "security";
 
-    /**
-     * SecurityConfig constructor.
-     */
     public function __construct()
     {
         parent::__construct(self::KEY);

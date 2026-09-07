@@ -52,7 +52,7 @@ class EventDispatcher
         if (!array_key_exists($type, $this->eventCalls)) {
             $this->eventCalls[$type] = [];
         }
-        if ($eventCall == null) {
+        if ($eventCall === null) {
             $eventCall = DIGet(EventCall::class, [$this, $type, $once]);
         }
         $this->eventCalls[$type][] = $eventCall;

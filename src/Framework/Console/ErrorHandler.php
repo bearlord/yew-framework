@@ -23,7 +23,7 @@ use Yew\Yew;
 /**
  * ErrorHandler handles uncaught PHP errors and exceptions.
  *
- * ErrorHandler is configured as an application component in [[\yii\base\Application]] by default.
+ * ErrorHandler is configured as an application component in [[\Yew\Framework\Base\Application]] by default.
  * You can access that instance via `Yew::$app->errorHandler`.
  *
  * @author Carsten Brandt <mail@cebe.cc>

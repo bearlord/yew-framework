@@ -246,7 +246,6 @@ abstract class AbstractServerPort
      */
     public function _onPacket($server, string $data, array $clientInfo)
     {
-        Server::$instance->getProcessManager()->getCurrentProcess()->waitReady();
         try {
             $this->onUdpPacket($data, $clientInfo);
         } catch (\Throwable $e) {

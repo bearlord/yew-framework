@@ -19,7 +19,7 @@ use Yew\Framework\Web\HttpException;
 /**
  * ErrorHandler handles uncaught PHP errors and exceptions.
  *
- * ErrorHandler is configured as an application component in [[\yii\base\Application]] by default.
+ * ErrorHandler is configured as an application component in [[\Yew\Framework\Base\Application]] by default.
  * You can access that instance via `Yew::$app->errorHandler`.
  *
  * For more details and usage information on ErrorHandler, see the [guide article on handling errors](guide:runtime-handling-errors).

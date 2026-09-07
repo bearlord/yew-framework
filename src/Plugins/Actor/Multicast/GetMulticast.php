@@ -11,21 +11,21 @@ use Yew\Plugins\Ipc\GetIpc;
 
 trait GetMulticast
 {
-    use GetIpc;
     use GetLogger;
 
     /**
-     * @var MulticastConfig
+     * @var MulticastConfig|null
      */
-    protected $multicastConfig;
+    protected ?MulticastConfig $multicastConfig = null;
 
     /**
-     * @return MulticastConfig|mixed
-     * @throws \Exception
+     * Lazily resolve the multicast config from the DI container.
+     *
+     * @return MulticastConfig
      */
     protected function getMulticastConfig(): MulticastConfig
     {
-        if ($this->multicastConfig == null) {
+        if ($this->multicastConfig === null) {
             $this->multicastConfig = DIGet(MulticastConfig::class);
         }
 
@@ -33,103 +33,108 @@ trait GetMulticast
     }
 
     /**
-     * Has channel
+     * Build a Multicast facade bound to the given actor name.
+     *
+     * @param string $actor
+     * @return Multicast
+     */
+    protected function multicastFor(string $actor): Multicast
+    {
+        return new Multicast($actor, $this->getMulticastConfig());
+    }
+
+    /**
+     * Whether the actor has subscribed to the channel.
+     *
      * @param string $channel
      * @param string $actor
      * @return bool
-     * @throws \Exception
      */
     public function actorHasChannel(string $channel, string $actor): bool
     {
-        if (empty($actor)) {
+        if ($actor === '') {
             $this->warn("Actor is empty");
+
             return false;
         }
 
-        /** @var Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), Channel::class);
-        return $rpcProxy->hasChannel($channel, $actor);
+        return $this->multicastFor($actor)->hasChannel($channel);
     }
 
     /**
-     * Delete channel
+     * Delete a channel and all its subscriptions.
      *
      * @param string $channel
-     * @throws \Exception
+     * @return void
      */
-    public function deleteChannel(string $channel)
+    public function deleteChannel(string $channel): void
     {
-        /** @var Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), Channel::class, true);
-        $rpcProxy->deleteChannel($channel);
+        $this->multicastFor('')->deleteChannel($channel);
     }
 
     /**
-     * Subscribe
+     * Subscribe an actor to a channel.
      *
      * @param string $channel
      * @param string $actor
-     * @throws \Exception
+     * @return void
      */
-    public function actorSubscribe(string $channel, string $actor)
+    public function actorSubscribe(string $channel, string $actor): void
     {
-        if (empty($actor)) {
+        if ($actor === '') {
             $this->warn("Actor is empty");
+
             return;
         }
 
-        /** @var Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), Channel::class, true);
-        $rpcProxy->subscribe($channel, $actor);
+        $this->multicastFor($actor)->subscribe($channel);
     }
 
     /**
-     * Unsubscribe
+     * Unsubscribe an actor from a channel.
      *
      * @param string $channel
      * @param string $actor
-     * @throws \Exception
+     * @return void
      */
-    public function actorUnsubscribe(string $channel, string $actor)
+    public function actorUnsubscribe(string $channel, string $actor): void
     {
-        if (empty($actor)) {
+        if ($actor === '') {
             $this->warn("Actor is empty");
+
             return;
         }
 
-        /** @var Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), Channel::class, true);
-        $rpcProxy->unsubscribe($channel, $actor);
+        $this->multicastFor($actor)->unsubscribe($channel);
     }
 
     /**
-     * Unsubscribe all
+     * Unsubscribe an actor from all channels.
+     *
      * @param string $actor
-     * @throws \Exception
+     * @return void
      */
-    public function actorUnsubscribeAll(string $actor)
+    public function actorUnsubscribeAll(string $actor): void
     {
-        if (empty($actor)) {
+        if ($actor === '') {
             $this->warn("Actor is empty");
+
             return;
         }
 
-        /** @var Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), Channel::class, true);
-        $rpcProxy->unsubscribeAll($actor);
+        $this->multicastFor($actor)->unsubscribeAll();
     }
 
     /**
-     * Publish subscription
+     * Publish a message to a channel on behalf of an actor.
      *
      * @param string $channel
      * @param string|null $message
-     * @param array|null $excludeActorList
+     * @param array $excludeActorList
+     * @return void
      */
-    public function actorPublish(string $channel, ?string $message, ?array $excludeActorList = [])
+    public function actorPublish(string $channel, ?string $message, array $excludeActorList = []): void
     {
-        /** @var Channel $rpcProxy */
-        $rpcProxy = $this->callProcessName($this->getMulticastConfig()->getProcessName(), Channel::class, true);
-        $rpcProxy->publish($channel, $message, $excludeActorList);
+        $this->multicastFor('')->publish($channel, (string) $message, $excludeActorList);
     }
 }

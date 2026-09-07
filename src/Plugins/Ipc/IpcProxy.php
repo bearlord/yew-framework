@@ -22,7 +22,7 @@ class IpcProxy
     /**
      * @var float
      */
-    protected float $timeOut;
+    protected float $timeOut = 0.0;
     /**
      * @var bool
      */
@@ -40,7 +40,7 @@ class IpcProxy
      * @param bool $oneway
      * @param float $timeOut
      */
-    public function __construct(Process $process, string $className, bool $oneway = false, float $timeOut = 0)
+    public function __construct(Process $process, string $className, bool $oneway = false, float $timeOut = 5)
     {
         $this->process = $process;
         $this->className = $className;
@@ -61,12 +61,15 @@ class IpcProxy
             $arguments["sessionId"] = $this->sessionId;
         }
         $message = new IpcCallMessage($this->className, $name, $arguments, $this->oneway);
+        $token = $message->getProcessIpcCallData()->getToken();
 
         Server::$instance->getProcessManager()->getCurrentProcess()->sendMessage($message, $this->process);
 
         if (!$this->oneway) {
-            $channel = IpcManager::getChannel($message->getProcessIpcCallData()->getToken());
+            $channel = IpcManager::getChannel($token);
+            $tWait = microtime(true);
             $result = $channel->pop($this->timeOut);
+            $waitMs = (microtime(true) - $tWait) * 1000;
             $channel->close();
 
             if ($result instanceof IpcResultData) {

@@ -6,67 +6,40 @@
 
 namespace Yew\Plugins\Session;
 
-
 use Yew\Plugins\Redis\GetRedis;
 
 class RedisSessionStorage implements SessionStorage
 {
     use GetRedis;
-    /**
-     * @var SessionConfig
-     */
+
     private SessionConfig $sessionConfig;
 
-    /**
-     * @var array
-     */
-    private array $redisConfig;
+    private const prefix = "SESSION_";
 
-    const prefix = "SESSION_";
-
-    /**
-     * RedisSessionStorage constructor.
-     * @param SessionConfig $sessionConfig
-     */
     public function __construct(SessionConfig $sessionConfig)
     {
         $this->sessionConfig = $sessionConfig;
     }
 
-    /**
-     * @param string $id
-     * @return mixed
-     * @throws \Throwable
-     */
-    public function get(string $id)
+    public function get(string $id): ?string
     {
         $redis = $this->redis($this->sessionConfig->getRedisName());
         $redis->select($this->sessionConfig->getDatabase());
-        return $redis->get(self::prefix . $id);
+        $value = $redis->get(self::prefix . $id);
+        return $value === false ? null : $value;
     }
 
-    /**
-     * @param string $id
-     * @param string $data
-     * @return mixed
-     * @throws \Throwable
-     */
-    public function set(string $id, string $data)
+    public function set(string $id, string $data): void
     {
         $redis = $this->redis($this->sessionConfig->getRedisName());
         $redis->select($this->sessionConfig->getDatabase());
-        return $redis->setex(self::prefix . $id, $this->sessionConfig->getTimeout(), $data);
+        $redis->setex(self::prefix . $id, $this->sessionConfig->getTimeout(), $data);
     }
 
-    /**
-     * @param string $id
-     * @return mixed
-     * @throws \Throwable
-     */
-    public function remove(string $id)
+    public function remove(string $id): void
     {
         $redis = $this->redis($this->sessionConfig->getRedisName());
         $redis->select($this->sessionConfig->getDatabase());
-        return $redis->del(self::prefix . $id);
+        $redis->del(self::prefix . $id);
     }
 }
