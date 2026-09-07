@@ -18,7 +18,7 @@ class m260728_025937_create_mqtt_user_table extends Migration
             'id' => $this->bigPrimaryKey()->comment('Primary key'),
 
             // MQTT login username (unique per client)
-            'username' => $this->string(64)->notNull()->comment('MQTT login username'),
+            'user_name' => $this->string(64)->notNull()->comment('MQTT login username'),
 
             // Hashed password for authentication
             'password_hash' => $this->string(240)->notNull()->comment('Hashed password'),
