@@ -83,7 +83,7 @@ class MqttConnectionPlugin extends AbstractPlugin
     }
 
     /**
-     * Init config
+     * Init mqttConnectionConfig
      * @return void
      */
     protected function initConfig()
