@@ -1,0 +1,116 @@
+<?php
+namespace Yew\Plugins\Mqtt\Connection;
+
+class MqttConnection
+{
+    /**
+     * fd -> [key => value] mapping (in-memory, lives in the Connection helper process).
+     * @var array<int, array<string, mixed>>
+     */
+    protected array $fdSession = [];
+
+    /**
+     * clientId -> [key => value] mapping.
+     * @var array<string, array<string, mixed>>
+     */
+    protected array $clientSession = [];
+
+    /**
+     * Connection constructor.
+     *
+     * The instance is created once per helper process and kept alive for the
+     * whole process lifetime (via DI container), so plain array properties are
+     * safe and persist across IPC calls without needing Swoole\Table.
+     */
+    public function __construct()
+    {
+    }
+
+    /**
+     * Store a key/value pair for a connection fd, e.g. setFdSession($fd, 'uid', $uid).
+     */
+    public function setFdSession(int $fd, string $key, $value): void
+    {
+        $this->fdSession[$fd][$key] = $value;
+    }
+
+    /**
+     * Resolve a value stored for a connection fd by key.
+     */
+    public function getFdSession(int $fd, string $key = 'uid')
+    {
+        return $this->fdSession[$fd][$key] ?? null;
+    }
+
+    /**
+     * Store multiple key/value pairs for a connection fd,
+     * e.g. setFdSessionMulti($fd, ['uid' => $uid, 'session_start' => $flag]).
+     */
+    public function setFdSessionMulti(int $fd, array $data): void
+    {
+        foreach ($data as $key => $value) {
+            $this->setFdSession($fd, $key, $value);
+        }
+    }
+
+    /**
+     * Resolve all values stored for a connection fd.
+     */
+    public function getFdSessionMulti(int $fd): ?array
+    {
+        return $this->fdSession[$fd] ?? null;
+    }
+
+    /**
+     * Remove the entire session state for a connection fd.
+     */
+    public function clearFdSession(int $fd): void
+    {
+        unset($this->fdSession[$fd]);
+    }
+
+    /**
+     * Store a key/value pair for a clientId, e.g. setClientSession($clientId, 'uid', $uid)
+     * or setClientSession($clientId, 'session_start', $flag).
+     */
+    public function setClientSession(string $clientId, string $key, $value): void
+    {
+        $this->clientSession[$clientId][$key] = $value;
+    }
+
+    /**
+     * Resolve a value stored for a clientId by key.
+     */
+    public function getClientSession(string $clientId, string $key = 'uid')
+    {
+        return $this->clientSession[$clientId][$key] ?? null;
+    }
+
+    /**
+     * Store multiple key/value pairs for a clientId,
+     * e.g. setClientSessionMulti($clientId, ['uid' => $uid, 'session_start' => $flag]).
+     */
+    public function setClientSessionMulti(string $clientId, array $data = []): void
+    {
+        foreach ($data as $key => $value) {
+            $this->setClientSession($clientId, $key, $value);
+        }
+    }
+
+    /**
+     * @param string $clientId
+     * @return mixed[]|null
+     */
+    public function getClientSessionMulti(string $clientId): ?array
+    {
+        return $this->clientSession[$clientId] ?? null;
+    }
+
+    /**
+     * Remove the entire session state for a clientId.
+     */
+    public function clearClientSession(string $clientId): void
+    {
+        unset($this->clientSession[$clientId]);
+    }
+}
