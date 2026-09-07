@@ -104,8 +104,6 @@ class Application extends Server
 
         $this->addPlugin(new TopicPlugin());
 
-        $this->addPlugin(new ConnectionPlugin());
-
         $this->addPlugin(new AutoReloadPlugin());
 
         //Add aop of Go namespace by default
