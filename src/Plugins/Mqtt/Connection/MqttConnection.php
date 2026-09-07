@@ -22,6 +22,30 @@ class MqttConnection
      * whole process lifetime (via DI container), so plain array properties are
      * safe and persist across IPC calls without needing Swoole\Table.
      */
+    /**
+     * Will message state: clientId -> will packet.
+     * Keys: topic, payload, qos, retain, will_delay_interval, protocol_level.
+     * @var array<string, array<string, mixed>>
+     */
+    protected array $wills = [];
+
+    /**
+     * Keepalive sweeper started flag (lazy, started once inside the Connection process).
+     * @var bool
+     */
+    private bool $keepaliveTimerStarted = false;
+
+    /**
+     * MQTT keepalive grace factor: a connection is broken if no packet arrives
+     * within 1.5 * keepAlive seconds (per spec).
+     */
+    private const KEEPALIVE_GRACE_FACTOR = 1.5;
+
+    /**
+     * How often the keepalive sweeper runs, in milliseconds.
+     */
+    private const KEEPALIVE_SWEEP_INTERVAL_MS = 5000;
+
     public function __construct()
     {
     }
@@ -112,5 +136,96 @@ class MqttConnection
     public function clearClientSession(string $clientId): void
     {
         unset($this->clientSession[$clientId]);
+    }
+
+    /**
+     * Record (or refresh) the last activity time for a connection fd and make
+     * sure the keepalive sweeper is running. Called on every inbound MQTT packet.
+     */
+    public function touchActivity(int $fd): void
+    {
+        if (!isset($this->fdSession[$fd])) {
+            $this->fdSession[$fd] = [];
+        }
+        $this->fdSession[$fd]['last_activity_at'] = microtime(true);
+        $this->ensureKeepaliveTimer();
+    }
+
+    /**
+     * Store the negotiated keepalive (seconds) for a connection and mark activity.
+     * keepAlive <= 0 disables keepalive enforcement for this fd.
+     */
+    public function setKeepAlive(int $fd, int $keepAlive): void
+    {
+        if ($keepAlive > 0) {
+            if (!isset($this->fdSession[$fd])) {
+                $this->fdSession[$fd] = [];
+            }
+            $this->fdSession[$fd]['keep_alive'] = $keepAlive;
+        }
+        $this->touchActivity($fd);
+    }
+
+    /**
+     * Register a Will message for a client (MQTT 5). Overwrites any previous will.
+     *
+     * @param string $clientId
+     * @param array<string, mixed> $will keys: topic, payload, qos, retain, will_delay_interval, protocol_level
+     */
+    public function registerWill(string $clientId, array $will): void
+    {
+        $this->wills[$clientId] = $will;
+    }
+
+    /**
+     * Peek the pending Will for a client without consuming it (used at close time
+     * and again when a delayed-Will timer fires, so a reconnect can still cancel it).
+     */
+    public function getWill(string $clientId): ?array
+    {
+        return $this->wills[$clientId] ?? null;
+    }
+
+    /**
+     * Cancel (clear) the pending Will for a client. Called on a normal DISCONNECT
+     * and on reconnect (same clientId takes over the session -> MQTT 5 semantics).
+     */
+    public function cancelWill(string $clientId): void
+    {
+        unset($this->wills[$clientId]);
+    }
+
+    /**
+     * Start the keepalive sweeper once, inside the Connection process event loop.
+     */
+    private function ensureKeepaliveTimer(): void
+    {
+        if ($this->keepaliveTimerStarted) {
+            return;
+        }
+        $this->keepaliveTimerStarted = true;
+        \Swoole\Timer::tick(self::KEEPALIVE_SWEEP_INTERVAL_MS, [$this, 'sweepKeepalive']);
+    }
+
+    /**
+     * Scan all tracked fds; close any whose keepalive grace period has elapsed.
+     *
+     * Closing the fd crosses into the owner worker and fires onWsClose there,
+     * which is where the Will (if any) is published. The fd session itself is
+     * cleared by the worker-side MqttWillAspect, so we only close here.
+     */
+    public function sweepKeepalive(): void
+    {
+        $now = microtime(true);
+        foreach ($this->fdSession as $fd => $state) {
+            $keepAlive = $state['keep_alive'] ?? 0;
+            if ($keepAlive <= 0) {
+                continue;
+            }
+            $last = $state['last_activity_at'] ?? $now;
+            if (($now - $last) > $keepAlive * self::KEEPALIVE_GRACE_FACTOR) {
+                \Yew\Core\Server\Server::$instance->closeFd($fd);
+            }
+        }
     }
 }
