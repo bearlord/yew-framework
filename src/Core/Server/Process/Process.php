@@ -52,6 +52,27 @@ abstract class Process
     const IPC_MAX_FRAME_SIZE = 16 * 1024 * 1024;
 
     /**
+     * Min / max number of IPC consumer coroutines. Swoole Task Workers are fixed
+     * at boot and cannot be added at runtime, so back-pressure "scaling" is done
+     * by growing / shrinking this coroutine pool instead (theory: dynamic
+     * coroutine scaling, not dynamic Task Workers).
+     */
+    const IPC_CONSUMER_MIN = 4;
+    const IPC_CONSUMER_MAX = 16;
+
+    /**
+     * High-water mark on the mailbox length. Once exceeded (and the pool is not
+     * yet at max) the elastic monitor spawns another consumer to drain faster.
+     */
+    const IPC_SCALE_UP_LEN = 256;
+
+    /**
+     * Dynamic consumers idle longer than this (seconds) self-exit, shrinking the
+     * pool back toward IPC_CONSUMER_MIN so we don't keep idle coroutines around.
+     */
+    const IPC_CONSUMER_IDLE_SEC = 5;
+
+    /**
      * Process type
      * @var int
      */
@@ -124,6 +145,15 @@ abstract class Process
      * @var bool
      */
     protected bool $mailboxClosed = false;
+
+    /**
+     * Current number of live IPC consumer coroutines. Only the elastic monitor
+     * (spawn) and dynamic consumers (self-exit) mutate it; PHP is single-threaded
+     * and coroutines yield only at sleep / channel ops, so plain int access is
+     * race-free.
+     * @var int
+     */
+    protected int $ipcConsumerCount = 0;
 
     /**
      * @var LoggerInterface
@@ -339,20 +369,31 @@ abstract class Process
                 // sendMessage(), bounds the in-flight message count per process.
                 $mailboxSize = 1024;
                 // Promote mailbox to an instance property so _onProcessStop() can
-                // close it on SIGTERM, letting the consumer coroutine exit cleanly.
+                // close it on SIGTERM, letting the consumer coroutines exit cleanly.
                 $this->mailbox = new \Swoole\Coroutine\Channel($mailboxSize);
-                // Single long-lived consumer: pops frames and dispatches them.
-                // Exactly one coroutine processes pipe messages at a time, so the
-                // total coroutine count stays bounded at (mailboxSize + 2).
+
+                // Bounded pool of consumer coroutines (back-pressure + pipeline).
+                // A single consumer would serialize every IPC message behind one
+                // (possibly slow, IO-bound) handler, becoming the bottleneck under
+                // burst load. A small pool lets independent messages overlap on IO
+                // waits while keeping in-flight handlers bounded. The monitor below
+                // scales the pool up when the mailbox stays backed up, and extra
+                // ("dynamic") consumers self-exit when idle — the coroutine-level
+                // equivalent of "dynamic scaling" for back-pressure (Swoole Task
+                // Workers are fixed at boot, so we scale coroutines, not workers).
+                $this->ipcConsumerCount = self::IPC_CONSUMER_MIN;
+                for ($i = 0; $i < self::IPC_CONSUMER_MIN; $i++) {
+                    $this->spawnIpcConsumer(false);
+                }
+                // Elastic monitor: add consumers up to IPC_CONSUMER_MAX while the
+                // mailbox length persists above the high-water mark.
                 \Swoole\Coroutine::create(function () {
-                    while (true) {
-                        $item = $this->mailbox->pop();
-                        // Channel closed (SIGTERM) or error: exit safely.
-                        if ($item === false) {
-                            break;
+                    while (!$this->mailboxClosed) {
+                        if ($this->mailbox->length() > self::IPC_SCALE_UP_LEN
+                            && $this->ipcConsumerCount < self::IPC_CONSUMER_MAX) {
+                            $this->spawnIpcConsumer(true);
                         }
-                        [$payload, $fromProcess] = $item;
-                        $this->_onPipeMessage(serverUnSerialize($payload), $fromProcess);
+                        \Swoole\Coroutine::sleep(0.5);
                     }
                 });
 
@@ -514,7 +555,7 @@ abstract class Process
             // wrap in a length-prefixed frame: [4B srcProcessId][4B payloadLen][payload].
             // The receiver reassembles by length, so a single write() need not
             // carry the whole frame — we chunk it to honour Swoole's pipe limit.
-            $payload = serverSerialize($message);
+            $payload = self::ipcSerialize($message);
             $frame = pack("N", $this->getProcessId()) . pack("N", strlen($payload)) . $payload;
             $offset = 0;
             $len = strlen($frame);
@@ -575,6 +616,63 @@ abstract class Process
             //If process is worker or task
             $this->server->getServer()->sendMessage($message, $toProcess->getProcessId());
         }
+    }
+
+    /**
+     * Serialize an IPC payload
+     *
+     * @param mixed $data
+     * @return string
+     */
+    private static function ipcSerialize($data): string
+    {
+        return \Swoole\Serialize::pack($data);
+    }
+
+    /**
+     * Reverse of ipcSerialize().
+     *
+     * @param string $data
+     * @return mixed
+     */
+    private static function ipcUnSerialize(string $data)
+    {
+        return \Swoole\Serialize::unpack($data);
+    }
+
+    /**
+     * Spawn one IPC consumer coroutine.
+     *
+     * Pops a reassembled frame from the bounded mailbox and dispatches it. The
+     * mailbox push() in the draining coroutine stays *blocking* on purpose: when
+     * the mailbox is full it yields, which back-pressures the socket reader, which
+     * fills the pipe buffer, which makes sendMessage() EAGAIN-retry on the sender
+     * side — so congestion propagates upstream instead of dropping frames. We do
+     * NOT switch to a non-blocking push + drop here: silently losing IPC frames
+     * would drop PUBLISH / control messages in the broker.
+     *
+     * @param bool $dynamic When true the consumer self-exits after IPC_CONSUMER_IDLE_SEC
+     *                      of inactivity, letting the pool shrink back toward MIN.
+     */
+    protected function spawnIpcConsumer(bool $dynamic): void
+    {
+        $this->ipcConsumerCount++;
+        \Swoole\Coroutine::create(function () use ($dynamic) {
+            // Base consumers block forever (timeout -1). Dynamic consumers wake on
+            // idle timeout and exit, shrinking the pool. A false return means either
+            // the channel was closed (SIGTERM) or an idle timeout on a dynamic one.
+            while (true) {
+                $item = $this->mailbox->pop($dynamic ? self::IPC_CONSUMER_IDLE_SEC : -1);
+                if ($item === false) {
+                    if ($dynamic) {
+                        $this->ipcConsumerCount--;
+                    }
+                    break;
+                }
+                [$payload, $fromProcess] = $item;
+                $this->_onPipeMessage(self::ipcUnSerialize($payload), $fromProcess);
+            }
+        });
     }
 
     /**
