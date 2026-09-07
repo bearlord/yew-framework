@@ -9,7 +9,6 @@ namespace Yew\Plugins\Mqtt;
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
 use Yew\Core\Plugin\PluginInterfaceManager;
-use Yew\Plugins\Mqtt\Auth\MqttAuth;
 use Yew\Plugins\Pack\PackPlugin;
 use Yew\Plugins\Topic\TopicPlugin;
 use Yew\Plugins\Uid\UidPlugin;
@@ -56,9 +55,6 @@ class MqttPlugin extends AbstractPlugin
     {
         parent::init($context);
         $this->mqttPluginConfig->merge();
-        $authRc = new \ReflectionClass($this->mqttPluginConfig->getMqttAuthClass());
-        $authAmpl = $authRc->newInstance();
-        $this->setToDIContainer(MqttAuth::class, $authAmpl);
     }
 
     /**
