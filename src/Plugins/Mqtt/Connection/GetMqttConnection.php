@@ -34,7 +34,7 @@ trait GetMqttConnection
     public function setFdSession(int $fd, string $key, mixed $value): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->setFdSession($fd, $key, $value);
         }
@@ -46,7 +46,7 @@ trait GetMqttConnection
     public function getFdSession(int $fd, string $key = 'uid')
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class);
         if (empty($ipcProxy)) {
             return null;
         }
@@ -60,7 +60,7 @@ trait GetMqttConnection
     public function setFdSessionMulti(int $fd, array $data): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->setFdSessionMulti($fd, $data);
         }
@@ -72,7 +72,7 @@ trait GetMqttConnection
     public function getFdSessionMulti(int $fd): ?array
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class);
         if (empty($ipcProxy)) {
             return null;
         }
@@ -85,7 +85,7 @@ trait GetMqttConnection
     public function clearFdSession(int $fd): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->clearFdSession($fd);
         }
@@ -99,7 +99,7 @@ trait GetMqttConnection
     public function setClientSession(string $clientId, string $key, $value): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->setClientSession($clientId, $key, $value);
         }
@@ -111,7 +111,7 @@ trait GetMqttConnection
     public function getClientSession(string $clientId, string $key = 'uid')
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class);
         if (empty($ipcProxy)) {
             return null;
         }
@@ -125,7 +125,7 @@ trait GetMqttConnection
     public function setClientSessionMulti(string $clientId, array $data = []): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->setClientSessionMulti($clientId, $data);
         }
@@ -137,7 +137,7 @@ trait GetMqttConnection
     public function getClientSessionMulti(string $clientId): ?array
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class);
         if (empty($ipcProxy)) {
             return null;
         }
@@ -150,7 +150,7 @@ trait GetMqttConnection
     public function clearClientSession(string $clientId): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->clearClientSession($clientId);
         }
@@ -163,7 +163,7 @@ trait GetMqttConnection
     public function touchActivity(int $fd): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->touchActivity($fd);
         }
@@ -176,7 +176,7 @@ trait GetMqttConnection
     public function setKeepAlive(int $fd, int $keepAlive): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->setKeepAlive($fd, $keepAlive);
         }
@@ -189,7 +189,7 @@ trait GetMqttConnection
     public function registerWill(string $clientId, array $will): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->registerWill($clientId, $will);
         }
@@ -203,7 +203,7 @@ trait GetMqttConnection
     public function getWill(string $clientId): ?array
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class);
         if (empty($ipcProxy)) {
             return null;
         }
@@ -217,7 +217,7 @@ trait GetMqttConnection
     public function cancelWill(string $clientId): void
     {
         /** @var MqttConnection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
+        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), MqttConnection::class, true);
         if (!empty($ipcProxy)) {
             $ipcProxy->cancelWill($clientId);
         }

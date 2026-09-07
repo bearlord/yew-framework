@@ -212,7 +212,7 @@ class MqttConnection
      *
      * Closing the fd crosses into the owner worker and fires onWsClose there,
      * which is where the Will (if any) is published. The fd session itself is
-     * cleared by the worker-side MqttWillAspect, so we only close here.
+     * cleared by the worker-side MqttWebsocketController::onWsClose, so we only close here.
      */
     public function sweepKeepalive(): void
     {
