@@ -225,7 +225,7 @@ class Application extends \Yew\Framework\Base\Application
     public function handleRequest($request)
     {
         list($route, $params) = $request->resolve();
-        
+
         if ($route === '') {
             $route = 'help';
         }
