@@ -28,6 +28,7 @@ use Yew\Plugins\Mqtt\Tools\UnPackTool;
 USE Yew\Core\Server\Config\PortConfig;
 use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Mqtt\MqttPluginConfig;
+use Yew\Plugins\Mqtt\Rule\RuleEngine;
 use Yew\Plugins\Pack\ClientData;
 use Yew\Plugins\Pack\GetBoostSend;
 use Yew\Plugins\Pack\PackTool\AbstractPack;
@@ -264,6 +265,24 @@ class MqttPack extends AbstractPack
                 $unpackedData = call_user_func([$this->getProtocolInstance($protocolLevel), "unpack"], $data);
                 // Client identifier
                 $clientId = $this->getClientIdFromFd($fd);
+        }
+
+        if ($type === Types::PUBLISH) {
+            try {
+                $ctx = [
+                    'source' => '$events/message_publish',
+                    'topic' => $unpackedData['topic'] ?? '',
+                    'message' => $unpackedData['message'] ?? '',
+                    'client_id' => $clientId,
+                    'qos' => $unpackedData['qos'] ?? 0,
+                    'retain' => $unpackedData['retain'] ?? 0,
+                    'dup' => $unpackedData['dup'] ?? 0,
+                    'level' => $protocolLevel,
+                ];
+                RuleEngine::instance()->onPublish($ctx);
+            } catch (\Throwable $e) {
+                Server::$instance->getLog()->warning('RuleEngine onPublish failed: ' . $e->getMessage());
+            }
         }
 
         return new ClientData($fd, $portConfig->getBaseType(), "onReceive", [

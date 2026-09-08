@@ -28,6 +28,15 @@ class Topic
 	 */
 	protected array $subscriptions = [];
 
+	/**
+	 * Subscription matching index (Trie). Delegates to Trie; maintained
+	 * incrementally alongside $subscriptions. Replaces the former buildTrees()
+	 * bitmask expansion so a publish resolves in O(levels) instead of O(2^levels).
+	 *
+	 * @var Trie
+	 */
+	protected Trie $trie;
+
     /**
      * Storage driver used to persist and load subscriptions.
      * @var DriverInterface
@@ -42,6 +51,7 @@ class Topic
 	public function __construct(DriverInterface $driver)
 	{
         $this->driver = $driver;
+		$this->trie = new Trie();
 
 		$this->recovery();
 	}
@@ -92,6 +102,7 @@ class Topic
 		}
 
 		$this->subscriptions[$topic][$uid] = $uid;
+		$this->trie->insert($topic, $uid);
 	}
 
 	/**
@@ -124,7 +135,8 @@ class Topic
         unset($this->subscriptions[$topic]);
 
         foreach ($uidItems as $uid) {
-            $this->driver->removeSubscription($topic, $uid);
+        	$this->trie->remove($topic, $uid);
+        	$this->driver->removeSubscription($topic, $uid);
         }
 
         return true;
@@ -134,27 +146,16 @@ class Topic
 	 * Get all subscriber uids for a given topic, including those subscribed
 	 * via matching wildcard patterns.
 	 *
-	 * Mirrors the resolution used by publish(): the topic is expanded into its
-	 * exact and wildcard patterns via buildTrees(), and the uids from every
-	 * matching pattern are collected and de-duplicated.
+	 * Mirrors the resolution used by publish(): the topic is resolved against
+	 * the subscription Trie (Trie::match()) in O(levels), and the uids from every
+	 * matching wildcard pattern are collected and de-duplicated.
 	 *
 	 * @param string $topic Topic to resolve subscribers for.
 	 * @return array List of subscriber uids (empty if none).
 	 */
 	public function getSubscribers(string $topic): array
 	{
-		$subscribers = [];
-		foreach ($this->buildTrees($topic) as $pattern) {
-			if (empty($this->subscriptions[$pattern])) {
-				continue;
-			}
-
-			foreach ($this->subscriptions[$pattern] as $uid) {
-				$subscribers[$uid] = $uid;
-			}
-		}
-
-		return array_values($subscribers);
+		return array_values($this->trie->match($topic));
 	}
 
 	/**
@@ -198,17 +199,18 @@ class Topic
             return false;
         }
         if (isset($this->subscriptions[$topic])) {
-            unset($this->subscriptions[$topic][$uid]);
+        	unset($this->subscriptions[$topic][$uid]);
 
-            if (empty($this->subscriptions[$topic])) {
-                unset($this->subscriptions[$topic]);
-            }
+        	if (empty($this->subscriptions[$topic])) {
+        		unset($this->subscriptions[$topic]);
+        	}
         }
 
+        $this->trie->remove($topic, $uid);
         $this->driver->removeSubscription($topic, $uid);
 
         return true;
-    }
+        }
 
 	/**
 	 * Clear all subscriptions of the uid bound to the given connection fd.
@@ -257,82 +259,21 @@ class Topic
 	 */
 	public function publish(string $topic, $data, ?array $excludeUidList = null): bool
 	{
-		foreach ($this->buildTrees($topic) as $pattern) {
-			if (empty($this->subscriptions[$pattern])) {
+		foreach ($this->trie->match($topic) as $uid) {
+			if (!empty($excludeUidList) && in_array($uid, $excludeUidList)) {
 				continue;
 			}
-
-			foreach ($this->subscriptions[$pattern] as $uid) {
-				if (!empty($excludeUidList) && in_array($uid, $excludeUidList)) {
-					continue;
-				}
-				$this->publishToUid($uid, $data, $topic);
-			}
+			$this->publishToUid($uid, $data, $topic);
 		}
 
 		return true;
 	}
 
 	/**
-	 * Build the set of topic patterns (exact + wildcard) that a published
-	 * topic should be matched against.
+	 * Build an empty Trie node.
 	 *
-	 * Generates exact matches, prefix wildcards (#) and single-level
-	 * wildcards (+) via a bitmask over the topic segments. System topics
-	 * (starting with '$') are protected from wildcard replacement.
-	 *
-	 * @param string $topic Published topic.
-	 * @return array Map of pattern => pattern.
+	 * @return array
 	 */
-	private function buildTrees(string $topic): array
-	{
-		$segments = explode('/', $topic);
-		$levelCount = count($segments);
-		$result = [];
-		$isSys = $topic[0] === '$';
-
-		if (!$isSys) {
-			$result['#'] = '#';
-		}
-
-		for ($level = 1; $level <= $levelCount; $level++) {
-			$levelSegments = array_slice($segments, 0, $level);
-			$isComplete = $level === $levelCount;
-			$exactTopic = implode('/', $levelSegments);
-
-			// Exact match and prefix wildcard
-			$result[$exactTopic . '/#'] = $exactTopic . '/#';
-			if ($isComplete) {
-				$result[$exactTopic] = $exactTopic;
-			}
-
-			// Generate + wildcard combinations via bitmask
-			$firstReplaceableIdx = $isSys ? 1 : 0;
-			$variantCount = 1 << $level;
-
-			for ($mask = 1; $mask < $variantCount; $mask++) {
-				// Skip masks that would replace the system prefix '$'
-				if ($mask & ((1 << $firstReplaceableIdx) - 1)) {
-					continue;
-				}
-
-				$variant = $levelSegments;
-				for ($pos = $firstReplaceableIdx; $pos < $level; $pos++) {
-					if ($mask & (1 << $pos)) {
-						$variant[$pos] = '+';
-					}
-				}
-
-				$variantTopic = implode('/', $variant);
-				$result[$variantTopic . '/#'] = $variantTopic . '/#';
-				if ($isComplete) {
-					$result[$variantTopic] = $variantTopic;
-				}
-			}
-		}
-
-		return $result;
-	}
 
 	/**
 	 * Deliver data to a single uid by resolving its connection fd.
