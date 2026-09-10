@@ -6,27 +6,28 @@
 
 namespace Yew\Client\Pool;
 
-use Yew\Framework\Db\Connection;
+use Yew\Client\DbClient;
 
 /**
- * Coroutine pool of database connections, wrapping Yew\Framework\Db\Connection
- * (PDO based, Yii-style). Supports MySQL / PostgreSQL / SQL Server / Oracle.
+ * Coroutine pool of database connections, pooling Yew\Client\DbClient
+ * (which wraps Yew\Framework\Db\Connection). Supports MySQL / PostgreSQL /
+ * SQL Server / Oracle.
  *
- * Borrowed connections MUST be returned via release(); prefer the scoped
- * withConnection() helper so the connection goes back even on exception.
+ * Borrowed clients MUST be returned via release(); prefer the scoped
+ * withConnection() helper so the client goes back even on exception.
  *
  * Usage:
  *   $pool = new DbPool('mysql', '127.0.0.1', 'iot', 3306, 'root', '');
- *   $rows = $pool->withConnection(function (Connection $db) {
- *       return $db->createCommand('SELECT * FROM t_payload LIMIT 1')->queryAll();
+ *   $rows = $pool->withConnection(function (DbClient $db) {
+ *       return $db->queryAll('SELECT * FROM t_payload LIMIT 1');
  *   });
  *
- * @method Connection borrow()
+ * @method DbClient borrow()
  */
 class DbPool extends ConnectionPool
 {
     /**
-     * Drivers supported by this pool (subset of Connection::$schemaMap).
+     * Drivers must stay in sync with Yew\Client\DbClient::DRIVERS.
      */
     protected const DRIVERS = [
         'mysql', 'mysqli',
@@ -72,73 +73,27 @@ class DbPool extends ConnectionPool
 
     protected function make(): object
     {
-        $conn = new Connection([
-            'dsn' => $this->buildDsn(),
-            'username' => $this->username,
-            'password' => $this->password,
-            'charset' => $this->charset,
-            'attributes' => $this->attributes,
-        ]);
-
-        $conn->open();
-
-        return $conn;
+        return new DbClient(
+            $this->type,
+            $this->host,
+            $this->dbname,
+            $this->port,
+            $this->username,
+            $this->password,
+            $this->charset,
+            $this->attributes
+        );
     }
 
     protected function isAlive(object $client): bool
     {
-        return $client instanceof Connection && $client->getIsActive();
+        return $client instanceof DbClient && $client->isConnected();
     }
 
     protected function destroy(object $client): void
     {
-        if ($client instanceof Connection) {
+        if ($client instanceof DbClient) {
             $client->close();
         }
-    }
-
-    /**
-     * Build a PDO DSN for the configured driver.
-     */
-    protected function buildDsn(): string
-    {
-        $port = $this->port ?? $this->defaultPort();
-
-        return match ($this->type) {
-            'mysql', 'mysqli' => sprintf(
-                'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-                $this->host, $port, $this->dbname, $this->charset
-            ),
-            'pgsql' => sprintf(
-                'pgsql:host=%s;port=%d;dbname=%s',
-                $this->host, $port, $this->dbname
-            ),
-            'sqlsrv' => sprintf(
-                'sqlsrv:Server=%s,%d;Database=%s',
-                $this->host, $port, $this->dbname
-            ),
-            'mssql', 'dblib' => sprintf(
-                'mssql:host=%s;port=%d;dbname=%s',
-                $this->host, $port, $this->dbname
-            ),
-            'oci' => sprintf(
-                'oci:dbname=//%s:%d/%s',
-                $this->host, $port, $this->dbname
-            ),
-        };
-    }
-
-    /**
-     * Per-driver default port when $port is not given.
-     */
-    protected function defaultPort(): int
-    {
-        return match ($this->type) {
-            'mysql', 'mysqli' => 3306,
-            'pgsql' => 5432,
-            'sqlsrv', 'mssql', 'dblib' => 1433,
-            'oci' => 1521,
-            default => 0,
-        };
     }
 }
