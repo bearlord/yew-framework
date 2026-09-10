@@ -21,8 +21,6 @@ use Yew\Client\RedisClient;
  *       $redis->set('foo', 'bar');
  *       return $redis->get('foo');
  *   });
- *
- * @method RedisClient borrow()
  */
 class RedisClientPool extends ConnectionPool
 {

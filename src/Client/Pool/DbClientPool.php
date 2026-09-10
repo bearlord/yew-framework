@@ -21,8 +21,6 @@ use Yew\Client\DbClient;
  *   $rows = $pool->withConnection(function (DbClient $db) {
  *       return $db->queryAll('SELECT * FROM t_payload LIMIT 1');
  *   });
- *
- * @method DbClient borrow()
  */
 class DbClientPool extends ConnectionPool
 {
