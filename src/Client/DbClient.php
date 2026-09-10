@@ -11,7 +11,7 @@ use Yew\Framework\Db\Connection;
 /**
  * A single database connection client. Thin wrapper over
  * Yew\Framework\Db\Connection (PDO based, Yii-style) so the same object can be
- * used standalone or pooled by Yew\Client\Pool\DbPool.
+ * used standalone or pooled by Yew\Client\Pool\DbClientPool.
  *
  * Connection is opened in the constructor; all query methods run inside the
  * current coroutine context (PDO must be runtime-hooked by Swoole, like any
@@ -21,8 +21,6 @@ use Yew\Framework\Db\Connection;
  *   $db = new DbClient('mysql', '127.0.0.1', 'iot', 3306, 'root', '');
  *   $rows = $db->queryAll('SELECT * FROM t_payload WHERE id = :id', ['id' => 1]);
  *   $db->insert('t_payload', ['topic' => 'a', 'payload' => 'b']);
- *
- * @method Connection getConnection()
  */
 class DbClient
 {

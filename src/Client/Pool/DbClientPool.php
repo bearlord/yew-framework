@@ -17,14 +17,14 @@ use Yew\Client\DbClient;
  * withConnection() helper so the client goes back even on exception.
  *
  * Usage:
- *   $pool = new DbPool('mysql', '127.0.0.1', 'iot', 3306, 'root', '');
+ *   $pool = new DbClientPool('mysql', '127.0.0.1', 'iot', 3306, 'root', '');
  *   $rows = $pool->withConnection(function (DbClient $db) {
  *       return $db->queryAll('SELECT * FROM t_payload LIMIT 1');
  *   });
  *
  * @method DbClient borrow()
  */
-class DbPool extends ConnectionPool
+class DbClientPool extends ConnectionPool
 {
     /**
      * Drivers must stay in sync with Yew\Client\DbClient::DRIVERS.

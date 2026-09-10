@@ -12,10 +12,10 @@ use Yew\Client\TcpClient;
  * Coroutine pool of TCP connections (optionally TLS), wrapping Yew\Client\TcpClient.
  *
  * Usage:
- *   $pool = new TcpPool('127.0.0.1', 9000, ['ssl' => true]);
+ *   $pool = new TcpClientPool('127.0.0.1', 9000, ['ssl' => true]);
  *   $pool->withConnection(fn (TcpClient $c) => $c->send($bytes) && $c->recv());
  */
-class TcpPool extends ConnectionPool
+class TcpClientPool extends ConnectionPool
 {
     public function __construct(
         protected string $host,

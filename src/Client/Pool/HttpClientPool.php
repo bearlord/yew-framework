@@ -15,13 +15,13 @@ use Yew\Client\HttpClient;
  * defaults to 80 / 443 accordingly when not given.
  *
  * Usage:
- *   $pool = new HttpPool('https://api.example.com');
+ *   $pool = new HttpClientPool('https://api.example.com');
  *   $pool->withConnection(function (HttpClient $c) {
  *       $c->get('/v1/ping');
  *       return $c->getBody();
  *   });
  */
-class HttpPool extends ConnectionPool
+class HttpClientPool extends ConnectionPool
 {
     protected string $host;
     protected int $port;

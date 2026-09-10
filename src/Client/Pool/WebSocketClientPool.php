@@ -12,14 +12,14 @@ use Yew\Client\WebSocketClient;
  * Coroutine pool of WebSocket connections, wrapping Yew\Client\WebSocketClient.
  *
  * Usage:
- *   $pool = new WebSocketPool('wss://echo.example.com', 'wss', '/ws');
+ *   $pool = new WebSocketClientPool('wss://echo.example.com', 'wss', '/ws');
  *   $pool->withConnection(function (WebSocketClient $c) {
  *       $c->push('hello');
  *       $frame = $c->recv();
  *       return $frame?->data;
  *   });
  */
-class WebSocketPool extends ConnectionPool
+class WebSocketClientPool extends ConnectionPool
 {
     protected string $host;
     protected int $port;
