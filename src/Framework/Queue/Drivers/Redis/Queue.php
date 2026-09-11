@@ -48,6 +48,14 @@ class Queue extends CliQueue
     public $defaultPriority = 2;
 
     /**
+     * Max jobs handled concurrently by a single worker.
+     * 1 = synchronous (handle one job at a time, default and backward-compatible);
+     * >1 = asynchronous (run up to this many jobs in parallel coroutines).
+     * @var int
+     */
+    public $concurrency = 1;
+
+    /**
      * @inheritdoc
      */
     public function init()
@@ -89,22 +97,82 @@ class Queue extends CliQueue
     public function run($repeat, $timeout = 0)
     {
         return $this->runWorker(function (callable $canContinue) use ($repeat, $timeout) {
-            while ($canContinue()) {
-                $payload = $this->reserve($timeout);
-                if ($payload !== null) {
-                    list($id, $message, $ttr, $attempt) = $payload;
-                    if ($this->handleMessage($id, $message, $ttr, $attempt)) {
-                        $this->delete($id);
+            $concurrency = max(1, (int) $this->concurrency);
+
+            // Synchronous mode (default): handle one job at a time, in place.
+            if ($concurrency === 1) {
+                while ($canContinue()) {
+                    $payload = $this->reserve($timeout);
+                    if ($payload !== null) {
+                        list($id, $message, $ttr, $attempt) = $payload;
+                        if ($this->handleMessage($id, $message, $ttr, $attempt)) {
+                            $this->delete($id);
+                        }
+                    } elseif (!$repeat) {
+                        break;
                     }
-                } elseif (!$repeat) {
-                    break;
+                    // reserve() already blocks (BRPOP) when $timeout > 0, so a tight
+                    // 1ms poll loop is only needed in non-blocking mode ($timeout == 0).
+                    // A 1ms busy-poll pins a full CPU core; back off to a sane idle
+                    // interval instead.
+                    if ($timeout <= 0) {
+                        \Swoole\Coroutine::sleep(0.05);
+                    }
                 }
-                // reserve() already blocks (BRPOP) when $timeout > 0, so a tight
-                // 1ms poll loop is only needed in non-blocking mode ($timeout == 0).
-                // A 1ms busy-poll pins a full CPU core; back off to a sane idle
-                // interval instead.
-                if ($timeout <= 0) {
-                    \Swoole\Coroutine::sleep(0.05);
+                return;
+            }
+
+            // Asynchronous mode: run up to $concurrency jobs concurrently.
+            // All Redis access (reserve/moveExpired/delete) stays on the main
+            // coroutine; only the job execution is offloaded to child coroutines,
+            // and the result is sent back through a channel. This keeps the single
+            // Redis connection free of concurrent use (which would corrupt commands).
+            $slots = new \Swoole\Coroutine\Channel($concurrency);
+            for ($i = 0; $i < $concurrency; $i++) {
+                $slots->push(1);
+            }
+            $done = new \Swoole\Coroutine\Channel($concurrency * 2);
+
+            while ($canContinue()) {
+                $slots->pop();
+                $payload = $this->reserve($timeout);
+                if ($payload === null) {
+                    $slots->push(1);
+                    if (!$repeat) {
+                        break;
+                    }
+                    if ($timeout <= 0) {
+                        \Swoole\Coroutine::sleep(0.05);
+                    }
+                    continue;
+                }
+
+                list($id, $message, $ttr, $attempt) = $payload;
+                \Swoole\Coroutine::create(function () use ($id, $message, $ttr, $attempt, $done, $slots) {
+                    try {
+                        $ok = $this->handleMessage($id, $message, $ttr, $attempt);
+                    } catch (\Throwable $e) {
+                        $ok = false;
+                    } finally {
+                        $done->push([$id, $ok]);
+                        $slots->push(1);
+                    }
+                });
+
+                // Reap finished jobs (non-blocking) so they get deleted promptly.
+                while ($finished = $done->pop(0.001)) {
+                    list($fid, $fok) = $finished;
+                    if ($fok) {
+                        $this->delete($fid);
+                    }
+                }
+            }
+
+            // Drain remaining results before leaving.
+            while ($finished = $done->pop(1)) {
+                list($fid, $fok) = $finished;
+                if ($fok) {
+                    $this->delete($fid);
                 }
             }
         });
