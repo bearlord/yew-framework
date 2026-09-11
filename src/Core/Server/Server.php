@@ -364,19 +364,19 @@ abstract class Server extends BaseNode
         $this->getEventDispatcher()->dispatchEvent(new ApplicationEvent(ApplicationEvent::ApplicationStartingEvent, $this));
         $this->processManager->getMasterProcess()->onProcessStart();
 
-        // Spin up a coroutine in the master that blocks on SIGTERM. It has to
-        // live here (after start) — doing it before start with Process::signal()
-        // creates the event loop early and makes start() blow up. When the signal
-        // lands we call shutdown() so workers get to clean up before they go.
-        \Swoole\Coroutine::create(function () {
-            $signal = \Swoole\Coroutine\System::waitSignal(SIGTERM);
-            if ($signal === SIGTERM) {
-                $this->getLog()->info("Received SIGTERM, shutting down gracefully");
-                try {
-                    $this->server->shutdown();
-                } catch (Throwable $e) {
-                    $this->getLog()->error($e);
-                }
+        // Trigger Swoole's graceful shutdown on SIGTERM.
+        // Do not use Coroutine::waitSignal(): in the master process that coroutine
+        // is scheduled on the Reactor and isn't ready for a few seconds after start,
+        // so any SIGTERM arriving in that window is silently dropped (e.g. `stop`
+        // right after `start` hangs). Also don't register before start() — it builds
+        // the event loop early and makes start() crash — so we register here in
+        // _onStart using a synchronous Process::signal handler.
+        \Swoole\Process::signal(SIGTERM, function () {
+            $this->getLog()->info("Received SIGTERM, shutting down gracefully");
+            try {
+                $this->server->shutdown();
+            } catch (Throwable $e) {
+                $this->getLog()->error($e);
             }
         });
 
