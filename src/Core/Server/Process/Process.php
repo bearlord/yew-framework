@@ -626,7 +626,10 @@ abstract class Process
      */
     private static function ipcSerialize($data): string
     {
-        return \Swoole\Serialize::pack($data);
+        if (class_exists('Swoole\Serialize')) {
+            return \Swoole\Serialize::pack($data);
+        }
+        return serialize($data);
     }
 
     /**
@@ -637,7 +640,10 @@ abstract class Process
      */
     private static function ipcUnSerialize(string $data)
     {
-        return \Swoole\Serialize::unpack($data);
+        if (class_exists('Swoole\Serialize')) {
+            return \Swoole\Serialize::unpack($data);
+        }
+        return unserialize($data);
     }
 
     /**
