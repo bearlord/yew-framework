@@ -83,7 +83,7 @@ class StopCmd extends Command
         // Normal path: the master listens for SIGTERM (see _onStart) and calls
         // Swoole's shutdown(), which lets every worker clean up first. Send once,
         // then just wait.
-        posix_kill($masterPid, SIGTERM);
+        $killRet = posix_kill($masterPid, SIGTERM);
 
         // Give it a few seconds (reload_async + max_wait_time is 3s). If it's
         // still kicking after 8s, kill the whole group.
