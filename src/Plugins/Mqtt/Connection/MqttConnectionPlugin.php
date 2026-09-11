@@ -7,7 +7,7 @@
  * survives worker restarts, unlike the static properties on Server.
  */
 
-namespace Yew\Plugins\Connection;
+namespace Yew\Plugins\Mqtt\Connection;
 
 use Yew\Core\Context\Context;
 use Yew\Core\Plugin\AbstractPlugin;
