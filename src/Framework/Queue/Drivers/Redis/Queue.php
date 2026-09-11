@@ -9,7 +9,6 @@ namespace Yew\Framework\Queue\Drivers\Redis;
 
 use Yew\Plugins\Redis\GetRedis;
 use Yew\Framework\Base\InvalidArgumentException;
-use Yew\Framework\Base\NotSupportedException;
 use Yew\Framework\Di\Instance;
 use Yew\Framework\Queue\Cli\Queue as CliQueue;
 use Yew\Framework\Redis\Connection;
@@ -33,6 +32,20 @@ class Queue extends CliQueue
      * @var string
      */
     public $channel = 'queue';
+
+    /**
+     * Number of priority levels. Each level maps to its own waiting list,
+     * so level 0 is served before level 1, and so on.
+     * @var int
+     */
+    public $priorityLevels = 3;
+
+    /**
+     * Level assigned to jobs pushed without an explicit priority.
+     * Defaults to the lowest level so any prioritized job jumps ahead.
+     * @var int
+     */
+    public $defaultPriority = 2;
 
     /**
      * @inheritdoc
@@ -145,7 +158,10 @@ class Queue extends CliQueue
         if ($this->redis->hdel("$this->channel.messages", $id)) {
             $this->redis->zrem("$this->channel.delayed", $id);
             $this->redis->zrem("$this->channel.reserved", $id);
-            $this->redis->lrem("$this->channel.waiting", 0, $id);
+            foreach ($this->waitingKeys() as $key) {
+                $this->redis->lrem($key, 0, $id);
+            }
+            $this->redis->hdel("$this->channel.priorities", $id);
             $this->redis->hdel("$this->channel.attempts", $id);
 
             return true;
@@ -160,17 +176,23 @@ class Queue extends CliQueue
      */
     public function reserve($timeout)
     {
-        // Moves delayed and reserved jobs into waiting list with lock for one second
+        // Moves delayed and reserved jobs into waiting lists with lock for one second
         if ($this->redis->set("$this->channel.moving_lock", true, ['NX', 'EX' => 1])) {
             $this->moveExpired("$this->channel.delayed");
             $this->moveExpired("$this->channel.reserved");
         }
 
-        // Find a new waiting message
+        // Find a new waiting message, highest priority list first.
         $id = null;
+        $waitingKeys = $this->waitingKeys();
         if (!$timeout) {
-            $id = $this->redis->rpop("$this->channel.waiting");
-        } elseif ($result = $this->redis->brpop("$this->channel.waiting", $timeout)) {
+            foreach ($waitingKeys as $key) {
+                $id = $this->redis->rpop($key);
+                if ($id !== null && $id !== false) {
+                    break;
+                }
+            }
+        } elseif ($result = $this->redis->executeCommand('BRPOP', array_merge($waitingKeys, [$timeout]))) {
             $id = $result[1];
         }
         if (!$id) {
@@ -198,7 +220,8 @@ class Queue extends CliQueue
         if ($expired = $this->redis->zrevrangebyscore($from, $now, '-inf')) {
             $this->redis->zremrangebyscore($from, '-inf', $now);
             foreach ($expired as $id) {
-                $this->redis->rpush("$this->channel.waiting", $id);
+                $level = (int) $this->redis->hget("$this->channel.priorities", $id);
+                $this->redis->rpush($this->waitingKey($level), $id);
             }
         }
     }
@@ -213,6 +236,7 @@ class Queue extends CliQueue
         $this->redis->zrem("$this->channel.reserved", $id);
         $this->redis->hdel("$this->channel.attempts", $id);
         $this->redis->hdel("$this->channel.messages", $id);
+        $this->redis->hdel("$this->channel.priorities", $id);
     }
 
     /**
@@ -220,18 +244,62 @@ class Queue extends CliQueue
      */
     protected function pushMessage($message, $ttr, $delay, $priority)
     {
-        if ($priority !== null) {
-            throw new NotSupportedException('Job priority is not supported in the driver.');
-        }
+        $level = $this->priorityToLevel($priority);
 
         $id = $this->redis->incr("$this->channel.message_id");
         $this->redis->hset("$this->channel.messages", $id, "$ttr;$message");
         if (!$delay) {
-            $this->redis->lpush("$this->channel.waiting", $id);
+            $this->redis->lpush($this->waitingKey($level), $id);
         } else {
             $this->redis->zadd("$this->channel.delayed", time() + $delay, $id);
+            // remember the level so a delayed job lands on the right waiting
+            // list once it expires
+            $this->redis->hset("$this->channel.priorities", $id, $level);
         }
 
         return $id;
+    }
+
+    /**
+     * Map a job priority to a waiting-list level. Smaller priority => smaller
+     * level => served first. Out-of-range values are clamped.
+     *
+     * @param mixed $priority
+     * @return int
+     */
+    protected function priorityToLevel($priority): int
+    {
+        if ($priority === null) {
+            return $this->defaultPriority;
+        }
+        $level = (int) $priority;
+        if ($level < 0) {
+            $level = 0;
+        } elseif ($level > $this->priorityLevels - 1) {
+            $level = $this->priorityLevels - 1;
+        }
+        return $level;
+    }
+
+    /**
+     * @param int $level
+     * @return string
+     */
+    protected function waitingKey(int $level): string
+    {
+        return "$this->channel.waiting.$level";
+    }
+
+    /**
+     * Waiting-list keys ordered from highest to lowest priority.
+     * @return string[]
+     */
+    protected function waitingKeys(): array
+    {
+        $keys = [];
+        for ($i = 0; $i < $this->priorityLevels; $i++) {
+            $keys[] = $this->waitingKey($i);
+        }
+        return $keys;
     }
 }
