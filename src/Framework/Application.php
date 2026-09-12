@@ -148,7 +148,7 @@ class Application extends Server
 
     public function onManagerStop()
     {
-        $this->debug('Manager process stop');
+        //$this->debug('Manager process stop');
     }
 
     /**
