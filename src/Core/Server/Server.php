@@ -163,41 +163,6 @@ abstract class Server extends BaseNode
         //Only get the above to initialize the plugManager
         $this->plugManager = new PluginInterfaceManager($this);
         $this->container->set(PluginInterfaceManager::class, $this->getPlugManager());
-
-        $this->initProcessTable();
-    }
-
-    /**
-     * @var Table
-     */
-    protected Table $processTable;
-
-    /**
-     * @return Table
-     */
-    public function getProcessTable(): Table
-    {
-        return $this->processTable;
-    }
-
-    /**
-     * @return void
-     */
-    public function initProcessTable()
-    {
-        $this->processTable = new Table(1000);
-        $this->processTable->column("process_name", Table::TYPE_STRING, 200);
-
-        //0: init, 1: Preparing, 2: Ready
-        $this->processTable->column("status", Table::TYPE_INT, 100);
-
-        $this->processTable->column("init_time", Table::TYPE_STRING, 100);
-
-        $this->processTable->column("ready_time", Table::TYPE_STRING, 100);
-
-        $this->processTable->column("last_exit_time", Table::TYPE_STRING, 100);
-
-        $this->processTable->create();
     }
 
     /**

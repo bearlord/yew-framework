@@ -95,14 +95,6 @@ class ActorProcess extends Process
             );
         });
 
-        Server::$instance->getProcessTable()->set($this->processName, [
-            "process_name" => $this->processName,
-            "status" => 0,
-            "init_time" => (Carbon::now())->format("Y-m-d H:i:s.u"),
-            "ready_time" => null,
-            "last_exit_time" => null
-        ]);
-
         // Every actor process needs the IPC-backed ClusterActorStore so that any
         // actor constructed here — whether recovered on startup or (re)spawned by
         // the failover driver — injects the correct replica transport via #[Inject]
