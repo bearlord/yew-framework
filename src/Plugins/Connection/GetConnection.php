@@ -2,21 +2,18 @@
 /**
  * Yew framework - Connection plugin
  *
- * Trait used by worker-side code to forward connection-state calls to the
- * Connection helper process via IPC. Mirrors the Server::setXxx / getXxx /
- * clearXxx static API so existing callers can be redirected with minimal change.
+ * Worker-side helper that reads/writes connection-state directly from the
+ * shared-memory Swoole\Table (via the Connection business object), so there is
+ * no longer any IPC round-trip to the Connection helper process. Mirrors the
+ * Server::setXxx / getXxx / clearXxx static API so existing callers keep working.
  */
 
 namespace Yew\Plugins\Connection;
 
-use Yew\Plugins\Ipc\GetIpc;
-
 trait GetConnection
 {
-    use GetIpc;
-
     /**
-     * Cached Connection plugin configuration (process name, etc.).
+     * Cached Connection plugin configuration (process name, table sizes, etc.).
      * @var ConnectionConfig|null
      */
     protected ?ConnectionConfig $connectionConfig = null;
@@ -35,131 +32,126 @@ trait GetConnection
     }
 
     /**
-     * Store a key/value pair for a connection fd on the Connection process,
-     * e.g. setFdSession($fd, 'uid', $uid).
+     * Store a key/value pair for a connection fd (local shared-memory write).
      */
     public function setFdSession(int $fd, string $key, mixed $value): void
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
-        if (!empty($ipcProxy)) {
-            $ipcProxy->setFdSession($fd, $key, $value);
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (!empty($conn)) {
+            $conn->setFdSession($fd, $key, $value);
         }
     }
 
     /**
-     * Resolve a value stored for a connection fd by key (defaults to 'uid').
+     * Resolve a value stored for a connection fd by key (local shared-memory read).
      */
     public function getFdSession(int $fd, string $key = 'uid')
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
-        if (empty($ipcProxy)) {
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (empty($conn)) {
             return null;
         }
-        return $ipcProxy->getFdSession($fd, $key);
+        return $conn->getFdSession($fd, $key);
     }
 
     /**
-     * Store multiple key/value pairs for a connection fd on the Connection process,
-     * e.g. setFdSessionMulti($fd, ['uid' => $uid, 'session_start' => $flag]).
+     * Store multiple key/value pairs for a connection fd (local shared-memory write).
      */
     public function setFdSessionMulti(int $fd, array $data): void
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
-        if (!empty($ipcProxy)) {
-            $ipcProxy->setFdSessionMulti($fd, $data);
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (!empty($conn)) {
+            $conn->setFdSessionMulti($fd, $data);
         }
     }
 
     /**
-     * Resolve all values stored for a connection fd (returns the full map or null).
+     * Resolve all values stored for a connection fd (local shared-memory read).
      */
     public function getFdSessionMulti(int $fd): ?array
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
-        if (empty($ipcProxy)) {
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (empty($conn)) {
             return null;
         }
-        return $ipcProxy->getFdSessionMulti($fd);
+        return $conn->getFdSessionMulti($fd);
     }
 
     /**
-     * Clear all fd-level session state on the Connection process.
+     * Clear all fd-level session state (local shared-memory delete).
      */
     public function clearFdSession(int $fd): void
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
-        if (!empty($ipcProxy)) {
-            $ipcProxy->clearFdSession($fd);
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (!empty($conn)) {
+            $conn->clearFdSession($fd);
         }
     }
 
     /**
-     * Store a key/value pair for a clientId on the Connection process,
-     * e.g. setClientSession($clientId, 'uid', $uid) or
-     * setClientSession($clientId, 'session_start', $flag).
+     * Store a key/value pair for a clientId (local shared-memory write).
      */
     public function setClientSession(string $clientId, string $key, $value): void
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
-        if (!empty($ipcProxy)) {
-            $ipcProxy->setClientSession($clientId, $key, $value);
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (!empty($conn)) {
+            $conn->setClientSession($clientId, $key, $value);
         }
     }
 
     /**
-     * Resolve a value stored for a clientId by key (defaults to 'uid').
+     * Resolve a value stored for a clientId by key (local shared-memory read).
      */
     public function getClientSession(string $clientId, string $key = 'uid')
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
-        if (empty($ipcProxy)) {
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (empty($conn)) {
             return null;
         }
-        return $ipcProxy->getClientSession($clientId, $key);
+        return $conn->getClientSession($clientId, $key);
     }
 
     /**
-     * Store multiple key/value pairs for a clientId on the Connection process,
-     * e.g. setClientSessionMulti($clientId, ['uid' => $uid, 'session_start' => $flag]).
+     * Store multiple key/value pairs for a clientId (local shared-memory write).
      */
     public function setClientSessionMulti(string $clientId, array $data = []): void
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
-        if (!empty($ipcProxy)) {
-            $ipcProxy->setClientSessionMulti($clientId, $data);
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (!empty($conn)) {
+            $conn->setClientSessionMulti($clientId, $data);
         }
     }
 
     /**
-     * Resolve all values stored for a clientId (returns the full map or null).
+     * Resolve all values stored for a clientId (local shared-memory read).
      */
     public function getClientSessionMulti(string $clientId): ?array
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class);
-        if (empty($ipcProxy)) {
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (empty($conn)) {
             return null;
         }
-        return $ipcProxy->getClientSessionMulti($clientId);
+        return $conn->getClientSessionMulti($clientId);
     }
 
     /**
-     * Clear all client-level session state on the Connection process.
+     * Clear all client-level session state (local shared-memory delete).
      */
     public function clearClientSession(string $clientId): void
     {
-        /** @var Connection $ipcProxy */
-        $ipcProxy = $this->callProcessName($this->getConnectionConfig()->getProcessName(), Connection::class, true);
-        if (!empty($ipcProxy)) {
-            $ipcProxy->clearClientSession($clientId);
+        /** @var Connection $conn */
+        $conn = DIGet(Connection::class);
+        if (!empty($conn)) {
+            $conn->clearClientSession($clientId);
         }
     }
 }

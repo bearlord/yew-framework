@@ -2,49 +2,123 @@
 /**
  * Yew framework - Connection plugin
  *
- * In-memory store of connection-level routing state, living inside the
- * Connection helper process. All mutating/reading calls arrive here via IPC
- * from worker processes through the GetConnection trait.
+ * In-memory store of connection-level routing state, backed by Swoole\Table
+ * (shared memory) so every worker/helper process can read and write it
+ * directly WITHOUT going through the Connection helper process via IPC.
  *
  * Stored relations:
  *  - fd      -> uid          (connection file descriptor to subscriber uid)
  *  - clientId-> uid          (mqtt client identifier to subscriber uid)
  *  - clientId-> session_start(clean_session / clean_start flag)
+ *
+ * The two tables are created once in the master process (before Server::start)
+ * via initTables() and are shared across all forked worker/helper processes.
+ *
+ * NOTE: Swoole\Table keys are limited to 64 bytes, so clientId must be <= 64
+ * bytes (hash it before use if longer). The per-row `data` column holds the
+ * serialized KV map and is capped at $dataColumnSize bytes.
  */
 
 namespace Yew\Plugins\Connection;
 
+use Swoole\Table;
+use Yew\Coroutine\Server\Server;
+
 class Connection
 {
     /**
-     * fd -> [key => value] mapping (in-memory, lives in the Connection helper process).
-     * @var array<int, array<string, mixed>>
+     * fd -> serialized [key => value] map. Shared memory, created in master.
+     * @var Table|null
      */
-    protected array $fdSession = [];
+    private static ?Table $fdTable = null;
 
     /**
-     * clientId -> [key => value] mapping.
-     * @var array<string, array<string, mixed>>
+     * clientId -> serialized [key => value] map. Shared memory, created in master.
+     * @var Table|null
      */
-    protected array $clientSession = [];
+    private static ?Table $clientTable = null;
 
     /**
-     * Connection constructor.
+     * Create the shared-memory tables. MUST be called before Server::start()
+     * (in the master process) so the mapping is inherited by every forked
+     * worker/helper process.
      *
-     * The instance is created once per helper process and kept alive for the
-     * whole process lifetime (via DI container), so plain array properties are
-     * safe and persist across IPC calls without needing Swoole\Table.
+     * @param int $fdSize     Max number of fd rows.
+     * @param int $clientSize Max number of clientId rows.
+     * @param int $dataSize   Bytes per row (holds the serialized KV map).
+     * @return void
+     */
+    public static function initTables(int $fdSize, int $clientSize, int $dataSize): void
+    {
+        if (self::$fdTable === null) {
+            $t = new Table($fdSize);
+            $t->column('data', Table::TYPE_STRING, $dataSize);
+            $t->create();
+            self::$fdTable = $t;
+        }
+        if (self::$clientTable === null) {
+            $t = new Table($clientSize);
+            $t->column('data', Table::TYPE_STRING, $dataSize);
+            $t->create();
+            self::$clientTable = $t;
+        }
+    }
+
+    /**
+     * @return void
      */
     public function __construct()
     {
     }
 
     /**
-     * Store a key/value pair for a connection fd, e.g. setFdSession($fd, 'uid', $uid).
+     * Read and unserialize a row's KV map. Returns [] when the row is absent.
+     *
+     * @param Table $table
+     * @param int|string $key
+     * @return array
+     */
+    private static function readMap(Table $table, $key): array
+    {
+        $row = $table->get($key);
+        if ($row === false) {
+            return [];
+        }
+        $map = @unserialize($row['data'], ['allowed_classes' => false]);
+        return is_array($map) ? $map : [];
+    }
+
+    /**
+     * Serialize and write a row's KV map. Logs (once per failure) when the table
+     * is full so the operator can raise the configured sizes instead of silently
+     * losing data.
+     *
+     * @param Table $table
+     * @param int|string $key
+     * @param array $map
+     * @return void
+     */
+    private static function writeMap(Table $table, $key, array $map): void
+    {
+        if ($table->set($key, ['data' => serialize($map)]) === false) {
+            $server = Server::$instance;
+            if ($server !== null) {
+                $server->getLog()->warning(sprintf(
+                    'Connection: shared table full on key=%s (raise fd/client table sizes)',
+                    is_string($key) ? $key : (string) $key
+                ));
+            }
+        }
+    }
+
+    /**
+     * Store a key/value pair for a connection fd.
      */
     public function setFdSession(int $fd, string $key, $value): void
     {
-        $this->fdSession[$fd][$key] = $value;
+        $map = self::readMap(self::$fdTable, $fd);
+        $map[$key] = $value;
+        self::writeMap(self::$fdTable, $fd, $map);
     }
 
     /**
@@ -52,18 +126,20 @@ class Connection
      */
     public function getFdSession(int $fd, string $key = 'uid')
     {
-        return $this->fdSession[$fd][$key] ?? null;
+        $map = self::readMap(self::$fdTable, $fd);
+        return $map[$key] ?? null;
     }
 
     /**
-     * Store multiple key/value pairs for a connection fd,
-     * e.g. setFdSessionMulti($fd, ['uid' => $uid, 'session_start' => $flag]).
+     * Store multiple key/value pairs for a connection fd.
      */
     public function setFdSessionMulti(int $fd, array $data): void
     {
-        foreach ($data as $key => $value) {
-            $this->setFdSession($fd, $key, $value);
+        $map = self::readMap(self::$fdTable, $fd);
+        foreach ($data as $k => $v) {
+            $map[$k] = $v;
         }
+        self::writeMap(self::$fdTable, $fd, $map);
     }
 
     /**
@@ -71,7 +147,8 @@ class Connection
      */
     public function getFdSessionMulti(int $fd): ?array
     {
-        return $this->fdSession[$fd] ?? null;
+        $map = self::readMap(self::$fdTable, $fd);
+        return $map === [] ? null : $map;
     }
 
     /**
@@ -79,16 +156,17 @@ class Connection
      */
     public function clearFdSession(int $fd): void
     {
-        unset($this->fdSession[$fd]);
+        self::$fdTable->del($fd);
     }
 
     /**
-     * Store a key/value pair for a clientId, e.g. setClientSession($clientId, 'uid', $uid)
-     * or setClientSession($clientId, 'session_start', $flag).
+     * Store a key/value pair for a clientId.
      */
     public function setClientSession(string $clientId, string $key, $value): void
     {
-        $this->clientSession[$clientId][$key] = $value;
+        $map = self::readMap(self::$clientTable, $clientId);
+        $map[$key] = $value;
+        self::writeMap(self::$clientTable, $clientId, $map);
     }
 
     /**
@@ -96,27 +174,29 @@ class Connection
      */
     public function getClientSession(string $clientId, string $key = 'uid')
     {
-        return $this->clientSession[$clientId][$key] ?? null;
+        $map = self::readMap(self::$clientTable, $clientId);
+        return $map[$key] ?? null;
     }
 
     /**
-     * Store multiple key/value pairs for a clientId,
-     * e.g. setClientSessionMulti($clientId, ['uid' => $uid, 'session_start' => $flag]).
+     * Store multiple key/value pairs for a clientId.
      */
     public function setClientSessionMulti(string $clientId, array $data = []): void
     {
-        foreach ($data as $key => $value) {
-            $this->setClientSession($clientId, $key, $value);
+        $map = self::readMap(self::$clientTable, $clientId);
+        foreach ($data as $k => $v) {
+            $map[$k] = $v;
         }
+        self::writeMap(self::$clientTable, $clientId, $map);
     }
 
     /**
-     * @param string $clientId
-     * @return mixed[]|null
+     * Resolve all values stored for a clientId.
      */
     public function getClientSessionMulti(string $clientId): ?array
     {
-        return $this->clientSession[$clientId] ?? null;
+        $map = self::readMap(self::$clientTable, $clientId);
+        return $map === [] ? null : $map;
     }
 
     /**
@@ -124,6 +204,6 @@ class Connection
      */
     public function clearClientSession(string $clientId): void
     {
-        unset($this->clientSession[$clientId]);
+        self::$clientTable->del($clientId);
     }
 }

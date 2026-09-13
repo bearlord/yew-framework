@@ -2,9 +2,11 @@
 /**
  * Yew framework - Connection plugin
  *
- * Registers a dedicated helper process that stores connection-level routing
- * state (fd <-> uid, clientId <-> uid, clientId <-> session_start) so the data
- * survives worker restarts, unlike the static properties on Server.
+ * Creates the shared-memory Swoole\Table (in the master process, before the
+ * server forks workers) that holds connection-level routing state
+ * (fd <-> uid, clientId <-> uid, clientId <-> session_start). Every process
+ * reads/writes it locally with no IPC to a helper process, and the data
+ * survives worker restarts because it lives in shared memory.
  */
 
 namespace Yew\Plugins\Connection;
@@ -56,10 +58,13 @@ class ConnectionPlugin extends AbstractPlugin
     {
         $this->connectionConfig->merge();
 
-        Server::$instance->addProcess(
-            $this->connectionConfig->getProcessName(),
-            ConnectionProcess::class,
-            self::PROCESS_GROUP_NAME
+        // Create the shared-memory tables ONCE, before the server forks workers,
+        // so every process shares the same backing memory (Swoole\Table must be
+        // created in the master process to be inherited by forked workers).
+        Connection::initTables(
+            $this->connectionConfig->getFdTableSize(),
+            $this->connectionConfig->getClientTableSize(),
+            $this->connectionConfig->getDataColumnSize()
         );
     }
 
@@ -69,12 +74,11 @@ class ConnectionPlugin extends AbstractPlugin
      */
     public function beforeProcessStart(Context $context)
     {
-        if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessName()
-            == $this->connectionConfig->getProcessName()
-        ) {
-            $connection = new Connection();
-            $this->setToDIContainer(Connection::class, $connection);
-        }
+        // Connection is now a thin wrapper over the shared-memory Swoole\Table,
+        // so every process (including workers) needs its own instance for
+        // GetConnection to read/write locally without any IPC.
+        $connection = new Connection();
+        $this->setToDIContainer(Connection::class, $connection);
 
         $this->ready();
     }
