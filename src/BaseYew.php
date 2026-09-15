@@ -497,7 +497,7 @@ class BaseYew
      * [[\Yew\Framework\Base\Application::language|application language]] will be used.
      * @return string the translated message.
      */
-    public static function t(string $category, string $message, array $params = [], string $language = null)
+    public static function t(string $category, string $message, array $params = [], ?string $language = null)
     {
         if (static::$app !== null) {
             return static::$app->getI18n()->translate($category, $message, $params, $language ?: static::$app->getLanguage());

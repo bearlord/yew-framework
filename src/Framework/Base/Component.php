@@ -558,7 +558,7 @@ class Component extends BaseObject
      * @throws InvalidConfigException
      * @see on()
      */
-    public function off(string $name, callable $handler = null): bool
+    public function off(string $name, ?callable $handler = null): bool
     {
         $this->ensureBehaviors();
         if (empty($this->_events[$name]) && empty($this->_eventWildcards[$name])) {
