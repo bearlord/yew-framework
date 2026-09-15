@@ -239,7 +239,7 @@ abstract class Cache extends Component implements CacheInterface
      * This parameter is ignored if [[serializer]] is false.
      * @return bool whether the value is successfully stored into cache
      */
-    public function set($key, $value, int $duration = null, Dependency $dependency = null): bool
+    public function set($key, $value, ?int $duration = null, ?Dependency $dependency = null): bool
     {
         if ($duration === null) {
             $duration = $this->defaultDuration;
@@ -282,7 +282,7 @@ abstract class Cache extends Component implements CacheInterface
      * expiration time will be replaced with the new ones, respectively.
      *
      * @param array $items the items to be cached, as key-value pairs.
-     * @param int $duration default number of seconds in which the cached values will expire. 0 means never expire.
+     * @param int|null $duration default number of seconds in which the cached values will expire. 0 means never expire.
      * @param Dependency|null $dependency dependency of the cached items. If the dependency changes,
      * the corresponding values in the cache will be invalidated when it is fetched via [[get()]].
      * This parameter is ignored if [[serializer]] is false.
@@ -315,7 +315,7 @@ abstract class Cache extends Component implements CacheInterface
      * If the cache already contains such a key, the existing value and expiration time will be preserved.
      *
      * @param array $items the items to be cached, as key-value pairs.
-     * @param int $duration default number of seconds in which the cached values will expire. 0 means never expire.
+     * @param int|null $duration default number of seconds in which the cached values will expire. 0 means never expire.
      * @param Dependency|null $dependency dependency of the cached items. If the dependency changes,
      * the corresponding values in the cache will be invalidated when it is fetched via [[get()]].
      * This parameter is ignored if [[serializer]] is false.
@@ -332,7 +332,7 @@ abstract class Cache extends Component implements CacheInterface
      * If the cache already contains such a key, the existing value and expiration time will be preserved.
      *
      * @param array $items the items to be cached, as key-value pairs.
-     * @param int $duration default number of seconds in which the cached values will expire. 0 means never expire.
+     * @param int|null $duration default number of seconds in which the cached values will expire. 0 means never expire.
      * @param Dependency|null $dependency dependency of the cached items. If the dependency changes,
      * the corresponding values in the cache will be invalidated when it is fetched via [[get()]].
      * This parameter is ignored if [[serializer]] is false.
@@ -366,7 +366,7 @@ abstract class Cache extends Component implements CacheInterface
      * @param mixed $key a key identifying the value to be cached. This can be a simple string or
      * a complex data structure consisting of factors representing the key.
      * @param mixed $value the value to be cached
-     * @param int $duration the number of seconds in which the cached value will expire. 0 means never expire.
+     * @param int|null $duration the number of seconds in which the cached value will expire. 0 means never expire.
      * @param Dependency|null $dependency dependency of the cached item. If the dependency changes,
      * the corresponding value in the cache will be invalidated when it is fetched via [[get()]].
      * This parameter is ignored if [[serializer]] is false.

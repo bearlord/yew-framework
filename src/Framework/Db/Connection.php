@@ -535,7 +535,7 @@ class Connection extends Component implements ConnectionInterface
      * @see queryCache
      * @see noCache()
      */
-    public function cache(callable $callable, int $duration = null, Dependency $dependency = null)
+    public function cache(callable $callable, ?int $duration = null, ?Dependency $dependency = null)
     {
         $this->_queryCacheInfo[] = [$duration === null ? $this->queryCacheDuration : $duration, $dependency];
         try {
@@ -753,7 +753,7 @@ class Connection extends Component implements ConnectionInterface
      * @throws InvalidConfigException
      * @throws \Throwable
      */
-    public function createCommand(string $sql = null, array $params = []): Command
+    public function createCommand(?string $sql = null, array $params = []): Command
     {
         $driver = $this->getDriverName();
         $config = ['class' => 'Yew\Framework\Db\Command'];
@@ -783,12 +783,12 @@ class Connection extends Component implements ConnectionInterface
      * Starts a transaction.
      * @param string|null $isolationLevel The isolation level to use for this transaction.
      * See [[Transaction::begin()]] for details.
-     * @return Transaction the transaction initiated
+     * @return Transaction|null the transaction initiated
      * @throws Exception
      * @throws InvalidConfigException
      * @throws NotSupportedException
      */
-    public function beginTransaction(string $isolationLevel = null): ?Transaction
+    public function beginTransaction(?string $isolationLevel = null): ?Transaction
     {
         $this->open();
 
