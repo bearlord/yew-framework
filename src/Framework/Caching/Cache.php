@@ -289,7 +289,7 @@ abstract class Cache extends Component implements CacheInterface
      * @return array array of failed keys
      * @since 2.0.7
      */
-    public function multiSet(array $items, ?int $duration = 0, Dependency $dependency = null): array
+    public function multiSet(array $items, ?int $duration = 0, ?Dependency $dependency = null): array
     {
         if ($dependency !== null && $this->serializer !== false) {
             $dependency->evaluateDependency($this);
@@ -322,7 +322,7 @@ abstract class Cache extends Component implements CacheInterface
      * @return array array of failed keys
      * @deprecated This method is an alias for [[multiAdd()]] and will be removed in 2.1.0.
      */
-    public function madd(array $items, ?int $duration = 0, Dependency $dependency = null): array
+    public function madd(array $items, ?int $duration = 0, ?Dependency $dependency = null): array
     {
         return $this->multiAdd($items, $duration, $dependency);
     }
@@ -339,7 +339,7 @@ abstract class Cache extends Component implements CacheInterface
      * @return array array of failed keys
      * @since 2.0.7
      */
-    public function multiAdd(array $items, ?int $duration = 0, Dependency $dependency = null): array
+    public function multiAdd(array $items, ?int $duration = 0, ?Dependency $dependency = null): array
     {
         if ($dependency !== null && $this->serializer !== false) {
             $dependency->evaluateDependency($this);
@@ -372,7 +372,7 @@ abstract class Cache extends Component implements CacheInterface
      * This parameter is ignored if [[serializer]] is false.
      * @return bool whether the value is successfully stored into cache
      */
-    public function add($key, $value, ?int $duration = 0, Dependency $dependency = null): bool
+    public function add($key, $value, ?int $duration = 0, ?Dependency $dependency = null): bool
     {
         if ($dependency !== null && $this->serializer !== false) {
             $dependency->evaluateDependency($this);
@@ -502,7 +502,7 @@ abstract class Cache extends Component implements CacheInterface
      * The default implementation calls [[addValue()]] multiple times add values one by one. If the underlying cache
      * storage supports multi-add, this method should be overridden to exploit that feature.
      * @param array $data array where key corresponds to cache key while value is the value stored.
-     * @param int $duration the number of seconds in which the cached values will expire. 0 means never expire.
+     * @param int|null $duration the number of seconds in which the cached values will expire. 0 means never expire.
      * @return array array of failed keys
      */
     protected function addValues(array $data, ?int $duration = 0): array
@@ -591,7 +591,7 @@ abstract class Cache extends Component implements CacheInterface
      * @return mixed result of $callable execution
      * @since 2.0.11
      */
-    public function getOrSet($key, $callable, int $duration = null, Dependency $dependency = null)
+    public function getOrSet($key, $callable, ?int $duration = null, ?Dependency $dependency = null)
     {
         if (($value = $this->get($key)) !== false) {
             return $value;
