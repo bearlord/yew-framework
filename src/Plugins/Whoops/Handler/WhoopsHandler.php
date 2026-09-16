@@ -260,7 +260,8 @@ class WhoopsHandler extends Handler
         /** @var Response $response */
         $response = getContextValueByClassName(Response::class);
 
-        $contentType = $response->getHeader("Content-Type")[0];
+        $_contentType = $response->getHeader("Content-Type");
+        $contentType = $_contentType[0] ?? null;
         if (strpos($contentType, "application/json") !== false) {
             $_exception = $this->getException();
 
