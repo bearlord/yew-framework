@@ -364,14 +364,30 @@ abstract class Process
                     $buffer = '';
                     while (true) {
                         $recv = $this->socket->recv(self::IPC_RECV_CHUNK_SIZE);
-                        if ($recv === '' || $recv === false) {
-                            break;
-                        }
+                        // Swoole coroutine socket recv() return semantics:
+                        //   string -> data;  null -> EAGAIN (no data yet);
+                        //   false  -> error (inspect errCode);  '' -> peer EOF.
+                        // Breaking on ANY of these would close the mailbox and
+                        // permanently kill all IPC for this process (callers
+                        // time out forever once the loop exits). So we ALWAYS
+                        // retry instead of breaking.
                         if ($recv === null) {
-                            break;
+                            \Swoole\Coroutine::sleep(0.001);
+                            continue;
+                        }
+                        if ($recv === false) {
+                            // Transient read error / timeout (e.g. EAGAIN) — keep waiting.
+                            \Swoole\Coroutine::sleep(0.01);
+                            continue;
+                        }
+                        if ($recv === '') {
+                            // Peer closed the pipe — idle loop, keep waiting to stay alive.
+                            \Swoole\Coroutine::sleep(0.05);
+                            continue;
                         }
 
                         $buffer .= $recv;
+
                         if (strlen($buffer) > $maxBufferSize) {
                             $this->log->warning(
                                 "IPC reassembly buffer exceeded {$maxBufferSize} bytes, "

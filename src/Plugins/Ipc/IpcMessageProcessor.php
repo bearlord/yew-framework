@@ -129,9 +129,9 @@ class IpcMessageProcessor extends MessageProcessor
                 $this->cacheMessages[$sessionKey][] = $message;
 
                 return true;
-            }
+                }
 
-            $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
+                $this->reply($ipcCallData, $message, $result, $errorClass, $errorCode, $errorMessage);
 
             //Processing cache
             if (!isset($this->sessions[$sessionKey])) {
