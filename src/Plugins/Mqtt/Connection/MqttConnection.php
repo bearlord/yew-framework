@@ -152,18 +152,20 @@ class MqttConnection
     }
 
     /**
-     * Store the negotiated keepalive (seconds) for a connection and mark activity.
-     * keepAlive <= 0 disables keepalive enforcement for this fd.
+     * Persist the negotiated keep-alive (seconds) for a connection and refresh
+     * its activity timestamp. Values <= 0 disable keep-alive enforcement and
+     * are not stored.
+     *
+     * @param int $fd         connection file descriptor
+     * @param int $keepAlive  keep-alive in seconds; <= 0 means disabled
      */
     public function setKeepAlive(int $fd, int $keepAlive): void
     {
+        // touchActivity() guarantees fdSession[$fd] exists, so no array init needed.
+        $this->touchActivity($fd);
         if ($keepAlive > 0) {
-            if (!isset($this->fdSession[$fd])) {
-                $this->fdSession[$fd] = [];
-            }
             $this->fdSession[$fd]['keep_alive'] = $keepAlive;
         }
-        $this->touchActivity($fd);
     }
 
     /**
