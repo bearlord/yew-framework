@@ -47,7 +47,7 @@ class Application extends \Yew\Framework\Base\Application
      *
      * Please refer to the [guide about class autoloading](guide:concept-autoloading.md) for more details.
      */
-    public ?string $controllerNamespace = 'App\Commands';
+    public ?string $controllerNamespace = 'App\Console';
 
     /**
      * @var bool whether to enable the commands provided by the core framework.
