@@ -49,6 +49,12 @@ class ProcessManager
     private array $groups = [];
 
     /**
+     * Current process id
+     * @var int|null
+     */
+    private ?int $currentProcessId = null;
+
+    /**
      * ProcessManager constructor.
      * @param Server $server
      * @param string $processClass
@@ -182,7 +188,10 @@ class ProcessManager
     {
         if ($process->getProcessType() == Process::PROCESS_TYPE_CUSTOM) {
             $process->createProcess();
-            $this->server->getServer()->addProcess($process->getSwooleProcess());
+            $server = $this->server->getServer();
+            if ($server !== null) {
+                $server->addProcess($process->getSwooleProcess());
+            }
         }
         $this->processes[$process->getProcessId()] = $process;
     }
@@ -230,7 +239,11 @@ class ProcessManager
      */
     public function getMasterPid(): ?int
     {
-        return $this->server->getServer()->master_pid ?? null;
+        $server = $this->server->getServer();
+        if ($server === null) {
+            return null;
+        }
+        return $server->master_pid ?? null;
     }
 
     /**
@@ -239,7 +252,11 @@ class ProcessManager
      */
     public function getManagerPid(): ?int
     {
-        return $this->server->getServer()->manager_pid ?? null;
+        $server = $this->server->getServer();
+        if ($server === null) {
+            return null;
+        }
+        return $server->manager_pid ?? null;
     }
 
     /**
@@ -248,7 +265,7 @@ class ProcessManager
      */
     public function getCurrentProcessId(): ?int
     {
-        return $this->server->getServer()->worker_id ?? null;
+        return $this->currentProcessId;
     }
 
     /**
@@ -258,7 +275,14 @@ class ProcessManager
      */
     public function setCurrentProcessId(int $processId)
     {
-        $this->server->getServer()->worker_id = $processId;
+        $this->currentProcessId = $processId;
+        // Best-effort: keep Swoole's worker_id in sync when the underlying
+        // server object is available. This is only for backwards compatibility
+        // and must not be relied upon for process identification.
+        $server = $this->server->getServer();
+        if ($server !== null) {
+            $server->worker_id = $processId;
+        }
     }
 
     /**
@@ -269,7 +293,11 @@ class ProcessManager
      */
     public function getCurrentProcessPid(): int
     {
-        return $this->server->getServer()->worker_pid;
+        $server = $this->server->getServer();
+        if ($server !== null && isset($server->worker_pid)) {
+            return $server->worker_pid;
+        }
+        return getmypid();
     }
 
     /**
@@ -279,7 +307,10 @@ class ProcessManager
      */
     public function setCurrentProcessPid(int $processPid)
     {
-        $this->server->getServer()->worker_pid = $processPid;
+        $server = $this->server->getServer();
+        if ($server !== null) {
+            $server->worker_pid = $processPid;
+        }
     }
 
     /**
@@ -289,16 +320,27 @@ class ProcessManager
      */
     public function getCurrentProcess(): ?Process
     {
-        if ($this->getCurrentProcessId() === null) {
-            if ($this->getMasterPid() === null) {
-                return $this->masterProcess;
-            } else if ($this->getManagerPid() !== null) {
-                return $this->managerProcess;
-            } else {
-                return null;
-            }
+        if ($this->currentProcessId !== null) {
+            return $this->getProcessFromId($this->currentProcessId);
         }
-        return $this->getProcessFromId($this->getCurrentProcessId());
+
+        // Fallback for the window before setCurrentProcessId() has run:
+        // identify master / manager from the (nullable) Swoole pid properties.
+        $server = $this->server->getServer();
+        if ($server !== null) {
+            $masterPid = $server->master_pid ?? null;
+            $managerPid = $server->manager_pid ?? null;
+        } else {
+            $masterPid = null;
+            $managerPid = null;
+        }
+
+        if ($masterPid === null) {
+            return $this->masterProcess;
+        } else if ($managerPid !== null) {
+            return $this->managerProcess;
+        }
+        return null;
     }
 
     /**

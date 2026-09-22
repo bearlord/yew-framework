@@ -62,7 +62,16 @@ class Application extends Server
     {
 
         $this->configure();
-        $this->getContainer()->get($mainClass);
+        // Register the actually-running instance (#1) for the main class
+        // instead of instantiating a second, un-started Server via get().
+        // The orphan instance created by get() ran the same constructor, which
+        // overwrote Server::$instance and the container's Server mapping with a
+        // Server whose underlying Swoole server was never started (getServer()
+        // returned null) -> every plugin's beforeProcessStart() crashed with
+        // "Call to a member function getProcessName() on null". By registering
+        // $this (the instance that is configure()d and start()ed below) we keep
+        // a single, live Server instance and avoid the whole class of bugs.
+        $this->getContainer()->set($mainClass, $this);
         $this->start();
     }
 
