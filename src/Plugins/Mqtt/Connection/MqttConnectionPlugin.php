@@ -16,6 +16,7 @@ use Yew\Coroutine\Server\Server;
 use Yew\Plugins\Mqtt\Connection\MqttConnection;
 use Yew\Plugins\Mqtt\Connection\MqttConnectionConfig;
 use Yew\Plugins\Mqtt\Connection\MqttConnectionProcess;
+use Yew\Plugins\Mqtt\Topic\MqttTopic;
 
 class MqttConnectionPlugin extends AbstractPlugin
 {
@@ -76,7 +77,13 @@ class MqttConnectionPlugin extends AbstractPlugin
             == $this->mqttConnectionConfig->getProcessName()
         ) {
             $mqttConnection = new MqttConnection();
+
+            $mqttTopic = new MqttTopic();
+            $mqttTopic->setConnection($mqttConnection);
+            $mqttTopic->init();
+
             $this->setToDIContainer(MqttConnection::class, $mqttConnection);
+            $this->setToDIContainer(MqttTopic::class, $mqttTopic);
         }
 
         $this->ready();
