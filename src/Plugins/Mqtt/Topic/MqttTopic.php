@@ -1,34 +1,32 @@
 <?php
 /**
- * Yew framework - MQTT topic routing (hosted in the mqtt-connection process)
+ * Yew framework - MQTT topic routing
  *
- * Subscription matching & message dispatch for the MQTT broker, hosted inside
- * the mqtt-connection helper process. This class is composed by
- * Yew\Plugins\Mqtt\Connection\MqttConnection so that subscription state and
- * publish dispatch live in the same process that already owns the
- * clientId <-> fd routing table.
+ * Subscription matching & message dispatch for the MQTT broker. This class
+ * holds the in-memory subscription index (Trie) and is intended to become the
+ * state of a subscription actor. It is deliberately free of any connection/fd
+ * knowledge: once a topic is matched to subscriber clientIds, delivery is
+ * delegated to an injected DeliveryGateway (local fd send by default, or a
+ * cross-node actor message in a distributed deployment).
  *
- * Subscribers are keyed by client_id (one clientId <-> one fd), so a
- * published message resolves the target fd directly via
- * getClientSession($clientId, 'fd') instead of a separate client_id lookup.
+ * Subscribers are keyed by client_id. Persistence (if a storage driver is
+ * bound) is used only to recover the index on startup, not on the hot path.
  */
 
 namespace Yew\Plugins\Mqtt\Topic;
 
-use Yew\Plugins\Mqtt\Connection\MqttConnection;
-use Yew\Plugins\Pack\GetBoostSend;
 use Yew\Plugins\Mqtt\Topic\Storage\DriverInterface;
 use Yew\Mqtt\Tools\TopicValidator;
 
 class MqttTopic
 {
-    use GetBoostSend;
-
     /**
-     * Owner connection process, used to resolve clientId -> fd and to send.
-     * @var MqttConnection
+     * Delivery boundary: how a matched subscriber is reached (local fd now,
+     * actor message later). Injected so MqttTopic stays free of connection/fd
+     * assumptions and is ready to become an actor's state.
+     * @var DeliveryGatewayInterface
      */
-    private MqttConnection $connection;
+    private DeliveryGatewayInterface $deliveryGateway;
 
     /**
      * In-memory subscription index: clientId => [topic => qos].
@@ -55,13 +53,15 @@ class MqttTopic
     private bool $topicRecovered = false;
 
     /**
-     * Wire this component to its owning MqttConnection (for fd resolution / send).
+     * Wire this component to a delivery gateway. The gateway encapsulates how a
+     * matched subscriber clientId is actually reached (local fd send by default,
+     * or cross-node actor message in a distributed deployment).
      *
-     * @param MqttConnection $connection
+     * @param DeliveryGatewayInterface $deliveryGateway
      */
-    public function __construct(MqttConnection $connection)
+    public function __construct(DeliveryGatewayInterface $deliveryGateway)
     {
-        $this->connection = $connection;
+        $this->deliveryGateway = $deliveryGateway;
         $this->init();
     }
 
@@ -299,8 +299,9 @@ class MqttTopic
     }
 
     /**
-     * Deliver data to a single clientId by resolving its connection fd and
-     * sending through the pack aspect.
+     * Deliver data to a single clientId via the injected DeliveryGateway.
+     * The gateway decides how the clientId is reached (local fd or, in a
+     * distributed deployment, a message to the owning connection actor).
      *
      * @param string $clientId
      * @param mixed  $data
@@ -309,14 +310,6 @@ class MqttTopic
      */
     private function publishToClientId(string $clientId, $data, string $topic): bool
     {
-        if ($this->connection === null) {
-            return false;
-        }
-        $fd = $this->connection->getClientSession($clientId, 'fd');
-        if (empty($fd)) {
-            return false;
-        }
-
-        return $this->autoBoostSend((int)$fd, $data, $topic);
+        return $this->deliveryGateway->deliver($clientId, $data, $topic);
     }
 }
