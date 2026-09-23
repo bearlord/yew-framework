@@ -26,9 +26,9 @@ class MqttTopic
 
     /**
      * Owner connection process, used to resolve clientId -> fd and to send.
-     * @var MqttConnection|null
+     * @var MqttConnection
      */
-    private ?MqttConnection $connection = null;
+    private MqttConnection $connection;
 
     /**
      * In-memory subscription index: clientId => [topic => qos].
@@ -58,17 +58,17 @@ class MqttTopic
      * Wire this component to its owning MqttConnection (for fd resolution / send).
      *
      * @param MqttConnection $connection
-     * @return void
      */
-    public function setConnection(MqttConnection $connection): void
+    public function __construct(MqttConnection $connection)
     {
         $this->connection = $connection;
+        $this->init();
     }
 
     /**
-     * Initialize the topic index. Call once inside the mqtt-connection process
-     * after wiring the connection (see MqttConnectionPlugin), or lazily via
-     * MqttConnection::getMqttTopic().
+     * Initialize the topic index. Invoked automatically by the constructor,
+     * so it is always built once the MqttTopic is instantiated (see
+     * MqttConnectionPlugin).
      *
      * @return void
      */

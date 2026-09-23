@@ -77,10 +77,7 @@ class MqttConnectionPlugin extends AbstractPlugin
             == $this->mqttConnectionConfig->getProcessName()
         ) {
             $mqttConnection = new MqttConnection();
-
-            $mqttTopic = new MqttTopic();
-            $mqttTopic->setConnection($mqttConnection);
-            $mqttTopic->init();
+            $mqttTopic = new MqttTopic($mqttConnection);
 
             $this->setToDIContainer(MqttConnection::class, $mqttConnection);
             $this->setToDIContainer(MqttTopic::class, $mqttTopic);
