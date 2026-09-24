@@ -86,7 +86,9 @@ trait GetMqttTopic
         if (empty($ipcProxy)) {
             return false;
         }
-        return $ipcProxy->addSubscription($topic, $clientId, $qos);
+        // Oneway IPC returns null (fire-and-forget); never propagate it as bool.
+        $ipcProxy->addSubscription($topic, $clientId, $qos);
+        return true;
     }
 
     /**
@@ -106,7 +108,8 @@ trait GetMqttTopic
         if (empty($ipcProxy)) {
             return false;
         }
-        return $ipcProxy->removeSubscription($topic, $clientId);
+        $ipcProxy->removeSubscription($topic, $clientId);
+        return true;
     }
 
     /**
@@ -125,7 +128,8 @@ trait GetMqttTopic
         if (empty($ipcProxy)) {
             return false;
         }
-        return $ipcProxy->clearClientSubscription($clientId);
+        $ipcProxy->clearClientSubscription($clientId);
+        return true;
     }
 
     /**
@@ -143,6 +147,7 @@ trait GetMqttTopic
         if (empty($ipcProxy)) {
             return false;
         }
-        return $ipcProxy->publish($topic, $data, $excludeClientIdList);
+        $ipcProxy->publish($topic, $data, $excludeClientIdList);
+        return true;
     }
 }
