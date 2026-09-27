@@ -25,9 +25,51 @@ class MqttConnectionConfig extends BaseConfig
      */
     protected string $processName = "mqtt-connection";
 
+    /**
+     * @var bool Whether to fan MQTT publishes out to other cluster nodes.
+     */
+    protected bool $clusterEnabled = false;
+
+    /**
+     * @var int Dedicated UDP port for MQTT cluster fan-out (0 = disabled).
+     */
+    protected int $clusterPort = 0;
+
     public function __construct()
     {
         parent::__construct(self::KEY);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isClusterEnabled(): bool
+    {
+        return $this->clusterEnabled;
+    }
+
+    /**
+     * @param bool $clusterEnabled
+     */
+    public function setClusterEnabled(bool $clusterEnabled): void
+    {
+        $this->clusterEnabled = $clusterEnabled;
+    }
+
+    /**
+     * @return int
+     */
+    public function getClusterPort(): int
+    {
+        return $this->clusterPort;
+    }
+
+    /**
+     * @param int $clusterPort
+     */
+    public function setClusterPort(int $clusterPort): void
+    {
+        $this->clusterPort = $clusterPort;
     }
 
     /**

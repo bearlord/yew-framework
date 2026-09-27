@@ -16,6 +16,7 @@
 namespace Yew\Plugins\Mqtt\Topic;
 
 use Yew\Plugins\Mqtt\Topic\Storage\DriverInterface;
+use Yew\Cluster\Broadcaster\ClusterBroadcaster;
 use Yew\Mqtt\Tools\TopicValidator;
 
 class MqttTopic
@@ -51,6 +52,19 @@ class MqttTopic
      * @var bool
      */
     private bool $topicRecovered = false;
+
+    /**
+     * Optional cluster fan-out broadcaster. When set, {@see publish()} also
+     * sends the (topic, data) to every other node so their local subscribers
+     * receive it. Null = single-node delivery only.
+     * @var ClusterBroadcaster|null
+     */
+    private ?ClusterBroadcaster $broadcaster = null;
+
+    /**
+     * Logical channel used for cluster fan-out frames on the shared UDP socket.
+     */
+    public const CLUSTER_CHANNEL = 'mqtt';
 
     /**
      * Wire this component to a delivery gateway. The gateway encapsulates how a
@@ -274,7 +288,21 @@ class MqttTopic
     }
 
     /**
-     * Publish data to every subscriber of a topic (wildcards included).
+     * Bind a cluster broadcaster so publishes are fanned out to other nodes.
+     *
+     * @param ClusterBroadcaster|null $broadcaster
+     */
+    public function setBroadcaster(?ClusterBroadcaster $broadcaster): void
+    {
+        $this->broadcaster = $broadcaster;
+    }
+
+    /**
+     * Publish data to every subscriber of a topic (wildcards included), then
+     * (when a broadcaster is bound) fan the same payload out to every other
+     * cluster node. The local node already has the message, so the broadcaster
+     * excludes it. Inbound cluster frames must call {@see publishLocal()} to
+     * avoid re-broadcasting and forming a loop.
      *
      * @param string $topic
      * @param mixed  $data
@@ -282,6 +310,40 @@ class MqttTopic
      * @return bool
      */
     public function publish(string $topic, $data, ?array $excludeClientIdList = null): bool
+    {
+        // Local delivery first.
+        $this->publishLocal($topic, $data, $excludeClientIdList);
+
+        // Fan out to other nodes (no-op when broadcaster is not bound).
+        if ($this->broadcaster !== null) {
+            $payload = json_encode([
+                'topic'   => $topic,
+                'data'    => $data,
+                'exclude' => $excludeClientIdList,
+            ], JSON_UNESCAPED_UNICODE);
+            if ($payload !== false) {
+                try {
+                    $this->broadcaster->broadcast(self::CLUSTER_CHANNEL, $payload);
+                } catch (\Throwable $e) {
+                    // Never let a cluster fan-out failure break local delivery.
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Deliver a publish to this node's local subscribers only. Used both by
+     * {@see publish()} and by the inbound cluster receive loop (which must NOT
+     * re-broadcast).
+     *
+     * @param string $topic
+     * @param mixed  $data
+     * @param array|null $excludeClientIdList
+     * @return bool
+     */
+    public function publishLocal(string $topic, $data, ?array $excludeClientIdList = null): bool
     {
         $this->ensureRecovered();
         if ($this->topicTrie === null) {
