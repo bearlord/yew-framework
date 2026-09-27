@@ -19,6 +19,7 @@ use Yew\Plugins\Actor\Mailbox\DropStrategy;
 use Yew\Plugins\Actor\Mailbox\FailStrategy;
 use Yew\Plugins\Actor\Mailbox\MailboxOverflowStrategy;
 use Yew\Plugins\Actor\Multicast\Multicast;
+use Yew\Plugins\Actor\Multicast\MulticastConfig;
 use Yew\Plugins\Actor\Supervision\Directive;
 use Yew\Plugins\Actor\Supervision\EscalateStrategy;
 use Yew\Plugins\Actor\Supervision\ResumeStrategy;
@@ -169,7 +170,7 @@ abstract class Actor
      */
     protected function init()
     {
-        $this->iniChannel();
+        $this->initChannel();
 
         $this->supervisorStrategy = $this->resolveSupervisorStrategy($this->actorConfig->getSupervisorStrategy());
         $this->dispatcher = $this->resolveDispatcher($this->actorConfig->getDispatcher());
@@ -209,10 +210,71 @@ abstract class Actor
     /**
      * Create the mailbox channel and resolve the overflow strategy.
      */
-    protected function iniChannel()
+    protected function initChannel()
     {
         $this->channel = DIGet(Channel::class, [$this->actorConfig->getMailboxCapacity()]);
         $this->mailboxOverflowStrategy = $this->resolveOverflowStrategy($this->actorConfig->getMailboxOverflow());
+    }
+
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return int
+     */
+    public function getState(): int
+    {
+        return $this->state;
+    }
+
+    /**
+     * @param int $state
+     * @return void
+     */
+    public function setState(int $state): void
+    {
+        $this->state = $state;
+    }
+
+    /**
+     * Init data
+     * @param $data
+     * @return void
+     */
+    public function initData($data)
+    {
+        $this->data = $data;
+    }
+
+    /**
+     * Get the actor's durable state snapshot.
+     *
+     * This array is the single source of truth that gets persisted (snapshot /
+     * event payload), replicated across nodes, and carried over on a supervisor
+     * restart. Keep it serializable and small: store big payloads in an external
+     * store (Swoole Table / Redis / …) and keep only a reference key here, so
+     * IPC and replication stay cheap.
+     *
+     * @return array
+     */
+    public function getData(): array
+    {
+        return $this->data;
+    }
+
+    /**
+     * Restore the actor's durable state (recovery / supervision restart).
+     *
+     * @param array $data Lightweight, serializable state — see {@see getData()}.
+     */
+    public function setData(array $data): void
+    {
+        $this->data = $data;
     }
 
     /**
@@ -432,32 +494,6 @@ abstract class Actor
     }
 
     /**
-     * Get the actor's durable state snapshot.
-     *
-     * This array is the single source of truth that gets persisted (snapshot /
-     * event payload), replicated across nodes, and carried over on a supervisor
-     * restart. Keep it serializable and small: store big payloads in an external
-     * store (Swoole Table / Redis / …) and keep only a reference key here, so
-     * IPC and replication stay cheap.
-     *
-     * @return array
-     */
-    public function getData(): array
-    {
-        return $this->data;
-    }
-
-    /**
-     * Restore the actor's durable state (recovery / supervision restart).
-     *
-     * @param array $data Lightweight, serializable state — see {@see getData()}.
-     */
-    public function setData(array $data): void
-    {
-        $this->data = $data;
-    }
-
-    /**
      * Serialize only what is needed to reconstruct the actor elsewhere.
      *
      * Runtime dependencies (dispatcher, logger, channel, message handlers,
@@ -490,37 +526,6 @@ abstract class Actor
         $this->data       = $data['data'];
     }
 
-    /**
-     * @return int
-     */
-    public function getState(): int
-    {
-        return $this->state;
-    }
-
-    /**
-     * @param int $state
-     * @return void
-     */
-    public function setState(int $state): void
-    {
-        $this->state = $state;
-    }
-
-    /**
-     * Init data
-     * @param $data
-     * @return void
-     */
-    public function initData($data)
-    {
-        $this->data = $data;
-    }
-
-    /**
-     * @param ActorMessage $message
-     * @return void
-     */
     /**
      * Handle a single mailbox message under supervision. Public so a
      * {@see \Yew\Plugins\Actor\Dispatcher\Dispatcher} can drive execution under a
@@ -639,14 +644,6 @@ abstract class Actor
      * @return mixed
      */
     abstract protected function handleMessage(ActorMessage $message);
-
-    /**
-     * @return string
-     */
-    public function getName(): string
-    {
-        return $this->name;
-    }
 
     /**
      * @return int Consecutive failure count (for parent supervisors)
@@ -931,5 +928,79 @@ abstract class Actor
         }
 
         $this->logHandle->log($this->data);
+    }
+
+
+    /**
+     * Subscribe this actor to a multicast channel.
+     *
+     * Cross-process safe: when invoked on an ActorIpcProxy, __call forwards the
+     * call to the owning process, so $actor->subscribe() works regardless of
+     * where the actor lives.
+     */
+    public function subscribe(string $channel): void
+    {
+        $this->multicast()->subscribe($channel);
+    }
+
+    /**
+     * Unsubscribe this actor from a multicast channel.
+     */
+    public function unsubscribe(string $channel): void
+    {
+        $this->multicast()->unsubscribe($channel);
+    }
+
+    /**
+     * Unsubscribe this actor from all multicast channels.
+     */
+    public function unsubscribeAll(): void
+    {
+        $this->multicast()->unsubscribeAll();
+    }
+
+    /**
+     * Whether this actor has subscribed to the given channel.
+     */
+    public function hasChannel(string $channel): bool
+    {
+        return $this->multicast()->hasChannel($channel);
+    }
+
+    /**
+     * Publish a message to a channel, excluding this actor by default.
+     */
+    public function publish(string $channel, string $message, array $excludeActorList = []): void
+    {
+        $this->multicast()->publish($channel, $message, $excludeActorList);
+    }
+
+    /**
+     * Publish a message to a channel, delivered only to other subscribers.
+     */
+    public function publishTo(string $channel, string $message): void
+    {
+        $this->multicast()->publishTo($channel, $message);
+    }
+
+    /**
+     * Publish a message to a channel, including this actor itself.
+     */
+    public function publishIn(string $channel, string $message): void
+    {
+        $this->multicast()->publishIn($channel, $message);
+    }
+
+    /**
+     * Resolve the Multicast facade bound to this actor, falling back to a fresh
+     * instance when the injected $multicast property is not yet initialized.
+     */
+    private function multicast(): Multicast
+    {
+        if (!isset($this->multicast)) {
+            return new Multicast($this->name, DIGet(MulticastConfig::class));
+        }
+
+        return $this->multicast;
     }
 }
