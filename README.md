@@ -134,7 +134,7 @@ php server.php start -d # daemonize
 
 | Section | English | 中文 |
 |---------|---------|------|
-| Getting Started (config, process model, plugin lifecycle, DI, logging, events, coroutine) | [en-US](docs/en-US/getting-started.md) | [zh-CN](docs/zh-CN/getting-started.md) |
+| Getting Started | [en-US](docs/en-US/getting-started.md) | [zh-CN](docs/zh-CN/getting-started.md) |
 | Actor model | [en-US](docs/en-US/actor.md) | [zh-CN](docs/zh-CN/actor.md) |
 | Multicast (pub/sub) | [en-US](docs/en-US/multicast.md) | [zh-CN](docs/zh-CN/multicast.md) |
 | AOP | [en-US](docs/en-US/aop.md) | [zh-CN](docs/zh-CN/aop.md) |
