@@ -150,7 +150,7 @@ php server.php start -d # daemonize
 | Scheduled | [en-US](docs/en-US/scheduled.md) | [zh-CN](docs/zh-CN/scheduled.md) |
 | Security & Session & Validate & JWT | [en-US](docs/en-US/security.md) | [zh-CN](docs/zh-CN/security.md) |
 | Rate Limit & Circuit Breaker | [en-US](docs/en-US/rate-limit-circuit-breaker.md) | [zh-CN](docs/zh-CN/rate-limit-circuit-breaker.md) |
-| Utilities (Uid, Topic, Connection, Console, AutoReload, Whoops, Actuator, AnnotationsScan, Autostart, Snowflake, Parallel, …) | [en-US](docs/en-US/utilities.md) | [zh-CN](docs/zh-CN/utilities.md) |
+| Utilities (Uid, Topic, Connection, Console, AutoReload…) | [en-US](docs/en-US/utilities.md) | [zh-CN](docs/zh-CN/utilities.md) |
 
 ---
 
