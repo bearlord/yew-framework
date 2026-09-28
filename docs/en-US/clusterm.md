@@ -3,34 +3,36 @@
 > Applies to: Yew framework `Yew\Cluster` package (`vendor/bearlord/yew-framework/src/Cluster`)
 > Keywords: Gossip membership, consistent-hash shard routing, cross-node Actor transport, cluster broadcast, Actor replication & failover
 
+Return to [homepage](../README.md) · See also [Actor](./actor.md) · [Multicast](./multicast.md).
+
 ---
 
 ## 1. Overview
 
 `Yew\Cluster` is Yew's clustering package. It provides **location-transparent** distributed primitives for the Actor layer:
 
-- **Membership**: Gossip-based cluster view (SYN/SYN-ACK/ACK handshake, digest anti-entropy, UDP fragmentation & retransmit, failure detection / FD).
-- **Shard Router**: maps an actor name to its owning node via consistent hashing, enabling key-based sharding and rebalancing.
-- **Remote Transport**: cross-node Actor `tell` / `ask` / `create` (Akka remoting / Orleans silo-to-silo equivalent).
-- **Broadcaster**: fans a message out to every other alive node in the cluster.
-- **Actor Replication & Failover**: replicates actor events/snapshots to replica nodes; on node death, survivors resurrect its actors.
+- **Membership** — `GossipClusterState` maintains the cluster view over UDP Gossip (SYN / SYN-ACK / ACK handshake, digest anti-entropy, UDP fragmentation & retransmit, failure detection / FD).
+- **Shard Router** — a consistent-hash ring maps an actor name to its owning node, enabling key-based sharding and rebalancing.
+- **Remote Transport** — cross-node Actor `tell` / `ask` / `create` (Akka remoting / Orleans silo-to-silo equivalent), implemented by `PooledTcpRemoteTransport`.
+- **Broadcaster** — `ClusterBroadcaster` fans a message out to every other alive node (`GossipClusterBroadcaster`).
+- **Actor Replication & Failover** — replicates actor events/snapshots to replica nodes; on node death, survivors resurrect its actors.
 
-### Architecture: single authority process
+### Architecture: a single authority process
 
-Cluster state lives **only** in each node's `cluster-state` helper process. Worker processes query it read-only over IPC (`GetClusterState`), so:
+Cluster state lives **only** in each node's `cluster-state` helper process (one per node). Worker processes query it read-only over IPC (`GetClusterState`), so:
 
 - Every worker sees exactly the same member view and shard ring — **no per-worker disagreement, no split-brain**;
 - No cross-worker shared `Swoole\Table` is used;
-- The Gossip UDP socket is self-managed by the `cluster-state` process (`UdpGossipTransport`, `setManaged(false)`); it alone sends/receives Gossip traffic.
+- The Gossip UDP socket is opened **inside** the `cluster-state` process (`UdpGossipTransport`, `setManaged(false)`); it alone sends/receives Gossip traffic.
 
 ```
-        +-------------------+        IPC (GetClusterState)        +----------------------+
-        |  cluster-state    | <---------------------------------- |   worker / actor     |
-        |  (authoritative   |    getMemberView / getLocationArray  |   process (read-only) |
-        |   view + FD +     |    replicateStoreEntry / findReplica |   IpcShardRouter      |
-        |   ring + Gossip)  |    getFailoverActors                 |   PooledTcpRemoteTransport |
-        +-------------------+                                      +----------------------+
-                  |  UDP Gossip (239.0.0.1:49999 or configured broadcast)
+        +----------------------+       IPC (GetClusterState)       +----------------------+
+        |   cluster-state      | <-------------------------------- |   worker / actor     |
+        |   (authoritative     |   getMemberView / getLocationArray  |   process (read-only)|
+        |    view + FD + ring   |   replicateStoreEntry / findReplica |   IpcShardRouter     |
+        |    + Gossip + TCP     |   getFailoverActors                |   PooledTcpRemote... |
+        +----------------------+                                    +----------------------+
+                  |  UDP Gossip (e.g. 239.0.0.1:49999 or configured broadcast)
                   v
            other nodes' cluster-state processes
 ```
@@ -39,7 +41,7 @@ Cluster state lives **only** in each node's `cluster-state` helper process. Work
 
 ## 2. Enabling the plugin
 
-`ClusterPlugin` automatically depends on `IpcPlugin` (runs after it) and **must run before** `ActorPlugin` (because `ActorPlugin`'s `beforeServerStart` resolves `ShardRouter` via `DIGet`, requiring `ClusterPlugin` to have registered the concrete `IpcShardRouter` first).
+`ClusterPlugin` automatically depends on `IpcPlugin` (runs `atAfter` it) and **must run before** `ActorPlugin` (because `ActorPlugin`'s `beforeServerStart` resolves `ShardRouter` via `DIGet`, requiring `ClusterPlugin` to have registered the concrete `IpcShardRouter` first).
 
 ```php
 use Yew\Cluster\ClusterPlugin;
@@ -58,14 +60,14 @@ If you only need the cluster primitives without Actors, `ClusterPlugin` can load
 
 ## 3. Configuration
 
-All cluster config lives under the `yew.cluster` subtree (`Yew\Cluster\ClusterConfig`, `KEY = "cluster"`). Available keys:
+All cluster config lives under the **`yew.cluster`** subtree (`Yew\Cluster\ClusterConfig`, `KEY = "cluster"`). Available keys:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `enabled` | bool | `false` | Enable clustering (sharding + Gossip). |
 | `nodeId` | string | `node-<hostname>` | Stable, cluster-unique node id. |
 | `host` | string | `127.0.0.1` | Bind host advertised to peers. |
-| `port` | int | `0` | Bind port advertised to peers. |
+| `port` | int | `0` | Bind port advertised to peers (used for the cross-node TCP endpoint). |
 | `weight` | int | `1` | Node capacity; higher = more shards. |
 | `suspectAfter` | int | `3` | Seconds of missed heartbeat before *suspect*. |
 | `downAfter` | int | `8` | Seconds of missed heartbeat before *down*. |
@@ -77,16 +79,17 @@ All cluster config lives under the `yew.cluster` subtree (`Yew\Cluster\ClusterCo
 | `poolSize` | int | `16` | Cross-node TCP connection pool size per node. |
 | `secret` | string | `''` | Shared HMAC secret for Gossip signing (anti-spoofing). |
 | `clockSkew` | int | `30` | Allowed clock skew (seconds) for message freshness. |
-| `privateKey` | string | `''` | This node's private key PEM; when set, switches to per-node asymmetric signing. |
+| `privateKey` | string | `''` | This node's private key PEM; when set alongside `publicKey`, switches to per-node asymmetric signing. |
 | `publicKey` | string | `''` | This node's public key PEM (paired with `privateKey`). |
 | `trustStore` | array | `[]` | Pinned trust store: `nodeId => publicKey PEM`. When non-empty, only pinned nodes are accepted. |
 | `replicationFactor` | int | `2` | Number of replicas an actor's events/snapshots are replicated to (besides owner). Read quorum = 1 replica present. |
 | `replicas` | int | `128` | Virtual replica points per node on the consistent-hash ring (higher = more even). |
 | `services` | array | `[]` | Declarative service overrides: `state` / `gossip` / `router` / `transport` / `store`. |
+| `cluster-tcp` port | — | — | Cross-node inbound TCP port; the name under `yew.port` **must** be exactly `cluster-tcp`. |
 
 Additionally, `yew.cluster.peers` (`nodeId => "host:port"`) gives an explicit static peer map; if omitted, synthetic ids are derived from `seeds`.
 
-The cross-node inbound TCP port must be declared under `yew.port` with the fixed name **`cluster-tcp`**:
+The cross-node inbound TCP port must be declared under `yew.port` with the fixed name **`cluster-tcp`** (`Yew\Cluster\Port\ClusterTcpPort::NAME`):
 
 ```yaml
 yew:
@@ -96,30 +99,38 @@ yew:
       port: 9501
 ```
 
+> The framework binds the `cluster-tcp` socket (Swoole multi-port) and forwards inbound connections to `PooledTcpRemoteTransport`. If the port is not declared, a warning is logged and cross-node *inbound* actor calls will not be served (outbound still works).
+
 ---
 
 ## 4. Core concepts
 
 ### ClusterNode (node descriptor)
+
+`Yew\Cluster\State\ClusterNode` describes a node. There is **no** `GetClusterNode` trait — use the class directly.
+
 ```php
 $node = new ClusterNode($nodeId, $host, $port, $local);
-$node->getNodeId();   // stable node id
-$node->getHost();     // host/ip
-$node->getPort();     // listening port (0 = not network-reachable)
-$node->isLocal();     // whether this is the local node
-$node->getEndpoint(); // e.g. "node-1@10.0.0.1:9501"
+$node->getNodeId();    // stable node id
+$node->getHost();      // host/ip
+$node->getPort();      // listening port (0 = not network-reachable)
+$node->isLocal();      // whether this is the local node
+$node->getEndpoint();  // e.g. "node-1@10.0.0.1:9501"
 ```
 
 ### Location (physical actor location)
-`Location` is the single source of truth for "where is actor X", making addressing location-transparent:
+
+`Yew\Cluster\State\Location` is the single source of truth for "where is actor X", making addressing location-transparent:
+
 ```php
-$location->getNode();       // owning ClusterNode
-$location->getProcessId();  // worker process id hosting the actor
-$location->getActorName();  // optional actor name
-$location->isLocal();       // whether on the local node
+$location->getNode();        // owning ClusterNode
+$location->getProcessId();   // worker process id hosting the actor
+$location->getActorName();   // optional actor name (used by the remote proxy)
+$location->isLocal();        // whether on the local node
 ```
 
 ### Member status
+
 The member view (`getMemberView()`) carries a `status` per node: typically `UP`, `SUSPECT`, `DOWN`. A `DOWN` triggers rebalancing and failover candidates.
 
 ---
@@ -143,7 +154,7 @@ class MyActor
             echo $loc->getNode()->getEndpoint();
         }
 
-        // 2) Full member view (array with status/weight/host/port...)
+        // 2) Full member view (array of node rows: nodeId/host/port/local/status/...)
         $view = $this->getClusterView();           // array
 
         // 3) Replicate a local store mutation to peers
@@ -158,7 +169,15 @@ class MyActor
 }
 ```
 
-> Design note: these calls may time out / return empty while the `cluster-state` process is still warming up (parallel boot). Callers should tolerate nulls/exceptions (the plugin swallows startup-time IPC errors so boot does not fatal).
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `clusterLocate(string $actorName)` | `Location\|null` | Owning node/location of an actor. |
+| `getClusterView()` | `array` | Full member view (node rows). |
+| `clusterReplicate($actorName, $kind, $payload, $ts)` | `void` | Replicate a store entry to peers. |
+| `clusterFindReplica($actorName, $kind)` | `string\|null` | Look up a replicated store entry. |
+| `clusterFailoverActors($ownerNodeId)` | `string[]` | Actor names to resurrect after a peer dies. |
+
+> Design note: these calls may time out / return empty while the `cluster-state` process is still warming up (parallel boot). The plugin swallows startup-time IPC errors so boot does not fatal — callers should tolerate nulls/exceptions.
 
 ---
 
@@ -192,6 +211,7 @@ $router = DIGet(ShardRouter::class);
 
 $loc = $router->locate('order-123');          // owning node + worker id
 $ownerNodeId = $router->ownerOf('order-123'); // just the owning node id
+$view = $router->getView();                   // cached member view from last refresh
 
 // Fire a rebalance hook when membership changes (e.g. a peer goes DOWN)
 if ($router instanceof IpcShardRouter) {
@@ -201,8 +221,9 @@ if ($router instanceof IpcShardRouter) {
 }
 ```
 
-- **Weight**: virtual points per node = `replicas * weight`, so heavier nodes get more shards.
+- **Weight**: virtual points per node = `replicas * weight` (rounded, minimum 1), so heavier nodes get more shards.
 - **Rebalance**: on membership add/remove or status flip, `refresh()` rebuilds the ring and invokes the `onRebalance` hook (the Actor layer evicts/migrates accordingly).
+- `register()` / `unregister()` are intentionally **no-ops** on `IpcShardRouter` — placement is derived from the authoritative ring on lookup.
 
 ---
 
@@ -236,15 +257,21 @@ interface ClusterBroadcaster
 }
 ```
 
-`broadcast($channel, $message)` fans the payload out to **every other alive node** in the cluster; the local node is **excluded** (implementations MUST not deliver to local). The implementation is `GossipClusterBroadcaster`. The Multicast module depends only on this interface, so it broadcasts across nodes without coupling to Gossip internals.
+`broadcast($channel, $message)` fans the payload out to **every other alive node** in the cluster; the local node is **excluded** (implementations MUST not deliver to local). The implementation is `GossipClusterBroadcaster`, which uses an independent UDP transport (separate from the internal gossip wire, so multicast frames can never be mistaken for SYNC/SYN-ACK gossip frames). The Multicast module depends only on this interface, so it broadcasts across nodes without coupling to Gossip internals.
 
 ```php
 use Yew\Cluster\Broadcaster\ClusterBroadcaster;
+use Yew\Cluster\Broadcaster\GossipClusterBroadcaster;
 
 /** @var ClusterBroadcaster $broadcaster */
 $broadcaster = DIGet(ClusterBroadcaster::class);
 $broadcaster->broadcast('config-reload', json_encode(['version' => 2]));
+
+// On the receiving side, parse an inbound frame back into [channel, message]:
+$parsed = GossipClusterBroadcaster::parse($payload); // ['channel'=>..., 'message'=>...] | null
 ```
+
+The wire format is `{"type":"mc","channel":...,"message":...}` (`GossipClusterBroadcaster::parse` returns `null` for anything that is not a multicast frame).
 
 ---
 
@@ -252,8 +279,10 @@ $broadcaster->broadcast('config-reload', json_encode(['version' => 2]));
 
 Gossip messages can be spoof-proofed, in two mutually exclusive modes:
 
-1. **Shared HMAC (default)**: set `secret` (non-empty). All nodes sign with the same key; `clockSkew` bounds message-freshness tolerance (seconds).
+1. **Shared HMAC (default)**: set `secret` (non-empty). All nodes sign with the same key; `clockSkew` bounds message-freshness tolerance (seconds, anti-replay).
 2. **Asymmetric per-node signing (stricter)**: set both `privateKey` (this node's private key PEM) and `publicKey` (this node's public key PEM). This switches to per-node signing and, with `trustStore` (`nodeId => publicKey PEM`), enforces a **whitelist**: only nodes whose public key is pinned are admitted.
+
+> `privateKey`/`publicKey` take precedence over `secret`. If all of them are empty, signing is disabled.
 
 ```php
 // Asymmetric + trust store example (under yew.cluster)
@@ -267,7 +296,7 @@ Gossip messages can be spoof-proofed, in two mutually exclusive modes:
 
 ## 10. Actor replication & failover
 
-- `ClusterActorStore` wraps `FileActorStore` and hooks into replication via `setCluster(ReplicaTransport)`.
+- `ClusterActorStore` wraps `FileActorStore` and hooks into replication via `ReplicaTransport`.
 - Worker side: `IpcReplicaTransport` — proxies replica mutations over IPC to the `cluster-state` process (single authority, no per-worker drift).
 - `cluster-state` side: `LocalReplicaTransport` — persists inbound replicas to disk; on node death, `onNodeDown($deadNodeId)` records the dead node, and workers query `clusterFailoverActors($deadNodeId)` for the actor names to resurrect locally.
 
@@ -308,7 +337,7 @@ yew:
     replicas: 128
     replicationFactor: 2
   port:
-    cluster-tcp:
+    cluster-tcp:                      # name MUST be exactly "cluster-tcp"
       host: 0.0.0.0
       port: 9501
 ```
@@ -324,4 +353,11 @@ Peer nodes only change `nodeId` / `host` / `seeds` to their own values.
 - **Q: Does every route lookup hit IPC?** No. `IpcShardRouter` uses a locally cached consistent-hash ring; it pulls from the authority only on first lookup or when the TTL expires.
 - **Q: What happens to subscriptions/state when a node dies?** See §10: `onNodeDown` + `clusterFailoverActors()` drive failover and resurrection.
 - **Q: How do I swap an implementation?** Use `yew.cluster.services` (state/gossip/router/transport/store) to declaratively override the class and constructor args; constructor args support `%token%` placeholders resolved against the `yew.cluster` subtree.
-```
+- **Q: Is there a `GetClusterNode` trait?** No. Node descriptors are the `ClusterNode` class.
+- **Q: Why must the inbound port be named `cluster-tcp`?** `ClusterPlugin::wirePorts()` looks the listener up by `ClusterTcpPort::NAME`; an arbitrary name will not be wired to `PooledTcpRemoteTransport`, so cross-node inbound calls fail.
+
+---
+
+## 13. Related links
+
+- [Actor](./actor.md) · [Multicast](./multicast.md) · [Getting Started](./getting-started.md)
