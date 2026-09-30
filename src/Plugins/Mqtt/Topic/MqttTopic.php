@@ -73,9 +73,12 @@ class MqttTopic
      *
      * @param DeliveryGatewayInterface $deliveryGateway
      */
-    public function __construct(DeliveryGatewayInterface $deliveryGateway)
-    {
+    public function __construct(
+        DeliveryGatewayInterface $deliveryGateway,
+        ?DriverInterface $topicDriver = null
+    ) {
         $this->deliveryGateway = $deliveryGateway;
+        $this->topicDriver = $topicDriver;
         $this->init();
     }
 
@@ -133,19 +136,13 @@ class MqttTopic
     }
 
     /**
-     * Resolve the persistence driver from the DI container; null if none bound.
+     * Return the persistence driver (injected via the constructor); null if the
+     * Mqtt plugin was started without a storage driver bound.
      *
      * @return DriverInterface|null
      */
     private function getTopicDriver(): ?DriverInterface
     {
-        if ($this->topicDriver === null) {
-            try {
-                $this->topicDriver = DIGet(DriverInterface::class);
-            } catch (\Throwable $e) {
-                $this->topicDriver = null;
-            }
-        }
         return $this->topicDriver;
     }
 

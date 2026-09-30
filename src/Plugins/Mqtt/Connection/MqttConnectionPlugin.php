@@ -20,6 +20,8 @@ use Yew\Plugins\Mqtt\Connection\MqttConnectionProcess;
 use Yew\Plugins\Mqtt\Topic\LocalDeliveryGateway;
 use Yew\Plugins\Mqtt\Topic\MqttClusterBroadcaster;
 use Yew\Plugins\Mqtt\Topic\MqttTopic;
+use Yew\Plugins\Mqtt\Topic\Storage\DriverInterface;
+use Yew\Plugins\Mqtt\Topic\Storage\StorageFactory;
 use Yew\Cluster\State\GossipClusterState;
 use Yew\Cluster\Transport\GossipTransport;
 use Yew\Cluster\Transport\UdpGossipTransport;
@@ -85,7 +87,10 @@ class MqttConnectionPlugin extends AbstractPlugin
             == $this->mqttConnectionConfig->getProcessName()
         ) {
             $mqttConnection = new MqttConnection();
-            $mqttTopic = new MqttTopic(new LocalDeliveryGateway($mqttConnection));
+            $mqttTopic = new MqttTopic(
+                new LocalDeliveryGateway($mqttConnection),
+                $this->createTopicDriver()
+            );
 
             $this->wireClusterBroadcaster($mqttTopic);
 
@@ -94,6 +99,26 @@ class MqttConnectionPlugin extends AbstractPlugin
         }
 
         $this->ready();
+    }
+
+    /**
+     * Build the optional MQTT subscription persistence driver from the
+     * "yew.topic.storage" config (reused from the Topic plugin). Returns null
+     * when no storage driver is configured, in which case subscriptions are
+     * kept in memory only.
+     *
+     * @return DriverInterface|null
+     */
+    private function createTopicDriver(): ?DriverInterface
+    {
+        $config = Server::$instance->getConfigContext()->get("yew.mqtt-topic");
+        $storage = $config["storage"] ?? null;
+
+        if (empty($storage)) {
+            return null;
+        }
+
+        return StorageFactory::create($storage);
     }
 
     /**
