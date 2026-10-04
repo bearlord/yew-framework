@@ -199,7 +199,27 @@ abstract class Actor extends BaseActor
             $this->dispatcher->shutdown();
         }
         $this->postStop();
+        // Close the mailbox last: init()'s consuming coroutine only breaks out of
+        // its loop when pop() returns false, which requires the channel to be closed.
+        $this->closeMailbox();
         ActorManager::getInstance()->removeActor($this);
+    }
+
+    /**
+     * Close the mailbox channel, releasing the coroutine that drains it.
+     *
+     * init() starts a coroutine looping on $this->channel->pop(); it breaks only
+     * when pop() returns false, i.e. once the channel is closed. Without this the
+     * coroutine blocks forever and — because the closure binds $this — keeps the
+     * whole actor instance alive after destroy()/restartActor().
+     *
+     * @return void
+     */
+    public function closeMailbox(): void
+    {
+        if (isset($this->channel)) {
+            $this->channel->close();
+        }
     }
 
     /**
@@ -243,7 +263,14 @@ abstract class Actor extends BaseActor
 
         $snapshot = $this->store->loadSnapshot($this->name);
         if ($snapshot !== null) {
-            $this->data = $snapshot->getState();
+            $state = $snapshot->getState();
+            if (is_array($state)) {
+                $this->data = $state;
+            } else {
+                // Corrupt or foreign snapshot: never assign a non-array to the
+                // typed $data property, and keep whatever state we already have.
+                $this->warning(sprintf("Actor %s snapshot state is not an array, ignoring it", $this->name));
+            }
             $this->eventSequence = $snapshot->getLastSequence();
         }
 

@@ -403,6 +403,10 @@ class ActorManager
         // Tear down the old instance without cascading to children.
         if ($old instanceof Actor) {
             $old->preRestart();
+            // Release the old mailbox's consuming coroutine. The replacement
+            // instance built below creates its own channel and coroutine, so
+            // leaving this one open would leak it permanently.
+            $old->closeMailbox();
         }
         DISet($className . ":" . $actorName, null);
         $this->actorTable->del($actorName);

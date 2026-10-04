@@ -262,6 +262,7 @@ class ActorIpcProxy extends IpcProxy
             'removeActor'  => true,
             'unregister'   => true,
             'shutdown'     => true,
+            'closeMailbox' => true,
         ];
         if (isset($reserved[$name])) {
             throw new \BadMethodCallException(sprintf(
