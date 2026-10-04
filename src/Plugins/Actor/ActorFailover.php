@@ -90,8 +90,11 @@ class ActorFailover
         }
         try {
             /** @var Actor $actor */
-            $actor = new $class($name, true);
-            $actor->recovery();
+            // $isCreated=false + explicit addActor(): the name is absent from the
+            // local actorTable here, but registering it twice would still throw
+            // "Has same actor name" on the second call. recovery() already ran
+            // inside the constructor, so no replay here.
+            $actor = new $class($name, false);
             $actorManager->addActor($actor);
             Server::$instance->getLog()->info(
                 "cluster: failover spawned actor [$name] (class $class) on {$this->processName}"

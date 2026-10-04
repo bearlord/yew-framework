@@ -725,6 +725,7 @@ abstract class Actor
     {
         if ($this->store === null) {
             $this->setState(2);
+            $this->onRecovered();
             return;
         }
 
@@ -743,6 +744,25 @@ abstract class Actor
         }
 
         $this->setState(2);
+        $this->onRecovered();
+    }
+
+    /**
+     * Hook invoked once durable state is fully loaded, i.e. right after
+     * recovery() has replayed the snapshot and the event log.
+     *
+     * Unlike init() — which runs BEFORE recovery() and therefore still sees an
+     * empty $this->data — this hook can safely read the restored state. Use it
+     * to re-arm work derived from that state, e.g. re-scheduling a one-shot
+     * delay from a persisted expiry timestamp rather than a raw interval.
+     *
+     * Also invoked for freshly created actors (with empty state), so keep the
+     * implementation idempotent.
+     *
+     * @return void
+     */
+    protected function onRecovered(): void
+    {
     }
 
     /**
@@ -871,6 +891,11 @@ abstract class Actor
 
     /**
      * After timer
+     *
+     * One-shot: Swoole destroys the timer as soon as it fires, so the id is
+     * dropped from the registry before running the callback. Otherwise an actor
+     * that schedules many delays would keep every fired id in $timerIds forever.
+     *
      * @param int $msec
      * @param callable $callback
      * @param ...$params
@@ -878,7 +903,12 @@ abstract class Actor
      */
     public function after(int $msec, callable $callback, ... $params): int
     {
-        $id = Timer::after($msec, $callback, ...$params);
+        $id = Timer::after($msec, function (...$args) use (&$id, $callback) {
+            unset($this->timerIds[$id]);
+
+            return $callback(...$args);
+        }, ...$params);
+
         $this->timerIds[$id] = $id;
 
         return $id;

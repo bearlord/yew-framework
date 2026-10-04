@@ -573,11 +573,19 @@ class ActorManager
                 continue;
             }
 
+            $parent = empty($row['parent']) ? null : $row['parent'];
             try {
                 /** @var Actor $actor */
-                $actor = new $className($name, true, empty($row['parent']) ? null : $row['parent']);
-                $actor->recovery();
-                $this->addActor($actor, empty($row['parent']) ? null : $row['parent']);
+                // $isCreated=false: the constructor must NOT call addActor(). The
+                // stale actorTable row for this name is still present, and addActor()
+                // rejects duplicates with "Has same actor name" — that would abort
+                // the constructor before init()/recovery() ever ran, so the actor
+                // would stay uninitialized and unroutable. Drop the stale row first,
+                // then register the freshly recovered instance. recovery() already
+                // ran inside the constructor; do not replay the log a second time.
+                $actor = new $className($name, false, $parent);
+                $this->actorTable->del($name);
+                $this->addActor($actor, $parent);
                 $recovered[] = $name;
             } catch (\Throwable $e) {
                 Server::$instance->getLog()->warning(sprintf(
@@ -633,8 +641,12 @@ class ActorManager
                 // have produced.
                 $parent = empty($data['parent']) ? null : $data['parent'];
                 try {
-                    $actor = new $className($actorName, true, $parent);
-                    $actor->recovery();
+                    // Same rule as recoverLocalActors(): never let the constructor's
+                    // addActor() collide with the existing row (it would throw
+                    // "Has same actor name" before init()/recovery() ever ran).
+                    // recovery() already ran inside the constructor.
+                    $actor = new $className($actorName, false, $parent);
+                    $this->actorTable->del($actorName);
                     $this->addActor($actor, $parent);
                     return $actor;
                 } catch (\Throwable $e) {
