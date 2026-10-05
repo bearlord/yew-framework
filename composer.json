@@ -27,7 +27,6 @@
     "malkusch/lock": "^3.0",
     "monolog/monolog": "^1.24",
     "nikic/php-parser": "^5.7.0",
-    "friendsofphp/proxy-manager-lts": "^1.0",
     "opis/closure": "^3.6",
     "php": "^8.2",
     "php-amqplib/php-amqplib": "^3.7.0",
