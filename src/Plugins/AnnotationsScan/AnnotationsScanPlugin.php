@@ -21,7 +21,6 @@ use Yew\Coroutine\Server\Server;
 use Yew\Plugins\AnnotationsScan\Annotation\Component;
 use Yew\Plugins\AnnotationsScan\Tokenizer\Tokenizer;
 use Yew\Plugins\Aop\AopPlugin;
-use Yew\Framework\Helpers\StringHelper;
 use ReflectionClass;
 use ReflectionException;
 
@@ -172,72 +171,20 @@ class AnnotationsScanPlugin extends AbstractPlugin
 
                     //Only those that inherit Component annotations will be scanned
                     //View annotations on classes
-                    $annotations = $this->cacheReader->getClassAnnotations($reflectionClass);
-                    foreach ($annotations as $annotation) {
-                        $annotationClass = get_class($annotation);
-
-						/*
-                        if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                            $_message = sprintf("@%s in %s",
-                                StringHelper::basename($annotationClass),
-                                $class
-                            );
-                            $this->debug($_message);
-                        }
-						*/
-
-                        $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
-                        $annotationClass = get_parent_class($annotation);
-                        if ($annotationClass != Annotation::class) {
-
-							/*
-                            if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                $_message = sprintf("@%s in %s",
-                                    StringHelper::basename($annotationClass),
-                                    $class
-                                );
-                                $this->debug($_message);
-                            }
-							*/
-
-                            $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
-                        }
+                    foreach ($this->cacheReader->getClassAnnotations($reflectionClass) as $annotation) {
+                        $this->collectClass($reflectionClass, $annotation);
                     }
 
                     //Add annotations in class interfaces
-                    $reflectionInterfaces = $reflectionClass->getInterfaces();
-                    foreach ($reflectionInterfaces as $reflectionInterface) {
-                        $annotations = $this->cacheReader->getClassAnnotations($reflectionInterface);
-                        foreach ($annotations as $annotation) {
-                            $annotationClass = get_class($annotation);
-
-							/*
-                            if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                $_message = sprintf("@%s in %s",
-                                    StringHelper::basename($annotationClass),
-                                    $class
-                                );
-                                $this->debug($_message);
-                            }
-							*/
-
-                            $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
-                            $annotationClass = get_parent_class($annotation);
-                            if ($annotationClass != Annotation::class) {
-
-								/*
-                                if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                    $_message = sprintf("@%s in %s",
-                                        StringHelper::basename($annotationClass),
-                                        $class
-                                    );
-                                    $this->debug($_message);
-                                }
-								*/
-
-                                $this->scanClass->addAnnotationClass($annotationClass, $reflectionClass);
-                            }
+                    foreach ($reflectionClass->getInterfaces() as $reflectionInterface) {
+                        foreach ($this->cacheReader->getClassAnnotations($reflectionInterface) as $annotation) {
+                            $this->collectClass($reflectionClass, $annotation);
                         }
+                    }
+
+                    // PHP 8 attribute support: collect class-level attributes as well
+                    foreach ($reflectionClass->getAttributes(Annotation::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+                        $this->collectClass($reflectionClass, $attribute->newInstance());
                     }
 
                     //View method annotations
@@ -251,80 +198,48 @@ class AnnotationsScanPlugin extends AbstractPlugin
                                 $reflectionInterfaceMethod = null;
                             }
                             if ($reflectionInterfaceMethod != null) {
-                                $annotations = $this->cacheReader->getMethodAnnotations($reflectionInterfaceMethod);
-                                foreach ($annotations as $annotation) {
-                                    $annotationClass = get_class($annotation);
-
-									/*
-                                    if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                        $_message = sprintf("%s in %s::%s",
-                                            StringHelper::basename($annotationClass),
-                                            $class,
-                                            $reflectionMethod->name
-                                        );
-                                        $this->debug($_message);
-                                    }
-									*/
-
-                                    $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
-                                    $annotationClass = get_parent_class($annotation);
-                                    if ($annotationClass != Annotation::class) {
-
-										/*
-                                        if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                            $_message = sprintf("%s in %s::%s",
-                                                StringHelper::basename($annotationClass),
-                                                $class,
-                                                $reflectionMethod->name
-                                            );
-                                            $this->debug($_message);
-                                        }
-										*/
-
-                                        $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
-                                    }
+                                foreach ($this->cacheReader->getMethodAnnotations($reflectionInterfaceMethod) as $annotation) {
+                                    $this->collectMethod($scanReflectionMethod, $annotation);
                                 }
                             }
                         }
 
-                        $annotations = $this->cacheReader->getMethodAnnotations($reflectionMethod);
-                        foreach ($annotations as $annotation) {
-                            $annotationClass = get_class($annotation);
+                        foreach ($this->cacheReader->getMethodAnnotations($reflectionMethod) as $annotation) {
+                            $this->collectMethod($scanReflectionMethod, $annotation);
+                        }
 
-							/*
-                            if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                $_message = sprintf("%s in %s::%s",
-                                    StringHelper::basename($annotationClass),
-                                    $class,
-                                    $reflectionMethod->name
-                                );
-                                $this->debug($_message);
-                            }
-							*/
-
-                            $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
-                            $annotationClass = get_parent_class($annotation);
-                            if ($annotationClass != Annotation::class) {
-
-								/*
-                                if (Server::$instance->getProcessManager()->getCurrentProcess()->getProcessId() == 0) {
-                                    $_message = sprintf("%s in %s::%s",
-                                        StringHelper::basename($annotationClass),
-                                        $class,
-                                        $reflectionMethod->name
-                                    );
-                                    $this->debug($_message);
-                                }
-								*/
-
-                                $this->scanClass->addAnnotationMethod($annotationClass, $scanReflectionMethod);
-                            }
+                        // PHP 8 attribute support: collect method-level attributes as well
+                        foreach ($reflectionMethod->getAttributes(Annotation::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+                            $this->collectMethod($scanReflectionMethod, $attribute->newInstance());
                         }
                     }
                 }
             }
-
         }
         $this->ready();
+    }
+
+    /**
+     * Register a class-level annotation together with its parent-annotation chain.
+     */
+    private function collectClass(ReflectionClass $reflectionClass, object $annotation): void
+    {
+        $this->scanClass->addAnnotationClass(get_class($annotation), $reflectionClass);
+        $parent = get_parent_class($annotation);
+        if ($parent !== false && $parent !== Annotation::class) {
+            $this->scanClass->addAnnotationClass($parent, $reflectionClass);
+        }
+    }
+
+    /**
+     * Register a method-level annotation together with its parent-annotation chain.
+     */
+    private function collectMethod(ScanReflectionMethod $scanReflectionMethod, object $annotation): void
+    {
+        $this->scanClass->addAnnotationMethod(get_class($annotation), $scanReflectionMethod);
+        $parent = get_parent_class($annotation);
+        if ($parent !== false && $parent !== Annotation::class) {
+            $this->scanClass->addAnnotationMethod($parent, $scanReflectionMethod);
+        }
     }
 }

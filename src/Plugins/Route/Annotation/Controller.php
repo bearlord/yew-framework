@@ -5,6 +5,7 @@
  */
 
 namespace Yew\Plugins\Route\Annotation;
+use Attribute;
 
 use Yew\Plugins\AnnotationsScan\Annotation\Component;
 
@@ -12,6 +13,7 @@ use Yew\Plugins\AnnotationsScan\Annotation\Component;
  * @Annotation
  * @Target("CLASS")
  */
+#[Attribute(Attribute::TARGET_CLASS)]
 class Controller extends Component
 {
     /**

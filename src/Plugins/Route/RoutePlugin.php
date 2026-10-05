@@ -179,12 +179,12 @@ class RoutePlugin extends AbstractPlugin
             //Add route in the comment
             foreach ($reflectionMethods as $reflectionMethod) {
                 $reflectionClass = $reflectionMethod->getParentReflectClass();
-                if ($this->scanClass->getCachedReader()->getClassAnnotation($reflectionClass, Controller::class) == null) {
+                if ($this->scanClass->getClassAndInterfaceAnnotation($reflectionClass, Controller::class) == null) {
                     continue;
                 }
                 $route = "/";
                 $requestMapping = $this->scanClass->getClassAndInterfaceAnnotation($reflectionClass, RequestMapping::class);
-                $controller = $this->scanClass->getCachedReader()->getClassAnnotation($reflectionClass, Controller::class);
+                $controller = $this->scanClass->getClassAndInterfaceAnnotation($reflectionClass, Controller::class);
                 if ($controller instanceof Controller) {
                     $controller->value = trim($controller->value, "/");
                     $route .= $controller->value;

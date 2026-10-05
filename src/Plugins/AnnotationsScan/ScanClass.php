@@ -6,6 +6,7 @@
 
 namespace Yew\Plugins\AnnotationsScan;
 
+use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\CachedReader;
 use ReflectionClass;
 
@@ -112,6 +113,30 @@ class ScanClass
     }
 
     /**
+     * Read PHP 8 attribute instances from a class or method reflector.
+     *
+     * @param ReflectionClass|\ReflectionMethod $reflector
+     * @param string|null $annotationName pass null to collect every Annotation-subclass attribute
+     * @return object[]
+     */
+    private function getAttributeInstances(ReflectionClass|\ReflectionMethod $reflector, ?string $annotationName): array
+    {
+        if ($annotationName === null) {
+            $instances = [];
+            foreach ($reflector->getAttributes() as $attribute) {
+                if (is_subclass_of($attribute->getName(), Annotation::class)) {
+                    $instances[] = $attribute->newInstance();
+                }
+            }
+            return $instances;
+        }
+        return array_map(
+            static fn(\ReflectionAttribute $attribute) => $attribute->newInstance(),
+            $reflector->getAttributes($annotationName, \ReflectionAttribute::IS_INSTANCEOF)
+        );
+    }
+
+    /**
      * Get class and interface annotation
      *
      * @param ReflectionClass $class
@@ -121,10 +146,13 @@ class ScanClass
     public function getClassAndInterfaceAnnotation(ReflectionClass $class, $annotationName): ?object
     {
         $result = $this->cachedReader->getClassAnnotation($class, $annotationName);
-        if ($result == null) {
-            foreach ($class->getInterfaces() as $reflectionClass) {
-                $result = $this->cachedReader->getClassAnnotation($reflectionClass, $annotationName);
-                if ($result != null) {
+        if ($result === null) {
+            $result = $this->getAttributeInstances($class, $annotationName)[0] ?? null;
+        }
+        if ($result === null) {
+            foreach ($class->getInterfaces() as $interface) {
+                $result = $this->getClassAndInterfaceAnnotation($interface, $annotationName);
+                if ($result !== null) {
                     return $result;
                 }
             }
@@ -136,13 +164,14 @@ class ScanClass
      * Get class and interface annotation list
      *
      * @param ReflectionClass $class
-     * @return array|mixed
+     * @return array
      */
-    public function getClassAndInterfaceAnnotations(ReflectionClass $class)
+    public function getClassAndInterfaceAnnotations(ReflectionClass $class): array
     {
         $result = $this->cachedReader->getClassAnnotations($class);
-        foreach ($class->getInterfaces() as $reflectionClass) {
-            $result = array_merge($this->cachedReader->getClassAnnotation($reflectionClass, null), $result);
+        $result = array_merge($result, $this->getAttributeInstances($class, null));
+        foreach ($class->getInterfaces() as $interface) {
+            $result = array_merge($this->getClassAndInterfaceAnnotations($interface), $result);
         }
         return $result;
     }
@@ -157,16 +186,19 @@ class ScanClass
     public function getMethodAndInterfaceAnnotation(\ReflectionMethod $method, $annotationName)
     {
         $result = $this->cachedReader->getMethodAnnotation($method, $annotationName);
-        if ($result == null) {
-            foreach ($method->getDeclaringClass()->getInterfaces() as $reflectionClass) {
+        if ($result === null) {
+            $result = $this->getAttributeInstances($method, $annotationName)[0] ?? null;
+        }
+        if ($result === null) {
+            foreach ($method->getDeclaringClass()->getInterfaces() as $interface) {
                 try {
-                    $reflectionMethod = $reflectionClass->getMethod($method->getName());
+                    $interfaceMethod = $interface->getMethod($method->getName());
                 } catch (\Throwable $e) {
-                    $reflectionMethod = null;
+                    $interfaceMethod = null;
                 }
-                if ($reflectionMethod != null) {
-                    $result = $this->cachedReader->getMethodAnnotation($reflectionMethod, $annotationName);
-                    if ($result != null) {
+                if ($interfaceMethod !== null) {
+                    $result = $this->getMethodAndInterfaceAnnotation($interfaceMethod, $annotationName);
+                    if ($result !== null) {
                         return $result;
                     }
                 }
@@ -184,14 +216,15 @@ class ScanClass
     public function getMethodAndInterfaceAnnotations(\ReflectionMethod $method): array
     {
         $result = $this->cachedReader->getMethodAnnotations($method);
-        foreach ($method->getDeclaringClass()->getInterfaces() as $reflectionClass) {
+        $result = array_merge($result, $this->getAttributeInstances($method, null));
+        foreach ($method->getDeclaringClass()->getInterfaces() as $interface) {
             try {
-                $reflectionMethod = $reflectionClass->getMethod($method->getName());
+                $interfaceMethod = $interface->getMethod($method->getName());
             } catch (\Throwable $e) {
-                $reflectionMethod = null;
+                $interfaceMethod = null;
             }
-            if ($reflectionMethod != null) {
-                $result = array_merge($result, $this->cachedReader->getMethodAnnotations($reflectionMethod));
+            if ($interfaceMethod !== null) {
+                $result = array_merge($result, $this->getMethodAndInterfaceAnnotations($interfaceMethod));
             }
         }
         return $result;
