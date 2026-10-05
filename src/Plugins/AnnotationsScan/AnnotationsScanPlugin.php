@@ -164,7 +164,12 @@ class AnnotationsScanPlugin extends AbstractPlugin
 
                 if (interface_exists($class) || class_exists($class)) {
                     $reflectionClass = new ReflectionClass($class);
-                    $has = $this->cacheReader->getClassAnnotation($reflectionClass, Component::class);
+                    // A class is scannable when it carries a Component (or any
+                    // Component-subclass) annotation. Doctrine's getClassAnnotation
+                    // matches by `instanceof`, so @RestController/@Controller also
+                    // pass. We use getClassAndInterfaceAnnotation so that the same
+                    // check also covers PHP 8 attributes (#[RestController(...)]).
+                    $has = $this->scanClass->getClassAndInterfaceAnnotation($reflectionClass, Component::class);
                     if ($has == null) {
                         continue;
                     }
