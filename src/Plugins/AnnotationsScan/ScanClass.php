@@ -121,19 +121,61 @@ class ScanClass
      */
     private function getAttributeInstances(ReflectionClass|\ReflectionMethod $reflector, ?string $annotationName): array
     {
-        if ($annotationName === null) {
-            $instances = [];
-            foreach ($reflector->getAttributes() as $attribute) {
-                if (is_subclass_of($attribute->getName(), Annotation::class)) {
-                    $instances[] = $attribute->newInstance();
-                }
+        // When a specific annotation is requested, IS_INSTANCEOF already filters
+        // to its subclasses; otherwise we keep every Annotation-subclass attribute.
+        $attributes = $annotationName === null
+            ? array_filter(
+                $reflector->getAttributes(),
+                static fn(\ReflectionAttribute $a) => is_subclass_of($a->getName(), Annotation::class)
+            )
+            : $reflector->getAttributes($annotationName, \ReflectionAttribute::IS_INSTANCEOF);
+
+        $instances = [];
+        foreach ($attributes as $attribute) {
+            try {
+                $instances[] = self::instantiateAttribute($attribute);
+            } catch (\Throwable $e) {
+                // A malformed attribute must not abort the whole scan; skip it.
             }
-            return $instances;
         }
-        return array_map(
-            static fn(\ReflectionAttribute $attribute) => $attribute->newInstance(),
-            $reflector->getAttributes($annotationName, \ReflectionAttribute::IS_INSTANCEOF)
-        );
+        return $instances;
+    }
+
+    /**
+     * Instantiate a PHP 8 attribute while staying compatible with Doctrine's
+     * final `Annotation::__construct(array $data)`.
+     *
+     * Doctrine feeds docblock annotations a single associative array; a native
+     * attribute must be normalised to the same shape so the `array $data`
+     * constructor can accept it:
+     *  - no arguments   -> empty property array              (#[Foo])
+     *  - one scalar     -> mapped to the `value` property    (#[Foo("x")])
+     *  - one array      -> used directly as the data array   (#[Foo(["value"=>"x"])])
+     *  - multiple args  -> passed as-is (named args map to
+     *                      properties; positional multi-args degrade gracefully)
+     *
+     * We always call `new $class($array)` instead of `newInstance()`, because
+     * newInstance() spreads named arguments and would fail against the single
+     * `array $data` parameter.
+     *
+     * @param \ReflectionAttribute $attribute
+     * @return object
+     */
+    public static function instantiateAttribute(\ReflectionAttribute $attribute): object
+    {
+        $arguments = $attribute->getArguments();
+        $className = $attribute->getName();
+
+        if (empty($arguments)) {
+            return new $className([]);
+        }
+
+        if (count($arguments) === 1) {
+            $arg = $arguments[0];
+            return new $className(is_array($arg) ? $arg : ['value' => $arg]);
+        }
+
+        return new $className($arguments);
     }
 
     /**
@@ -147,6 +189,7 @@ class ScanClass
     {
         $result = $this->cachedReader->getClassAnnotation($class, $annotationName);
         if ($result === null) {
+            // No docblock match: fall back to the first PHP 8 attribute of this type.
             $result = $this->getAttributeInstances($class, $annotationName)[0] ?? null;
         }
         if ($result === null) {

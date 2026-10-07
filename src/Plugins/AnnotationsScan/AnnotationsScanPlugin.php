@@ -162,66 +162,114 @@ class AnnotationsScanPlugin extends AbstractPlugin
                     continue;
                 }
 
-                if (interface_exists($class) || class_exists($class)) {
-                    $reflectionClass = new ReflectionClass($class);
-                    // A class is scannable when it carries a Component (or any
-                    // Component-subclass) annotation. Doctrine's getClassAnnotation
-                    // matches by `instanceof`, so @RestController/@Controller also
-                    // pass. We use getClassAndInterfaceAnnotation so that the same
-                    // check also covers PHP 8 attributes (#[RestController(...)]).
-                    $has = $this->scanClass->getClassAndInterfaceAnnotation($reflectionClass, Component::class);
-                    if ($has == null) {
-                        continue;
-                    }
+                if (!class_exists($class) && !interface_exists($class)) {
+                    continue;
+                }
 
-                    //Only those that inherit Component annotations will be scanned
-                    //View annotations on classes
-                    foreach ($this->cacheReader->getClassAnnotations($reflectionClass) as $annotation) {
-                        $this->collectClass($reflectionClass, $annotation);
-                    }
+                $reflectionClass = new ReflectionClass($class);
 
-                    //Add annotations in class interfaces
-                    foreach ($reflectionClass->getInterfaces() as $reflectionInterface) {
-                        foreach ($this->cacheReader->getClassAnnotations($reflectionInterface) as $annotation) {
-                            $this->collectClass($reflectionClass, $annotation);
-                        }
-                    }
+                // A class is scannable only when it carries a Component (or any
+                // Component-subclass) annotation. Doctrine's getClassAnnotation
+                // matches by `instanceof`, so @RestController/@Controller pass too;
+                // getClassAndInterfaceAnnotation additionally covers the same check
+                // for PHP 8 attributes (#[RestController(...)]).
+                if ($this->scanClass->getClassAndInterfaceAnnotation($reflectionClass, Component::class) === null) {
+                    continue;
+                }
 
-                    // PHP 8 attribute support: collect class-level attributes as well
-                    foreach ($reflectionClass->getAttributes(Annotation::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-                        $this->collectClass($reflectionClass, $attribute->newInstance());
-                    }
-
-                    //View method annotations
-                    foreach ($reflectionClass->getMethods() as $reflectionMethod) {
-                        $scanReflectionMethod = new ScanReflectionMethod($reflectionClass, $reflectionMethod);
-
-                        foreach ($reflectionMethod->getDeclaringClass()->getInterfaces() as $reflectionInterface) {
-                            try {
-                                $reflectionInterfaceMethod = $reflectionInterface->getMethod($reflectionMethod->getName());
-                            } catch (\Throwable $e) {
-                                $reflectionInterfaceMethod = null;
-                            }
-                            if ($reflectionInterfaceMethod != null) {
-                                foreach ($this->cacheReader->getMethodAnnotations($reflectionInterfaceMethod) as $annotation) {
-                                    $this->collectMethod($scanReflectionMethod, $annotation);
-                                }
-                            }
-                        }
-
-                        foreach ($this->cacheReader->getMethodAnnotations($reflectionMethod) as $annotation) {
-                            $this->collectMethod($scanReflectionMethod, $annotation);
-                        }
-
-                        // PHP 8 attribute support: collect method-level attributes as well
-                        foreach ($reflectionMethod->getAttributes(Annotation::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-                            $this->collectMethod($scanReflectionMethod, $attribute->newInstance());
-                        }
-                    }
+                $this->scanClassAnnotations($reflectionClass);
+                foreach ($reflectionClass->getMethods() as $reflectionMethod) {
+                    $this->scanMethodAnnotations($reflectionClass, $reflectionMethod);
                 }
             }
         }
         $this->ready();
+    }
+
+    /**
+     * Scan every annotation (docblock + PHP 8 attribute) declared on a class:
+     * the class itself, the interfaces it implements, and class-level attributes.
+     */
+    private function scanClassAnnotations(ReflectionClass $reflectionClass): void
+    {
+        // Docblock annotations declared directly on the class.
+        foreach ($this->cacheReader->getClassAnnotations($reflectionClass) as $annotation) {
+            $this->collectClass($reflectionClass, $annotation);
+        }
+
+        // Docblock annotations declared on the interfaces the class implements.
+        foreach ($reflectionClass->getInterfaces() as $reflectionInterface) {
+            foreach ($this->cacheReader->getClassAnnotations($reflectionInterface) as $annotation) {
+                $this->collectClass($reflectionClass, $annotation);
+            }
+        }
+
+        // PHP 8 attributes declared on the class.
+        $this->collectAttributes(
+            $reflectionClass,
+            fn(object $annotation) => $this->collectClass($reflectionClass, $annotation),
+            $reflectionClass->getName()
+        );
+    }
+
+    /**
+     * Scan every annotation (docblock + PHP 8 attribute) declared on a single
+     * method: from the interfaces it originates in, the method itself, and
+     * method-level attributes.
+     */
+    private function scanMethodAnnotations(ReflectionClass $reflectionClass, \ReflectionMethod $reflectionMethod): void
+    {
+        $scanReflectionMethod = new ScanReflectionMethod($reflectionClass, $reflectionMethod);
+
+        // Docblock annotations declared on the method where it appears in an interface.
+        foreach ($reflectionMethod->getDeclaringClass()->getInterfaces() as $reflectionInterface) {
+            try {
+                $reflectionInterfaceMethod = $reflectionInterface->getMethod($reflectionMethod->getName());
+            } catch (\Throwable $e) {
+                $reflectionInterfaceMethod = null;
+            }
+            if ($reflectionInterfaceMethod !== null) {
+                foreach ($this->cacheReader->getMethodAnnotations($reflectionInterfaceMethod) as $annotation) {
+                    $this->collectMethod($scanReflectionMethod, $annotation);
+                }
+            }
+        }
+
+        // Docblock annotations declared directly on the method.
+        foreach ($this->cacheReader->getMethodAnnotations($reflectionMethod) as $annotation) {
+            $this->collectMethod($scanReflectionMethod, $annotation);
+        }
+
+        // PHP 8 attributes declared on the method.
+        $this->collectAttributes(
+            $reflectionMethod,
+            fn(object $annotation) => $this->collectMethod($scanReflectionMethod, $annotation),
+            $reflectionClass->getName() . '::' . $reflectionMethod->getName()
+        );
+    }
+
+    /**
+     * Collect PHP 8 attributes from a class or method reflector, instantiating each
+     * one via ScanClass::instantiateAttribute and handing it to $collector.
+     * A malformed attribute is skipped with a warning instead of aborting the scan.
+     */
+    private function collectAttributes(
+        ReflectionClass|\ReflectionMethod $reflector,
+        callable $collector,
+        string $targetName
+    ): void {
+        foreach ($reflector->getAttributes(Annotation::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+            try {
+                $collector(ScanClass::instantiateAttribute($attribute));
+            } catch (\Throwable $e) {
+                $this->warning(sprintf(
+                    'Skip attribute %s on %s: %s',
+                    $attribute->getName(),
+                    $targetName,
+                    $e->getMessage()
+                ));
+            }
+        }
     }
 
     /**
