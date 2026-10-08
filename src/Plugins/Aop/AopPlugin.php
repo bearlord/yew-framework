@@ -32,8 +32,7 @@ class AopPlugin extends AbstractPlugin
      */
     private array $options;
 
-    /** @var ApplicationAspectKernel */
-    protected ApplicationAspectKernel $applicationAspectKernel;
+    protected ?ApplicationAspectKernel $applicationAspectKernel = null;
 
     /**
      * AopPlugin constructor.
@@ -136,9 +135,19 @@ class AopPlugin extends AbstractPlugin
             "includePaths" => $this->aopConfig->getIncludePaths(),
             //Exclude paths
             "excludePaths" => $this->aopConfig->getExcludePaths()
-        ];
+            ];
 
-        $this->applicationAspectKernel->init($this->options);
+            // Defensive: $applicationAspectKernel is only assigned inside init(). If
+            // init() did not run (or aborted early) on this instance, it would be
+            // uninitialized and the call below would fatal with
+            // "Typed property ... must not be accessed before initialization".
+            if ($this->applicationAspectKernel === null) {
+                $this->applicationAspectKernel = ApplicationAspectKernel::getInstance();
+                $this->applicationAspectKernel->setConfig($this->aopConfig);
+                $this->applicationAspectKernel->initContainer($this->options);
+            }
+
+            $this->applicationAspectKernel->init($this->options);
 
     }
 
