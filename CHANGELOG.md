@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-10-08
+
+### Fixed
+
+- **AnnotationsScan: PHP 8 attribute support was broken for Doctrine `Annotation` subclasses.** Doctrine's `Annotation` constructor is `final` and takes a single `array $data`, but the scanner used `ReflectionAttribute::newInstance()`, which spreads named arguments and fails against that signature. Added `ScanClass::instantiateAttribute()`, which normalizes every attribute form (`#[Foo]`, `#[Foo("x")]`, `#[Foo(["value"=>"x"])]`, named args) into the `array $data` shape the constructor expects, and merged the duplicated `getAttributeInstances()` branches into one tolerant path. `AnnotationsScanPlugin` now routes scanning through `scanClassAnnotations()` / `scanMethodAnnotations()` / `collectAttributes()`, and a malformed attribute is skipped with a warning instead of aborting the scan.
+- **Process: IPC message sent by the master process crashed the worker under PHP 8.2.** The master process has `processId = -1`, and the IPC frame header packed it with `pack('N', ...)`, which overflows for negative values. The receiver then failed to resolve the source process (`getProcessFromId()` returned `null`) and `_onPipeMessage()` fatalled on its non-nullable `Process $fromProcess` parameter. The frame now encodes the negative master process id correctly so the source process is resolved on the receiving side instead of crashing the worker.
+
+### Upgrade notes
+
+- No changes required in application code.
+- Required if you run on PHP 8.2: earlier 2.1.x releases fatal during annotation scanning or when the master process sends a message to a custom process.
+
 ## [2.1.1] - 2026-10-04
 
 ### Fixed
