@@ -1,4 +1,4 @@
-# Yew Framework 2.1.2
+# Yew Framework 2.2
 
 Patch release fixing PHP 8.2 compatibility issues in annotation scanning and master-process IPC.
 
