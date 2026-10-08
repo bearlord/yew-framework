@@ -581,7 +581,7 @@ abstract class BaseActor
      * Resolve the Multicast facade bound to this actor, falling back to a fresh
      * instance when the injected $multicast property is not yet initialized.
      */
-    private function multicast(): Multicast
+    public function multicast(): Multicast
     {
         if (!isset($this->multicast)) {
             return new Multicast($this->name, DIGet(MulticastConfig::class));
