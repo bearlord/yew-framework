@@ -137,16 +137,6 @@ class AopPlugin extends AbstractPlugin
             "excludePaths" => $this->aopConfig->getExcludePaths()
             ];
 
-            // Defensive: $applicationAspectKernel is only assigned inside init(). If
-            // init() did not run (or aborted early) on this instance, it would be
-            // uninitialized and the call below would fatal with
-            // "Typed property ... must not be accessed before initialization".
-            if ($this->applicationAspectKernel === null) {
-                $this->applicationAspectKernel = ApplicationAspectKernel::getInstance();
-                $this->applicationAspectKernel->setConfig($this->aopConfig);
-                $this->applicationAspectKernel->initContainer($this->options);
-            }
-
             $this->applicationAspectKernel->init($this->options);
 
     }
