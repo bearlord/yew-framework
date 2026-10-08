@@ -59,7 +59,7 @@
       "src/Core/Common.php",
       "src/Goaop/ParserReflection/bootstrap.php",
       "src/Nikic/FastRoute/bootstrap.php",
-      "src/Plugins/MQTT/constants.php"
+      "src/Mqtt/constants.php"
     ]
   }
 }
