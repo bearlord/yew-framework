@@ -73,6 +73,13 @@ class ProcessManager
      */
     public function getProcessFromId(int $processId): ?Process
     {
+        // pack("N")/unpack("N") transmits ids as unsigned 32-bit, so the
+        // negative system ids (master=-1, manager=-2) arrive as 4294967295 /
+        // 4294967294. Sign-extend them back to signed before the lookups.
+        if ($processId >= 0x80000000) {
+            $processId -= 0x100000000;
+        }
+
         if ($processId == MasterProcess::ID) {
             return $this->masterProcess;
         }
